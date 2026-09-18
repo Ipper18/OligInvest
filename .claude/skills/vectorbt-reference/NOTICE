@@ -1,0 +1,4 @@
+Source: https://github.com/marketcalls/vectorbt-backtesting-skills (MIT, commit 05d9e8b, 2026-07-12)
+Copied: selected generic rule files from .claude/skills/vectorbt-expert/rules/. OpenAlgo/Indian-market-specific rules intentionally omitted.
+
+Omitted on purpose: rules/assets/* templates (they call an OpenAlgo client at 127.0.0.1) and the OpenAlgo/DuckDB/Indian-market rule files.

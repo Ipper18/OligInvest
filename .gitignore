@@ -1,0 +1,48 @@
+# Sekrety
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Claude Code — ustawienia lokalne (globalne .claude/settings.json i skille SĄ wersjonowane)
+.claude/settings.local.json
+
+# Node
+node_modules/
+.pnpm-store/
+.turbo/
+.next/
+dist/
+build/
+coverage/
+*.tsbuildinfo
+npm-debug.log*
+pnpm-debug.log*
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+
+# Playwright
+test-results/
+playwright-report/
+blob-report/
+
+# Systemy operacyjne / IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Dane lokalne
+*.sqlite
+*.db
+/data/
