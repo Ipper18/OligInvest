@@ -1,0 +1,13 @@
+# Jednolite końce linii w repo (LF); Git normalizuje przy commicie.
+* text=auto eol=lf
+
+# Pliki binarne
+*.png binary
+*.jpg binary
+*.gif binary
+*.ico binary
+*.xls binary
+*.xlsx binary
+*.pdf binary
+*.woff binary
+*.woff2 binary
