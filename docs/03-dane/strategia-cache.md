@@ -8,7 +8,7 @@ Powiązane: `zrodla-danych.md` (role dostawców), `model-danych.md` (tabele `mar
 
 1. **Baza danych jest źródłem prawdy dla historii.** Dostawcy uzupełniają luki; raz pobrany bar EOD nie jest pobierany ponownie (poza oknem korekt).
 2. **Każda odpowiedź niesie metadane:** `source`, `asOf` (czas danych), `fetchedAt`, `stale: boolean`, `delayMinutes`. UI pokazuje je zawsze (wymóg z `11-zgodnosc-prawna.md`).
-3. **Kwoty są zasobem planowanym**, nie limitem do „zderzenia się”: każdy dostawca ma budżet dzienny/minutowy w Redis; zadania deklarują koszt przed wykonaniem.
+3. **Kwoty są zasobem planowanym**, nie limitem do „zderzenia się”: każdy dostawca ma budżet dzienny/minutowy w `valkey-queue` (trwałe liczniki); zadania deklarują koszt przed wykonaniem.
 4. **Degradacja zamiast błędu:** brak świeżych danych → serwujemy ostatnie znane z flagą `stale` i komunikatem; alert dla admina po N minutach niedostępności.
 5. **Jedna kanoniczna tożsamość instrumentu:** `instrument_id` (ISIN + MIC, np. `PLPKO0000016@XWAR`) ↔ symbole dostawców (`PKO.WA` Yahoo, `PKO` GPW, `PKO.WAR` Alpha Vantage) w tabeli `instrument_provider_symbols`.
 
@@ -43,7 +43,7 @@ Rejestr (`ProviderRegistry`) trzyma listę adapterów uporządkowaną per `(capa
 sequenceDiagram
   participant UI
   participant API as apps/api (market)
-  participant C as Cache (L1 mem → L2 Redis)
+  participant C as Cache (L1 pamięć → L2 valkey-cache)
   participant DB as Postgres (L3, trwały)
   participant R as ProviderRegistry
   participant P1 as Yahoo
@@ -67,14 +67,14 @@ sequenceDiagram
   API-->>UI: Quote + {source, asOf, delayMinutes, stale}
 ```
 
-- **Token bucket per dostawca** w Redis (`quota:{provider}:{day}` i `:{minute}`), atomowe `INCR` z TTL. Zadanie, które nie ma pokrycia w kwocie, jest odkładane (BullMQ `delay`) zamiast odrzucane.
+- **Token bucket per dostawca** w `valkey-queue` (`quota:{provider}:{day}` i `:{minute}`; instancja z trwałością AOF, więc restart nie zeruje zużycia kwot), atomowe `INCR` z TTL. Zadanie, które nie ma pokrycia w kwocie, jest odkładane (BullMQ `delay`) zamiast odrzucane.
 - **Circuit breaker per dostawca:** `CLOSED → OPEN` po 5 błędach w 2 min lub HTTP 429; `HALF_OPEN` po 5 min (1 próba). Stan widoczny w panelu admina (status integracji).
-- **Single-flight / coalescing:** równoległe żądania tej samej serii czekają na jedno pobranie (klucz `inflight:{key}` w Redis z TTL 30 s).
+- **Single-flight / coalescing:** równoległe żądania tej samej serii czekają na jedno pobranie (klucz `inflight:{key}` w `valkey-cache` z TTL 30 s).
 - **Stale-while-revalidate:** UI dostaje natychmiast dane z cache i (przez SSE) aktualizację po odświeżeniu w tle.
 
 ## 4. Poziomy cache i TTL per typ danych
 
-| Typ danych | L1 (pamięć procesu) | L2 Redis (TTL) | L3 Postgres | Odświeżanie / źródło zdarzenia |
+| Typ danych | L1 (pamięć procesu) | L2 `valkey-cache` (TTL) | L3 Postgres | Odświeżanie / źródło zdarzenia |
 |---|---|---|---|---|
 | Bary EOD (akcje, ETF, indeksy) | 60 s | 24 h (klucz per instrument+rok) | **trwałe** (`market_bars`); okno korekt: ostatnie 5 sesji nadpisywane przy każdym batchu | Batch nocny: GPW 18:30 CET (po publikacji archiwum), USA 23:30 CET; backfill historii dla nowych instrumentów |
 | Notowania intraday (opóźnione) | 15 s | **5 min** w godzinach sesji (GPW 09:00–17:05 CET; USA 15:30–22:00 CET; kalendarz z `pandas-market-calendars`/własna tabela `trading_calendar`), 60 min poza sesją | ostatnia wartość w `instrument_quotes_latest` (do trybu stale) | Job cykliczny co 5 min dla: pozycji użytkowników ∪ watchlist ∪ otwartych ekranów (heartbeat SSE); nic dla instrumentów nieobserwowanych |
@@ -87,7 +87,7 @@ sequenceDiagram
 | Kalendarz earnings/makro | — | 24 h | `calendar_events` | Job dzienny 06:00 CET |
 | Makro FRED | — | 24 h | `macro_series` trwałe | Job tygodniowy + na żądanie |
 
-Klucze Redis: `q:{instrumentId}` (quote), `b:{instrumentId}:{yyyy}` (bary), `fx:{base}{quote}:{date}`, `news:{instrumentId}`, `quota:{provider}:{window}`. Wszystkie wartości z `fetchedAt` w payloadzie, by UI liczył wiek danych lokalnie.
+Klucze w `valkey-cache`: `q:{instrumentId}` (quote), `b:{instrumentId}:{yyyy}` (bary), `fx:{base}{quote}:{date}`, `news:{instrumentId}`; dane per użytkownik zawsze z prefiksem `u:{userId}:` (NFR-03.05). Klucze w `valkey-queue`: `quota:{provider}:{window}`, `breaker:{provider}`. Instancja cache ma politykę `allkeys-lru` — utrata wpisu oznacza tylko ponowne pobranie z L3 (ADR-003). Wszystkie wartości z `fetchedAt` w payloadzie, by UI liczył wiek danych lokalnie.
 
 ## 5. Warm-up i planowanie kwot
 

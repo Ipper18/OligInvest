@@ -1,5 +1,7 @@
 # Research: biblioteki i komponenty gotowe
 
+> **Aktualizacja (Krok 3, 2026-09-18):** finalne wybory i wersje są w [`../01-architektura/stack-technologiczny.md`](../01-architektura/stack-technologiczny.md). Zmiany względem tego researchu: Serwist → własny service worker; Redis → Valkey 9 (dwie instancje); PostgreSQL 16 → 18; dodane: SheetJS CE (XLS z archiwum GPW), `@node-rs/argon2` (Better Auth domyślnie używa scrypt), `yahoo-finance2`, `nodemailer`, TanStack Query, Tailwind CSS 4, Biome.
+
 **Cel:** dla każdego elementu systemu wybrać gotowe, darmowe rozwiązanie open source (lub uzasadnić budowę własną), na podstawie zweryfikowanych wersji, licencji i rozmiarów — tak, aby `stack-technologiczny.md` i ADR-y nie opierały się na pamięci.
 
 Data weryfikacji: 2026-09-18. Wersje i licencje z `npm view` / PyPI JSON / GitHub REST API; rozmiary gzip z bundlephobia.com. Kryteria wspólne: 0 zł, self-host, licencja niewymuszająca publikacji kodu aplikacji przy prywatnym użyciu, aktywne utrzymanie (commit ≤ 6 mies.), zgodność z budżetem 200 KB gzip na initial bundle.
@@ -54,10 +56,10 @@ Uwaga metodologiczna: TWR, XIRR, cost basis i P/L **muszą** być liczone w `pac
 
 | Opcja | Wersja | Licencja | 2FA TOTP | OAuth | RBAC/admin | Self-host | Werdykt |
 |---|---|---|---|---|---|---|---|
-| [Better Auth](https://github.com/better-auth/better-auth) | 1.7.5 | MIT | plugin `twoFactor` (TOTP, backup codes, trusted devices, lockout) | Google/GitHub wbudowane | plugin `admin` (role, ban, sesje) | tak (adapter Drizzle/Postgres) | ✅ **wybrany** — patrz Z-3: OAuth-only wymaga `allowPasswordless` |
+| [Better Auth](https://github.com/better-auth/better-auth) | 1.7.5 | MIT | plugin `twoFactor` (TOTP, backup codes, trusted devices, lockout) | Google/GitHub wbudowane | plugin `admin` (role, ban, sesje) | tak (adapter Drizzle/Postgres) | ✅ **wybrany** — uwaga: logowania OAuth/passkey nie są domyślnie objęte 2FA (Z-04 w `00-przeglad/wymagania.md`, [ADR-004](ADR-004-postgres-better-auth-rls.md)) |
 | Auth.js (NextAuth) | 5.x | ISC | brak wbudowanego TOTP | tak | brak | tak | ⛔ 2FA do napisania samemu |
 | Keycloak | 26.x | Apache-2.0 | tak | tak | pełne | tak, ale Java ≈ 1 GB RAM | ⛔ za ciężki na współdzielony i5 |
-| Supabase Auth | — | Apache-2.0 | tak (MFA) | tak | RLS | ciężki self-host (Z-4 w planie) | ⛔ wg decyzji Kroku 0 |
+| Supabase Auth | — | Apache-2.0 | tak (MFA) | tak | RLS | ciężki self-host (~10 kontenerów) | ⛔ wg decyzji Kroku 0 |
 
 ## 7. Panel administratora (nie od zera, ale w budżecie bundle'a)
 
@@ -87,7 +89,7 @@ SSE (`EventSource`, standard platformy, 0 KB) ✅ — dane są opóźnione/EOD, 
 |---|---|---|---|
 | Monorepo | Turborepo + pnpm | turbo 2.11.1 | MIT |
 | Frontend | Next.js (App Router, RSC) + React | 16.3.5 / 19.3.0 | MIT |
-| PWA | Serwist (`@serwist/next`) | 9.5.12 | MIT — ⚠️ zgodność z Next 16 do potwierdzenia w Kroku 4 (context7) |
+| PWA | ~~Serwist (`@serwist/next`) 9.5.12~~ → **własny service worker** wg oficjalnego przewodnika PWA Next.js 16 (Krok 3, [ADR-008](ADR-008-pwa-i-integracje-mobilne.md)) | — | — |
 | API | Hono + `@hono/zod-openapi` | 4.13.8 / 1.6.3 | MIT |
 | Walidacja | Zod | 4.6.5 | MIT |
 | ORM/migracje | Drizzle ORM | 0.45.2 | Apache-2.0 |

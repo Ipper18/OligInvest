@@ -14,16 +14,20 @@ i fragmenty ilustracyjne ≤ 30 linii. Zero implementacji komponentów, endpoint
 
 Źródło prawdy dla wymagań: `docs/00-przeglad/wymagania.md`. Decyzje: `docs/09-decyzje/ADR-*.md`. Plan: `docs/08-plan/`.
 
-## Stack (wstępny — do potwierdzenia po Fazie 1; zmiany tylko przez ADR)
+## Stack (zaakceptowany; szczegóły i wersje: `docs/01-architektura/stack-technologiczny.md`; zmiany tylko przez ADR)
 
-- Monorepo Turborepo + pnpm: `apps/web` (Next.js App Router, PWA), `apps/api` (Hono, Zod → OpenAPI),
-  `apps/worker-py` (Python: vectorbt, PyPortfolioOpt, quantstats, Monte Carlo), `packages/core` (TS, `decimal.js`,
-  czyste funkcje finansowe — jedna implementacja dla wszystkich platform), `packages/db` (Drizzle + Postgres 16 + RLS),
-  `packages/data-providers` (adaptery port/adapter z łańcuchem fallbacków i twardym cache), `packages/ui`.
-- Redis + BullMQ (Node) / `bullmq` (Python) · Better Auth (hasło + OAuth Google/GitHub, **TOTP obowiązkowe**) · SSE zamiast
-  WebSocket · Web Push (VAPID) · Docker Compose · Caddy w VM, nginx na VPS.
-- Dane: opóźnione ~15 min (USA) i EOD (GPW). Stooq **nie** nadaje się do automatycznego pobierania (blokada anty-bot) —
-  tylko ręczny import CSV. NBP API dla kursów walut (HTTPS, max 93 dni/zapytanie).
+- Monorepo Turborepo + pnpm: `apps/web` (Next.js 16, PWA, bez dostępu do bazy), `apps/api` (Hono + Better Auth, jedyna
+  granica domenowa, REST `/api/v1` + SSE), `apps/jobs` (Node 24 + BullMQ: ingest, import, alerty, powiadomienia),
+  `apps/analytics` (Python 3.13: vectorbt, PyPortfolioOpt, quantstats — bez internetu i bez danych użytkowników w bazie).
+- `modules/*` — moduły domenowe (identity, notifications, market, portfolio + wyłączalne analytics, alerts, education,
+  admin, quick-actions); `packages/core` (TS, `decimal.js` — jedyna implementacja obliczeń finansowych),
+  `packages/contracts` (Zod → OpenAPI i JSON Schema), `packages/db` (Drizzle + PostgreSQL 18 + RLS),
+  `packages/data-providers` (port/adapter, fallbacki, kwoty), `packages/platform`, `packages/ui`.
+- Valkey 9 ×2 (kolejki `noeviction` + cache LRU) · Better Auth (Argon2id, **TOTP obowiązkowe** przez bramkę MFA, PAT) ·
+  SSE · Web Push (własny service worker) · e-mail SMTP (Brevo) · Docker Compose w VM (Debian 13) · Caddy w VM,
+  VPS = TLS passthrough.
+- Dane: opóźnione ~15 min (Yahoo, best effort) i EOD (archiwum GPW, uczciwie identyfikujący się klient, bez obchodzenia
+  blokad). Stooq zabrania automatów (`robots.txt`) — tylko ręczny import CSV. NBP API dla kursów walut.
 
 ## Zasady pracy i kodowania
 
@@ -35,7 +39,8 @@ i fragmenty ilustracyjne ≤ 30 linii. Zero implementacji komponentów, endpoint
 - Konwencje nazw (dla przyszłego kodu): `kebab-case` katalogi i pliki, `PascalCase` komponenty/typy, `camelCase`
   funkcje/zmienne, `SCREAMING_SNAKE_CASE` stałe i env, tabele SQL `snake_case` liczba mnoga, ID wymagań `FR-xx`/`NFR-xx`,
   ADR `ADR-NNN-slug.md`. Commity: Conventional Commits (`feat:`, `fix:`, `docs:`, `chore:`).
-- Pieniądze: nigdy `float` — `decimal.js` w TS, `Decimal` w Pythonie, `NUMERIC(20,8)` w SQL; waluta zawsze jawna.
+- Pieniądze: nigdy `float` — `decimal.js` w TS, `Decimal` w Pythonie, `NUMERIC` w SQL, kwoty w JSON jako ciągi;
+  waluta zawsze jawna (ADR-014).
 - Preferuj mniej warstw i mniej zależności; każda nowa biblioteka wymaga uzasadnienia (ADR lub sekcja w
   `stack-technologiczny.md`). Jeśli da się standardem platformy — standardem.
 
@@ -45,6 +50,9 @@ i fragmenty ilustracyjne ≤ 30 linii. Zero implementacji komponentów, endpoint
 - `.mcp.json` odwołuje się do kluczy wyłącznie przez `${VAR}`. Przed commitem: `git grep -nE '(api[_-]?key|secret|token)\s*[:=]\s*["'"'"']?[A-Za-z0-9_\-]{16,}'`.
 - Skille społecznościowe nie mogą czytać env poza własnymi parametrami ani wywoływać sieci — patrz
   `docs/09-decyzje/audyt-pluginow.md`.
+- **Repozytorium jest publiczne** (ADR-013): nigdy nie commituj adresów IP, wewnętrznych nazw hostów, portów usług
+  domowych, konfiguracji WireGuard/SSH ani rzeczywistych wyciągów brokerskich; fixtures tylko po anonimizacji.
+  Gałąź główna: `main`.
 
 ## Wymóg regulacyjny (MiFID II / rekomendacje inwestycyjne)
 
