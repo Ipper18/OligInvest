@@ -1,5 +1,7 @@
 # OligInvest — instrukcje dla Claude Code
 
+**Cel:** dać Claude Code kontekst projektu, zasady pracy, politykę sekretów i listę narzędzi, aby każda sesja była spójna z dokumentacją w `docs/`.
+
 ## Kontekst projektu
 
 OligInvest to **prywatna** aplikacja webowa (PWA) do analizy inwestycji dla właściciela i kilku zaufanych osób:

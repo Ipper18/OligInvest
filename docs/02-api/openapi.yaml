@@ -3574,11 +3574,13 @@ components:
         name: {type: string, minLength: 1, maxLength: 80}
     Preferences:
       type: object
-      required: [baseCurrency, costBasisMethod, plView, timezone, locale, theme, plPalette]
+      required: [baseCurrency, costBasisMethod, plView, taxDateBasis, taxIncludeFxFee, timezone, locale, theme, plPalette]
       properties:
         baseCurrency: {type: string, enum: [PLN], description: 'W MVP wyłącznie PLN (ADR-014).'}
         costBasisMethod: {type: string, enum: [fifo, average]}
         plView: {type: string, enum: [economic, tax]}
+        taxDateBasis: {type: string, enum: [settlement, trade], description: 'Dzień przychodu i kosztu w widoku podatkowym: dzień rozliczenia (domyślnie) albo zawarcia (tylko do porównań).'}
+        taxIncludeFxFee: {type: boolean, description: 'Czy wliczać marżę przewalutowania brokera do kosztu w widoku podatkowym (domyślnie false — pokazywana osobno jako fxCosts).'}
         timezone: {type: string, example: Europe/Warsaw}
         locale: {type: string, enum: [pl-PL, en-US]}
         theme: {type: string, enum: [system, light, dark]}
@@ -3589,6 +3591,8 @@ components:
       properties:
         costBasisMethod: {type: string, enum: [fifo, average]}
         plView: {type: string, enum: [economic, tax]}
+        taxDateBasis: {type: string, enum: [settlement, trade]}
+        taxIncludeFxFee: {type: boolean}
         timezone: {type: string, maxLength: 64}
         locale: {type: string, enum: [pl-PL, en-US]}
         theme: {type: string, enum: [system, light, dark]}
@@ -4579,6 +4583,13 @@ components:
             fees: {$ref: '#/components/schemas/Money'}
             fxCosts: {$ref: '#/components/schemas/Money'}
             realizedPl: {$ref: '#/components/schemas/Money'}
+        taxSettings:
+          type: object
+          description: 'Ustawienia użyte w widoku tax (FR-02.07): dzień przychodu i kosztu oraz sposób ujęcia marży przewalutowania brokera; fxCosts pokazuje tę marżę osobno.'
+          required: [dateBasis, includeFxFee]
+          properties:
+            dateBasis: {type: string, enum: [settlement, trade]}
+            includeFxFee: {type: boolean, description: 'false — marża poza kosztem (tylko w fxCosts); true — wliczona do cost.'}
         taxNote: {type: string, description: 'Informacja, że widok tax nie jest zeznaniem PIT-38.'}
     Dividends:
       type: object

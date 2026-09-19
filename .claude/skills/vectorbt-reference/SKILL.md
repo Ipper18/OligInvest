@@ -1,6 +1,6 @@
 ---
 name: vectorbt-reference
-description: Reference knowledge base for vectorbt backtesting used by the OligInvest Python worker (apps/worker-py). Use when designing or reviewing backtests, walk-forward validation, parameter optimization, position sizing, stop-loss/take-profit logic, realistic transaction costs, or performance metrics. Read the relevant rule file before writing any backtest spec.
+description: Reference knowledge base for vectorbt backtesting used by the OligInvest Python worker (apps/analytics). Use when designing or reviewing backtests, walk-forward validation, parameter optimization, position sizing, stop-loss/take-profit logic, realistic transaction costs, or performance metrics. Read the relevant rule file before writing any backtest spec.
 user-invocable: false
 ---
 

@@ -1,5 +1,7 @@
 # ADR-013: Publiczne repozytorium GitHub — higiena, CI i skanowanie
 
+**Cel:** zapisać zasady prowadzenia publicznego repozytorium: co wolno publikować, które zabezpieczenia GitHub są włączone i jaka jest licencja.
+
 - **Status:** zaakceptowana; licencja rozstrzygnięta 2026-09-19 (Q-03: „zrób domyślnie” → brak pliku `LICENSE`)
 - **Data:** 2026-09-18
 - **Decydent:** właściciel projektu (repozytorium publiczne — Krok 2)

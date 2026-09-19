@@ -78,7 +78,8 @@ Bez logiki domenowej; wynik: działające CI, baza z RLS, wydanie podpisane i wd
 | BL-032 | Spike: TypeScript 7 z Next.js, Hono, Drizzle i Better Auth — decyzja 7.x albo 6.x | NFR-10.05 | STACK | BL-011 | 0,5 | todo |
 | BL-033 | Raport rozmiarów bazowych (Next.js, Zod, Radix) i aktualizacja PERF §2 | NFR-01.02 | PERF | BL-016 | 0,5 | todo |
 | BL-034 | Środowisko deweloperskie: `compose.dev.yaml` (PostgreSQL, Valkey, Mailpit), `pnpm dev`, dane przykładowe | NFR-10.01 | CI | BL-022 | 1 | todo |
-| | **Suma etapu** | | | | **50,5** | |
+| BL-035 | Test spójności dokumentacji w CI: każde FR/NFR z `wymagania.md` ma zadanie w `backlog.md` i wiersz w `macierz-pokrycia.md`; linki wewnętrzne w `docs/` działają; każdy dokument zaczyna się od „Cel:” | NFR-10.01 | CI | BL-017 | 0,5 | todo |
+| | **Suma etapu** | | | | **51** | |
 
 ## 2. M1 — MVP
 
@@ -119,7 +120,7 @@ Brama A (**[A]**) — MVP właściciela; brama B (**[B]**) — funkcje wymagane 
 | BL-138 | **[A]** Wykres świecowy: `getInstrumentChart` z decymacją ≤ 3 000 punktów (1W/1M), leniwy wrapper Lightweight Charts, tabela alternatywna, atrybucja TradingView | FR-01.03, NFR-01.04, NFR-06.01 | [ADR-009](../09-decyzje/ADR-009-wykresy.md), PERF, LAW | BL-137 | 3 | todo |
 | BL-139 | **[A]** Minimalna kontrola jakości EOD przy zapisie: integralność OHLC, duplikaty, skoki bez zdarzenia korporacyjnego | NFR-08.04 | OBL | BL-133 | 1,5 | todo |
 | BL-141 | **[A]** `packages/core`: `Money`, `Quantity`, `Price`, `FxRate` (decimal.js, precyzja 34, zaokrąglenia), formatowanie pl-PL | NFR-08.01, NFR-04.04 | OBL, [ADR-014](../09-decyzje/ADR-014-pieniadze-waluty-czas.md) | BL-015 | 2 | todo |
-| BL-142 | **[A]** `packages/core`: model operacji, partie FIFO (sprzedaż częściowa, split, przeniesienie), P/L zrealizowany ekonomiczny i podatkowy (`settle_date`, NBP D-1) — wektor A | FR-02.07, FR-03.05, NFR-08.02 | OBL, VEC | BL-141 | 4 | todo |
+| BL-142 | **[A]** `packages/core`: model operacji, partie FIFO (sprzedaż częściowa, split, przeniesienie), P/L zrealizowany ekonomiczny i podatkowy (`settle_date`, NBP D-1; marża przewalutowania osobno jako `fxCosts`, ustawienia `tax_date_basis` i `tax_include_fx_fee`) — wektor A | FR-02.07, FR-03.05, NFR-08.02 | OBL, VEC | BL-141 | 4 | todo |
 | BL-143 | **[A]** `packages/core`: pozycje, gotówka per waluta, wycena, P/L niezrealizowany, wynik dnia — wektory F i G | FR-02.02, FR-02.04, FR-02.09 | OBL, VEC | BL-142 | 2 | todo |
 | BL-144 | **[A]** Moduł `portfolio`: rachunki (zwykły, IKE, IKZE), operacje z walidacją per typ, przeliczenie ≤ 5 s | FR-02.01, FR-03.03 | API, DB | BL-108, BL-143 | 3 | todo |
 | BL-145 | **[A]** Import XTB: upload ≤ 10 MB, parsowanie w `jobs`, oba szablony, statusy wierszy, idempotencja, mapowanie instrumentów, CFD jako `unsupported`, uzgodnienie sald, zatwierdzenie | FR-03.01, NFR-08.03, NFR-03.07 | IMP | BL-144, BL-135 | 5 | todo |
@@ -149,7 +150,7 @@ Brama A (**[A]**) — MVP właściciela; brama B (**[B]**) — funkcje wymagane 
 | BL-208 | Import mBank eMakler (historia transakcji i finansowa, Windows-1250, mapowanie po nazwie) | FR-03.02 | IMP | BL-145 | 3 | todo |
 | BL-209 | Pełna kontrola jakości danych: reguły BLOCK/WARN/INFO, `data_quality_issues`, oznaczenia w UI, blokada analiz | NFR-08.04, NFR-09.02 | OBL | BL-139 | 1,5 | todo |
 | BL-210 | Zapasowe adaptery USA: Finnhub, Twelve Data, Alpha Vantage — kwoty, testy kontraktowe na zapisanych odpowiedziach | NFR-02.04, NFR-09.02 | SRC, CACHE | BL-131 | 2 | todo |
-| BL-211 | Preferencje: metoda kosztu (FIFO/średnia), strefa czasowa, język; synchronizacja między urządzeniami | FR-07.08 | API | BL-113 | 1 | todo |
+| BL-211 | Preferencje: metoda kosztu (FIFO/średnia), ustawienia widoku podatkowego (dzień przychodu, marża przewalutowania w koszcie — przelicza widok podatkowy), strefa czasowa, język; synchronizacja między urządzeniami | FR-07.08 | API | BL-113 | 1 | todo |
 | BL-212 | Test opóźnienia SSE < 2 s p95 i wznowienia z `Last-Event-ID` | NFR-01.06 | RT, [ADR-007](../09-decyzje/ADR-007-sse-zamiast-websocket.md) | BL-125 | 1 | todo |
 | BL-213 | Raport kompletności EOD GPW (weryfikacja ADR-005 przez 20 sesji) | NFR-09.02 | [ADR-005](../09-decyzje/ADR-005-strategia-danych-rynkowych.md) | BL-133 | 0,5 | todo |
 | BL-214 | Ekran kursów walut `/rynek/waluty` z historią NBP | FR-01.14 | EKR | BL-132 | 1 | todo |
@@ -287,7 +288,7 @@ Poza planem etapów; estymacja orientacyjna. Przed startem każde zadanie przech
 
 | Etap | Zadania | Suma (d) | Uwagi |
 |---|---|---|---|
-| M0 Szkielet i infrastruktura | 34 | 50,5 |  |
+| M0 Szkielet i infrastruktura | 35 | 51 |  |
 | M1 MVP | 47 | 102 | brama A 85,5 d, brama B 16,5 d |
 | M2 Dane rynkowe, wskaźniki, onboarding | 16 | 29,5 |  |
 | M3 Wyniki historyczne i scenariusze | 19 | 38,5 |  |
@@ -295,7 +296,7 @@ Poza planem etapów; estymacja orientacyjna. Przed startem każde zadanie przech
 | M5a Admin, edukacja, rynek | 15 | 27 |  |
 | M5b Analizy zaawansowane, OAuth, offline | 16 | 38,5 |  |
 | M6 Hardening i dostępność | 12 | 17 |  |
-| **Razem M0–M6** | **171** | **326,5** | bez narzutu przeglądu (ok. +30 %) |
+| **Razem M0–M6** | **172** | **327** | bez narzutu przeglądu (ok. +30 %) |
 | Później | 8 | 18,5 | poza planem |
 
-**Pokrycie wymagań:** każde z 151 wymagań FR/NFR z [`../00-przeglad/wymagania.md`](../00-przeglad/wymagania.md) ma co najmniej jedno zadanie (sprawdzone skryptem 2026-09-19: brak wymagań bez zadania, brak zależności wstecz między etapami, M3 i M4 niezależne). Pełna macierz wymaganie → dokument → zadanie powstaje w Kroku 7 (`docs/00-przeglad/macierz-pokrycia.md`).
+**Pokrycie wymagań:** każde z 151 wymagań FR/NFR z [`../00-przeglad/wymagania.md`](../00-przeglad/wymagania.md) ma co najmniej jedno zadanie (sprawdzone skryptem 2026-09-19: brak wymagań bez zadania, brak zależności wstecz między etapami, M3 i M4 niezależne). Pełna macierz wymaganie → dokument → zadanie: [`../00-przeglad/macierz-pokrycia.md`](../00-przeglad/macierz-pokrycia.md).

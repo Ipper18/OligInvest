@@ -105,7 +105,7 @@ $$\text{koszt}_{\text{PLN}}^{\text{pod}} = q\cdot p \cdot \text{nbp}(\text{prev\
 $$\text{przychód}_{\text{PLN}}^{\text{pod}} = q\cdot p \cdot \text{nbp}(\text{prev\_bd}(d_{\text{sprzedaży}})) - \text{prowizja}\cdot \text{nbp}(\text{prev\_bd}(d_{\text{sprzedaży}}))$$
 
 - Dzień przychodu i kosztu (`d_kupna`, `d_sprzedaży` we wzorach) = **dzień rozliczenia transakcji** (`settle_date`, przeniesienie własności — art. 17 ust. 1ab pkt 1 ustawy o PIT; interpretacja Dyrektora KIS z 29.03.2024, sygn. 0114-KDIP3-1.4011.1149.2023.1.AK; tak samo liczy XTB — [`../11-zgodnosc-prawna.md`](../11-zgodnosc-prawna.md) § 5). Gdy import nie podaje daty rozliczenia, wyliczamy ją z `trade_date` i kalendarza rynku: USA — T+1 (od 28.05.2024, wcześniej T+2); GPW i pozostałe rynki UE — T+2, od 11.10.2027 T+1 (rozporządzenie (UE) 2025/2075). ❓ Dni, w których giełda działa, a system rozliczeń nie (np. niektóre święta federalne w USA), wymagają kalendarza rozliczeń — w MVP wpisy admina w `market.trading_calendar` (`notes`), weryfikacja przed M1. Parametr `tax_date_basis = settlement|trade` (domyślnie `settlement`; `trade` tylko do porównań).
-- **Koszt przewalutowania brokera w widoku podatkowym:** przeliczenie następuje po kursie NBP, więc marży brokera nie dodajemy do kosztu (brak jednolitej praktyki — [`../11-zgodnosc-prawna.md`](../11-zgodnosc-prawna.md) § 5.3; parametr `tax_include_fx_fee`, domyślnie `false`).
+- **Koszt przewalutowania brokera w widoku podatkowym** (decyzja właściciela 2026-09-19): marży brokera nie dodajemy do kosztu podatkowego — widok pokazuje ją jako **osobny koszt** (`fxCosts` = część kosztów przewalutowania partii zużytych przy sprzedaży + koszt przewalutowania przy sprzedaży). Ustawienie użytkownika `tax_include_fx_fee` (domyślnie `false`) wlicza ją do kosztu; zmiana przelicza wyłącznie widok podatkowy (dane pochodne), a widok ekonomiczny zawsze zawiera ten koszt. Brak jednolitej praktyki — [`../11-zgodnosc-prawna.md`](../11-zgodnosc-prawna.md) § 5.3.
 - Rachunki IKE/IKZE: widok podatkowy pokazuje „nie dotyczy” (brak rozliczenia bieżącego).
 
 ### 2.3 Wycena bieżąca pozycji zagranicznych
@@ -168,6 +168,8 @@ FIFO: sprzedaż zużywa 10 szt. z T1 (9 599,76) + 2 szt. z T2 (1 507,50) → kos
 | w tym efekt ceny (przy średnim kursie zużytych partii) | −158,68 PLN |
 | w tym efekt walutowy | −924,95 PLN |
 | P/L zrealizowany — podatkowy (informacyjnie) | **−950,20 PLN** |
+| Koszty przewalutowania przypisane do sprzedaży — w widoku podatkowym osobno (`fxCosts`) | 105,63 PLN (T1 47,76 + 2/5 z T2 7,50 + przy sprzedaży 50,37) |
+| P/L podatkowy przy ustawieniu `tax_include_fx_fee = true` | −1 055,83 PLN |
 | Średnia ważona: koszt jednostkowy / P/L | 891,234 PLN/szt. / −671,18 PLN (inny wynik niż FIFO — dlatego FIFO jest domyślne) |
 | Pozostało po sprzedaży | 3 szt. z T2, koszt 2 261,25 PLN |
 | Po splicie 4:1 | 12 szt., koszt 2 261,25 PLN, 188,4375 PLN/szt. |
@@ -410,7 +412,7 @@ Wyszukiwanie binarne miesięcznej wpłaty `c`, dla której `P(V_T ≥ cel) ≥ p
 | Płynność | pozycja ≤ 5 % mediany obrotu dziennego z 20 sesji; instrumenty z medianą obrotu < 100 tys. PLN wykluczone |
 | Koszty — prowizja | XTB: 0 % do 100 000 EUR miesięcznego obrotu, potem 0,2 % (min. 10 EUR); inni brokerzy — tabela konfiguracyjna |
 | Koszty — przewalutowanie | 0,5 % kursu mid na każdą konwersję (kupno i sprzedaż instrumentu w USD na rachunku PLN ≈ 1 % za cykl) |
-| Koszty — poślizg | połowa spreadu wg koszyka płynności (mediana obrotu dziennego): ≥ 10 mln PLN → 0,05 %; 1–10 mln → 0,15 %; 0,1–1 mln → 0,50 % (parametry konfigurowalne; ❓ skalibrować na danych w M5) |
+| Koszty — poślizg | połowa spreadu wg koszyka płynności (mediana obrotu dziennego): ≥ 10 mln PLN → 0,05 %; 1–10 mln → 0,15 %; 0,1–1 mln → 0,50 % (parametry konfigurowalne; ❓ skalibrować na danych w M5b) |
 | Podatki | opcjonalnie 19 % od zrealizowanych zysków na rachunku zwykłym (rozliczenie roczne, bez przenoszenia strat między latami w MVP — uproszczenie jawne) |
 | Walidacja | podział in-sample / out-of-sample (domyślnie 70/30, bez tasowania) + walk-forward (okno dopasowania 3 lata, test 1 rok, krok 1 rok); optymalizacja parametrów **tylko** wewnątrz okien dopasowania |
 | Przeuczenie | raport liczby testowanych kombinacji `N`; **Deflated Sharpe Ratio** (Bailey, López de Prado 2014); flaga, gdy wynik OOS < 60 % wyniku IS; domyślny tryb „bez optymalizacji” |
@@ -459,7 +461,7 @@ Pytania do właściciela rozstrzygnięte domyślnie (do zmiany decyzją w ADR): 
 
 ---
 
-## 14. Jakość danych jako warunek obliczeń (skill `data-scrub`)
+## 14. Jakość danych jako warunek obliczeń (NFR-08.04, skill `data-scrub`)
 
 Każda seria EOD przechodzi przy zapisie kontrole; wynik trafia do `market.data_quality_issues`, a seria z problemem `BLOCK` nie jest używana w analizach FR-04 (UI pokazuje powód):
 

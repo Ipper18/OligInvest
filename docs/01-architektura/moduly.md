@@ -218,7 +218,7 @@ Admin **nie ma** uprawnienia do danych finansowych innych użytkowników — RLS
 12. **Bezpieczeństwo:** sekcja STRIDE modułu w `06-bezpieczenstwo/model-zagrozen.md`.
 13. **Edukacja i zgodność:** wyjaśnienia dla nowych metryk (FR-06.02); disclaimery i blok założeń, jeśli moduł pokazuje analizy (NFR-07).
 14. **Testy:** jednostkowe, integracyjne z RLS, e2e ścieżki krytycznej; zadanie CI „build bez modułu” nadal zielone.
-15. **Dokumentacja:** katalog w § 4, `00-przeglad/macierz-pokrycia.md`, [`../08-plan/backlog.md`](../08-plan/backlog.md).
+15. **Dokumentacja:** katalog w § 4, [`../00-przeglad/macierz-pokrycia.md`](../00-przeglad/macierz-pokrycia.md), [`../08-plan/backlog.md`](../08-plan/backlog.md).
 
 ### 8.2 Usunięcie modułu funkcjonalnego
 

@@ -54,7 +54,7 @@ Pomiary powtarza w M0 zadanie „raport rozmiarów” — liczby w tym dokumenci
 
 | Trasa | JS początkowy | Leniwe (maks.) | Razem | Zakazane w chunkach początkowych |
 |---|---|---|---|---|
-| `/logowanie`, `/logowanie/2fa`, `/rejestracja`, `/konfiguracja-2fa` | ≤ 160 KB | — | ≤ 160 KB | TanStack Query, wykresy, Radix |
+| `/logowanie`, `/logowanie/2fa`, `/rejestracja`, `/konfiguracja-2fa`, `/akceptacja-regulaminu`, strony publiczne (`/regulamin`, `/prywatnosc`, `/zrodla-danych`) | ≤ 160 KB | — | ≤ 160 KB | TanStack Query, wykresy, Radix |
 | `/` (Start) | ≤ 190 KB | uPlot 23 KB (po LCP) | ≤ 230 KB | Lightweight Charts, uPlot, driver.js (NFR-01.03), Radix |
 | `/portfel`, `/portfel/*` | ≤ 195 KB | tabela + wirtualizacja 41 KB, menu 31 KB, uPlot 23 KB | ≤ 290 KB | wykresy, Radix, Zod |
 | `/rynek/[instrumentId]` | ≤ 190 KB | Lightweight Charts 54 KB, wyszukiwarka 24 KB | ≤ 280 KB | Radix, Zod |

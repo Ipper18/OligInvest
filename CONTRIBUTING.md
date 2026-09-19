@@ -94,7 +94,7 @@ grep -rnE 'pip install|npm install|npx |uv add' .claude/skills/<skill>
 
 ## 8. Uruchamianie lokalne
 
-Polecenia powstają w etapie M0 (BL-001–BL-034); do tego czasu repozytorium zawiera tylko dokumentację.
+Polecenia powstają w etapie M0 (BL-001–BL-035); do tego czasu repozytorium zawiera tylko dokumentację.
 
 | Polecenie | Co robi |
 |---|---|

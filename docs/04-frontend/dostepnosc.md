@@ -80,7 +80,7 @@ Użytkownik może wstrzymać automatyczne odświeżanie danych (2.2.2) — prze�
 
 ## 9. Onboarding i treści edukacyjne
 
-- driver.js: każdy krok jest dostępny z klawiatury, `Esc` kończy, przycisk „Pomiń” zawsze widoczny; onboarding nigdy nie blokuje aplikacji (FR-06.01). Przed M5 audyt dostępności wyskakujących okien driver.js z VoiceOver — ❓ jeśli zawiodą, zastąpienie własnym `<dialog>` ze wskazaniem elementu.
+- driver.js: każdy krok jest dostępny z klawiatury, `Esc` kończy, przycisk „Pomiń” zawsze widoczny; onboarding nigdy nie blokuje aplikacji (FR-06.01). Przy wdrażaniu onboardingu (M2, BL-216) audyt dostępności wyskakujących okien driver.js z VoiceOver — ❓ jeśli zawiodą, zastąpienie własnym `<dialog>` ze wskazaniem elementu.
 - Treści edukacyjne prostym językiem (NFR-06.03): zdania do ~20 słów, wyjaśnienie terminu przy pierwszym użyciu, przykłady w złotych.
 - Tryb demo wyraźnie oznaczony tekstem, nie tylko kolorem.
 

@@ -198,6 +198,8 @@ CREATE TABLE identity.user_preferences (
   locale             text        NOT NULL DEFAULT 'pl-PL',
   theme              text        NOT NULL DEFAULT 'system' CHECK (theme IN ('system', 'light', 'dark')),
   pl_palette         text        NOT NULL DEFAULT 'default' CHECK (pl_palette IN ('default', 'colorblind')),
+  tax_date_basis     text        NOT NULL DEFAULT 'settlement' CHECK (tax_date_basis IN ('settlement', 'trade')), -- obliczenia-finansowe.md § 2.2
+  tax_include_fx_fee boolean     NOT NULL DEFAULT false,     -- marża przewalutowania w koszcie podatkowym (domyślnie osobno)
   updated_at         timestamptz NOT NULL DEFAULT now()
 );
 
@@ -782,6 +784,7 @@ CREATE TABLE portfolio.lots (
   cost_total_instrument_ccy numeric(20,8),
   cost_total_tax_pln        numeric(20,8),                    -- widok podatkowy (NBP D-1)
   fees_total                numeric(20,8)  NOT NULL DEFAULT 0,
+  fx_fee_total              numeric(20,8)  NOT NULL DEFAULT 0, -- koszt przewalutowania brokera przy nabyciu (zawarty w cost_total)
   split_factor              numeric(24,12) NOT NULL DEFAULT 1,
   closed_on                 date,
   computed_at               timestamptz    NOT NULL DEFAULT now(),
@@ -803,6 +806,7 @@ CREATE TABLE portfolio.lot_consumptions (
   cost_tax_pln          numeric(20,8),
   proceeds_tax_pln      numeric(20,8),
   realized_pl_tax_pln   numeric(20,8),
+  fx_cost_pln           numeric(20,8),                    -- koszty przewalutowania przypisane do sprzedaży; w widoku podatkowym osobno albo w cost_tax_pln (tax_include_fx_fee)
   closed_on             date           NOT NULL,
   FOREIGN KEY (lot_id, user_id) REFERENCES portfolio.lots (id, user_id) ON DELETE CASCADE,
   FOREIGN KEY (close_transaction_id, user_id) REFERENCES portfolio.transactions (id, user_id) ON DELETE CASCADE

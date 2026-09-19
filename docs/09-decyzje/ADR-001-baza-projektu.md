@@ -1,5 +1,7 @@
 # ADR-001: Baza projektu — fork istniejącej aplikacji OSS czy budowa własna
 
+**Cel:** zapisać decyzję, czy budować OligInvest od zera, czy na bazie istniejącej aplikacji open source, wraz z porównaniem kandydatów i warunkiem powrotu do decyzji.
+
 - **Status:** zaakceptowana
 - **Data:** 2026-09-18
 - **Decydent:** właściciel projektu

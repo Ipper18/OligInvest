@@ -8,6 +8,8 @@ Skopiuj poniższy szablon do `ADR-NNN-slug.md` (numeracja rosnąca, slug po pols
 
 # ADR-NNN: Tytuł decyzji
 
+**Cel:** jedno zdanie — jaką decyzję zapisuje ten dokument i po co.
+
 - **Status:** proponowana | zaakceptowana | zastąpiona przez ADR-MMM | wycofana
 - **Data:** RRRR-MM-DD
 - **Decydent:** właściciel projektu

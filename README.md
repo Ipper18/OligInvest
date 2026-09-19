@@ -40,7 +40,7 @@ Monorepo Turborepo + pnpm: `apps/{web,api,jobs,analytics}`, `modules/*` (identit
 
 | Katalog | Zawartość |
 |---|---|
-| [`docs/00-przeglad/`](docs/00-przeglad/wizja-produktu.md) | wizja, wymagania FR/NFR z zastrzeżeniami do specyfikacji, słownik pojęć, specyfikacja źródłowa |
+| [`docs/00-przeglad/`](docs/00-przeglad/wizja-produktu.md) | wizja, wymagania FR/NFR z zastrzeżeniami do specyfikacji, macierz pokrycia wymagań, słownik pojęć, specyfikacja źródłowa |
 | [`docs/01-architektura/`](docs/01-architektura/przeglad-architektury.md) | C4, stos z uzasadnieniami, moduły i ich granice, przepływy danych |
 | [`docs/02-api/`](docs/02-api/konwencje-api.md) | OpenAPI 3.1, kontrakty SSE, konwencje API |
 | [`docs/03-dane/`](docs/03-dane/zrodla-danych.md) | źródła danych, model danych, DDL z RLS, strategia cache, wzory finansowe, formaty importu, fixtures |
@@ -57,7 +57,7 @@ Monorepo Turborepo + pnpm: `apps/{web,api,jobs,analytics}`, `modules/*` (identit
 ## Jak rozpocząć budowę (Codex)
 
 1. Codex czyta automatycznie [`AGENTS.md`](AGENTS.md) — stałe reguły, stos, granice modułów, checklisty metodologiczne.
-2. Otwórz [`docs/08-plan/prompty-codex.md`](docs/08-plan/prompty-codex.md) i wklej **Prompt 0** (etap M0, zadania `BL-001`–`BL-019`, `BL-032`–`BL-034`).
+2. Otwórz [`docs/08-plan/prompty-codex.md`](docs/08-plan/prompty-codex.md) i wklej **Prompt 0** (etap M0, zadania `BL-001`–`BL-019`, `BL-032`–`BL-035`).
 3. Przeglądaj każdy PR przed scaleniem; statusy zadań prowadzi [`docs/08-plan/backlog.md`](docs/08-plan/backlog.md).
 4. Zadania na serwerach (VPS, VM, DNS w home.pl) wykonuje właściciel według skryptów i instrukcji przygotowanych przez Codex.
 

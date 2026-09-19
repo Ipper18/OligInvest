@@ -1,5 +1,7 @@
 # ADR-004: PostgreSQL 18 + Better Auth; RLS jako druga linia obrony; Argon2id; bramka MFA; osobne role bazodanowe
 
+**Cel:** zapisać wybór bazy danych i biblioteki uwierzytelniania oraz zasady RLS, haszowania haseł, obowiązkowego 2FA i tokenów PAT.
+
 - **Status:** zaakceptowana
 - **Data:** 2026-09-18
 - **Decydent:** właściciel projektu (self-host + Better Auth wybrane w Kroku 0)

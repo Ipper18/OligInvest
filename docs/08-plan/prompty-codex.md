@@ -20,7 +20,7 @@ Jesteś głównym inżynierem projektu OligInvest. Repozytorium zawiera dziś wy
 (docs/), AGENTS.md, CLAUDE.md, CONTRIBUTING.md, SECURITY.md, .mcp.json, .env.example, redocly.yaml.
 Zasady stałe są w AGENTS.md — przestrzegaj ich bezwzględnie.
 
-Zadanie: zrealizuj z docs/08-plan/backlog.md zadania BL-001–BL-019 oraz BL-032–BL-034
+Zadanie: zrealizuj z docs/08-plan/backlog.md zadania BL-001–BL-019 oraz BL-032–BL-035
 (szkielet monorepo, pakiety wspólne, baza z RLS, CI, ustawienia repozytorium jako pliki).
 
 Przeczytaj najpierw:
@@ -67,7 +67,7 @@ aktualizacja statusów w backlog.md i — jeśli etap się kończy — lista kry
 
 | Sesja | Zakres (`BL-…`) | Uwagi do promptu |
 |---|---|---|
-| M0-1 | 001–019, 032–034 | Prompt 0 (§ 2) |
+| M0-1 | 001–019, 032–035 | Prompt 0 (§ 2) |
 | M0-2 | 020–023, 030, 031 | obrazy, wydanie, skrypty; spiki Better Auth w lokalnym Compose |
 | M0-3 | 024–029 | Codex przygotowuje konfiguracje i instrukcje krok po kroku; wykonuje właściciel; wartości `<…>` tylko na serwerach |
 | M1-1 | 101–103, 105–109, 111, 117 | uwierzytelnianie i autoryzacja; testy RLS i 403 dla każdej trasy |

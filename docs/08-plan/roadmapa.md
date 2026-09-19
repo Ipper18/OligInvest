@@ -43,7 +43,7 @@ Sumy etapów pochodzą z [`backlog.md`](backlog.md) § 10 (po zaokrągleniu). Ł
 
 **Cel:** puste, ale kompletne monorepo z CI, bezpieczeństwem łańcucha dostaw od pierwszego commita, schematem bazy z RLS i wdrożeniem pull na docelową infrastrukturę. Bez logiki domenowej.
 
-**Zakres:** NFR-02.01–NFR-02.03, NFR-02.07, NFR-03.09, NFR-03.11, NFR-03.12, NFR-09.05, NFR-10.02–NFR-10.05 (narzędzia), fundamenty NFR-01.02–NFR-01.03 (egzekwowanie budżetów); spiki techniczne; migracja TLS Immicha. Zadania `BL-001`–`BL-034`.
+**Zakres:** NFR-02.01–NFR-02.03, NFR-02.07, NFR-03.09, NFR-03.11, NFR-03.12, NFR-09.05, NFR-10.02–NFR-10.05 (narzędzia), fundamenty NFR-01.02–NFR-01.03 (egzekwowanie budżetów); spiki techniczne; migracja TLS Immicha. Zadania `BL-001`–`BL-035`.
 
 **Kryteria wyjścia:**
 

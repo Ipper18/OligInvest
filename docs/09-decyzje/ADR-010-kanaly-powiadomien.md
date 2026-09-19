@@ -1,5 +1,7 @@
 # ADR-010: Kanały powiadomień — Web Push + e-mail przez SMTP (Brevo, darmowy plan)
 
+**Cel:** zapisać wybór kanałów powiadomień (Web Push, e-mail przez SMTP) i zasady treści powiadomień.
+
 - **Status:** zaakceptowana
 - **Data:** 2026-09-18
 - **Decydent:** właściciel projektu

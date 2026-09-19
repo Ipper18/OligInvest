@@ -54,7 +54,7 @@ flowchart LR
 | `/portfel/operacje/nowa`, `/portfel/operacje/[transactionId]` | formularz operacji (typ decyduje o polach) | FR-03.03 | `createTransaction`, `updateTransaction`, `deleteTransaction`, `searchInstruments` | — | arkusz od dołu; klawiatura dziesiętna |
 | `/portfel/import` | wybór rachunku i pliku, formaty i instrukcja eksportu z XTB/mBank | FR-03.01, FR-03.02, FR-03.04 | `uploadImport`, `listImports`, `listImportTemplates` | — | wybór pliku z aplikacji Pliki (iOS) / menedżera plików |
 | `/portfel/import/[importId]` | podgląd: wiersze wg statusu, mapowanie instrumentów, uzgodnienie sald, zatwierdzenie | FR-03.01, NFR-08.03 | `getImport`, `listImportRows`, `resolveImportRow`, `commitImport`, `discardImport` | — | lista wierszy wirtualizowana; filtr „do rozstrzygnięcia” domyślnie |
-| `/portfel/wyniki` | TWR, XIRR, okresy, benchmark, P/L zrealizowany | FR-03.06, FR-03.07, FR-02.07 | `getPerformance`, `getRealizedPl`, `listBenchmarks` | F, W | przełącznik widoku ekonomiczny/podatkowy |
+| `/portfel/wyniki` | TWR, XIRR, okresy, benchmark, P/L zrealizowany | FR-03.06, FR-03.07, FR-02.07 | `getPerformance`, `getRealizedPl`, `listBenchmarks` | F, W | przełącznik widoku ekonomiczny/podatkowy; w podatkowym koszty przewalutowania jako osobna pozycja |
 | `/portfel/ryzyko` | obsunięcia, metryki ryzyka, atrybucja | FR-03.08, FR-03.09, FR-03.10 | `getDrawdown`, `getRiskMetrics`, `getAttribution` | F, W, Z | założenia (stopa wolna od ryzyka, okno) zawsze widoczne |
 | `/portfel/alokacja` | alokacja wg wymiaru, ekspozycja walutowa, alokacje docelowe | FR-02.05, FR-02.06, FR-04.06 | `getAllocation`, `listTargetAllocations`, `createTargetAllocation`, `upsertInstrumentOverride` | F | wykres pierścieniowy + tabela |
 | `/portfel/dywidendy` | dywidendy brutto/podatek/netto, szacowana dopłata | FR-02.08 | `listDividends` | W | — |
@@ -95,7 +95,7 @@ flowchart LR
 
 | Trasa | Ekran | Wymagania | Operacje API |
 |---|---|---|---|
-| `/ustawienia` | profil i preferencje (waluta bazowa, metoda kosztu, widok P/L, strefa, język, motyw, paleta) | FR-07.08 | `getMe`, `updateMe`, `getPreferences`, `updatePreferences` |
+| `/ustawienia` | profil i preferencje (waluta bazowa, metoda kosztu, widok P/L, ustawienia widoku podatkowego — dzień przychodu i koszt przewalutowania, strefa, język, motyw, paleta) | FR-07.08 | `getMe`, `updateMe`, `getPreferences`, `updatePreferences` |
 | `/ustawienia/bezpieczenstwo` | hasło, 2FA (nowe kody, zmiana urządzenia), sesje i urządzenia | FR-07.04, FR-07.05 | `authChangePassword`, `authTwoFactorGenerateBackupCodes`, `authListSessions`, `authRevokeSession`, `authRevokeOtherSessions` |
 | `/ustawienia/tokeny` | tokeny PAT (tworzenie ze step-up, odwołanie) | FR-07.07 | `listPersonalAccessTokens`, `createPersonalAccessToken`, `revokePersonalAccessToken`, `verifyStepUp` |
 | `/ustawienia/powiadomienia` | urządzenia push, test, kanały, ciche godziny | FR-05.06, FR-09.03 | `listPushSubscriptions`, `createPushSubscription`, `sendTestPush`, `getNotificationPreferences`, `replaceNotificationPreferences` |

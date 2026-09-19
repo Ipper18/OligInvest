@@ -1,5 +1,7 @@
 # ADR-012: `api` (Hono) jako jedyna granica domenowa; `web` (Next.js) bez dostępu do bazy; kontrakty Zod → OpenAPI
 
+**Cel:** zapisać, że `api` jest jedyną granicą domenową, a `web` nie ma dostępu do bazy, oraz jakie kontrakty i testy z tego wynikają.
+
 - **Status:** zaakceptowana
 - **Data:** 2026-09-18
 - **Decydent:** właściciel projektu

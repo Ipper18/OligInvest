@@ -1,5 +1,7 @@
 # ADR-008: PWA z własnym service workerem; integracje iOS przez Skróty i Android przez HTTP Shortcuts, na API z tokenami PAT
 
+**Cel:** zapisać, jak OligInvest działa na telefonach i komputerach bez sklepów z aplikacjami i kont deweloperskich (PWA, Skróty iOS, HTTP Shortcuts).
+
 - **Status:** zaakceptowana
 - **Data:** 2026-09-18
 - **Decydent:** właściciel projektu (iPhone bez konta Apple Developer — Krok 0)

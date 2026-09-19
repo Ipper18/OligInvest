@@ -6,7 +6,7 @@ Powiązane: [`samouczki.md`](samouczki.md) (nauka krok po kroku), [`regulamin.md
 
 > OligInvest pomaga analizować i uczyć się — nie doradza. Wyniki analiz to scenariusze przy jawnych założeniach, a nie prognozy. Decyzje inwestycyjne podejmujesz samodzielnie.
 
-**Dostępność funkcji:** aplikacja powstaje etapami ([`../08-plan/roadmapa.md`](../08-plan/roadmapa.md)). Rozdziały 1–5 i 10–12 dotyczą wersji MVP; wskaźniki i mBank pojawiają się w M2, wyniki historyczne i symulacje w M3, alerty, instalacja i Skróty w M4, pozostałe analizy w M5. Instrukcję aktualizujemy z każdym etapem (BL-611).
+**Dostępność funkcji:** aplikacja powstaje etapami ([`../08-plan/roadmapa.md`](../08-plan/roadmapa.md)). Rozdziały 1–5 i 10–12 dotyczą wersji MVP; wskaźniki i mBank pojawiają się w M2, wyniki historyczne i symulacje w M3, alerty, instalacja i Skróty w M4, pozostałe analizy w M5a–M5b. Instrukcję aktualizujemy z każdym etapem (BL-611).
 
 ## 1. Pierwsze kroki
 
@@ -47,7 +47,7 @@ Importuj regularnie, np. raz w miesiącu — cały plik historii, bez wycinania 
 | `fx_rate` | kurs przeliczenia ceny na walutę rachunku | `3.9999` |
 | `external_id`, `note` | Twój identyfikator (chroni przed duplikatami), notatka | `ext-1` |
 
-  Jeśli Twój plik ma inne nagłówki, w podglądzie importu przypisz kolumny ręcznie i zapisz **szablon mapowania** — przy kolejnym imporcie zostanie użyty automatycznie (od M5).
+  Jeśli Twój plik ma inne nagłówki, w podglądzie importu przypisz kolumny ręcznie i zapisz **szablon mapowania** — przy kolejnym imporcie zostanie użyty automatycznie (od M5b).
 - **Ręcznie:** **Portfel → Operacje → +**. Formularz pokazuje tylko pola potrzebne dla wybranego rodzaju operacji.
 
 ## 4. Jak czytać portfel
@@ -57,7 +57,7 @@ Importuj regularnie, np. raz w miesiącu — cały plik historii, bez wycinania 
 - **Zysk/strata niezrealizowany** — dla pozycji, które nadal masz: wartość dziś minus koszt zakupu.
 - **Zysk/strata zrealizowany** — z zamkniętych sprzedaży; koszt liczymy metodą FIFO (najpierw sprzedają się najstarsze zakupy), tak jak wymagają przepisy podatkowe.
 - **Widok ekonomiczny** (domyślny) — po kursach, po których broker faktycznie przeliczył waluty, z jego kosztami przewalutowania.
-- **Widok podatkowy** (informacyjny) — po kursach NBP z dnia roboczego poprzedzającego rozliczenie transakcji; może różnić się od PIT-8C i nie zastępuje zeznania.
+- **Widok podatkowy** (informacyjny) — po kursach NBP z dnia roboczego poprzedzającego rozliczenie transakcji; może różnić się od PIT-8C i nie zastępuje zeznania. Koszty przewalutowania brokera pokazujemy w nim osobno, poza kosztem; w **Ustawieniach** możesz je wliczyć do kosztu.
 - Zysk i strata mają zawsze znak (+/−) i strzałkę ▲▼, a nie tylko kolor. W Ustawieniach możesz wybrać paletę przyjazną dla daltonistów i tryb ciemny.
 - Przy każdej metryce jest „?” z wyjaśnieniem (od M2).
 

@@ -1,5 +1,7 @@
 # ADR-014: Reprezentacja pieniędzy, walut i czasu
 
+**Cel:** ustalić reprezentację pieniędzy, walut, kursów i czasu w kodzie, bazie i API tak, aby wyniki zgadzały się z wyciągami co do grosza.
+
 - **Status:** zaakceptowana
 - **Data:** 2026-09-18
 - **Decydent:** właściciel projektu
@@ -26,7 +28,7 @@ OligInvest liczy wartości w wielu walutach (PLN, USD, EUR), dla ułamkowych ilo
 4. **Kontrakty API:** kwoty jako **ciągi znaków** z liczbą dziesiętną (`"1234.56"`) + pole `currency` — nigdy JSON `number` dla pieniędzy.
 5. **Waluty i kursy:**
    - *Widok ekonomiczny (domyślny):* przepływy w walucie rachunku po kursach faktycznie zastosowanych przez brokera (z eksportu); gdy eksport nie zawiera kursu — wyliczenie z kwot w obu walutach; ostatecznie kurs NBP z dnia transakcji, z oznaczeniem.
-   - *Widok podatkowy:* przychody i koszty w walucie obcej przeliczane po kursie średnim NBP (tabela A) z ostatniego dnia roboczego poprzedzającego dzień przychodu/kosztu (kurs „D-1”) — metoda FIFO. Dzień przychodu i kosztu to dzień rozliczenia transakcji (przeniesienie własności); podstawa prawna i interpretacja: [`../11-zgodnosc-prawna.md`](../11-zgodnosc-prawna.md) § 5 (uzupełnienie z Kroku 6).
+   - *Widok podatkowy:* przychody i koszty w walucie obcej przeliczane po kursie średnim NBP (tabela A) z ostatniego dnia roboczego poprzedzającego dzień przychodu/kosztu (kurs „D-1”) — metoda FIFO. Dzień przychodu i kosztu to dzień rozliczenia transakcji (przeniesienie własności); podstawa prawna i interpretacja: [`../11-zgodnosc-prawna.md`](../11-zgodnosc-prawna.md) § 5 (uzupełnienie z Kroku 6). Marża przewalutowania brokera nie wchodzi do kosztu podatkowego — widok pokazuje ją osobno; ustawienie użytkownika pozwala to zmienić (decyzja właściciela 2026-09-19).
    - *Wycena bieżąca pozycji zagranicznych:* ostatni dostępny kurs (NBP tabela A z dnia; w trakcie dnia przed publikacją — kurs z dnia poprzedniego, oznaczony).
 6. **Czas:** znaczniki czasu jako `timestamptz` w UTC; daty sesyjne jako `date` w kalendarzu giełdy (XWAR — Europe/Warsaw, XNYS/XNAS — America/New_York); prezentacja w strefie użytkownika (domyślnie Europe/Warsaw). „Dzień” wyniku dnia i wycen dziennych to dzień kalendarzowy w strefie Europe/Warsaw; zamknięcie USA przypisujemy do daty sesji nowojorskiej.
 7. **Identyfikatory:** UUIDv7 (`uuidv7()` w PostgreSQL 18) — sortowalne w czasie, bez ujawniania liczby rekordów.

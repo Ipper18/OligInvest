@@ -1,5 +1,7 @@
 # ADR-011: Topologia — VM na Proxmoxie, VPS jako niezaufany przekaźnik z TLS passthrough
 
+**Cel:** zapisać topologię wdrożenia (VM w domu, VPS jako przekaźnik TCP bez terminacji TLS) i jej skutki dla bezpieczeństwa i dostępności.
+
 - **Status:** zaakceptowana; zaktualizowana 2026-09-19 po odpowiedzi na Q-02 (specyfikacja VPS, obecne miejsce terminacji TLS)
 - **Data:** 2026-09-18 (aktualizacja 2026-09-19)
 - **Decydent:** właściciel projektu (VM na Proxmoxie + VPS jako edge — Krok 0; TLS w HomeLabie — Krok 4)

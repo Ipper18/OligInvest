@@ -125,7 +125,8 @@ Powiadomienia push i odpowiedzi Skrótów są zbyt krótkie na disclaimer — za
 
 ### 5.2 Decyzje projektowe
 
-- `tax_date_basis = settlement` (domyślnie); `trade` tylko do porównań.
+- `tax_date_basis = settlement` (domyślnie); `trade` tylko do porównań. Oba parametry widoku podatkowego są ustawieniami użytkownika (`identity.user_preferences`), a ich zmiana przelicza tylko widok podatkowy.
+- Marża przewalutowania brokera: poza kosztem podatkowym, jako osobna pozycja (`tax_include_fx_fee = false`) — § 5.3.
 - Widok podatkowy jest drugim widokiem obok ekonomicznego (Z-16, [ADR-014](09-decyzje/ADR-014-pieniadze-waluty-czas.md)) i zawsze ma disclaimer `tax_view`.
 - Dywidendy zagraniczne: kwota brutto, podatek u źródła i szacowana dopłata do 19 % — informacyjnie ([`03-dane/obliczenia-finansowe.md`](03-dane/obliczenia-finansowe.md) § 4.3).
 
@@ -133,7 +134,7 @@ Powiadomienia push i odpowiedzi Skrótów są zbyt krótkie na disclaimer — za
 
 | Kwestia | Stan | Decyzja tymczasowa |
 |---|---|---|
-| Marża przewalutowania brokera przy zakupie instrumentu w USD z rachunku PLN | brak jednolitej praktyki: przy przeliczeniu ceny kursem NBP marża nie trafia do kosztu, część praktyków przyjmuje faktycznie zapłaconą kwotę w PLN | parametr `tax_include_fx_fee`, domyślnie `false`; różnica widoczna w raporcie uzgodnienia z PIT-8C |
+| Marża przewalutowania brokera przy zakupie instrumentu w USD z rachunku PLN | brak jednolitej praktyki: przy przeliczeniu ceny kursem NBP marża nie trafia do kosztu, część praktyków przyjmuje faktycznie zapłaconą kwotę w PLN | decyzja właściciela (2026-09-19): marża poza kosztem podatkowym, pokazywana jako osobny koszt (`fxCosts`); ustawienie `tax_include_fx_fee` (domyślnie `false`) pozwala ją wliczyć, np. po interpretacji lub porównaniu z PIT-8C |
 | Dni, w których giełda działa, a system rozliczeń nie (np. niektóre święta federalne w USA) | kalendarz rozliczeń różni się od kalendarza sesji | wpisy admina w `market.trading_calendar`; sprawdzenie przed M1 |
 | Straty z lat ubiegłych, rozliczenie PIT-38 | poza zakresem ([`00-przeglad/wizja-produktu.md`](00-przeglad/wizja-produktu.md) § 6) | ewentualne „zestawienie pomocnicze” w przyszłości, z disclaimerem |
 

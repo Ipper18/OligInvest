@@ -1,5 +1,7 @@
 # ADR-009: Wykresy — TradingView Lightweight Charts (świece) + uPlot (serie), heatmapa w CSS
 
+**Cel:** zapisać wybór bibliotek wykresów i zasady ich ładowania tak, aby wykresy były płynne na telefonie i mieściły się w budżecie JS.
+
 - **Status:** zaakceptowana
 - **Data:** 2026-09-18
 - **Decydent:** właściciel projektu

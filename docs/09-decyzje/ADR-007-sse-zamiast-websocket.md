@@ -1,5 +1,7 @@
 # ADR-007: Server-Sent Events zamiast WebSocket
 
+**Cel:** zapisać wybór mechanizmu aktualizacji na żywo (SSE zamiast WebSocket) i zasady jego działania.
+
 - **Status:** zaakceptowana
 - **Data:** 2026-09-18
 - **Decydent:** właściciel projektu

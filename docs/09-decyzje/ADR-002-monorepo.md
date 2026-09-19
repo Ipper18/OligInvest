@@ -1,5 +1,7 @@
 # ADR-002: Monorepo Turborepo + pnpm ze strukturą `apps/`, `modules/`, `packages/`
 
+**Cel:** zapisać wybór organizacji repozytorium (Turborepo + pnpm, `apps/`, `modules/`, `packages/`) i mechanizmów pilnujących granic modułów.
+
 - **Status:** zaakceptowana
 - **Data:** 2026-09-18
 - **Decydent:** właściciel projektu

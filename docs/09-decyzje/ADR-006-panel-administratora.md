@@ -1,5 +1,7 @@
 # ADR-006: Panel administratora w aplikacji (leniwa trasa `/admin`), moduły dokładają własne panele
 
+**Cel:** zapisać, jak powstaje panel administratora bez obciążania budżetu JS użytkowników i bez osobnej aplikacji.
+
 - **Status:** zaakceptowana
 - **Data:** 2026-09-18
 - **Decydent:** właściciel projektu

@@ -30,7 +30,8 @@
   "sell": {
    "rate_bid": "3.631750",
    "proceeds_pln": "10023.63",
-   "proceeds_tax_pln": "10087.80"
+   "proceeds_tax_pln": "10087.80",
+   "fx_fee_pln": "50.37"
   },
   "consumed": [
    {
@@ -38,18 +39,22 @@
     "qty": "10.000000",
     "cost_pln": "9599.760000",
     "tax_cost_pln": "9540.000000",
-    "cost_usd": "2400.000000"
+    "cost_usd": "2400.000000",
+    "fx_fee_pln": "47.760000"
    },
    {
     "lot": "T2",
     "qty": "2.000000",
     "cost_pln": "1507.500000",
     "tax_cost_pln": "1498.000000",
-    "cost_usd": "400.000000"
+    "cost_usd": "400.000000",
+    "fx_fee_pln": "7.500000"
    }
   ],
   "realized_pl_economic_pln": "-1083.63",
   "realized_pl_tax_pln": "-950.20",
+  "fx_costs_realized_pln": "105.63",
+  "realized_pl_tax_pln_incl_fx_fee": "-1055.83",
   "price_effect_pln": "-158.68",
   "fx_effect_pln": "-924.95",
   "remaining_after_sale": {
