@@ -27,7 +27,7 @@ Specyfikacja zakłada „analizę rynku w czasie rzeczywistym” i wymienia Stoo
 
 Wariant **A**, z zasadami:
 
-1. **Historia EOD jest trwała w naszej bazie** (`market_bars`) — dostawcy uzupełniają luki; raz pobrane dane nie są pobierane ponownie (poza oknem korekt 5 sesji).
+1. **Historia EOD jest trwała w naszej bazie** (`market.bars_daily`) — dostawcy uzupełniają luki; raz pobrane dane nie są pobierane ponownie (poza oknem korekt 5 sesji).
 2. **GPW EOD:** archiwum GPW, 1 żądanie na dzień sesyjny ok. 18:30, klient identyfikuje się uczciwie (`User-Agent: OligInvest/<wersja> (+kontakt)`), **żadnego obchodzenia blokad** — jeśli GPW zacznie odrzucać automat, przechodzimy na import ręczny pliku przez admina (FR-08.09) i rozważamy wariant B. Parser XLS (SheetJS CE) z testem kontraktowym na zapisanej próbce.
 3. **Intraday (opóźnione):** Yahoo przez `yahoo-finance2` jako *best effort* dla GPW i USA; dla USA zapasowo Finnhub (60/min) i Twelve Data (800/dobę); brak zapasu dla GPW → degradacja do trybu „tylko EOD” z komunikatem.
 4. **FX:** NBP tabela A (primary; także kurs D-1 do widoku podatkowego), Frankfurter/ECB jako zapas oznaczany w UI.

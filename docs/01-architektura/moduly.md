@@ -128,10 +128,10 @@ export interface UiModuleDefinition {
 | | `identity` | `notifications` | `market` | `portfolio` |
 |---|---|---|---|---|
 | **Odpowiedzialność** | Konta, zaproszenia, sesje, 2FA, role, tokeny PAT, preferencje, RODO (eksport/usunięcie) | Subskrypcje Web Push, preferencje kanałów, wysyłka i dziennik doręczeń | Katalog instrumentów, notowania, historia EOD, FX, indeksy, sektory, kalendarz, newsy, watchlisty, screener, status dostawców | Rachunki, operacje, import, partie FIFO, pozycje, gotówka, wyceny, wyniki (TWR/XIRR), dywidendy, dziennik transakcji, alokacja docelowa, rebalancing |
-| **Tabele (własność)** | tabele Better Auth (`user`, `session`, `account`, `verification`, `twoFactor`, `apikey`), `invitations`, `user_preferences`, `deletion_requests` | `push_subscriptions`, `notification_preferences`, `notification_deliveries` | `instruments`, `instrument_provider_symbols`, `market_bars`, `instrument_quotes_latest`, `fx_rates`, `corporate_actions`, `trading_calendar`, `sector_memberships`, `calendar_events`, `news_items`, `macro_series`, `data_quality_issues`, `watchlists`, `watchlist_items`, `screener_presets` | `accounts`, `transactions`, `import_batches`, `import_files`, `import_rows`, `lots`, `lot_consumptions`, `positions_daily`, `valuations_daily`, `cash_balances_daily`, `journal_entries`, `journal_postmortems`, `target_allocations` |
+| **Tabele (własność)** | tabele Better Auth (`user`, `session`, `account`, `verification`, `twoFactor`, `apikey`), `invitations`, `user_preferences`, `deletion_requests` | `push_subscriptions`, `notification_preferences`, `notification_deliveries` | `instruments`, `instrument_provider_symbols`, `bars_daily`, `bars_intraday`, `quotes_latest`, `fx_rates`, `corporate_actions`, `trading_calendar`, `sector_memberships`, `calendar_events`, `news_items`, `macro_series`, `data_quality_issues`, `watchlists`, `watchlist_items`, `screener_presets` | `accounts`, `transactions`, `import_batches`, `import_files`, `import_rows`, `lots`, `lot_consumptions`, `positions_daily`, `valuations_daily`, `cash_balances_daily`, `journal_entries`, `journal_postmortems`, `target_allocations` |
 | **API** | `/api/auth/*` (Better Auth), `/api/v1/me/*` | `/api/v1/notifications/*` | `/api/v1/market/*` | `/api/v1/portfolio/*` |
 | **Kolejki** | — | `notify` | `ingest` | `import`, `recompute` |
-| **Zdarzenia publikowane** | `identity.user.registered`, `identity.user.deletion_requested`, `identity.user.deleted` | `notifications.delivery.failed` | `market.quotes.updated`, `market.bars.eod_ingested`, `market.fx.published`, `market.corporate_action.detected`, `market.provider.status_changed` | `portfolio.import.parsed`, `portfolio.transactions.changed`, `portfolio.valuation.updated` |
+| **Zdarzenia publikowane** | `identity.user.registered`, `identity.user.deletion_requested`, `identity.user.deleted`, `identity.export.ready` | `notifications.delivery.failed` | `market.quotes.updated`, `market.bars.eod_ingested`, `market.fx.published`, `market.corporate_action.detected`, `market.provider.status_changed` | `portfolio.import.parsed`, `portfolio.transactions.changed`, `portfolio.valuation.updated` |
 | **Subskrypcje** | — | — | — | `market.bars.eod_ingested`, `market.fx.published`, `market.corporate_action.detected`, `market.quotes.updated` (tylko wycena dla podłączonych) |
 | **Uprawnienia** | `self:*`, `admin:users` | `self:notifications` | `market:read`, `watchlists:write`, `admin:market` | `portfolio:read`, `portfolio:write`, `transactions:write` |
 | **RLS** | preferencje/tokeny per `user_id` | per `user_id` | watchlisty i presety per `user_id`; dane rynkowe globalne (odczyt dla wszystkich, zapis tylko rola `jobs`/admin) | wszystkie tabele per `user_id` |
@@ -157,7 +157,7 @@ Moduły z wyświetlaniem danych rynkowych i wyników analiz korzystają ze wspó
 ### 5.1 Model
 
 - Zdarzenia domenowe są definiowane w `contracts.ts` modułu (schemat Zod + wersja) i publikowane **po zatwierdzeniu transakcji** (`ctx.events.publishAfterCommit`).
-- Dostarczanie: publikacja = dodanie zadań do kolejek subskrybentów (fan-out w `platform`) + opcjonalnie wiadomość pub/sub w `valkey-cache` dla SSE.
+- Dostarczanie: publikacja = dodanie zadań do kolejek subskrybentów (fan-out w `platform`) + dla SSE: wpis w strumieniu użytkownika `sse:{userId}` (z odtwarzaniem) albo — dla notowań i flag — pub/sub w `valkey-cache` ([`realtime.md`](../02-api/realtime.md) § 5).
 - Handlery są **idempotentne** (klucz idempotencji w payloadzie, np. `batchId`, `date`); ponowienia z wykładniczym odstępem; po wyczerpaniu prób zadanie trafia do stanu `failed` widocznego w panelu admina (FR-08.07).
 - Siatka bezpieczeństwa: nocne pełne przeliczenie wycen i pozycji (`portfolio.recompute-all`) naprawia skutki ewentualnie utraconych zdarzeń.
 
@@ -176,7 +176,7 @@ Moduły z wyświetlaniem danych rynkowych i wyników analiz korzystają ze wspó
 
 ### 5.3 Zdarzenia przekazywane do przeglądarki (SSE)
 
-`portfolio.valuation.updated`, `portfolio.import.parsed`, `market.quotes.updated` (tylko instrumenty z pozycji/watchlist/otwartych ekranów użytkownika), `alerts.alert.triggered`, `analytics.run.progress`, `analytics.run.completed`, `analytics.run.failed`, `flags.changed`. Kontrakty strumienia: `docs/02-api/realtime.md` (Krok 4).
+`portfolio.valuation.updated`, `portfolio.import.parsed`, `market.quotes.updated` (tylko instrumenty z pozycji/watchlist/otwartych ekranów użytkownika), `alerts.alert.triggered`, `analytics.run.progress`, `analytics.run.completed`, `analytics.run.failed`, `identity.export.ready`, `flags.changed`, `auth.session.revoked` oraz techniczne `ready`, `ping`, `resync`. Kontrakty strumienia: [`../02-api/realtime.md`](../02-api/realtime.md).
 
 ## 6. Uprawnienia (RBAC) i zakresy PAT
 

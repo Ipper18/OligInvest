@@ -96,7 +96,7 @@ SSE (`EventSource`, standard platformy, 0 KB) ✅ — dane są opóźnione/EOD, 
 | Kolejka | BullMQ (Node) + `bullmq` (PyPI) | 6.3.7 / 3.2.3 | MIT |
 | Push | `web-push` (VAPID) | 3.6.7 | MPL-2.0 |
 | Pieniądze | `decimal.js` | 10.6.0 | MIT |
-| Wydajność w CI | Lighthouse CI (`@lhci/cli`) | 0.15.1 | Apache-2.0 |
+| Wydajność w CI | ~~Lighthouse CI (`@lhci/cli`) 0.15.1~~ → **Lighthouse 13.5** uruchamiany skryptem w CI (Krok 4: `@lhci/cli` bez wydań od 2025-06, zawiera Lighthouse 12.6.1) | 13.5.0 | Apache-2.0 |
 | Kalendarz sesji | `pandas-market-calendars` (XWAR obsługiwany) | 5.4.0 | MIT |
 
 ## 11. Co budujemy sami (uzasadnienia jednoakapitowe)

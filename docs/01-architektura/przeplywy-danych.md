@@ -64,8 +64,8 @@ sequenceDiagram
   J->>DB: mapowanie ISIN i tickerów na instrumenty
   J->>DB: import_rows ze statusem new, duplicate, unsupported, error
   J->>J: uzgodnienie sald gotówki i ilości z wyciągiem
-  J->>S: PUBLISH portfolio.import.parsed
-  S-->>A: wiadomość pub/sub
+  J->>S: XADD portfolio.import.parsed do strumienia sse:userId
+  S-->>A: nowy wpis strumienia (XREAD)
   A-->>W: SSE portfolio.import.parsed
   W->>U: podgląd: nowe, duplikaty, nieobsługiwane CFD, błędy, różnice sald
   U->>W: zatwierdzenie
@@ -74,8 +74,8 @@ sequenceDiagram
   A->>Q: po commit recompute dla rachunków od najwcześniejszej daty
   Q->>J: recompute
   J->>DB: partie FIFO, pozycje, gotówka, wyceny dzienne przez packages/core
-  J->>S: PUBLISH portfolio.valuation.updated
-  S-->>A: wiadomość pub/sub
+  J->>S: XADD portfolio.valuation.updated do strumienia sse:userId
+  S-->>A: nowy wpis strumienia (XREAD)
   A-->>W: SSE portfolio.valuation.updated, odświeżenie widoku
 ```
 
@@ -123,7 +123,7 @@ sequenceDiagram
   alt plik XLS dostępny
     G-->>J: XLS BIFF z całym rynkiem
     J->>J: SheetJS, test kontraktu kolumn, walidacja wierszy
-    J->>DB: upsert market_bars source=gpw oraz korekty 5 ostatnich sesji
+    J->>DB: upsert market.bars_daily source=gpw oraz korekty 5 ostatnich sesji
     J->>J: kontrola jakości: luki, skoki bez splitu, zera
     J->>DB: data_quality_issues
     J->>Q: market.bars.eod_ingested
@@ -155,7 +155,7 @@ sequenceDiagram
   else brak
     A->>DB: valuations_daily i przepływy zewnętrzne w okresie
     A->>A: packages/core: TWR łańcuchowy, XIRR, obsunięcia
-    A->>DB: seria benchmarku z market_bars
+    A->>DB: seria benchmarku z market.bars_daily
     A->>A: symulacja tych samych przepływów w benchmarku
     A->>C: SET z TTL do najbliższej wyceny EOD
   end
@@ -290,7 +290,7 @@ sequenceDiagram
   participant DB as PG
   participant C as VC
   AD->>W: przełączenie flagi module.analytics.backtest
-  W->>A: PATCH /api/v1/admin/flags/key
+  W->>A: PUT /api/v1/admin/flags/flagKey
   A->>A: uprawnienie admin:flags i świeży TOTP nie starszy niż 15 min
   alt brak świeżego TOTP
     A-->>W: 403 STEP_UP_REQUIRED
@@ -315,15 +315,15 @@ sequenceDiagram
   participant J as jobs
   participant DB as PG RLS
   U->>W: Pobierz moje dane
-  W->>A: POST /api/v1/me/export, wymagany świeży TOTP
+  W->>A: POST /api/v1/me/exports, wymagany świeży TOTP
   A->>DB: audit identity.export_requested
   A->>Q: zadanie export z userId
   Q->>J: export
   J->>DB: odczyt wszystkich tabel z user_id w kontekście RLS
-  J->>J: archiwum ZIP z JSON i CSV, szyfrowane hasłem jednorazowym
+  J->>J: archiwum ZIP z JSON i CSV
   J->>DB: plik eksportu z terminem ważności 24 h
-  J->>A: PUBLISH export.ready przez VC
-  A-->>W: SSE export.ready
+  J->>A: XADD identity.export.ready do strumienia VC
+  A-->>W: SSE identity.export.ready
   U->>W: pobranie pliku, link jednorazowy
 ```
 

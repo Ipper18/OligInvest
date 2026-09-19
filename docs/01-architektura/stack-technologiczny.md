@@ -40,7 +40,7 @@ Nowa zależność runtime trafia do projektu tylko, jeśli spełnia **wszystkie*
 | Testy TS | **Vitest** | 5.0 | MIT | Szybki, zgodny z ESM/TS, `bench` dla wydajności `core`. | Jest (wolniejszy z ESM). |
 | Testy Python | **pytest** + **hypothesis** | 9.1 / 6.168 | MIT / MPL-2.0 | Testy właściwości (property-based) dla wzorów i symulacji. | unittest. |
 | Testy e2e | **Playwright** + `@axe-core/playwright` | 1.63 / 4.13 | Apache-2.0 / MPL-2.0 | Chromium, WebKit (Safari/iOS), Firefox w jednym narzędziu; testy dostępności. | Cypress (brak WebKit). |
-| Budżety wydajności | **Lighthouse CI** + **size-limit** | 0.15 / 14.0 | Apache-2.0 / MIT | LCP/INP/CLS w CI; twardy limit rozmiaru JS per trasa (NFR-01.02). | tylko ręczne pomiary. |
+| Budżety wydajności | **Lighthouse** (uruchamiany w CI skryptem z asercjami) + **size-limit** | 13.5 / 14.0 | Apache-2.0 / MIT | LCP/CLS/TBT w CI; twardy limit rozmiaru JS per trasa (NFR-01.02); szczegóły w `04-frontend/wydajnosc.md` § 6. | `@lhci/cli` 0.15.1 — ostatnie wydanie 2025-06, zawiera Lighthouse 12.6.1 (sprawdzone 2026-09-19); tylko ręczne pomiary. |
 
 ## 4. Frontend (`apps/web`)
 
@@ -56,7 +56,7 @@ Nowa zależność runtime trafia do projektu tylko, jeśli spełnia **wszystkie*
 | Wykresy serii | **uPlot** | 1.6 | MIT | 21 KB gzip; krzywe kapitału, obsunięcia, wachlarze percentyli. | Chart.js (większy, wolniejszy przy dużych seriach). |
 | Onboarding | **driver.js** | 1.8 | MIT | 7 KB, bez zależności, dostępny z klawiatury; ładowany leniwie. | Shepherd.js (AGPL), react-joyride (większy). |
 | PWA | **Manifest z Next.js** (`app/manifest.ts`) + **własny service worker** (`public/sw.js`, wg oficjalnego przewodnika PWA Next.js 16) | — | — | Standard platformy: push, `notificationclick`, cache powłoki offline; zero zależności ([ADR-008](../09-decyzje/ADR-008-pwa-i-integracje-mobilne.md)). | Serwist (dodatkowa zależność; generowanie manifestu precache nie jest potrzebne — zasoby `/_next/static/*` cache'ujemy w runtime). |
-| Formularze | **Natywne formularze** + schematy **Zod** z `packages/contracts` | — | — | Ta sama walidacja po obu stronach; bez biblioteki formularzy. | react-hook-form (niepotrzebny przy prostych formularzach). |
+| Formularze | **Natywne formularze** + walidacja HTML (Constraint Validation API); źródłem prawdy są schematy **Zod** w `api` (błędy `422` mapowane na pola) | — | — | Zero JS walidacji w początkowym bundlu; Zod w przeglądarce tylko w leniwych, złożonych formularzach (pomiar: ≈ 25 KB gz, import `{ z }` ≈ 90 KB gz — `04-frontend/architektura-ui.md` § 11). | react-hook-form (niepotrzebny przy prostych formularzach). |
 | Internacjonalizacja | **`Intl`** (liczby, waluty, daty) + słowniki komunikatów w `packages/i18n` | — | — | Standard platformy; PL na start, klucze gotowe na EN (NFR-10.04). | next-intl/i18next (zbędne przy jednym języku). |
 | Stan globalny | **Brak biblioteki** (stan w URL, TanStack Query, lokalny stan React) | — | — | Mniej warstw. | Redux/Zustand. |
 
@@ -90,15 +90,15 @@ Nowa zależność runtime trafia do projektu tylko, jeśli spełnia **wszystkie*
 | Kolejka | **bullmq** (Python) | 3.2 | MIT | Ten sam protokół kolejek co Node. | Celery. |
 | Dostęp do danych rynkowych | **psycopg** | 3.3 | LGPL-3.0 (używany bez modyfikacji) | Dojrzały sterownik; rola tylko do odczytu. | SQLAlchemy (zbędna warstwa). |
 | Walidacja wejścia | **jsonschema** | 4.26 | MIT | Walidacja treści zadań schematami eksportowanymi z Zod — jedno źródło prawdy kontraktu. | Ręczne modele Pydantic (duplikacja kontraktu). |
-| Tylko testy | **TA-Lib** (python), **empyrical-reloaded** | 0.8 / 0.5.12 | BSD / Apache-2.0 | Wartości referencyjne dla wektorów testowych `packages/core` i analityki. | pandas-ta (repozytorium autora zniknęło z GitHuba). |
+| Tylko testy | **TA-Lib** (python), **empyrical-reloaded** (≥ 0.5.12 — starsze używają `np.NINF`, usuniętego w NumPy 2) | 0.8 / 0.5.12 | BSD / Apache-2.0 | Wartości referencyjne dla wektorów testowych `packages/core` i analityki. | pandas-ta (repozytorium autora zniknęło z GitHuba). |
 
 ## 7. Infrastruktura, CI/CD i łańcuch dostaw
 
 | Element | Wybór | Wersja | Licencja | Uzasadnienie | Odrzucone |
 |---|---|---|---|---|---|
 | Reverse proxy w VM | **Caddy** | 2.11 | Apache-2.0 | Automatyczne certyfikaty ACME, TLS 1.3 domyślnie, prosta konfiguracja. | nginx w VM (ręczna obsługa certyfikatów), Traefik (więcej ruchomych części). |
-| Edge na VPS | **nginx** (istniejący, moduł `stream`) + **WireGuard** + firewall | istniejące | BSD-2 / GPL-2.0 (kernel) | Już działa u właściciela; SNI passthrough nie odszyfrowuje ruchu ([ADR-011](../09-decyzje/ADR-011-topologia-wdrozenia.md)). | Cloudflare Tunnel (zależność od firmy trzeciej, terminacja TLS u niej). |
-| Ochrona przed nadużyciami | **CrowdSec** | 1.8 | MIT | Wykrywanie i blokowanie na podstawie logów; darmowa sieć reputacji. | fail2ban (tylko lokalne reguły; może działać równolegle dla SSH). |
+| Edge na VPS | **nginx `stream`** (`ssl_preread`, protokół PROXY do domu) + **WireGuard** + firewall | pakiety Debiana | BSD-2 / GPL-2.0 (kernel) | Routing po SNI bez odszyfrowania ruchu; zastępuje obecny Caddy na VPS, który dziś kończy TLS dla Immicha ([ADR-011](../09-decyzje/ADR-011-topologia-wdrozenia.md)). | Cloudflare Tunnel (terminacja TLS u firmy trzeciej), Caddy z modułem `layer4` (własna kompilacja), HAProxy (alternatywa). |
+| Ochrona przed nadużyciami | **CrowdSec** (agent i LAPI w domu, bouncer nftables na VPS) | 1.8 | MIT | Wykrywanie na podstawie logów Caddy w domu, blokowanie już na krawędzi; darmowa sieć reputacji. | fail2ban (tylko lokalne reguły; może działać równolegle dla SSH). |
 | Kopie zapasowe | **restic** (+ `pg_dump`/archiwizacja WAL — wybór narzędzia w `07-wdrozenie/backup-dr.md`) | 0.19 | BSD-2 | Szyfrowane, deduplikowane repozytoria, wiele celów (HDD, VPS). | Duplicati (mniej przewidywalny), rsync (brak szyfrowania/deduplikacji). |
 | Monitoring dostępności | **Uptime Kuma** | 2.5 | MIT | Lekki, powiadomienia; szczegóły i ewentualne metryki/logi w `07-wdrozenie/monitoring.md`. | Pełny stos Prometheus/Grafana/Loki od startu (koszt RAM). |
 | CI | **GitHub Actions** | — | — | Darmowe dla repozytoriów publicznych na standardowych runnerach (dokumentacja GitHub, 2026-09-18). | Self-hosted runner od startu (niepotrzebny). |
@@ -140,4 +140,6 @@ Pełne budżety i strategia ładowania: `docs/04-frontend/wydajnosc.md` (Krok 4)
 | Redis 7 → **Valkey 9 (dwie instancje)** | Licencja OSI; BullMQ wymaga `noeviction`, cache potrzebuje LRU — jedna instancja łączyłaby sprzeczne polityki. |
 | Serwist → **własny service worker** | Oficjalny przewodnik PWA Next.js 16 realizuje push i manifest bez bibliotek; mniej zależności (§6.6). |
 | Debian 12 → **Debian 13** | Aktualna wersja stabilna, zgodna z Proxmox VE 9. |
+| Lighthouse CI → **Lighthouse 13.5 + skrypt asercji** (Krok 4) | `@lhci/cli` nie jest rozwijany od 2025-06 i zawiera starszy Lighthouse 12.6.1; wymóg specyfikacji „budżety egzekwowane w CI” spełnia Lighthouse uruchamiany w GitHub Actions. |
+| Walidacja formularzy w przeglądarce (Krok 4) | Pomiar rozmiaru Zod 4 w bundlu (25–90 KB gz) — domyślnie walidacja natywna HTML + błędy `422` z `api`; Zod tylko w leniwych formularzach. |
 | Doprecyzowania | Argon2id zamiast domyślnego scrypt w Better Auth; SheetJS CE z CDN dla XLS GPW; jsonschema jako kontrakt dla Pythona; brak dostępu `analytics` do internetu i danych użytkowników. |

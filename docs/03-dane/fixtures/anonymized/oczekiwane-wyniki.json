@@ -1,0 +1,141 @@
+{
+ "xtb": {
+  "account_currency": "PLN",
+  "cash_end": "14518.27",
+  "positions_end": [
+   {
+    "ticker": "AAPL.US",
+    "qty": "3",
+    "cost_pln": "2261.25"
+   },
+   {
+    "ticker": "PKO.PL",
+    "qty": "15",
+    "cost_pln": "1000.60",
+    "lots": [
+     [
+      "2025-01-13",
+      "5",
+      "299.60"
+     ],
+     [
+      "2025-11-05",
+      "10",
+      "701.00"
+     ]
+    ]
+   },
+   {
+    "ticker": "VWCE.DE",
+    "qty": "0.75",
+    "cost_pln": "384.41"
+   }
+  ],
+  "realized_pl_economic": [
+   {
+    "ticker": "AAPL.US",
+    "date": "2025-09-01",
+    "qty": "12",
+    "proceeds_pln": "10023.63",
+    "cost_pln": "11107.26",
+    "pl_pln": "-1083.63"
+   },
+   {
+    "ticker": "PKO.PL",
+    "date": "2025-12-01",
+    "qty": "15",
+    "proceeds_pln": "1080.00",
+    "cost_pln": "898.80",
+    "pl_pln": "181.20"
+   }
+  ],
+  "dividends": [
+   {
+    "ticker": "AAPL.US",
+    "date": "2025-08-14",
+    "gross_pln": "14.28",
+    "withholding_pln": "2.14",
+    "net_pln": "12.14"
+   }
+  ],
+  "fees": [
+   {
+    "type": "FEE",
+    "subtype": "sec_fee",
+    "amount_pln": "-0.28",
+    "linked_sale": "2025-09-01 AAPL.US"
+   }
+  ],
+  "interest": {
+   "gross_pln": "12.34",
+   "tax_pln": "-2.34"
+  },
+  "external_flows": [
+   {
+    "date": "2025-01-10",
+    "amount": "20000.00"
+   },
+   {
+    "date": "2025-10-15",
+    "amount": "-1000.00"
+   }
+  ],
+  "unsupported_rows": [
+   {
+    "id": 900004,
+    "reason": "cfd",
+    "cash_effect_pln": "45.10",
+    "imported_as": "ADJUSTMENT(category=cfd_pl)"
+   }
+  ],
+  "implied_fx": {
+   "AAPL.US 2025-03-03": "3.9999",
+   "AAPL.US 2025-06-02": "3.76875",
+   "VWCE.DE 2025-10-20": "4.27125 (z 384.41/(0.75*120) = 4.271222, zaokrąglenie kwoty przez brokera)"
+  },
+  "reimport_same_file": "wszystkie wiersze status=duplicate, 0 nowych operacji"
+ },
+ "mbank": {
+  "positions_end": [
+   {
+    "name": "KGHM",
+    "isin_resolved": "PLKGHM000017",
+    "qty": "3",
+    "cost_pln": "423.00"
+   },
+   {
+    "name": "MICROSOFT",
+    "qty": "2",
+    "cost": "❓ brak wartości i prowizji w wierszu — wymaga kursu z historii finansowej lub NBP; import oznacza wiersz warning: missing_settlement_value"
+   }
+  ],
+  "realized_pl_economic": [
+   {
+    "name": "KGHM",
+    "date": "2025-09-03",
+    "qty": "12",
+    "proceeds_pln": "1915.00",
+    "cost_pln": "1792.00",
+    "pl_pln": "123.00"
+   }
+  ],
+  "dividends": [
+   {
+    "isin": "PLKGHM000017",
+    "date": "2025-06-26",
+    "gross_pln": "45.00",
+    "withholding_pln": "8.55",
+    "net_pln": "36.45"
+   }
+  ],
+  "financial_history": {
+   "deposits": [
+    "5000.00"
+   ],
+   "skipped_rows": [
+    "Blokada środków",
+    "WYC: ... PW: (rozliczenie T+2)"
+   ]
+  }
+ }
+}

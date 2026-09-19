@@ -1,0 +1,22 @@
+# Cel: konfiguracja lintera Redocly dla kontraktu API (docs/02-api/openapi.yaml) — lokalnie i w CI.
+# Uruchomienie: npx @redocly/cli lint   (wersję CLI pinuje package.json po M0)
+extends:
+  - recommended
+
+apis:
+  oliginvest@v1:
+    root: docs/02-api/openapi.yaml
+
+rules:
+  # Repozytorium publiczne bez licencji (wszystkie prawa zastrzeżone, ADR-013) — brak pola license jest zamierzony.
+  info-license: off
+  # Fałszywe alarmy: `required` w gałęziach if/then (JSON Schema 2020-12) odwołuje się do pól zdefiniowanych
+  # w sąsiedniej gałęzi allOf (TransactionInput, AlertRuleInput, ImportRowResolution, AdminUserPatch).
+  no-required-schema-properties-undefined: off
+  # Zaostrzenia względem `recommended`:
+  operation-4xx-response: error
+  operation-operationId-unique: error
+  operation-summary: error
+  security-defined: error
+  no-unused-components: error
+  tag-description: error

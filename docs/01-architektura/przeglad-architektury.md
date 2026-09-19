@@ -105,7 +105,7 @@ flowchart LR
 | `analytics` | Python 3.13 | Monte Carlo, optymalizacja, backtest, testy skrajne; **bez internetu**, **bez danych użytkowników w bazie** | Postgres (rola `analytics_ro`: SELECT na tabelach rynkowych), `valkey-queue` | 1,5 GB, CPU ≤ 2 |
 | `postgres` | PostgreSQL 18 | Dane trwałe, RLS, historia rynkowa | Tylko sieć wewnętrzna | 1 GB |
 | `valkey-queue` | Valkey 9 | Kolejki BullMQ, liczniki kwot dostawców; `maxmemory-policy noeviction`, AOF co 1 s | Tylko sieć wewnętrzna | 128 MB |
-| `valkey-cache` | Valkey 9 | Cache L2, pub/sub dla SSE i unieważniania flag; `allkeys-lru`, bez trwałości | Tylko sieć wewnętrzna | 128 MB |
+| `valkey-cache` | Valkey 9 | Cache L2, strumienie SSE per użytkownik, pub/sub notowań i unieważniania flag; `allkeys-lru`, bez trwałości | Tylko sieć wewnętrzna | 128 MB |
 
 Suma limitów ≈ 4,2 GB + system ≈ 0,8 GB → VM **6 GB RAM, 3 vCPU** (NFR-01.08). Monitoring i kopie zapasowe: `docs/07-wdrozenie/` (Krok 5).
 

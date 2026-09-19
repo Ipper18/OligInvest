@@ -1,6 +1,6 @@
 # ADR-013: Publiczne repozytorium GitHub — higiena, CI i skanowanie
 
-- **Status:** zaakceptowana (licencja projektu — decyzja otwarta, Q-03)
+- **Status:** zaakceptowana; licencja rozstrzygnięta 2026-09-19 (Q-03: „zrób domyślnie” → brak pliku `LICENSE`)
 - **Data:** 2026-09-18
 - **Decydent:** właściciel projektu (repozytorium publiczne — Krok 2)
 - **Powiązane wymagania:** NFR-03.09, NFR-03.12, NFR-10.03, Z-23
@@ -17,7 +17,7 @@ Właściciel wybrał publiczne repozytorium (m.in. darmowe minuty GitHub Actions
 4. **Włączone mechanizmy GitHub:** secret scanning + push protection, CodeQL (JS/TS, Python), alerty Dependabot, Renovate do aktualizacji, prywatne zgłaszanie podatności (`SECURITY.md`), ochrona gałęzi `main` (wymagane zielone CI, zakaz force-push), podpisane commity zalecane.
 5. **Issues i dyskusje** nie mogą zawierać szczegółów incydentów bezpieczeństwa — te trafiają do prywatnych security advisories.
 6. **Obrazy kontenerów** w GHCR (publiczne, bez sekretów w warstwach) podpisywane cosign; alternatywnie budowa lokalna na serwerze.
-7. **Licencja projektu — otwarte (Q-03).** Do czasu decyzji repozytorium nie ma pliku `LICENSE`, co oznacza „wszelkie prawa zastrzeżone” (decyzja odwracalna — nadanie licencji otwartej później jest możliwe, cofnięcie już udzielonej nie). Skille i kod zewnętrzny zachowują swoje licencje (`.claude/skills/THIRD_PARTY_NOTICES.md`). Uwaga: vectorbt (Commons Clause) nie ogranicza publikacji kodu, tylko sprzedaż.
+7. **Licencja projektu — brak pliku `LICENSE` (decyzja właściciela 2026-09-19, Q-03).** Oznacza to „wszelkie prawa zastrzeżone”: kod jest widoczny, ale nikt poza właścicielem nie uzyskuje prawa do kopiowania, modyfikacji ani dystrybucji. Decyzja jest odwracalna — nadanie licencji otwartej później jest możliwe, cofnięcie już udzielonej nie. Lint specyfikacji OpenAPI ma wyłączoną regułę `info-license` (`redocly.yaml`). Skille i kod zewnętrzny zachowują swoje licencje (`.claude/skills/THIRD_PARTY_NOTICES.md`). Uwaga: vectorbt (Commons Clause) nie ogranicza publikacji kodu, tylko sprzedaż.
 
 ## Konsekwencje
 

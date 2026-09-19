@@ -2,7 +2,7 @@
 
 **Cel:** zaprojektować wymienną warstwę dostawców danych (port/adapter) z łańcuchem fallbacków, budżetowaniem kwot i wielopoziomowym cache tak, aby limity typu „25 zapytań/dobę” były obsłużone architektonicznie, a użytkownik zawsze widział dane ze znacznikiem czasu i źródłem.
 
-Powiązane: `zrodla-danych.md` (role dostawców), `model-danych.md` (tabele `market_bars`, `fx_rates`, `instruments`), `01-architektura/moduly.md` (moduł `market`), NFR-01 (wydajność), NFR-02 (adaptery wymienne).
+Powiązane: `zrodla-danych.md` (role dostawców), `model-danych.md` (tabele `market.bars_daily`, `fx_rates`, `instruments`), `01-architektura/moduly.md` (moduł `market`), NFR-01 (wydajność), NFR-02 (adaptery wymienne).
 
 ## 1. Zasady
 
@@ -48,7 +48,7 @@ sequenceDiagram
   participant R as ProviderRegistry
   participant P1 as Yahoo
   participant P2 as Finnhub
-  UI->>API: GET /quotes?ids=PKO@XWAR,AAPL@XNAS
+  UI->>API: GET /api/v1/market/quotes, instrumentId PKO i AAPL
   API->>C: get(quote:PKO@XWAR)
   alt trafienie i świeże (TTL)
     C-->>API: Quote (stale=false)
@@ -76,8 +76,8 @@ sequenceDiagram
 
 | Typ danych | L1 (pamięć procesu) | L2 `valkey-cache` (TTL) | L3 Postgres | Odświeżanie / źródło zdarzenia |
 |---|---|---|---|---|
-| Bary EOD (akcje, ETF, indeksy) | 60 s | 24 h (klucz per instrument+rok) | **trwałe** (`market_bars`); okno korekt: ostatnie 5 sesji nadpisywane przy każdym batchu | Batch nocny: GPW 18:30 CET (po publikacji archiwum), USA 23:30 CET; backfill historii dla nowych instrumentów |
-| Notowania intraday (opóźnione) | 15 s | **5 min** w godzinach sesji (GPW 09:00–17:05 CET; USA 15:30–22:00 CET; kalendarz z `pandas-market-calendars`/własna tabela `trading_calendar`), 60 min poza sesją | ostatnia wartość w `instrument_quotes_latest` (do trybu stale) | Job cykliczny co 5 min dla: pozycji użytkowników ∪ watchlist ∪ otwartych ekranów (heartbeat SSE); nic dla instrumentów nieobserwowanych |
+| Bary EOD (akcje, ETF, indeksy) | 60 s | 24 h (klucz per instrument+rok) | **trwałe** (`market.bars_daily`); okno korekt: ostatnie 5 sesji nadpisywane przy każdym batchu | Batch nocny: GPW 18:30 CET (po publikacji archiwum), USA 23:30 CET; backfill historii dla nowych instrumentów |
+| Notowania intraday (opóźnione) | 15 s | **5 min** w godzinach sesji (GPW 09:00–17:05 CET; USA 15:30–22:00 CET; kalendarz z `pandas-market-calendars`/własna tabela `trading_calendar`), 60 min poza sesją | ostatnia wartość w `market.quotes_latest` (do trybu stale) | Job cykliczny co 5 min dla: pozycji użytkowników ∪ watchlist ∪ otwartych ekranów (heartbeat SSE); nic dla instrumentów nieobserwowanych |
 | Kursy NBP (A/C) i złoto | 5 min | 24 h; klucz per data | **trwałe** (`fx_rates`), tabela per dzień | Job 12:20 CET (NBP publikuje ~12:15) + retry co 10 min do 14:00; brak tabeli w święta → kurs z ostatniego dnia roboczego (zgodnie z zasadą podatkową D-1) |
 | Kursy Frankfurter | — | 24 h | `fx_rates` z `source='ECB'` | tylko gdy NBP zawiedzie 3× |
 | Profil instrumentu (nazwa, sektor, waluta, ISIN) | 10 min | 7 dni | **trwałe** (`instruments`) | ręczna edycja admina lub odświeżenie na żądanie |
@@ -97,7 +97,7 @@ Dobowy plan (czas CET), realizowany przez BullMQ z priorytetami:
 2. 12:20 — NBP tabela A + złoto (2 zapytania) → przeliczenie wycen w PLN.
 3. 09:00–17:05 co 5 min — intraday GPW (Yahoo, 1 zapytanie na partię ≤ 50 symboli).
 4. 15:30–22:00 co 5 min — intraday USA (Yahoo; fallback Finnhub 1 zapytanie/symbol).
-5. 18:30 — archiwum GPW (1 XLS = cały rynek) → `market_bars` + korekty 5 sesji.
+5. 18:30 — archiwum GPW (1 XLS = cały rynek) → `market.bars_daily` + korekty 5 sesji.
 6. 23:30 — EOD USA dla pozycji ∪ watchlist (Yahoo; fallback Alpha Vantage z rezerwą 10 zapytań).
 7. 02:00 — backfill historii (nowe instrumenty, luki wykryte przez `data-scrub`), maks. 20 % kwoty dziennej każdego dostawcy.
 8. Rezerwa: Alpha Vantage 25/dobę = 1 kalendarz + ≤ 10 `NEWS_SENTIMENT` + ≤ 10 EOD fallback + 4 bufor.
@@ -106,7 +106,7 @@ Budżety są konfigurowalne w panelu admina (feature flag + liczby), a zużycie 
 
 ## 6. Invalidacja i jakość danych
 
-- **Zdarzenia:** nowy dzień sesyjny (czyści L1/L2 intraday), publikacja NBP, korekta/split (`SPLITS` Alpha Vantage lub ręcznie) → przeliczenie `adjustment_factor` w `market_bars` i cache `b:*`.
+- **Zdarzenia:** nowy dzień sesyjny (czyści L1/L2 intraday), publikacja NBP, korekta/split (`SPLITS` Alpha Vantage lub ręcznie) → przeliczenie `adjustment_factor` w `market.bars_daily` i cache `b:*`.
 - **Ręcznie:** przycisk „Odśwież” (user: 1/min per instrument) i „Wymuś ponowne pobranie” (admin).
 - **Polityka cen skorygowanych:** przechowujemy *surowe* OHLCV + osobne współczynniki korekt; wykresy używają cen skorygowanych, a wyceny i P/L — surowych cen i realnych przepływów (TWR/XIRR nie mogą korzystać z cen skorygowanych wstecz). Szczegóły w `obliczenia-finansowe.md`.
 - **Kontrola jakości (skill `data-scrub`):** przy każdym batchu: luki w kalendarzu sesji, duplikaty timestampów, zera w wolumenie przy zmianie ceny, skoki > 40 % bez splitu → wpis do `data_quality_issues` i oznaczenie serii jako „do weryfikacji” w UI.
@@ -115,7 +115,7 @@ Budżety są konfigurowalne w panelu admina (feature flag + liczby), a zużycie 
 ## 7. Konsekwencje dla wydajności (NFR-01)
 
 - Ekrany ładują dane z L2/L3 w < 50 ms; żadne żądanie użytkownika nie czeka na zewnętrzne API (pobrania są asynchroniczne, wynik dociera SSE).
-- Wykres 10-letni = 1 zapytanie do `market_bars` (indeks `(instrument_id, date)`), decymacja po stronie serwera do ≤ 3 000 punktów dla interwałów > 1D.
+- Wykres 10-letni = 1 zapytanie do `market.bars_daily` (indeks `(instrument_id, date)`), decymacja po stronie serwera do ≤ 3 000 punktów dla interwałów > 1D.
 - Brak polling’u z przeglądarki: jeden strumień SSE per karta.
 
 ## 8. Ryzyka i mitygacje

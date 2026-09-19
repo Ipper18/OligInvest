@@ -319,7 +319,7 @@ Zgodnie z §6.3: poniżej miejsca, w których specyfikacja jest sprzeczna, niere
 | A-02 | Strefa czasowa użytkowników Europe/Warsaw; daty sesji wg kalendarza giełdy. | Preferencja strefy per użytkownik (FR-07.08). |
 | A-03 | ≤ 10 kont, ≤ 5 równoczesnych użytkowników. | Rewizja NFR-01.08 i limitów kolejek. |
 | A-04 | Adres aplikacji: `invest.oligi.pl` (❓ do potwierdzenia). | Zmiana konfiguracji DNS/TLS. |
-| A-05 | VPS OVH ≥ 1 vCPU / 1 GB RAM, pełni funkcję edge (❓ specyfikacja i obecne miejsce terminacji TLS do potwierdzenia przed Krokiem 5). | Zmiana projektu edge w ADR-011. |
+| A-05 | VPS OVH 1 vCPU / 2 GB RAM / 20 GB (potwierdzone 2026-09-19) pełni funkcję edge: dziś kończy TLS dla Immicha w Caddy, docelowo wyłącznie przekaźnik TCP (routing po SNI) przez WireGuard, bez dostępu do odszyfrowanej treści. | Zmiana projektu edge w ADR-011. |
 | A-06 | Użytkownicy mają rachunki w XTB i/lub mBank eMakler; przed M1 właściciel dostarczy anonimizowane pliki eksportu jako fixtures. | Bez fixtures parsery powstaną na podstawie dokumentacji społecznościowej — wyższe ryzyko błędów. |
 | A-07 | Historia instrumentów: do 10+ lat dziennych danych; ≤ 2 000 śledzonych instrumentów. | Rewizja rozmiaru bazy i czasu batchy. |
 | A-08 | Aplikacja nie składa zleceń i nie łączy się z rachunkami w trybie zapisu. | Zmiana statusu regulacyjnego (`11-zgodnosc-prawna.md`). |
