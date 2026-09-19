@@ -96,7 +96,7 @@ M0 szkielet i infrastruktura → **M1 MVP** (import XTB, wycena opóźniona/EOD,
 
 | ID | Kwestia | Kto rozstrzyga | Termin |
 |---|---|---|---|
-| Q-01 | Adres aplikacji (`invest.oligi.pl`?) — **brak odpowiedzi; obowiązuje założenie robocze `invest.oligi.pl`** (zmiana = konfiguracja `PUBLIC_BASE_URL` i DNS) | Właściciel | przed M0 |
+| Q-01 | ✅ Rozstrzygnięte 2026-09-19: adres aplikacji `invest.oligi.pl` (potwierdzony przez właściciela; konfiguracja `PUBLIC_BASE_URL`) | Właściciel | — |
 | Q-02 | ✅ Rozstrzygnięte 2026-09-19: VPS 1 vCPU / 2 GB RAM / 20 GB; dziś TLS dla Immicha kończy się w Caddy na VPS; docelowo TLS w HomeLabie, VPS wyłącznie przekaźnik TCP przez WireGuard ([ADR-011](../09-decyzje/ADR-011-topologia-wdrozenia.md)) | Właściciel | — |
 | Q-03 | ✅ Rozstrzygnięte 2026-09-19: domyślnie — brak pliku `LICENSE` (wszelkie prawa zastrzeżone, [ADR-013](../09-decyzje/ADR-013-repozytorium-publiczne.md)) | Właściciel | — |
 | Q-04 | ✅ Rozstrzygnięte 2026-09-19: fixtures syntetyczne wygenerowane na podstawie dokumentacji formatów ([`../03-dane/fixtures/anonymized/`](../03-dane/fixtures/anonymized/README.md)); rzeczywiste pliki właściciela — tylko do lokalnej weryfikacji parsera, po anonimizacji | Właściciel | — |

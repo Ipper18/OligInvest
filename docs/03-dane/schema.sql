@@ -221,6 +221,23 @@ CREATE TABLE identity.data_exports (
   downloaded_at timestamptz
 );
 
+-- Akceptacje regulaminu, potwierdzenia informacji o przetwarzaniu i zgody opcjonalne (FR-07.12, prywatnosc-rodo.md § 5).
+-- Append-only: stan bieżący = ostatnie zdarzenie per dokument; wycofanie zgody = nowe zdarzenie 'withdrawn'.
+CREATE TABLE identity.consent_events (
+  id           uuid        PRIMARY KEY DEFAULT uuidv7(),
+  user_id      uuid        NOT NULL REFERENCES auth.users (id) ON DELETE CASCADE,
+  document     text        NOT NULL CHECK (document IN ('terms', 'privacy_notice', 'diagnostics')),
+  version      text        NOT NULL CHECK (version ~ '^[0-9]{4}-[0-9]{2}(-[0-9]{2})?(\.[0-9]{1,3})?$'),  -- np. '2026-09', '2026-09-19.1'
+  action       text        NOT NULL,
+  source       text        NOT NULL CHECK (source IN ('sign_up', 'gate', 'settings')),
+  recorded_at  timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT consent_action_matches_document CHECK (
+    (document = 'terms' AND action = 'accepted')
+    OR (document = 'privacy_notice' AND action = 'acknowledged')
+    OR (document = 'diagnostics' AND action IN ('granted', 'withdrawn')))
+);
+CREATE INDEX consent_events_user_doc_idx ON identity.consent_events (user_id, document, recorded_at DESC);
+
 -- Katalog użytkowników dla modułów (bez danych uwierzytelniania); widok z uprawnieniami właściciela.
 CREATE VIEW identity.user_directory WITH (security_barrier = true) AS
   SELECT u.id, u.name, u.email, u.role, u.banned, u.two_factor_enabled, u.created_at
@@ -270,7 +287,7 @@ CREATE TABLE platform.audit_log (                           -- append-only (FR-0
   id             uuid        PRIMARY KEY DEFAULT uuidv7(),
   occurred_at    timestamptz NOT NULL DEFAULT now(),
   actor_user_id  uuid,                                      -- NULL po usunięciu konta (Z-21) — zostaje actor_ref
-  actor_ref      text        NOT NULL,                      -- pseudonim: sha256(user_id + sól) — trwały po usunięciu konta
+  actor_ref      text        NOT NULL,                      -- pseudonim: HMAC-SHA-256(user_id, AUDIT_PSEUDONYM_KEY) — trwały po usunięciu konta
   actor_type     text        NOT NULL CHECK (actor_type IN ('user', 'admin', 'system', 'pat')),
   action         text        NOT NULL,                      -- np. 'admin.flag.update', 'auth.sign_in', 'portfolio.import.commit'
   resource_type  text,
@@ -309,6 +326,15 @@ CREATE TABLE platform.web_vitals (                          -- RUM (NFR-01.01), 
   connection    text                                        -- effectiveType z Network Information API (jeśli dostępne)
 );
 CREATE INDEX web_vitals_route_idx ON platform.web_vitals (route, metric, recorded_at DESC);
+
+-- Identyfikatory usuniętych kont (RODO art. 17; prywatnosc-rodo.md § 7, backup-dr.md § 7): po odtworzeniu kopii zapasowej
+-- zadanie ponownie usuwa te konta. Tylko UUID (bez innych danych); wpis kasowany po okresie retencji kopii (purge_after).
+-- Kolumna celowo nie nazywa się user_id — generator eksportu RODO obejmuje tabele z kolumną user_id.
+CREATE TABLE platform.erasure_log (
+  erased_user_id  uuid        PRIMARY KEY,
+  erased_at       timestamptz NOT NULL DEFAULT now(),
+  purge_after     timestamptz NOT NULL
+);
 
 -- =====================================================================================
 -- 5. NOTIFICATIONS
@@ -1067,6 +1093,21 @@ CREATE POLICY audit_insert ON platform.audit_log FOR INSERT TO oliginvest_app WI
 CREATE POLICY audit_read ON platform.audit_log FOR SELECT TO oliginvest_app
   USING (platform.current_app_role() = 'admin' OR actor_user_id = platform.current_user_id());
 
+-- 12.5 Zgody i akceptacje: właściciel dopisuje i czyta własne zdarzenia; brak UPDATE/DELETE (brak uprawnień — § 13).
+--      Usunięcie konta kasuje zdarzenia kaskadowo (akcje referencyjne nie podlegają RLS).
+ALTER TABLE identity.consent_events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE identity.consent_events FORCE ROW LEVEL SECURITY;
+CREATE POLICY consent_select_own ON identity.consent_events FOR SELECT TO oliginvest_app
+  USING (user_id = platform.current_user_id());
+CREATE POLICY consent_insert_own ON identity.consent_events FOR INSERT TO oliginvest_app
+  WITH CHECK (user_id = platform.current_user_id());
+
+-- 12.6 Dziennik usuniętych kont: wyłącznie kontekst systemowy (zadanie usuwania kont i zadanie po odtworzeniu kopii).
+ALTER TABLE platform.erasure_log ENABLE ROW LEVEL SECURITY;
+ALTER TABLE platform.erasure_log FORCE ROW LEVEL SECURITY;
+CREATE POLICY system_all ON platform.erasure_log FOR ALL TO oliginvest_app
+  USING (platform.current_app_role() = 'system') WITH CHECK (platform.current_app_role() = 'system');
+
 -- =====================================================================================
 -- 13. UPRAWNIENIA
 -- =====================================================================================
@@ -1083,6 +1124,8 @@ GRANT EXECUTE ON FUNCTION identity.find_invitation(text), identity.consume_invit
 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA identity, notifications, market, portfolio, analytics, alerts, education TO oliginvest_app;
 GRANT SELECT, INSERT, UPDATE, DELETE ON platform.feature_flags, platform.role_limits, platform.idempotency_keys, platform.web_vitals TO oliginvest_app;
 GRANT SELECT, INSERT ON platform.audit_log TO oliginvest_app;                         -- append-only
+REVOKE UPDATE, DELETE, TRUNCATE ON identity.consent_events FROM oliginvest_app;       -- append-only (po GRANT ON ALL TABLES)
+GRANT SELECT, INSERT, DELETE ON platform.erasure_log TO oliginvest_app;                -- DELETE: czyszczenie po purge_after
 GRANT SELECT ON identity.user_directory TO oliginvest_app;
 -- Widok jest automatycznie aktualizowalny i działa z uprawnieniami właściciela — bez tego REVOKE rola aplikacji
 -- mogłaby zmienić auth.users (np. własną rolę) przez UPDATE na widoku.
@@ -1111,6 +1154,8 @@ COMMENT ON TABLE portfolio.lots IS 'Pochodne: partie FIFO odtwarzane z operacji 
 COMMENT ON TABLE portfolio.valuations_daily IS 'Pochodne: dzienne wyceny rachunków — wejście TWR/XIRR';
 COMMENT ON TABLE market.bars_daily IS 'Historia EOD; źródło prawdy dla wykresów i analiz (strategia-cache.md)';
 COMMENT ON TABLE platform.audit_log IS 'Append-only: rola aplikacji ma tylko INSERT i SELECT';
+COMMENT ON TABLE identity.consent_events IS 'Append-only: akceptacje regulaminu, potwierdzenia informacji o przetwarzaniu i zgody (FR-07.12)';
+COMMENT ON TABLE platform.erasure_log IS 'UUID usuniętych kont do ponownego usunięcia po odtworzeniu kopii zapasowej (RODO art. 17)';
 COMMENT ON VIEW identity.user_directory IS 'Bezpieczne kolumny kont; filtr: admin/system widzi wszystkich, użytkownik siebie';
 
 RESET ROLE;

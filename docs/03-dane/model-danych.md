@@ -18,8 +18,8 @@ Powiązane: [`schema.sql`](schema.sql) (DDL, role, RLS — zweryfikowane na Post
 | Schemat | Moduł | Najważniejsze tabele | RLS |
 |---|---|---|---|
 | `auth` | identity (Better Auth) | `users`, `sessions`, `accounts`, `verifications`, `two_factors`, `api_keys`, `rate_limits` | brak (dostęp wyłącznie rola `oliginvest_auth`) |
-| `identity` | identity | `invitations`, `user_preferences`, `deletion_requests`, `data_exports`, widok `user_directory` | tak (zaproszenia: tylko admin + funkcje DEFINER) |
-| `platform` | jądro | `feature_flags`, `role_limits`, `audit_log`, `idempotency_keys`, `web_vitals` | konfiguracja: zapis admin/system; audyt: append-only |
+| `identity` | identity | `invitations`, `user_preferences`, `deletion_requests`, `data_exports`, `consent_events`, widok `user_directory` | tak (zaproszenia: tylko admin + funkcje DEFINER; zgody: append-only) |
+| `platform` | jądro | `feature_flags`, `role_limits`, `audit_log`, `idempotency_keys`, `web_vitals`, `erasure_log` | konfiguracja: zapis admin/system; audyt: append-only; `erasure_log`: tylko system |
 | `notifications` | notifications | `push_subscriptions`, `notification_preferences`, `notification_deliveries` | tak |
 | `market` | market | `instruments`, `instrument_provider_symbols`, `bars_daily`, `bars_intraday`, `quotes_latest`, `fx_rates`, `corporate_actions`, `trading_calendar`, `sectors`, `sector_memberships`, `universes`, `universe_members`, `calendar_events`, `news_items`, `macro_series`, `macro_observations`, `fundamentals_snapshots`, `data_quality_issues` + dane użytkownika: `watchlists`, `watchlist_items`, `screener_presets` | tylko tabele użytkownika |
 | `portfolio` | portfolio | `accounts`, `transactions`, `import_*`, `instrument_overrides`, pochodne: `lots`, `lot_consumptions`, `positions_daily`, `cash_balances_daily`, `valuations_daily`; `journal_entries`, `journal_postmortems`, `target_allocations` | tak (wszystkie) |
@@ -42,6 +42,7 @@ erDiagram
   auth_users ||--o| identity_user_preferences : "preferencje"
   auth_users ||--o{ identity_invitations : "wystawia"
   auth_users ||--o{ identity_data_exports : "eksporty RODO"
+  auth_users ||--o{ identity_consent_events : "zgody"
   auth_users ||--o{ notifications_push_subscriptions : "urządzenia"
   auth_users ||--o{ notifications_notification_deliveries : "doręczenia"
   auth_users ||--o{ platform_idempotency_keys : "klucze"
@@ -65,6 +66,14 @@ erDiagram
     text key "SHA-256"
     text permissions "zakresy"
     timestamptz expires_at
+  }
+  identity_consent_events {
+    uuid id PK
+    uuid user_id FK
+    text document "terms, privacy_notice, diagnostics"
+    text version
+    text action "accepted, acknowledged, granted, withdrawn"
+    timestamptz recorded_at
   }
   identity_invitations {
     uuid id PK
@@ -240,7 +249,7 @@ erDiagram
 | Dane | Retencja | Mechanizm | Uwagi |
 |---|---|---|---|
 | Operacje, rachunki, dziennik, alokacje | do usunięcia konta | — | eksport RODO (FR-07.09) |
-| Dane pochodne portfela | odtwarzalne | zadanie `recompute` | nie wchodzą do kopii zapasowych krytycznych (❓ decyzja w `07-wdrozenie/backup-dr.md`) |
+| Dane pochodne portfela | odtwarzalne | zadanie `recompute` | w kopii fizycznej razem z resztą bazy (pgBackRest nie wyklucza tabel); po odtworzeniu i tak przeliczane nocą |
 | Pliki importu (`import_files`) | 90 dni | zadanie czyszczące (codziennie) | NFR-11.02 |
 | Wiersze importu (`import_rows`) | 1 rok po zatwierdzeniu | zadanie czyszczące | audyt importu |
 | `bars_intraday` | 90 dni | zadanie czyszczące | EOD trwałe |
@@ -248,9 +257,11 @@ erDiagram
 | `notification_deliveries` | 180 dni | zadanie czyszczące | |
 | `idempotency_keys` | 24 h | zadanie czyszczące | |
 | `web_vitals` | 90 dni | zadanie czyszczące | bez danych osobowych |
-| `audit_log` | 2 lata (❓ potwierdzenie w dokumencie RODO) | partycjonowanie miesięczne przy wzroście > 1 mln wierszy | pseudonim `actor_ref` po usunięciu konta (Z-21) |
+| `audit_log` | 2 lata ([`../06-bezpieczenstwo/prywatnosc-rodo.md`](../06-bezpieczenstwo/prywatnosc-rodo.md) § 6) | partycjonowanie miesięczne przy wzroście > 1 mln wierszy | pseudonim `actor_ref` po usunięciu konta (Z-21) |
 | Eksporty RODO (`data_exports`) | 24 h lub do pierwszego pobrania | zadanie czyszczące | pobranie wymaga sesji z 2FA i step-up |
-| Konto usunięte | 14 dni karencji, potem kasowanie kaskadowe | `deletion_requests` | audyt zostaje z pseudonimem |
+| Konto usunięte | 14 dni karencji, potem kasowanie kaskadowe | `deletion_requests` | audyt zostaje z pseudonimem; UUID trafia do `erasure_log` |
+| Zgody i akceptacje (`consent_events`) | do usunięcia konta | kasowanie kaskadowe | append-only — dowód akceptacji i zgody (art. 7 ust. 1 RODO) |
+| `erasure_log` | 40 dni (dłużej niż najdłuższa retencja kopii — 35 dni) | zadanie czyszczące po `purge_after` | ponowne usunięcie kont po odtworzeniu kopii ([`../07-wdrozenie/backup-dr.md`](../07-wdrozenie/backup-dr.md) § 7) |
 
 ## 5. Migracje i ewolucja schematu
 

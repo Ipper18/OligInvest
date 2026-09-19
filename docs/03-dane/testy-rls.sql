@@ -1,5 +1,5 @@
 -- Scenariusze testowe RLS i uprawnień dla schema.sql (PostgreSQL 18).
--- Cel: specyfikacja testów integracyjnych izolacji danych (NFR-03.04, NFR-03.13, FR-08.01, FR-08.05); w M1 przenieść do
+-- Cel: specyfikacja testów integracyjnych izolacji danych (NFR-03.04, NFR-03.13, FR-07.09, FR-07.12, FR-08.01, FR-08.05); w M1 przenieść do
 -- testów packages/db (Vitest + prawdziwy PostgreSQL) i uruchamiać w CI przy każdej migracji.
 -- Zweryfikowano 2026-09-19 na PostgreSQL 18.4: wszystkie scenariusze przechodzą. Uruchamiać jako superuser po schema.sql.
 \set ON_ERROR_STOP on
@@ -145,6 +145,62 @@ DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM identity.find_invitation($x$hash-123$x$
 SELECT identity.consume_invitation('hash-123', '0198a000-0000-7000-8000-00000000000b') AS consumed_first;
 SELECT identity.consume_invitation('hash-123', '0198a000-0000-7000-8000-00000000000b') AS consumed_second_should_be_false;
 RESET ROLE;
+
+\echo '== consent events: own rows only, append-only, action matches document =='
+SET ROLE oliginvest_app;
+BEGIN; SET LOCAL app.user_id = '0198a000-0000-7000-8000-00000000000a'; SET LOCAL app.role = 'user';
+INSERT INTO identity.consent_events (user_id, document, version, action, source) VALUES
+  ('0198a000-0000-7000-8000-00000000000a', 'terms', '2026-09', 'accepted', 'sign_up'),
+  ('0198a000-0000-7000-8000-00000000000a', 'privacy_notice', '2026-09', 'acknowledged', 'sign_up'),
+  ('0198a000-0000-7000-8000-00000000000a', 'diagnostics', '2026-09', 'granted', 'sign_up');
+DO $$ BEGIN
+  BEGIN UPDATE identity.consent_events SET action = 'withdrawn'; RAISE EXCEPTION 'CONSENT UPDATE ALLOWED';
+  EXCEPTION WHEN insufficient_privilege THEN RAISE NOTICE 'OK: consent events are append-only';
+  END;
+  BEGIN
+    INSERT INTO identity.consent_events (user_id, document, version, action, source)
+      VALUES ('0198a000-0000-7000-8000-00000000000b', 'terms', '2026-09', 'accepted', 'settings');
+    RAISE EXCEPTION 'CONSENT CROSS-USER INSERT';
+  EXCEPTION WHEN insufficient_privilege THEN RAISE NOTICE 'OK: cannot record consent for another user';
+  END;
+  BEGIN
+    INSERT INTO identity.consent_events (user_id, document, version, action, source)
+      VALUES ('0198a000-0000-7000-8000-00000000000a', 'terms', '2026-09', 'granted', 'settings');
+    RAISE EXCEPTION 'CONSENT ACTION CHECK FAILED';
+  EXCEPTION WHEN check_violation THEN RAISE NOTICE 'OK: action must match document';
+  END;
+END $$;
+COMMIT;
+BEGIN; SET LOCAL app.user_id = '0198a000-0000-7000-8000-00000000000b'; SET LOCAL app.role = 'user';
+DO $$ BEGIN IF (SELECT count(*) FROM identity.consent_events) <> 0 THEN RAISE EXCEPTION 'CONSENT LEAK: B sees A'; END IF; END $$;
+COMMIT;
+
+\echo '== erasure log: system context only =='
+BEGIN; SET LOCAL app.user_id = '0198a000-0000-7000-8000-00000000000a'; SET LOCAL app.role = 'user';
+DO $$ BEGIN
+  BEGIN
+    INSERT INTO platform.erasure_log (erased_user_id, purge_after) VALUES ('0198a000-0000-7000-8000-0000000000ee', now() + interval '90 days');
+    RAISE EXCEPTION 'USER WROTE ERASURE LOG';
+  EXCEPTION WHEN insufficient_privilege THEN RAISE NOTICE 'OK: user cannot write erasure log';
+  END;
+END $$;
+COMMIT;
+BEGIN; SET LOCAL app.role = 'system';
+INSERT INTO platform.erasure_log (erased_user_id, purge_after) VALUES ('0198a000-0000-7000-8000-0000000000ee', now() + interval '90 days');
+DO $$ BEGIN IF (SELECT count(*) FROM platform.erasure_log) <> 1 THEN RAISE EXCEPTION 'SYSTEM CANNOT SEE ERASURE LOG'; END IF; END $$;
+COMMIT;
+RESET ROLE;
+
+\echo '== account deletion cascades through FORCE RLS tables (auth role) =='
+SET ROLE oliginvest_auth;
+DELETE FROM auth.users WHERE id = '0198a000-0000-7000-8000-00000000000a';
+RESET ROLE;
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM identity.consent_events WHERE user_id = '0198a000-0000-7000-8000-00000000000a')
+     OR EXISTS (SELECT 1 FROM portfolio.transactions WHERE user_id = '0198a000-0000-7000-8000-00000000000a')
+  THEN RAISE EXCEPTION 'ACCOUNT DELETION DID NOT CASCADE'; END IF;
+  RAISE NOTICE 'OK: account deletion removed consent events and portfolio rows';
+END $$;
 
 \echo '== uuidv7 default works =='
 SELECT uuid_extract_version(id) AS uuid_version FROM portfolio.accounts LIMIT 1;

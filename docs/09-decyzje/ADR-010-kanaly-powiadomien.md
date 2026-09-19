@@ -26,6 +26,7 @@ Weryfikacja planów darmowych (2026-09-18): **Brevo** — 300 e-maili/dzień (tr
 - **E-mail przez SMTP (nodemailer) z Brevo** jako kanał dla kont (zaproszenia, weryfikacja, reset hasła) i zapasowy dla alertów (brak subskrypcji push, alert oznaczony jako krytyczny). Dostawca wymienny zmianą danych SMTP (Resend jako zamiennik).
 - DNS domeny: rekordy SPF, DKIM i DMARC (`p=quarantine` po okresie obserwacji) dla subdomeny nadawczej.
 - Zasady: ciche godziny, deduplikacja i cooldown, limit dzienny e-maili pilnowany kolejką `notify` (≤ 300/dobę), dziennik doręczeń per kanał, usuwanie wygasłych subskrypcji push (404/410).
+- **Treść bez kwot portfela (decyzja właściciela 2026-09-19):** powiadomienia push (widoczne na ekranie blokady) i e-maile (przechodzą przez Brevo) nie zawierają kwot portfela — alert cenowy podaje kurs i próg, alert portfelowy tylko zmianę procentową; kwoty wyłącznie w aplikacji ([`../05-mobile/strategia-mobilna.md`](../05-mobile/strategia-mobilna.md) § 4).
 - Telegram/ntfy: poza zakresem MVP; możliwe jako dodatkowy kanał w przyszłości (nowy adapter kanału, bez zmian w module alertów).
 
 ## Konsekwencje

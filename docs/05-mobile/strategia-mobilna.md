@@ -78,7 +78,7 @@ Format: `https://<host>/rynek/<instrumentId>`, `/portfel/rachunki/<accountId>`, 
 ## 6. Offline i aktualizacje
 
 - Service worker przechowuje wyłącznie zasoby statyczne i stronę `/offline`; odpowiedzi API nie są cache'owane.
-- Migawka portfela offline (FR-09.02) tylko po włączeniu w ustawieniach, w IndexedDB, czyszczona przy wylogowaniu ([`architektura-ui.md`](../04-frontend/architektura-ui.md) § 8).
+- Migawka portfela offline (FR-09.02) tylko w zainstalowanej aplikacji i po jednorazowej zgodzie (pytanie przy pierwszym uruchomieniu po instalacji), w IndexedDB, z limitem 30 dni i czyszczeniem przy wylogowaniu lub odwołaniu sesji ([`architektura-ui.md`](../04-frontend/architektura-ui.md) § 8).
 - Nowa wersja aplikacji: komunikat „Dostępna nowa wersja — odśwież”; aktualizacja po geście użytkownika, bez przerywania wpisywania formularza.
 - Po powrocie aplikacji z tła (iOS wstrzymuje stronę) — ponowne połączenie SSE z `Last-Event-ID` i odświeżenie danych starszych niż 60 s ([`realtime.md`](../02-api/realtime.md) § 6).
 

@@ -3,7 +3,7 @@
 - **Status:** zaakceptowana; zaktualizowana 2026-09-19 po odpowiedzi na Q-02 (specyfikacja VPS, obecne miejsce terminacji TLS)
 - **Data:** 2026-09-18 (aktualizacja 2026-09-19)
 - **Decydent:** właściciel projektu (VM na Proxmoxie + VPS jako edge — Krok 0; TLS w HomeLabie — Krok 4)
-- **Powiązane wymagania:** NFR-01.01, NFR-01.08, NFR-03.06, NFR-03.10, NFR-03.11, NFR-05.03, NFR-09.01, A-05, Z-07, Z-18
+- **Powiązane wymagania:** NFR-01.01, NFR-01.08, NFR-03.06, NFR-03.10, NFR-03.11, NFR-05.03, NFR-09.01, A-05, Z-18, Z-27
 
 ## Kontekst
 
@@ -35,13 +35,13 @@ Wariant **A** i **VM** (nie LXC):
 
 - **VM `oliginvest`**: Debian 13, Docker Engine + Compose, **6 GB RAM, 3 vCPU**, dysk systemowy na SSD (~60 GB), kopie zapasowe na HDD 1 TB (`07-wdrozenie/backup-dr.md`, Krok 5); limity zasobów kontenerów wg [`../01-architektura/przeglad-architektury.md`](../01-architektura/przeglad-architektury.md) § 4; priorytet CPU niższy niż Immich w godzinach nocnych (zadania ciężkie) — do dostrojenia.
 - **VPS = przekaźnik TCP bez terminacji TLS**:
-  - nginx `stream` z `ssl_preread` kieruje połączenia na porcie 443 według nazwy serwera (SNI): nazwa aplikacji (robocza `invest.oligi.pl`, Q-01) → WireGuard → Caddy w VM `oliginvest`; nazwa Immicha → WireGuard → reverse proxy Immicha w domu;
+  - nginx `stream` z `ssl_preread` kieruje połączenia na porcie 443 według nazwy serwera (SNI): nazwa aplikacji `invest.oligi.pl` → WireGuard → Caddy w VM `oliginvest`; nazwa Immicha → WireGuard → reverse proxy Immicha w domu;
   - połączenia bez SNI lub z nieznaną nazwą są zamykane (brak domyślnego backendu — mniej skanowania);
   - port 80: wyłącznie przekierowanie 301 na HTTPS (bez treści);
   - do domu wysyłany jest nagłówek **protokołu PROXY**, żeby Caddy, limity i CrowdSec widziały prawdziwy adres IP klienta; Caddy w domu przyjmuje go tylko od adresu VPS w tunelu (listener wrapper `proxy_protocol` z listą dozwolonych adresów);
   - VPS nie przechowuje danych, certyfikatów ani kluczy prywatnych usług; logi tylko metadanych połączeń (czas, IP, SNI, bajty).
 - **Certyfikaty w domu:** Caddy uzyskuje certyfikaty ACME wyzwaniem **TLS-ALPN-01**, które przechodzi przez routing SNI bez zmian na VPS (wyzwanie DNS-01 wymagałoby tokenu API dostawcy DNS w domu i niestandardowej kompilacji Caddy — odrzucone).
-- **CrowdSec:** agent i lokalne API (LAPI) w domu analizują logi Caddy; **bouncer zapory (nftables) na VPS** pobiera decyzje z LAPI przez WireGuard i blokuje adresy już na krawędzi, zanim ruch wejdzie do tunelu.
+- **CrowdSec (zmiana 2026-09-19, Krok 5):** agent (procesor logów) w VM analizuje logi Caddy i SSH i wysyła alerty do **LAPI na VPS** przez WireGuard — połączeniem wychodzącym z domu; na VPS **bouncer zapory (nftables)** pobiera decyzje z lokalnego LAPI i blokuje adresy na krawędzi, zanim ruch wejdzie do tunelu. Wariant z LAPI w domu wymagałby dodatkowego przepływu VPS → dom (port LAPI) — odrzucony, bo zwiększa powierzchnię ataku z niezaufanego VPS, a VPS i tak widzi adresy IP klientów.
 - **Hardening VPS:** otwarte tylko 80, 443 i port WireGuard; SSH wyłącznie kluczem (najlepiej tylko przez WireGuard); automatyczne aktualizacje bezpieczeństwa; limity połączeń per IP w nginx `stream`.
 - **Immich:** terminacja TLS przeniesiona do domu (reverse proxy przed Immichem z certyfikatem ACME), a Caddy na VPS wyłączony. Procedura migracji z krótkim oknem przerwy i planem powrotu — `07-wdrozenie/infrastruktura.md` (Krok 5). Kolejność: najpierw nowa nazwa OligInvest (brak ruchu do przerwania), potem Immich.
 - **Wydajność (Z-18):** jeśli pomiary RUM pokażą przekroczenie LCP z powodu łącza domowego, opcją jest osobna subdomena zasobów statycznych (bez danych użytkowników) z cache na VPS — nowy ADR przed wdrożeniem.
@@ -52,13 +52,13 @@ flowchart LR
   V -->|"WireGuard + PROXY"| C["VM oliginvest: Caddy<br/>terminacja TLS, ACME TLS-ALPN-01"]
   V -->|"WireGuard + PROXY"| I["Dom: reverse proxy Immich<br/>terminacja TLS"]
   C --> APP["web / api"]
-  CS["CrowdSec LAPI w domu"] -.->|"decyzje przez WireGuard"| B["Bouncer nftables na VPS"]
+  CA["CrowdSec: agent w VM"] -.->|"alerty przez WireGuard"| CS["CrowdSec: LAPI i bouncer nftables na VPS"]
 ```
 
 ## Konsekwencje
 
 - Pozytywne: poufność end-to-end między urządzeniem użytkownika a domem dla OligInvest i Immicha; klucze TLS tylko w domu; izolacja OligInvest od Immicha (osobna VM); VPS o 2 GB RAM z dużym zapasem (router L4, WireGuard i bouncer zużywają zwykle kilkaset MB); 0 zł.
-- Negatywne: awaria domu (prąd, łącze, sprzęt) = niedostępność aplikacji (Z-07, akceptowalne dla aplikacji prywatnej — `10-ograniczenia.md`); brak cache na krawędzi; zależność od przepustowości wysyłania łącza domowego; migracja Immicha wymaga krótkiego okna serwisowego.
+- Negatywne: awaria domu (prąd, łącze, sprzęt) = niedostępność aplikacji (Z-27, akceptowalne dla aplikacji prywatnej — `10-ograniczenia.md`); brak cache na krawędzi; zależność od przepustowości wysyłania łącza domowego; migracja Immicha wymaga krótkiego okna serwisowego.
 - Zadania: VM i Compose (M0), router SNI na VPS i Caddy z protokołem PROXY (M0), migracja TLS Immicha (M0, osobne okno serwisowe), CrowdSec z bouncerem na VPS (M6), pomiar RUM (M1+).
 
 ## Weryfikacja
@@ -66,5 +66,5 @@ flowchart LR
 - Przechwycenie ruchu na VPS (`tcpdump` na interfejsie WireGuard) pokazuje wyłącznie TLS dla obu usług; na VPS nie ma plików certyfikatów ani kluczy prywatnych usług.
 - Test SSL Labs dla nazwy aplikacji: TLS 1.3, HSTS; certyfikat odnawiany automatycznie w domu (wyzwanie TLS-ALPN-01).
 - Logi Caddy w domu zawierają prawdziwe adresy IP klientów (nie adres VPS); nagłówek PROXY od innego źródła jest odrzucany.
-- Adres zablokowany przez CrowdSec w domu jest odrzucany na VPS w ≤ 60 s.
+- Adres wykryty przez agenta CrowdSec w domu jest odrzucany na VPS w ≤ 60 s.
 - Zużycie zasobów VM w teście obciążeniowym ≤ 6 GB RAM (NFR-01.08).

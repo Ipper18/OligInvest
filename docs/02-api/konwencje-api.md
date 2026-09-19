@@ -8,7 +8,7 @@ Powiązane: [`openapi.yaml`](openapi.yaml), [`realtime.md`](realtime.md), [ADR-0
 
 | Zasób | Adres | Uwagi |
 |---|---|---|
-| API domenowe | `https://invest.oligi.pl/api/v1/<moduł>/…` | ❓ nazwa hosta do potwierdzenia (Q-01); konfigurowana zmienną `PUBLIC_BASE_URL` |
+| API domenowe | `https://invest.oligi.pl/api/v1/<moduł>/…` | host potwierdzony przez właściciela (Q-01); konfigurowany zmienną `PUBLIC_BASE_URL` |
 | Uwierzytelnianie (Better Auth) | `/api/auth/*` | trasy biblioteki; bez wersji w ścieżce; pełny opis generuje wtyczka OpenAPI Better Auth |
 | Strumień SSE | `/api/v1/stream` | [`realtime.md`](realtime.md) |
 | Specyfikacja | `/api/v1/openapi.json` | generowana z Zod (`@hono/zod-openapi`); w CI porównywana z `openapi.yaml` |
@@ -20,13 +20,15 @@ Powiązane: [`openapi.yaml`](openapi.yaml), [`realtime.md`](realtime.md), [ADR-0
 
 | Klient | Mechanizm | Zakres |
 |---|---|---|
-| Przeglądarka / PWA | ciasteczko sesji Better Auth (`HttpOnly`, `Secure`, `SameSite=Lax`, prefiks `__Secure-`; ❓ nazwa `__Secure-oliginvest.session_token` wg konfiguracji `cookiePrefix`) | wszystkie endpointy wg roli |
+| Przeglądarka / PWA | ciasteczko sesji Better Auth `__Host-oliginvest.session_token` (`HttpOnly`, `Secure`, `SameSite=Lax`, `Path=/`, bez `Domain`; zapasowo przedrostek `__Secure-` — [`uwierzytelnianie-autoryzacja.md`](../06-bezpieczenstwo/uwierzytelnianie-autoryzacja.md) § 4) | wszystkie endpointy wg roli |
 | Skróty iOS / HTTP Shortcuts | `Authorization: Bearer oli_pat_…` (PAT z wtyczki API key) | wyłącznie `/api/v1/quick/*`, wg zakresów tokenu (`portfolio:read`, `transactions:write`, `alerts:read`, `market:read`) |
 
 - **Bramka MFA:** sesja użytkownika bez skonfigurowanego TOTP → `403` z kodem `MFA_ENROLLMENT_REQUIRED` na każdej trasie poza `/api/auth/two-factor/*`, `/api/auth/sign-out`, `GET /api/v1/me`.
-- **Step-up:** działania wrażliwe (tworzenie PAT, eksport danych, usunięcie konta, zmiany admina, nowe kody zapasowe lub zmiana urządzenia TOTP; samo wyłączenie 2FA jest zablokowane) wymagają weryfikacji TOTP nie starszej niż 15 min → w przeciwnym razie `403 STEP_UP_REQUIRED`; klient wywołuje `POST /api/v1/me/step-up` z kodem i ponawia żądanie.
+- **Bramka regulaminu:** brak akceptacji bieżącej wersji regulaminu (FR-07.12) → `403 TERMS_ACCEPTANCE_REQUIRED` na każdej trasie poza `GET /api/v1/me`, `/api/v1/me/legal*` i `/api/auth/sign-out`; dotyczy także tokenów PAT. Kolejność: najpierw bramka MFA, potem regulaminu.
+- **Step-up:** działania wrażliwe (tworzenie PAT, eksport danych, usunięcie konta, zmiany admina, nowe kody zapasowe lub zmiana urządzenia TOTP, wylogowanie innych urządzeń; samo wyłączenie 2FA jest zablokowane) wymagają weryfikacji TOTP nie starszej niż 15 min → w przeciwnym razie `403 STEP_UP_REQUIRED`; klient wywołuje `POST /api/v1/me/step-up` z kodem i ponawia żądanie. Udana weryfikacja rotuje token sesji (ASVS V7.2.4).
 - **Role i uprawnienia:** macierz w `moduly.md` § 6; brak uprawnienia → `403 FORBIDDEN`; zasób innego użytkownika → `404 NOT_FOUND` (nie ujawniamy istnienia); moduł wyłączony flagą → `404 NOT_FOUND`.
 - **CSRF:** ten sam origin (brak CORS); dla metod modyfikujących z ciasteczkiem `api` sprawdza nagłówek `Origin` (lub `Sec-Fetch-Site: same-origin`); żądania z PAT nie używają ciasteczek.
+- **Sekrety nigdy w adresie URL:** tokeny zaproszenia i resetu hasła są we fragmencie adresu (`#t=…` — nie trafia do serwera ani nagłówka `Referer`) i przechodzą do API w treści żądania; PAT wyłącznie w nagłówku `Authorization`, parametr `?token=` jest odrzucany (ASVS V14.2.1).
 
 ## 3. Formaty danych
 
@@ -61,7 +63,7 @@ Powiązane: [`openapi.yaml`](openapi.yaml), [`realtime.md`](realtime.md), [ADR-0
 |---|---|---|
 | 400 | `BAD_REQUEST` | niepoprawna składnia żądania |
 | 401 | `UNAUTHENTICATED` | brak/wygasła sesja lub PAT |
-| 403 | `FORBIDDEN`, `MFA_REQUIRED`, `MFA_ENROLLMENT_REQUIRED`, `STEP_UP_REQUIRED`, `PAT_SCOPE_MISSING` | brak uprawnień, brak 2FA, wymagana świeża weryfikacja, brak zakresu tokenu |
+| 403 | `FORBIDDEN`, `MFA_REQUIRED`, `MFA_ENROLLMENT_REQUIRED`, `TERMS_ACCEPTANCE_REQUIRED`, `STEP_UP_REQUIRED`, `PAT_SCOPE_MISSING` | brak uprawnień, brak 2FA, brak akceptacji regulaminu, wymagana świeża weryfikacja, brak zakresu tokenu |
 | 404 | `NOT_FOUND` | brak zasobu, cudzy zasób, moduł wyłączony |
 | 409 | `CONFLICT`, `IDEMPOTENCY_CONFLICT`, `INSTRUMENT_AMBIGUOUS`, `DUPLICATE_IMPORT` | konflikt stanu; ten sam klucz idempotencji z innym ciałem; niejednoznaczny ticker (z listą kandydatów w `candidates`) |
 | 412 | `RECONCILIATION_REQUIRED` | np. rebalancing przy nieuzgodnionych danych (obliczenia-finansowe.md § 12.5) |
@@ -101,10 +103,9 @@ Nagłówki: `RateLimit-Policy` i `RateLimit` wg [draft-ietf-httpapi-ratelimit-he
 
 ## 8. Cache i żądania warunkowe
 
-- Dane użytkownika: `Cache-Control: private, no-cache` + `ETag` (skrót treści) → `If-None-Match` → `304`.
-- Dane rynkowe EOD (`/market/instruments/{id}/chart`): `Cache-Control: private, max-age=300` + `ETag`.
-- Dane wrażliwe (tokeny, eksporty, `/me/*`): `Cache-Control: no-store`.
-- Service worker nie cache'uje odpowiedzi `/api/*` poza jawnie oznaczonymi (ostatni stan dashboardu dla trybu offline — FR-09.02).
+- Dane użytkownika (portfel, operacje, analizy, alerty, `/me/*`, tokeny, eksporty): `Cache-Control: no-store` — dane finansowe nie trafiają do pamięci podręcznej przeglądarki ani pośredników (ASVS V14.3.2); świeżość zapewniają pamięć zapytań TanStack Query i zdarzenia SSE.
+- Dane rynkowe (instrumenty, wykresy EOD, kursy walut): `Cache-Control: private, max-age=300` + `ETag` → `If-None-Match` → `304`.
+- Service worker nigdy nie cache'uje odpowiedzi `/api/*`; migawka offline (FR-09.02) to osobny zapis w IndexedDB na wyraźne żądanie użytkownika ([`../04-frontend/architektura-ui.md`](../04-frontend/architektura-ui.md) § 8).
 
 ## 9. Operacje asynchroniczne
 
@@ -124,4 +125,4 @@ Każda odpowiedź ma `X-Request-Id` (przyjmujemy nagłówek klienta, jeśli popr
 
 ## 13. Nagłówki bezpieczeństwa odpowiedzi API
 
-`X-Content-Type-Options: nosniff`, `Cache-Control` wg § 8, `Referrer-Policy: no-referrer`, `Cross-Origin-Resource-Policy: same-origin`; brak nagłówków CORS (tylko ten sam origin). Pozostałe nagłówki (HSTS, CSP) ustawia `caddy`/`web` — `docs/06-bezpieczenstwo/` (Krok 5).
+`X-Content-Type-Options: nosniff`, `Cache-Control` wg § 8, `Referrer-Policy: no-referrer`, `Cross-Origin-Resource-Policy: same-origin`; brak nagłówków CORS (tylko ten sam origin); `Clear-Site-Data` przy wylogowaniu. Pozostałe nagłówki (HSTS, CSP) ustawia `caddy`/`web` — [`../06-bezpieczenstwo/kontrole-bezpieczenstwa.md`](../06-bezpieczenstwo/kontrole-bezpieczenstwa.md) § 2.

@@ -107,7 +107,7 @@ flowchart LR
 | `valkey-queue` | Valkey 9 | Kolejki BullMQ, liczniki kwot dostawców; `maxmemory-policy noeviction`, AOF co 1 s | Tylko sieć wewnętrzna | 128 MB |
 | `valkey-cache` | Valkey 9 | Cache L2, strumienie SSE per użytkownik, pub/sub notowań i unieważniania flag; `allkeys-lru`, bez trwałości | Tylko sieć wewnętrzna | 128 MB |
 
-Suma limitów ≈ 4,2 GB + system ≈ 0,8 GB → VM **6 GB RAM, 3 vCPU** (NFR-01.08). Monitoring i kopie zapasowe: `docs/07-wdrozenie/` (Krok 5).
+Suma limitów ≈ 4,2 GB + system ≈ 0,8 GB → VM **6 GB RAM, 3 vCPU** (NFR-01.08). Procesy operacyjne w VM (agent CrowdSec, pgBackRest w kontenerze bazy, zadania restic, skrypty sygnałów życia) ≈ 0,3 GB — [`../07-wdrozenie/infrastruktura.md`](../07-wdrozenie/infrastruktura.md) § 4.
 
 ## 5. C4 — poziom 3: komponenty
 

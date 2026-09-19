@@ -125,6 +125,7 @@
 | FR-07.09 | RODO: eksport wszystkich danych użytkownika (JSON + CSV), usunięcie konta i danych (14 dni na anulowanie), klauzula informacyjna. | P1 | Eksport obejmuje każdą tabelę z `user_id` (test porównuje z listą tabel); po usunięciu brak danych osobowych poza pseudonimizowanym audytem. | 4.3 |
 | FR-07.10 | Reset hasła przez e-mail (jednorazowy link ważny 30 min), a następnie TOTP. | P0 | Link jednorazowy; reset unieważnia wszystkie sesje. | 3.2 |
 | FR-07.11 | Passkeys (WebAuthn) jako dodatkowa metoda logowania. | P3 | Rejestracja passkey (Face ID) działa w zainstalowanej PWA na iPhonie. | 3.2 |
+| FR-07.12 | Dokumenty prawne i zgody: przy rejestracji akceptacja regulaminu i potwierdzenie zapoznania się z informacją o przetwarzaniu danych (wersjonowane, z historią zdarzeń); ponowna akceptacja po istotnej zmianie regulaminu (bramka); zgody opcjonalne (diagnostyka wydajności) domyślnie niezaznaczone i wycofywane równie łatwo jak udzielane. | P0 | Rejestracja bez akceptacji → `422`; nowa wersja regulaminu → `403 TERMS_ACCEPTANCE_REQUIRED` do czasu akceptacji; bez zgody przeglądarka nie wysyła pomiarów RUM (test e2e). | 3.2, 4.3 |
 
 ### FR-08 Panel administratora (§3.2)
 
@@ -250,7 +251,7 @@
 
 | ID | Wymaganie | P | Weryfikacja | § |
 |---|---|---|---|---|
-| NFR-09.01 | Docelowa dostępność 99 % miesięcznie; pojedyncze punkty awarii udokumentowane (Z-07 w `10-ograniczenia.md`). | P1 | Monitoring dostępności. | 4.3 |
+| NFR-09.01 | Docelowa dostępność 99 % miesięcznie; pojedyncze punkty awarii udokumentowane (Z-27; szczegóły w `10-ograniczenia.md`). | P1 | Monitoring dostępności. | 4.3 |
 | NFR-09.02 | Łagodna degradacja przy awarii dostawców danych (dane z flagą „nieaktualne” zamiast błędu). | P0 | Test z wyłączonym adapterem. | 2.1 |
 | NFR-09.03 | Kopie zapasowe 3-2-1, szyfrowane; RPO ≤ 24 h (cel ≤ 1 h dla bazy), RTO ≤ 4 h; test odtworzenia co kwartał z protokołem. | P0 | `07-wdrozenie/backup-dr.md` + protokoły testów. | 4.3 |
 | NFR-09.04 | Monitoring: health-checki, metryki, logi strukturalne JSON z identyfikatorem korelacji, alerty do admina. | P1 | `07-wdrozenie/monitoring.md`. | 4.3 |
@@ -308,6 +309,8 @@ Zgodnie z §6.3: poniżej miejsca, w których specyfikacja jest sprzeczna, niere
 | Z-24 | §0 `AGENT.md` / budowa w Codex | Codex czyta `AGENTS.md` (limit 32 KiB) i nie ma skilli Claude (`strategy-critique`, `backtest-review`). | `AGENTS.md` zamiast `AGENT.md`; checklisty metodologiczne przeniesione do dokumentacji i `AGENTS.md`. | Krok 6. |
 | Z-25 | §4.3 CSP bez `unsafe-inline` w Next.js | CSP z nonce wymusza dynamiczne renderowanie wszystkich stron (brak optymalizacji statycznej, ISR i PPR). | Akceptowalne: ekrany po zalogowaniu i tak są spersonalizowane; strony publiczne (logowanie) są lekkie. | NFR-03.06. |
 | Z-26 | §3.1.6 tryb demo | Publiczne demo z danymi rynkowymi = redystrybucja danych (licencje) i dodatkowa powierzchnia ataku. | Demo tylko dla zalogowanych (osobny rachunek typu `demo`). | FR-06.04. |
+| Z-27 | §4.5 serwer domowy + VPS jako edge | Awaria domu (prąd, łącze, sprzęt) albo VPS oznacza niedostępność aplikacji; redundancja nie mieści się w 0 zł. | Akceptowane dla aplikacji prywatnej: cel 99 % miesięcznie, monitoring z VPS, odtworzenie ≤ 4 h ([`../07-wdrozenie/backup-dr.md`](../07-wdrozenie/backup-dr.md)); UPS i drugi węzeł jako koszt w `10-ograniczenia.md`. | NFR-09.01, NFR-09.03. |
+| Z-28 | §4.3 ASVS L2 „kontrola po kontroli” | Kilka wymagań ASVS 5.0 L2 jest nieproporcjonalnych dla jednej VM i kilku użytkowników (TLS między kontenerami jednego hosta, sejf sekretów, logi na osobnym systemie) albo koliduje z funkcjami (migawka offline w przeglądarce, kody zapasowe szyfrowane zamiast haszowanych w Better Auth). | Każde odstępstwo opisane z uzasadnieniem, środkami kompensującymi i warunkiem powrotu ([`../06-bezpieczenstwo/kontrole-bezpieczenstwa.md`](../06-bezpieczenstwo/kontrole-bezpieczenstwa.md) § 8). | NFR-03.01. |
 
 ---
 
@@ -318,7 +321,7 @@ Zgodnie z §6.3: poniżej miejsca, w których specyfikacja jest sprzeczna, niere
 | A-01 | Waluta bazowa PLN; instrumenty w PLN, USD i EUR. | Dodanie waluty = konfiguracja (FX z NBP obejmuje tabelę A). |
 | A-02 | Strefa czasowa użytkowników Europe/Warsaw; daty sesji wg kalendarza giełdy. | Preferencja strefy per użytkownik (FR-07.08). |
 | A-03 | ≤ 10 kont, ≤ 5 równoczesnych użytkowników. | Rewizja NFR-01.08 i limitów kolejek. |
-| A-04 | Adres aplikacji: `invest.oligi.pl` (❓ do potwierdzenia). | Zmiana konfiguracji DNS/TLS. |
+| A-04 | Adres aplikacji: `invest.oligi.pl` (potwierdzony przez właściciela 2026-09-19). | Zmiana konfiguracji DNS/TLS. |
 | A-05 | VPS OVH 1 vCPU / 2 GB RAM / 20 GB (potwierdzone 2026-09-19) pełni funkcję edge: dziś kończy TLS dla Immicha w Caddy, docelowo wyłącznie przekaźnik TCP (routing po SNI) przez WireGuard, bez dostępu do odszyfrowanej treści. | Zmiana projektu edge w ADR-011. |
 | A-06 | Użytkownicy mają rachunki w XTB i/lub mBank eMakler; przed M1 właściciel dostarczy anonimizowane pliki eksportu jako fixtures. | Bez fixtures parsery powstaną na podstawie dokumentacji społecznościowej — wyższe ryzyko błędów. |
 | A-07 | Historia instrumentów: do 10+ lat dziennych danych; ≤ 2 000 śledzonych instrumentów. | Rewizja rozmiaru bazy i czasu batchy. |

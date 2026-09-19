@@ -6,7 +6,7 @@ Powiązane: [ADR-007](../09-decyzje/ADR-007-sse-zamiast-websocket.md), [`openapi
 
 ## 1. Zasady
 
-1. **SSE to kanał podpowiedzi, nie źródło prawdy.** Zdarzenia niosą identyfikatory i minimalne dane; stan pobiera się przez REST (z `ETag`). Utrata zdarzenia kończy się najwyżej chwilowo nieaktualnym ekranem, nigdy błędnymi danymi.
+1. **SSE to kanał podpowiedzi, nie źródło prawdy.** Zdarzenia niosą identyfikatory i minimalne dane; stan pobiera się przez REST. Utrata zdarzenia kończy się najwyżej chwilowo nieaktualnym ekranem, nigdy błędnymi danymi.
 2. **Jeden strumień na kartę przeglądarki**, wyłącznie dla zalogowanej sesji z 2FA (ciasteczko sesji; PAT nie jest akceptowany).
 3. **Izolacja użytkowników:** kanał ma w kluczu `userId`; serwer nie wysyła danych innych użytkowników. Notowania są danymi rynkowymi (nie osobowymi), ale i tak tylko dla instrumentów z pozycji, watchlist lub otwartych ekranów użytkownika.
 4. **Dostarczanie „co najmniej raz”:** klient toleruje duplikaty (zdarzenia są idempotentne — powodują ponowne pobranie).
@@ -112,7 +112,7 @@ Włączany, gdy: przeglądarka nie obsługuje `EventSource`, serwer zwrócił `4
 
 | Dane | Zapytanie | Interwał |
 |---|---|---|
-| Podsumowanie portfela i wynik dnia | `GET /portfolio/summary`, `GET /portfolio/day-change` (z `If-None-Match`) | 60 s w trakcie sesji giełdowej, 15 min poza nią |
+| Podsumowanie portfela i wynik dnia | `GET /portfolio/summary`, `GET /portfolio/day-change` | 60 s w trakcie sesji giełdowej, 15 min poza nią |
 | Kursy na ekranie | `GET /market/quotes?instrumentId=…` | 60 s |
 | Status analizy w toku | `GET /analytics/runs/{runId}` | 5 s (minimum z `konwencje-api.md` § 9) |
 | Status importu | `GET /portfolio/imports/{importId}` | 5 s do zakończenia parsowania |

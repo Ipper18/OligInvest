@@ -26,11 +26,18 @@ info:
     **Bramka MFA:** sesja bez skonfigurowanego TOTP otrzymuje `403 MFA_ENROLLMENT_REQUIRED` na wszystkich operacjach
     poza trasami `/api/auth/two-factor/*`, `/api/auth/sign-out` i `GET /me`.
 
+    **Bramka regulaminu:** gdy bieżąca wersja regulaminu wymaga akceptacji (brak zapisu w `identity.consent_events`),
+    sesja i token PAT otrzymują `403 TERMS_ACCEPTANCE_REQUIRED` na wszystkich operacjach poza `GET /me`, `/me/legal*`
+    i `/api/auth/sign-out` (FR-07.12, `docs/06-bezpieczenstwo/prywatnosc-rodo.md`).
+
+    **Sekrety nigdy w adresie URL** (ASVS V14.2.1): token zaproszenia i token resetu hasła są we fragmencie adresu
+    (`#t=…`) i trafiają do API w treści żądania; PAT wyłącznie w nagłówku `Authorization`.
+
     **Zgodność:** odpowiedzi modułu `analytics` zawierają blok `compliance` i `assumptions`; to materiały analityczne
     i edukacyjne, nie rekomendacje inwestycyjne w rozumieniu MiFID II (`docs/11-zgodnosc-prawna.md`, Krok 6).
 servers:
   - url: https://{host}/api/v1
-    description: Instancja produkcyjna (host roboczy do potwierdzenia — Q-01).
+    description: Instancja produkcyjna (`invest.oligi.pl`, potwierdzone przez właściciela 2026-09-19).
     variables:
       host:
         default: invest.oligi.pl
@@ -100,6 +107,7 @@ paths:
     get:
       operationId: getOpenApiDocument
       summary: Specyfikacja OpenAPI generowana z Zod
+      description: Celowo publiczna — ta sama treść jest w publicznym repozytorium; bez sekretów i adresów wewnętrznych (ASVS V13.4.5).
       tags: [platform]
       security: []
       x-requirements: [NFR-02.05]
@@ -155,7 +163,10 @@ paths:
     post:
       operationId: reportWebVitals
       summary: Zgłoś pomiary Core Web Vitals z przeglądarki (RUM)
-      description: Wysyłane przez `navigator.sendBeacon`; bez identyfikatora użytkownika w zapisie (`platform.web_vitals`).
+      description: |
+        Wysyłane przez `navigator.sendBeacon` wyłącznie przy zgodzie `diagnostics` (FR-07.12; art. 399 Prawa komunikacji
+        elektronicznej). Serwer sprawdza zgodę w sesji: bez zgody odrzuca pomiar i zwraca `204`. Zapis bez identyfikatora
+        użytkownika (`platform.web_vitals`).
       tags: [platform]
       x-requirements: [NFR-01.01]
       requestBody:
@@ -179,9 +190,12 @@ paths:
         Hook `before` weryfikuje `invitationToken` (`identity.find_invitation`), wymusza zgodność e-maila z zaproszeniem,
         długość hasła ≥ 12 i brak hasła w bazie wycieków (k-anonimowość); hook `after` zużywa zaproszenie
         (`identity.consume_invitation`) i nadaje rolę. Bez ważnego zaproszenia → `403`.
+        Wymaga akceptacji bieżącego regulaminu i potwierdzenia informacji o przetwarzaniu danych (wersje muszą być bieżące);
+        opcjonalna zgoda `diagnosticsConsent` domyślnie niezaznaczona. Zdarzenia zapisuje `api` w `identity.consent_events`
+        po utworzeniu konta — brak zapisu skutkuje bramką regulaminu przy pierwszym logowaniu (bezpieczny stan domyślny).
       tags: [auth]
       security: []
-      x-requirements: [FR-07.01, FR-07.02]
+      x-requirements: [FR-07.01, FR-07.02, FR-07.12]
       requestBody:
         required: true
         content:
@@ -237,7 +251,7 @@ paths:
       tags: [auth]
       x-requirements: [FR-07.05]
       responses:
-        '200': {description: 'Sesja unieważniona.', content: {application/json: {schema: {$ref: '#/components/schemas/AuthStatusResponse'}}}}
+        '200': {description: 'Sesja unieważniona; przeglądarka czyści dane strony.', headers: {Clear-Site-Data: {$ref: '#/components/headers/ClearSiteData'}}, content: {application/json: {schema: {$ref: '#/components/schemas/AuthStatusResponse'}}}}
         '401': {$ref: '#/components/responses/Unauthenticated'}
   /get-session:
     servers: [{url: 'https://{host}/api/auth', variables: {host: {default: invest.oligi.pl}}}]
@@ -254,7 +268,9 @@ paths:
     post:
       operationId: authRequestPasswordReset
       summary: Wyślij jednorazowy link resetu hasła (ważny 30 min)
-      description: Odpowiedź identyczna niezależnie od istnienia konta (brak enumeracji użytkowników).
+      description: |
+        Odpowiedź identyczna niezależnie od istnienia konta (brak enumeracji użytkowników). Link w e-mailu ma token we
+        fragmencie adresu (`/reset-hasla/nowe#t=…`); strona przekazuje go w treści `POST /reset-password`.
       tags: [auth]
       security: []
       x-requirements: [FR-07.10]
@@ -381,7 +397,9 @@ paths:
     post:
       operationId: authRevokeSession
       summary: Wyloguj wskazane urządzenie
+      description: Wymaga świeżej weryfikacji TOTP (ASVS V7.5.2) — przejęta sesja nie wyloguje prawowitego właściciela.
       tags: [auth]
+      x-step-up: true
       x-requirements: [FR-07.05]
       requestBody:
         required: true
@@ -391,31 +409,42 @@ paths:
       responses:
         '200': {description: 'Sesja unieważniona (skutek ≤ 60 s na wszystkich instancjach).', content: {application/json: {schema: {$ref: '#/components/schemas/AuthStatusResponse'}}}}
         '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
   /revoke-other-sessions:
     servers: [{url: 'https://{host}/api/auth', variables: {host: {default: invest.oligi.pl}}}]
     post:
       operationId: authRevokeOtherSessions
       summary: Wyloguj wszystkie inne urządzenia („wyloguj wszędzie”)
+      description: Wymaga świeżej weryfikacji TOTP (ASVS V7.5.2). Nie odwołuje tokenów PAT — te odwołuje się osobno.
       tags: [auth]
+      x-step-up: true
       x-requirements: [FR-07.05]
       responses:
         '200': {description: 'Pozostałe sesje unieważnione.', content: {application/json: {schema: {$ref: '#/components/schemas/AuthStatusResponse'}}}}
         '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
 
   # ───────────────────────────── identity (/api/v1) ─────────────────────────────
-  /invitations/{token}:
-    get:
-      operationId: getInvitationPreview
-      summary: Sprawdź zaproszenie przed rejestracją
-      description: Nieważne, wygasłe, użyte i nieistniejące zaproszenie dają ten sam `404`. Limit 10 / min / IP.
+  /invitations/preview:
+    post:
+      operationId: previewInvitation
+      summary: Sprawdź zaproszenie przed rejestracją (token w treści żądania)
+      description: |
+        Link z e-maila ma token we fragmencie adresu (`/rejestracja#t=…`), więc token nie trafia do logów serwera ani do
+        nagłówka `Referer` (ASVS V14.2.1); strona przekazuje go w treści żądania. Nieważne, wygasłe, użyte i nieistniejące
+        zaproszenie dają ten sam `404`. Limit 10 / min / IP.
       tags: [identity]
       security: []
       x-requirements: [FR-07.01]
-      parameters:
-        - {name: token, in: path, required: true, schema: {type: string, minLength: 32, maxLength: 128, pattern: '^[A-Za-z0-9_-]+$'}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/InvitationPreviewRequest'}
       responses:
         '200': {description: 'Zaproszenie ważne.', headers: {Cache-Control: {description: '`no-store`', schema: {type: string}}}, content: {application/json: {schema: {$ref: '#/components/schemas/InvitationPreview'}}}}
         '404': {$ref: '#/components/responses/NotFound'}
+        '422': {$ref: '#/components/responses/ValidationFailed'}
         '429': {$ref: '#/components/responses/RateLimited'}
   /me:
     get:
@@ -430,6 +459,7 @@ paths:
     patch:
       operationId: updateMe
       summary: Zmień nazwę wyświetlaną
+      description: Adres e-mail zmienia wyłącznie administrator po potwierdzeniu tożsamości (ASVS V7.5.1) — `adminUpdateUser`.
       tags: [identity]
       x-requirements: [FR-07.08]
       requestBody:
@@ -466,10 +496,58 @@ paths:
         '401': {$ref: '#/components/responses/Unauthenticated'}
         '403': {$ref: '#/components/responses/Forbidden'}
         '422': {$ref: '#/components/responses/ValidationFailed'}
+  /me/legal:
+    get:
+      operationId: getLegalStatus
+      summary: Stan akceptacji regulaminu, informacji o przetwarzaniu danych i zgód opcjonalnych
+      description: Dostępne także przy aktywnej bramce regulaminu (`TERMS_ACCEPTANCE_REQUIRED`).
+      tags: [identity]
+      x-requirements: [FR-07.12]
+      responses:
+        '200': {description: 'Stan dokumentów i zgód.', headers: {Cache-Control: {description: '`no-store`', schema: {type: string}}}, content: {application/json: {schema: {$ref: '#/components/schemas/LegalStatus'}}}}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+  /me/legal/acceptances:
+    post:
+      operationId: acceptLegalDocuments
+      summary: Zaakceptuj bieżący regulamin i potwierdź zapoznanie się z informacją o przetwarzaniu danych
+      description: Wersje muszą być bieżące (inaczej `422`). Zapis w `identity.consent_events` (append-only) zdejmuje bramkę regulaminu.
+      tags: [identity]
+      x-requirements: [FR-07.12]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/LegalAcceptanceRequest'}
+      responses:
+        '200': {description: 'Zapisano.', content: {application/json: {schema: {$ref: '#/components/schemas/LegalStatus'}}}}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '422': {$ref: '#/components/responses/ValidationFailed'}
+  /me/legal/consents/{purpose}:
+    put:
+      operationId: updateConsent
+      summary: Udziel lub wycofaj zgodę opcjonalną (diagnostyka wydajności)
+      description: Wycofanie jest tak samo proste jak udzielenie (art. 7 ust. 3 RODO) i działa od następnego żądania.
+      tags: [identity]
+      x-requirements: [FR-07.12]
+      parameters:
+        - {name: purpose, in: path, required: true, schema: {$ref: '#/components/schemas/ConsentPurpose'}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ConsentUpdate'}
+      responses:
+        '200': {description: 'Zapisano.', content: {application/json: {schema: {$ref: '#/components/schemas/LegalStatus'}}}}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '422': {$ref: '#/components/responses/ValidationFailed'}
   /me/step-up:
     post:
       operationId: verifyStepUp
       summary: Świeża weryfikacja TOTP dla działań wrażliwych (ważna 15 min)
+      description: |
+        Sukces ustawia `mfa_verified_at` i rotuje token sesji — nowe ciasteczko, stary token unieważniony (ASVS V7.2.4).
+        Otwarte strumienie SSE łączą się ponownie z nowym ciasteczkiem.
       tags: [identity]
       x-requirements: [FR-07.04, FR-07.07, FR-07.09]
       requestBody:
@@ -1476,8 +1554,7 @@ paths:
         - {$ref: '#/components/parameters/AccountIds'}
         - {$ref: '#/components/parameters/PlView'}
       responses:
-        '200': {description: 'Podsumowanie.', headers: {ETag: {$ref: '#/components/headers/ETag'}}, content: {application/json: {schema: {$ref: '#/components/schemas/PortfolioSummary'}}}}
-        '304': {$ref: '#/components/responses/NotModified'}
+        '200': {description: 'Podsumowanie.', headers: {Cache-Control: {description: '`no-store` — dane finansowe nie trafiają do cache przeglądarki (ASVS V14.3.2)', schema: {type: string}}}, content: {application/json: {schema: {$ref: '#/components/schemas/PortfolioSummary'}}}}
         '401': {$ref: '#/components/responses/Unauthenticated'}
         '403': {$ref: '#/components/responses/Forbidden'}
   /portfolio/day-change:
@@ -2534,7 +2611,7 @@ paths:
     post:
       operationId: adminCreateInvitation
       summary: Wystaw zaproszenie (link jednorazowy, domyślnie 72 h)
-      description: Link zwracany jednorazowo (np. do przekazania innym kanałem); w bazie tylko skrót SHA-256 tokenu.
+      description: Link (token we fragmencie `#t=`) zwracany jednorazowo, np. do przekazania innym kanałem; w bazie tylko skrót SHA-256 tokenu.
       tags: [admin]
       x-permission: admin:users
       x-step-up: true
@@ -3003,10 +3080,13 @@ components:
     sessionCookie:
       type: apiKey
       in: cookie
-      name: __Secure-oliginvest.session_token
+      name: __Host-oliginvest.session_token
       description: |
-        Ciasteczko sesji Better Auth (`HttpOnly`, `Secure`, `SameSite=Lax`). Nazwa zależy od `advanced.cookiePrefix`
-        (❓ do potwierdzenia przy implementacji). Metody modyfikujące wymagają nagłówka `Origin` zgodnego z hostem (CSRF).
+        Ciasteczko sesji Better Auth: `HttpOnly`, `Secure`, `SameSite=Lax`, `Path=/`, bez atrybutu `Domain`; wartość podpisana
+        HMAC sekretem serwera. Przedrostek `__Host-` (ASVS V3.3.3) chroni przed podstawieniem ciasteczka z sąsiedniej subdomeny
+        `oligi.pl` (np. Immich). Better Auth przy bezpiecznych ciasteczkach zawsze dokleja `__Secure-`, więc wymaga to
+        `useSecureCookies: false` + własnych nazw i `defaultCookieAttributes.secure: true` — spike w M0; zapasowo
+        `__Secure-oliginvest.session_token` z udokumentowanym odstępstwem. Metody modyfikujące wymagają zgodnego `Origin` (CSRF).
     bearerPat:
       type: http
       scheme: bearer
@@ -3090,6 +3170,9 @@ components:
     RateLimitPolicy:
       description: Polityka limitu (np. `"default";q=300;w=60`).
       schema: {type: string}
+    ClearSiteData:
+      description: '`"cache", "cookies", "storage"` po wylogowaniu (ASVS V14.3.1); klient dodatkowo sam czyści IndexedDB, pamięć zapytań i cache service workera.'
+      schema: {type: string}
     XRequestId:
       description: Identyfikator korelacji (także w polu `instance` błędu, w logach i zadaniach).
       schema: {type: string, maxLength: 64}
@@ -3106,7 +3189,7 @@ components:
       headers: {X-Request-Id: {$ref: '#/components/headers/XRequestId'}}
       content: {application/problem+json: {schema: {$ref: '#/components/schemas/Problem'}, example: {type: 'https://invest.oligi.pl/problems/unauthenticated', title: 'Wymagane logowanie', status: 401, code: UNAUTHENTICATED, instance: req_01J8Z3Q6X4}}}
     Forbidden:
-      description: Brak uprawnienia, brak 2FA, wymagany step-up lub brak zakresu PAT (rozróżnia `code`).
+      description: Brak uprawnienia, brak 2FA, wymagana akceptacja regulaminu, wymagany step-up lub brak zakresu PAT (rozróżnia `code`).
       headers: {X-Request-Id: {$ref: '#/components/headers/XRequestId'}}
       content: {application/problem+json: {schema: {$ref: '#/components/schemas/Problem'}, example: {type: 'https://invest.oligi.pl/problems/step-up-required', title: 'Potwierdź kodem z aplikacji uwierzytelniającej', status: 403, code: STEP_UP_REQUIRED, instance: req_01J8Z3Q6X4}}}
     NotFound:
@@ -3194,6 +3277,7 @@ components:
     ProblemCode:
       type: string
       enum: [BAD_REQUEST, UNAUTHENTICATED, FORBIDDEN, MFA_REQUIRED, MFA_ENROLLMENT_REQUIRED, STEP_UP_REQUIRED, PAT_SCOPE_MISSING,
+             TERMS_ACCEPTANCE_REQUIRED,
              NOT_FOUND, CONFLICT, IDEMPOTENCY_CONFLICT, INSTRUMENT_AMBIGUOUS, DUPLICATE_IMPORT, RECONCILIATION_REQUIRED,
              FILE_TOO_LARGE, UNSUPPORTED_MEDIA_TYPE, IMPORT_FORMAT_UNKNOWN, VALIDATION_FAILED, PARAMETERS_OUT_OF_BOUNDS,
              RATE_LIMITED, QUOTA_EXCEEDED, INTERNAL, SERVICE_UNAVAILABLE]
@@ -3269,12 +3353,17 @@ components:
     # ── auth (Better Auth) ──
     AuthSignUpRequest:
       type: object
-      required: [name, email, password, invitationToken]
+      description: 'Pola akceptacji obsługuje warstwa api wokół trasy Better Auth (zapis w identity.consent_events); nie są kolumnami auth.users.'
+      required: [name, email, password, invitationToken, acceptTerms, termsVersion, privacyNoticeVersion]
       properties:
         name: {type: string, minLength: 1, maxLength: 80}
         email: {type: string, format: email}
         password: {type: string, minLength: 12, maxLength: 128}
         invitationToken: {type: string, minLength: 32, maxLength: 128}
+        acceptTerms: {type: boolean, const: true, description: 'Akceptacja regulaminu (warunek zawarcia umowy o świadczenie usług drogą elektroniczną).'}
+        termsVersion: {$ref: '#/components/schemas/LegalDocumentVersion'}
+        privacyNoticeVersion: {$ref: '#/components/schemas/LegalDocumentVersion'}
+        diagnosticsConsent: {type: boolean, default: false, description: 'Opcjonalna zgoda na pomiary wydajności (RUM); pole domyślnie niezaznaczone.'}
     AuthSignInRequest:
       type: object
       required: [email, password]
@@ -3398,7 +3487,7 @@ components:
         expiresAt: {$ref: '#/components/schemas/Timestamp'}
     Me:
       type: object
-      required: [id, email, name, role, mfa, permissions, features, preferences]
+      required: [id, email, name, role, mfa, legal, permissions, features, preferences]
       properties:
         id: {$ref: '#/components/schemas/Uuid'}
         email: {type: string, format: email}
@@ -3412,6 +3501,12 @@ components:
             enrolled: {type: boolean}
             sessionVerifiedAt: {$ref: '#/components/schemas/Timestamp'}
             stepUpValidUntil: {$ref: '#/components/schemas/Timestamp'}
+        legal:
+          type: object
+          required: [termsAcceptanceRequired, diagnosticsConsent]
+          properties:
+            termsAcceptanceRequired: {type: boolean}
+            diagnosticsConsent: {type: boolean}
         permissions: {type: array, items: {type: string}, example: ['portfolio:read', 'analytics:run:light']}
         features:
           type: object
@@ -3420,6 +3515,57 @@ components:
           example: {module.analytics: true, module.analytics.backtest: false}
         preferences: {$ref: '#/components/schemas/Preferences'}
         deletionScheduledFor: {$ref: '#/components/schemas/Timestamp'}
+    InvitationPreviewRequest:
+      type: object
+      required: [token]
+      properties:
+        token: {type: string, minLength: 32, maxLength: 128, pattern: '^[A-Za-z0-9_-]+$'}
+    LegalDocumentVersion: {type: string, pattern: '^[0-9]{4}-[0-9]{2}(-[0-9]{2})?(\.[0-9]{1,3})?$', example: '2026-09'}
+    ConsentPurpose: {type: string, enum: [diagnostics], description: 'Rozszerzalne. diagnostics = pomiary wydajności (RUM) wysyłane z przeglądarki.'}
+    LegalStatus:
+      type: object
+      required: [terms, privacyNotice, consents, termsAcceptanceRequired]
+      properties:
+        terms:
+          type: object
+          required: [currentVersion, url]
+          properties:
+            currentVersion: {$ref: '#/components/schemas/LegalDocumentVersion'}
+            acceptedVersion: {$ref: '#/components/schemas/LegalDocumentVersion'}
+            acceptedAt: {$ref: '#/components/schemas/Timestamp'}
+            url: {type: string, example: /regulamin}
+        privacyNotice:
+          type: object
+          required: [currentVersion, url]
+          properties:
+            currentVersion: {$ref: '#/components/schemas/LegalDocumentVersion'}
+            acknowledgedVersion: {$ref: '#/components/schemas/LegalDocumentVersion'}
+            acknowledgedAt: {$ref: '#/components/schemas/Timestamp'}
+            url: {type: string, example: /prywatnosc}
+        consents:
+          type: object
+          required: [diagnostics]
+          properties:
+            diagnostics:
+              type: object
+              required: [granted]
+              properties:
+                granted: {type: boolean}
+                version: {$ref: '#/components/schemas/LegalDocumentVersion'}
+                updatedAt: {$ref: '#/components/schemas/Timestamp'}
+        termsAcceptanceRequired: {type: boolean}
+    LegalAcceptanceRequest:
+      type: object
+      required: [termsVersion, privacyNoticeVersion]
+      properties:
+        termsVersion: {$ref: '#/components/schemas/LegalDocumentVersion'}
+        privacyNoticeVersion: {$ref: '#/components/schemas/LegalDocumentVersion'}
+    ConsentUpdate:
+      type: object
+      required: [granted, version]
+      properties:
+        granted: {type: boolean}
+        version: {$ref: '#/components/schemas/LegalDocumentVersion'}
     MePatch:
       type: object
       minProperties: 1
@@ -5569,6 +5715,7 @@ components:
       minProperties: 1
       properties:
         role: {$ref: '#/components/schemas/Role'}
+        email: {type: string, format: email, description: 'Zmiana adresu (tylko admin): powiadomienie na stary i nowy adres, unieważnienie sesji, wpis audytu.'}
         banned: {type: boolean}
         banReason: {type: string, maxLength: 500}
         banExpires: {oneOf: [{$ref: '#/components/schemas/Timestamp'}, {type: 'null'}]}
@@ -5601,7 +5748,7 @@ components:
         - type: object
           required: [inviteUrl]
           properties:
-            inviteUrl: {type: string, format: uri, description: 'Pokazywany wyłącznie w tej odpowiedzi.'}
+            inviteUrl: {type: string, format: uri, description: 'Link z tokenem we fragmencie adresu (`#t=`); pokazywany wyłącznie w tej odpowiedzi.'}
     AdminInvitationPage:
       type: object
       required: [data, page]

@@ -54,7 +54,7 @@ Pomiary powtarza w M0 zadanie „raport rozmiarów” — liczby w tym dokumenci
 
 | Trasa | JS początkowy | Leniwe (maks.) | Razem | Zakazane w chunkach początkowych |
 |---|---|---|---|---|
-| `/logowanie`, `/logowanie/2fa`, `/rejestracja/[token]`, `/konfiguracja-2fa` | ≤ 160 KB | — | ≤ 160 KB | TanStack Query, wykresy, Radix |
+| `/logowanie`, `/logowanie/2fa`, `/rejestracja`, `/konfiguracja-2fa` | ≤ 160 KB | — | ≤ 160 KB | TanStack Query, wykresy, Radix |
 | `/` (Start) | ≤ 190 KB | uPlot 23 KB (po LCP) | ≤ 230 KB | Lightweight Charts, uPlot, driver.js (NFR-01.03), Radix |
 | `/portfel`, `/portfel/*` | ≤ 195 KB | tabela + wirtualizacja 41 KB, menu 31 KB, uPlot 23 KB | ≤ 290 KB | wykresy, Radix, Zod |
 | `/rynek/[instrumentId]` | ≤ 190 KB | Lightweight Charts 54 KB, wyszukiwarka 24 KB | ≤ 280 KB | Radix, Zod |
@@ -106,7 +106,7 @@ Wszystkie strony są renderowane dynamicznie (CSP z nonce — [`architektura-ui.
 
 **Dane**
 - Serie decymowane na serwerze do ≤ 3 000 punktów (świece: agregacja OHLC do interwału; linie: LTTB), kolumnowe tablice liczb (`konwencje-api.md` § 3).
-- `ETag` + `If-None-Match` dla danych użytkownika i wykresów EOD; `Cache-Control: private, max-age=300` dla wykresów dziennych.
+- `ETag` + `If-None-Match` i `Cache-Control: private, max-age=300` dla danych rynkowych (wykresy EOD, instrumenty); dane użytkownika z `no-store` (ASVS V14.3.2) — ich świeżość zapewniają pamięć zapytań i SSE.
 - Prefetch linków Next.js ograniczony do nawigacji głównej (telefon: bez prefetchu tras ciężkich).
 
 ## 6. Egzekwowanie w CI
@@ -180,7 +180,7 @@ process.exit(failed ? 1 : 0);
 
 ## 7. Pomiar w terenie (RUM)
 
-- `web-vitals` 6.2 ładowany dynamicznie po zdarzeniu `load`; `onLCP`, `onINP`, `onCLS`, `onFCP`, `onTTFB` → paczka wysyłana `navigator.sendBeacon` na `POST /api/v1/rum/web-vitals` (bez identyfikatora użytkownika; trasa jako wzorzec bez identyfikatorów).
+- `web-vitals` 6.2 ładowany dynamicznie po zdarzeniu `load` **wyłącznie przy zgodzie na diagnostykę** (FR-07.12; bez zgody żadnych pomiarów, więc próba RUM jest mniejsza, a głównym kryterium pozostaje laboratorium z § 6.3); `onLCP`, `onINP`, `onCLS`, `onFCP`, `onTTFB` → paczka wysyłana `navigator.sendBeacon` na `POST /api/v1/rum/web-vitals` (bez identyfikatora użytkownika; trasa jako wzorzec bez identyfikatorów).
 - Panel `/admin/rum`: p75 per trasa i klasa urządzenia (`adminGetRumSummary`), retencja 90 dni.
 - **Ograniczenia (README `web-vitals` 6.2.2):** `onCLS` działa tylko w Chromium; INP i LCP także w Safari; metryki nawigacji „miękkich” (przejścia klienckie w App Router) tylko w Chromium 151+. Na iPhonie RUM mierzy więc LCP i INP pierwszego wczytania, bez CLS — CLS na iOS kontrolujemy testami w laboratorium i przeglądem.
 

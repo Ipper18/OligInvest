@@ -21,7 +21,7 @@ Kryteria odrzucenia (z zadania): wywołania sieciowe do nieudokumentowanych host
 | `context7` | ➡️ jako serwer MCP w `.mcp.json` | — | j.w. — `https://mcp.context7.com/mcp`, klucz opcjonalny. |
 | `supabase` | ⛔ pominięty | — | Stos to self-host Postgres + Better Auth (decyzja z Kroku 0). Plugin nieadekwatny. |
 | `vercel` | ⛔ pominięty | — | Hosting we własnej VM (Proxmox), nie Vercel. |
-| `sentry` | ⛔ pominięty (do decyzji w `07-wdrozenie/monitoring.md`) | — | Kandydaci: GlitchTip self-host lub Sentry free tier; plugin instalujemy dopiero, gdy zapadnie decyzja. |
+| `sentry` | ⛔ pominięty — decyzja w [`../07-wdrozenie/monitoring.md`](../07-wdrozenie/monitoring.md) § 5: bez Sentry i GlitchTip (pamięć RAM, dane błędów poza domem) | — | Błędy w ustrukturyzowanych logach z identyfikatorem żądania i alertach progowych. |
 
 Stan po instalacji (`plugin list`): `code-review`, `feature-dev`, `frontend-design` — ✔ enabled. Uwaga poboczna: wcześniej zainstalowane `document-skills@anthropic-agent-skills` i `example-skills@anthropic-agent-skills` raportują „failed to load: conflicting manifests” — problem po stronie marketplace `anthropics/skills`, nie tego projektu; skille i tak są dostępne w aplikacji desktop.
 

@@ -16,7 +16,7 @@ Powiązane: [`system-projektowy.md`](system-projektowy.md), [`mapa-ekranow.md`](
 
 ```text
 apps/web/
-├── proxy.ts                  # CSP z nonce, nagłówki bezpieczeństwa, przekierowania bramki MFA
+├── proxy.ts                  # CSP z nonce, nagłówki bezpieczeństwa, przekierowania bramek MFA i regulaminu
 ├── app/
 │   ├── layout.tsx            # <html lang="pl">, motyw, nonce
 │   ├── manifest.ts           # manifest PWA (FR-09.01, skróty Androida FR-09.06)
@@ -79,6 +79,7 @@ flowchart LR
 |---|---|
 | `UNAUTHENTICATED` | przejście do logowania z `returnTo` |
 | `MFA_ENROLLMENT_REQUIRED`, `MFA_REQUIRED` | ekran konfiguracji lub weryfikacji TOTP |
+| `TERMS_ACCEPTANCE_REQUIRED` | ekran `/akceptacja-regulaminu` (FR-07.12) |
 | `STEP_UP_REQUIRED` | okno z kodem TOTP → `POST /me/step-up` → automatyczne ponowienie żądania |
 | `VALIDATION_FAILED`, `PARAMETERS_OUT_OF_BOUNDS` | błędy przy polach według `errors[].path` |
 | `INSTRUMENT_AMBIGUOUS` | lista `candidates` do wyboru |
@@ -104,7 +105,7 @@ flowchart LR
 | Filtry, zakresy dat, zakładki, wybrane rachunki | parametry URL (`useSearchParams`) — linki głębokie i przycisk „wstecz” działają (FR-09.07) |
 | Stan komponentu | `useState` / `useReducer` |
 | Preferencje urządzenia (ostatnio wybrany rachunek) | `localStorage` — bez danych finansowych |
-| Migawka offline portfela (FR-09.02) | IndexedDB — tylko po włączeniu w ustawieniach, czyszczona przy wylogowaniu (§ 8) |
+| Migawka offline portfela (FR-09.02) | IndexedDB — tylko w zainstalowanej aplikacji i po jednorazowej zgodzie, czyszczona przy wylogowaniu (§ 8) |
 
 Bez biblioteki stanu globalnego (stos § 4).
 
@@ -120,7 +121,7 @@ Bez biblioteki stanu globalnego (stos § 4).
   - **brak cache odpowiedzi `/api/*`** i stron HTML z danymi (konwencje § 8);
   - `push` → `showNotification` z `data.url`; `notificationclick` → fokus otwartego okna lub otwarcie linku głębokiego (FR-09.07);
   - nowa wersja → komunikat „Dostępna nowa wersja — odśwież”; `skipWaiting` dopiero po geście użytkownika.
-- **Tryb offline (FR-09.02):** po każdym udanym pobraniu podsumowania i pozycji aplikacja zapisuje migawkę w IndexedDB — **domyślnie wyłączone** (ustawienie „Zapamiętaj portfel offline na tym urządzeniu”), bo dane finansowe na zgubionym telefonie to ryzyko. Strona `/offline` pokazuje migawkę tylko do odczytu z datą i etykietą „dane z …”.
+- **Tryb offline (FR-09.02) — decyzja właściciela z 2026-09-19 („ustaw najlepiej”):** migawka powstaje wyłącznie w **zainstalowanej aplikacji** (tryb `standalone`) i **wyłącznie na żądanie** — przy pierwszym uruchomieniu po instalacji aplikacja raz pyta „Zapamiętywać ostatni stan portfela do podglądu bez internetu na tym urządzeniu?” (Tak/Nie; zmiana w Ustawienia → Dane). W zwykłej karcie przeglądarki (możliwy komputer współdzielony) funkcji nie ma. Zakres: podsumowanie, wynik dnia i lista pozycji — bez operacji, dziennika i analiz. Migawka jest nadpisywana przy każdej synchronizacji, **nie jest pokazywana po 30 dniach** bez synchronizacji i jest kasowana przy wylogowaniu, odpowiedzi `401` (np. sesja odwołana zdalnie) i wyłączeniu opcji. Strona `/offline` pokazuje ją tylko do odczytu z datą „dane z …”. Uzasadnienie: dane finansowe w pamięci urządzenia to świadome odstępstwo od ASVS V14.3.3, a zapis w urządzeniu końcowym, który nie jest niezbędny do świadczenia usługi, wymaga wyraźnego żądania użytkownika (art. 399 Prawa komunikacji elektronicznej) — [`../06-bezpieczenstwo/kontrole-bezpieczenstwa.md`](../06-bezpieczenstwo/kontrole-bezpieczenstwa.md) § 8.
 - **Wylogowanie:** czyści cache TanStack Query, IndexedDB, cache service workera z danymi i powiadamia inne karty przez `BroadcastChannel`.
 
 ## 9. Nawigacja i moduły UI
@@ -158,9 +159,11 @@ Najpierw HTML natywny, Radix tylko tam, gdzie natywne elementy nie zapewniają d
 
 ## 12. Bezpieczeństwo warstwy UI
 
-- `proxy.ts` generuje nonce per żądanie i ustawia CSP: `script-src 'self' 'nonce-…' 'strict-dynamic'`, `style-src 'self' 'nonce-…'`, `object-src 'none'`, `base-uri 'self'`, `frame-ancestors 'none'`, `connect-src 'self'`; pełna polityka i pozostałe nagłówki w `06-bezpieczenstwo/` (Krok 5).
+- `proxy.ts` generuje nonce per żądanie i ustawia CSP: `script-src 'self' 'nonce-…' 'strict-dynamic'`, `style-src 'self' 'nonce-…'`, `object-src 'none'`, `base-uri 'none'`, `frame-ancestors 'none'`, `form-action 'self'`, `connect-src 'self'`; pełna polityka i pozostałe nagłówki: [`../06-bezpieczenstwo/kontrole-bezpieczenstwa.md`](../06-bezpieczenstwo/kontrole-bezpieczenstwa.md) § 2.
 - Zakaz `dangerouslySetInnerHTML` (reguła lintera); treści edukacyjne MDX kompilowane w czasie budowania z repozytorium (zaufane źródło).
-- Brak skryptów stron trzecich, analityki zewnętrznej i fontów z CDN; RUM przez własny endpoint (`POST /rum/web-vitals`).
+- Brak skryptów stron trzecich, analityki zewnętrznej i fontów z CDN; RUM przez własny endpoint (`POST /rum/web-vitals`) wyłącznie przy zgodzie na diagnostykę (FR-07.12) — bez zgody moduł `web-vitals` w ogóle się nie ładuje.
+- Tokeny zaproszenia i resetu hasła przychodzą we fragmencie adresu (`#t=…`); strona odczytuje je raz, usuwa z paska adresu (`history.replaceState`) i wysyła w treści żądania.
+- Wylogowanie: nagłówek `Clear-Site-Data` z API oraz czyszczenie po stronie klienta (pamięć zapytań, IndexedDB, cache service workera, `BroadcastChannel` do innych kart) — także bez połączenia z serwerem (ASVS V14.3.1).
 - Token PAT i kody zapasowe pokazywane jednorazowo, kopiowane przez `navigator.clipboard`, usuwane z pamięci komponentu po zamknięciu okna.
 - Linki zewnętrzne (źródła newsów) z `rel="noopener noreferrer"` i ikoną „link zewnętrzny”.
 
@@ -177,5 +180,5 @@ Najpierw HTML natywny, Radix tylko tam, gdzie natywne elementy nie zapewniają d
 ## 14. Zastrzeżenia
 
 - **CSP z nonce a renderowanie statyczne:** świadomie rezygnujemy ze statycznej optymalizacji i PPR (§ 5). Konflikt zapisany zgodnie z NFR-01.09.
-- **Migawka offline domyślnie wyłączona:** FR-09.02 jest spełnione po włączeniu opcji; domyślne wyłączenie to wybór prywatności kosztem wygody.
+- **Migawka offline tylko na żądanie:** FR-09.02 działa po jednym potwierdzeniu w zainstalowanej aplikacji; brak zgody = brak migawki (ASVS V14.3.3, art. 399 PKE).
 - **Rozmiary bibliotek** (Radix per komponent, `openapi-fetch`) nie są tu podawane — mierzy je `size-limit` w CI względem budżetów tras.

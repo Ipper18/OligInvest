@@ -12,7 +12,7 @@ Oznaczenia komponentów zgodności: **F** = `<DataFreshness/>`, **Z** = `<Assump
 flowchart LR
   subgraph AUTH["(auth)"]
     L["/logowanie"] --> L2["/logowanie/2fa"]
-    R["/rejestracja/[token]"] --> K["/konfiguracja-2fa"]
+    R["/rejestracja (token we fragmencie adresu)"] --> K["/konfiguracja-2fa"]
     RH["/reset-hasla"]
   end
   subgraph APP["(app)"]
@@ -38,9 +38,11 @@ flowchart LR
 |---|---|---|---|---|
 | `/logowanie` | e-mail i hasło; OAuth za flagą | FR-07.02, FR-07.03 | `authSignInEmail`, `authSignInSocial` | menedżery haseł: `autocomplete="username"` / `current-password` |
 | `/logowanie/2fa` | kod TOTP lub kod zapasowy | FR-07.04 | `authTwoFactorVerifyTotp`, `authTwoFactorVerifyBackupCode` | `autocomplete="one-time-code"`, wklejanie dozwolone |
-| `/rejestracja/[token]` | rejestracja z zaproszenia | FR-07.01, FR-07.02 | `getInvitationPreview`, `authSignUpEmail` | nieważne zaproszenie → ten sam komunikat dla każdej przyczyny |
+| `/rejestracja` (token w `#t=…`) | rejestracja z zaproszenia: dane konta, akceptacja regulaminu (wymagana), potwierdzenie zapoznania się z informacją o przetwarzaniu danych, zgoda na diagnostykę (opcjonalna, niezaznaczona) | FR-07.01, FR-07.02, FR-07.12 | `previewInvitation`, `authSignUpEmail` | token usuwany z paska adresu po odczytaniu; nieważne zaproszenie → ten sam komunikat dla każdej przyczyny |
 | `/konfiguracja-2fa` | kod QR, ręczny sekret, weryfikacja, 10 kodów zapasowych | FR-07.04 | `authTwoFactorEnable`, `authTwoFactorVerifyTotp` | cel bramki MFA; kody do pobrania jako plik TXT i do skopiowania |
 | `/reset-hasla`, `/reset-hasla/nowe` | prośba o link, nowe hasło | FR-07.10 | `authRequestPasswordReset`, `authResetPassword` | odpowiedź identyczna niezależnie od istnienia konta |
+| `/akceptacja-regulaminu` | ponowna akceptacja po istotnej zmianie regulaminu (bramka `TERMS_ACCEPTANCE_REQUIRED`) ze streszczeniem zmian | FR-07.12 | `getLegalStatus`, `acceptLegalDocuments` | jedyny dostępny ekran (obok wylogowania) do czasu akceptacji |
+| `/regulamin`, `/prywatnosc` | regulamin i informacja o przetwarzaniu danych — publiczne, wersjonowane, do pobrania i wydruku | FR-07.12 | — (treść statyczna) | link w stopce każdego ekranu i w e-mailu z zaproszeniem |
 
 ## 3. Start i portfel
 
@@ -99,6 +101,7 @@ flowchart LR
 | `/ustawienia/powiadomienia` | urządzenia push, test, kanały, ciche godziny | FR-05.06, FR-09.03 | `listPushSubscriptions`, `createPushSubscription`, `sendTestPush`, `getNotificationPreferences`, `replaceNotificationPreferences` |
 | `/ustawienia/integracje` | instrukcje Skrótów iOS i HTTP Shortcuts, linki do gotowych skrótów | FR-09.05, FR-09.06, FR-09.08 | — (treść) |
 | `/ustawienia/dane` | eksport RODO, usunięcie konta, migawka offline, eksport CSV/JSON | FR-07.09, FR-09.02, FR-03.13 | `createDataExport`, `getDataExport`, `downloadDataExport`, `requestAccountDeletion`, `exportPortfolioData` |
+| `/ustawienia/prywatnosc` | zgody opcjonalne (diagnostyka), wersje zaakceptowanych dokumentów, historia akceptacji, kontakt do administratora danych | FR-07.12, FR-07.09 | `getLegalStatus`, `updateConsent` |
 | `/admin` | stan systemu, skróty | FR-08.08 | `adminGetSystemHealth` |
 | `/admin/uzytkownicy`, `/admin/uzytkownicy/[userId]`, `/admin/zaproszenia`, `/admin/sesje` | użytkownicy (bez danych finansowych), zaproszenia, sesje | FR-08.01, FR-08.02, FR-07.01 | `adminListUsers`, `adminUpdateUser`, `adminResetTwoFactor`, `adminCreateInvitation`, `adminListSessions`, `adminRevokeSession` |
 | `/admin/flagi`, `/admin/limity` | flagi funkcji, limity ról | FR-08.04, FR-08.03 | `adminListFeatureFlags`, `adminUpdateFeatureFlag`, `adminListRoleLimits`, `adminReplaceRoleLimits` |
@@ -118,7 +121,7 @@ flowchart LR
 
 ## 8. Ścieżki kluczowe
 
-1. **Pierwsze uruchomienie:** link z zaproszenia → `/rejestracja/[token]` → `/konfiguracja-2fa` (bramka MFA) → onboarding: utworzenie rachunku → import pliku XTB **albo** tryb demo → `/` z objaśnieniem kafelków (FR-06.01).
+1. **Pierwsze uruchomienie:** link z zaproszenia (token we fragmencie adresu) → `/rejestracja` z akceptacją regulaminu → `/konfiguracja-2fa` (bramka MFA) → onboarding: utworzenie rachunku → import pliku XTB **albo** tryb demo → `/` z objaśnieniem kafelków (FR-06.01).
 2. **Import XTB:** `/portfel/import` → wgranie pliku → zdarzenie `portfolio.import.parsed` → `/portfel/import/[importId]` → rozstrzygnięcie wierszy do zmapowania → uzgodnienie sald (różnica 0,00 PLN) → zatwierdzenie → aktualizacja wyceny na `/`.
 3. **Dodanie transakcji na telefonie:** FAB „+” → arkusz z typem, instrumentem (wyszukiwarka), ilością, ceną → zapis → wynik dnia zaktualizowany zdarzeniem SSE. Alternatywa: Skrót iOS / HTTP Shortcuts (`05-mobile`).
 4. **Analiza scenariuszowa:** `/analizy` → typ → parametry → **podgląd założeń i disclaimer przed uruchomieniem** → postęp → wynik z „jak czytać” i ograniczeniami → opcjonalnie przejście do rebalancingu (świadome kliknięcie, koszty widoczne).
