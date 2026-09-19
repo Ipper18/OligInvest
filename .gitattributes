@@ -11,3 +11,7 @@
 *.pdf binary
 *.woff binary
 *.woff2 binary
+
+# Fixtures importu muszą zostać bajt w bajt (np. CSV z mBank: Windows-1250 + CRLF) — bez normalizacji końców linii.
+docs/03-dane/fixtures/** -text
+**/test/fixtures/** -text

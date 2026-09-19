@@ -21,3 +21,7 @@
 **XTB (oba szablony — identycznie):** gotówka końcowa **14 518,27 PLN**; pozycje: AAPL.US 3 szt. (koszt 2 261,25 PLN), PKO.PL 15 szt. (koszt 1 000,60 PLN; partie 5 szt. z 2025-01-13 i 10 szt. z 2025-11-05), VWCE.DE 0,75 szt. (384,41 PLN); P/L zrealizowany: AAPL.US −1 083,63 PLN (przykład A), PKO.PL +181,20 PLN; dywidenda AAPL.US brutto 14,28 / podatek 2,14 / netto 12,14 PLN; odsetki 12,34 PLN i podatek 2,34 PLN; opłata SEC 0,28 PLN; wiersz CFD `US500` (+45,10 PLN) → `unsupported`, zaksięgowany jako `ADJUSTMENT(cfd_pl)`; ponowny import → wyłącznie duplikaty.
 
 **mBank:** KGHM — pozostają 3 szt. (koszt 423,00 PLN), P/L sprzedaży z 2025-09-03: +123,00 PLN (prowizje w koszcie i przychodzie); dywidenda KGHM brutto 45,00 / podatek 8,55 / netto 36,45 PLN; wpłata 5 000,00 PLN; blokady i rozliczenia T+2 pominięte; wiersz MICROSOFT bez wartości → ostrzeżenie `missing_settlement_value`.
+
+## Wierność bajtowa
+
+Pliki w tym katalogu są wyłączone z normalizacji końców linii (`.gitattributes`: `-text`), więc CSV z mBank zachowują kodowanie Windows-1250 i końce linii CRLF jak prawdziwe eksporty — parser musi obsłużyć oba warianty końców linii. Nie edytuj tych plików edytorem, który zmienia kodowanie lub końce linii; generuj je ponownie skryptem.
