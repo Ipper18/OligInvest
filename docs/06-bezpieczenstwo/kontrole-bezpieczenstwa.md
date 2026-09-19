@@ -55,7 +55,7 @@ Powiązane: [`model-zagrozen.md`](model-zagrozen.md), [`uwierzytelnianie-autoryz
 - **HTTP/3 wyłączony** (`servers { protocols h1 h2 }`): VPS przekazuje wyłącznie TCP, więc ogłaszanie QUIC w `Alt-Svc` prowadziłoby do nieudanych prób.
 - **Terminacja w domu**, VPS przekazuje zaszyfrowany strumień po SNI ([ADR-011](../09-decyzje/ADR-011-topologia-wdrozenia.md)).
 - **CAA** z `accounturi` i `validationmethods=tls-alpn-01` — Let's Encrypt obsługuje oba parametry (RFC 8657, [dokumentacja CAA](https://letsencrypt.org/docs/caa/)); przejęty VPS nie uzyska certyfikatu dla naszej nazwy, choć przez niego przechodzi ruch ACME.
-- **Monitoring Certificate Transparency:** codzienne zapytanie do crt.sh o certyfikaty dla `invest.oligi.pl`; certyfikat nieznanego numeru seryjnego → alert ([`plan-reagowania.md`](plan-reagowania.md) P12).
+- **Monitoring Certificate Transparency:** codzienne zapytanie do crt.sh o certyfikaty dla `invest.oligi.pl` i wildcard `*.oligi.pl` (wildcard obejmuje subdomenę mimo CAA na subdomenie); certyfikat nieznanego numeru seryjnego → alert ([`plan-reagowania.md`](plan-reagowania.md) P12).
 
 ### 2.2 Nagłówki odpowiedzi (NFR-03.06)
 

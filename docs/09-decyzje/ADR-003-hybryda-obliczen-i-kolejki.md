@@ -32,7 +32,7 @@ Kolejki: BullMQ (Node + oficjalny port Python) vs pg-boss (tylko Node) vs Celery
 
 - Pozytywne: wyniki portfela identyczne w UI, API, PWA i alertach; najlepsze narzędzia do analiz; skompromitowana biblioteka Pythona nie ma skąd czytać cudzych danych ani dokąd ich wysyłać; ciężkie obliczenia nie spowalniają API.
 - Negatywne: dwa runtime'y (obrazy, CI, aktualizacje zależności); utrzymanie wektorów testowych w dwóch językach; payloady zadań muszą być rozsądnie małe (historię rynkową Python czyta sam z bazy).
-- Ograniczenie licencyjne: vectorbt ma klauzulę Commons Clause (zakaz sprzedaży) — bez wpływu na użytek prywatny, odnotowane w `10-ograniczenia.md`.
+- Ograniczenie licencyjne: vectorbt ma klauzulę Commons Clause (zakaz sprzedaży) — bez wpływu na użytek prywatny, odnotowane w [`../10-ograniczenia.md`](../10-ograniczenia.md) (L-41).
 - Zadania: `packages/test-vectors` (M1), eksport JSON Schema kontraktów zadań (M3), konfiguracja sieci i ról DB dla `analytics` (M3), dwie instancje Valkey w `compose.yaml` (M0).
 
 ## Weryfikacja

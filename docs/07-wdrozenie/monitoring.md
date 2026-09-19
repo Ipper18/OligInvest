@@ -39,7 +39,7 @@ Przerwy planowane (okno nocne) liczą się do niedostępności — raport pokazu
 | `restore-test` | push | comiesięczny automatyczny test odtworzenia | 30 dni | brak 32 dni lub błąd |
 | `eod-gpw` | push | zadanie EOD GPW po zapisie sesji | dni sesyjne | brak do 19:30 |
 | `fx-nbp` | push | zadanie kursów NBP | dni robocze | brak do 14:00 |
-| `ct-check` | push | skrypt: certyfikaty dla `invest.oligi.pl` w crt.sh porównane z listą znanych numerów seryjnych | 24 h | brak 26 h lub nieznany certyfikat |
+| `ct-check` | push | skrypt: certyfikaty dla `invest.oligi.pl` i wildcard `*.oligi.pl` w crt.sh porównane z listą znanych numerów seryjnych | 24 h | brak 26 h lub nieznany certyfikat |
 | `crowdsec-agent` | push | stan agenta w VM i połączenie z LAPI | 1 h | brak 3 h |
 
 Adresy monitorów push zawierają tokeny — są sekretami ([`infrastruktura.md`](infrastruktura.md) § 8). Kuma nasłuchuje wyłącznie na adresie tunelu i sieci administracyjnej.

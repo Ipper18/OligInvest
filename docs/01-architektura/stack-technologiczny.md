@@ -83,7 +83,7 @@ Nowa zależność runtime trafia do projektu tylko, jeśli spełnia **wszystkie*
 
 | Element | Wybór | Wersja | Licencja | Uzasadnienie | Odrzucone |
 |---|---|---|---|---|---|
-| Backtesting | **vectorbt** | 1.1 (wymaga pandas ≥ 3.0.3, numpy ≥ 2.4.6) | Apache-2.0 + **Commons Clause** (zakaz sprzedaży oprogramowania, którego wartość wynika z vectorbt) | Wektorowe backtesty wielu wariantów, walk-forward; baza wiedzy w skillu `vectorbt-reference`. Ograniczenie licencyjne opisane w `10-ograniczenia.md` (nie dotyczy użytku prywatnego). | backtesting.py (AGPL), nautilus_trader (silnik live, zbyt ciężki). |
+| Backtesting | **vectorbt** | 1.1 (wymaga pandas ≥ 3.0.3, numpy ≥ 2.4.6) | Apache-2.0 + **Commons Clause** (zakaz sprzedaży oprogramowania, którego wartość wynika z vectorbt) | Wektorowe backtesty wielu wariantów, walk-forward; baza wiedzy w skillu `vectorbt-reference`. Ograniczenie licencyjne opisane w [`../10-ograniczenia.md`](../10-ograniczenia.md) (L-41; nie dotyczy użytku prywatnego). | backtesting.py (AGPL), nautilus_trader (silnik live, zbyt ciężki). |
 | Optymalizacja portfela | **PyPortfolioOpt** + **cvxpy** | 1.6 / 1.9 | MIT / Apache-2.0 | Markowitz, Black-Litterman, HRP, ograniczenia wag — gotowe i sprawdzone. | Własna implementacja (ryzyko błędów numerycznych). |
 | Metryki i raporty | **quantstats** | 0.0.81 | Apache-2.0 | Metryki i tearsheety dla wyników symulacji. | pyfolio-reloaded (starszy, cięższy). |
 | Numeryka | **numpy**, **pandas**, **scipy** | 2.5 / 3.0 / 1.18 | BSD | Standard. | — |

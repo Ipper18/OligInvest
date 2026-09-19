@@ -95,7 +95,7 @@ Użytkownik może wstrzymać automatyczne odświeżanie danych (2.2.2) — prze�
 | Czytniki ekranu | ręcznie: VoiceOver iOS (PWA), TalkBack, NVDA | koniec każdego etapu (M1–M6) | scenariusze: logowanie z TOTP, odczyt portfela, dodanie operacji, odczyt wykresu przez tabelę, alert |
 | Powiększenie i reflow | ręcznie: 200 % i 320 px | koniec etapu | brak utraty treści |
 
-Automatyczne testy wykrywają tylko część problemów; test ręczny z czytnikiem ekranu jest kryterium wyjścia etapów w `08-plan/roadmapa.md` (Krok 6).
+Automatyczne testy wykrywają tylko część problemów; test ręczny z czytnikiem ekranu jest kryterium wyjścia etapów w [`../08-plan/roadmapa.md`](../08-plan/roadmapa.md) § 4.
 
 ## 11. Znane ograniczenia
 

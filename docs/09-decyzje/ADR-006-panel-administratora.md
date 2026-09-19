@@ -27,7 +27,7 @@ Specyfikacja: panel admina (użytkownicy, sesje, limity API, flagi, audyt, statu
 
 - Pozytywne: zero wpływu na bundle zwykłych użytkowników; jedna ścieżka bezpieczeństwa; zgodność z modułowością (moduł usunięty = jego panel znika).
 - Negatywne: kilka ekranów do złożenia; brak „magii” CRUD.
-- Zadania: powłoka admina + zaproszenia i role (M1, minimalnie), reszta ekranów (M5).
+- Zadania: powłoka admina + zaproszenia i role (M1, minimalnie), reszta ekranów (M5a).
 
 ## Weryfikacja
 

@@ -9,10 +9,10 @@
 - **Identyfikatory:** `FR-XX.YY` / `NFR-XX.YY`. Człon `XX` to obszar (np. `FR-01` = analiza rynku, `NFR-01` = wydajność), `YY` — konkretne wymaganie. Identyfikatorów nie zmieniamy ani nie używamy ponownie; wymaganie wycofane dostaje status „wycofane” i zostaje w tabeli.
 - **Priorytet (P):**
   - **P0** — MVP (etap M1): bez tego produkt nie ma sensu.
-  - **P1** — zaraz po MVP (M2–M3).
-  - **P2** — pełny produkt (M4–M5).
-  - **P3** — opcjonalne / później; realizowane, jeśli nie koliduje z NFR.
-  Mapowanie priorytetów na etapy i zadania: `docs/08-plan/roadmapa.md` i `backlog.md` (Krok 6).
+  - **P1** — ważne, zaraz po MVP (M2–M4; panele admina w M5a — ADR-006; kilka wymagań P1 wchodzi już do M1, bo są warunkiem udostępnienia aplikacji innym osobom).
+  - **P2** — pełny produkt (głównie M5a–M5b).
+  - **P3** — opcjonalne; po M6, jeśli nie koliduje z NFR.
+  Priorytet mówi, co jest ważniejsze i co wycinamy przy braku czasu; etap przypisuje [`../08-plan/backlog.md`](../08-plan/backlog.md) według zasad z [`../08-plan/roadmapa.md`](../08-plan/roadmapa.md) § 1.
 - **Kryterium akceptacji** jest warunkiem zamknięcia zadania w backlogu (Definition of Done w `CONTRIBUTING.md`).
 - „Dane opóźnione” = notowania z opóźnieniem ~15 min lub większym; „EOD” = dane dzienne po zamknięciu sesji (patrz Z-01).
 
@@ -77,7 +77,7 @@
 
 | ID | Wymaganie | P | Kryterium akceptacji | § |
 |---|---|---|---|---|
-| FR-04.01 | **Reguła nadrzędna:** wszystkie wyniki tego obszaru to scenariusze i rozkłady z założeniami, źródłem danych, horyzontem, przedziałami i disclaimerem; brak prognoz punktowych i języka rekomendacji. | P0 (reguła) | Checklista z `11-zgodnosc-prawna.md` przechodzi dla każdego ekranu obszaru; testy e2e sprawdzają blok założeń i disclaimer. | 3.1.4, 6.4, 6.5 |
+| FR-04.01 | **Reguła nadrzędna:** wszystkie wyniki tego obszaru to scenariusze i rozkłady z założeniami, źródłem danych, horyzontem, przedziałami i disclaimerem; brak prognoz punktowych i języka rekomendacji. | P0 (reguła) | Checklista z [`../11-zgodnosc-prawna.md`](../11-zgodnosc-prawna.md) § 4.4 przechodzi dla każdego ekranu obszaru; testy e2e sprawdzają blok założeń i disclaimer. | 3.1.4, 6.4, 6.5 |
 | FR-04.02 | Symulacja Monte Carlo wartości portfela (horyzont do 40 lat): bootstrap blokowy historycznych zwrotów lub model parametryczny, wpłaty/wypłaty, inflacja; wynik: wachlarz percentyli (5/25/50/75/95), prawdopodobieństwo osiągnięcia celu, rozkład maks. obsunięcia. | P1 | Wynik odtwarzalny z zapisanym ziarnem (seed); 10 000 ścieżek × 30 lat (krok miesięczny) < 20 s na serwerze docelowym; UI: „to nie prognoza”. | 3.1.4 |
 | FR-04.03 | Optymalizacja portfela: minimalna wariancja, maks. Sharpe, efektywna granica, risk parity / HRP, Black-Litterman z poglądami użytkownika; ograniczenia wag; prezentacja niepewności (resampling wag). | P2 | Wyniki zgodne z PyPortfolioOpt dla danych testowych; wagi z przedziałem niepewności; ostrzeżenie o błędzie estymacji. | 3.1.4 |
 | FR-04.04 | Testy warunków skrajnych: scenariusze historyczne (np. 2008, 2020, 2022) i hipotetyczne (spadek indeksu o X %, zmiana USD/PLN o Y %). | P2 | Scenariusz opisany (okres, źródło, założenia); instrumenty bez historii w okresie scenariusza oznaczone, zamiennik (proxy) wskazany jawnie. | 3.1.4 |
@@ -97,7 +97,7 @@
 | FR-05.04 | Alert na wynikach spółek: przypomnienie N dni przed publikacją wyników spółki z pozycji/watchlisty. | P3 | USA z kalendarza dostawcy, GPW z wpisów admina. | 3.1.5 |
 | FR-05.05 | Alert na newsach: nowe artykuły lub skok liczby wzmianek o instrumencie. | P3 | Próg i okno konfigurowalne; domyślnie maks. 1 alert/instrument/dzień. | 3.1.5 |
 | FR-05.06 | Kanały i preferencje: Web Push i e-mail wybierane per alert; ciche godziny; deduplikacja i cooldown; historia wyzwoleń i doręczeń. | P1 | Brak subskrypcji push → automatycznie e-mail; historia pokazuje status doręczenia per kanał. | 3.1.5, 4.4 |
-| FR-05.07 | Treść alertu: wartość, próg, czas i źródło danych, link do instrumentu; bez języka rekomendacji. | P1 | Szablony przechodzą checklistę języka z `11-zgodnosc-prawna.md`. | 3.1.5, 6.5 |
+| FR-05.07 | Treść alertu: wartość, próg, czas i źródło danych, link do instrumentu; bez języka rekomendacji. | P1 | Szablony przechodzą checklistę języka z [`../11-zgodnosc-prawna.md`](../11-zgodnosc-prawna.md) § 4. | 3.1.5, 6.5 |
 
 ### FR-06 Samouczki i warstwa edukacyjna (§3.1.6)
 
@@ -105,7 +105,7 @@
 |---|---|---|---|---|
 | FR-06.01 | Interaktywny onboarding przy pierwszym logowaniu (rachunek, import, jak czytać portfel, gdzie są wyjaśnienia) z możliwością pominięcia i powtórzenia. | P1 | Ładowany leniwie (brak wpływu na initial JS); stan ukończenia zapisany per użytkownik. | 3.1.6 |
 | FR-06.02 | Kontekstowe wyjaśnienia przy wskaźnikach i metrykach: definicja, jak czytać, pułapki, link do glosariusza i do wzoru. | P1 | 100 % wskaźników i metryk w UI ma wyjaśnienie (test sprawdza klucze treści). | 3.1.6 |
-| FR-06.03 | Glosariusz (PL, wyszukiwalny) z powiązaniami do miejsc w aplikacji. | P1 | ≥ 60 haseł na koniec M5; wyszukiwanie po fragmencie i synonimie. | 3.1.6 |
+| FR-06.03 | Glosariusz (PL, wyszukiwalny) z powiązaniami do miejsc w aplikacji. | P1 | ≥ 60 haseł na koniec M5a; wyszukiwanie po fragmencie i synonimie. | 3.1.6 |
 | FR-06.04 | Tryb demo: fikcyjny portfel na danych historycznych, odizolowany od danych realnych, dostępny dla zalogowanych (np. przed pierwszym importem). | P2 | Operacje demo nie modyfikują danych realnych (rachunek typu `demo`, test izolacji); stały baner „DEMO”. | 3.1.6 |
 | FR-06.05 | Ścieżki nauki (podstawy, dywersyfikacja, koszty, podatki w PL, ryzyko, pułapki behawioralne) z ćwiczeniami na danych demo i zapisem postępu. | P3 | Lekcja ma cel, treść, ćwiczenie i podsumowanie; postęp zapisywany. | 3.1.6 |
 | FR-06.06 | „Jak czytać ten wynik” przy analizach FR-04 (percentyle, przedziały, dlaczego to nie prognoza). | P2 | Obecne na każdym ekranie wyników FR-04.02–FR-04.09. | 3.1.6, 3.1.4 |
@@ -150,7 +150,7 @@
 | FR-09.02 | Offline shell: aplikacja uruchamia się bez sieci i pokazuje ostatnio zsynchronizowany stan portfela (tylko odczyt) z datą. | P2 | W trybie samolotowym dashboard pokazuje dane z datą synchronizacji; brak białego ekranu. | 4.4 |
 | FR-09.03 | Web Push dla alertów (iOS ≥ 16.4 po instalacji PWA, Android, desktop); prośba o zgodę wyłącznie po geście użytkownika. | P1 | Na iPhonie alert dociera jako powiadomienie; kliknięcie otwiera właściwy ekran. | 4.4, 3.1.5 |
 | FR-09.04 | API „szybkich akcji” dla automatyzacji (Skróty iOS, HTTP Shortcuts): podsumowanie portfela, wynik dnia, dodanie transakcji (oraz „moje alerty” udostępniane przez moduł alertów); odpowiedź tekstowa lub JSON; uwierzytelnianie PAT. | P1 | `GET /api/v1/quick/today?format=text` zwraca jedną linię (np. „Dziś: +1 234,56 zł (+0,84 %) · dane 15:42, opóźnione”) w < 300 ms. | 4.4 |
-| FR-09.05 | Gotowe Skróty iOS (link iCloud + instrukcja): „Pokaż mój portfel”, „Ile dziś zarobiłem”, „Dodaj transakcję”, „Moje alerty”; konfiguracja Stuknięcia w tył, Siri, automatyzacji i widżetu Skrótów. | P2 | Instrukcja w `12-dla-uzytkownika/` przetestowana na aktualnym iOS. | 4.4 |
+| FR-09.05 | Gotowe Skróty iOS (link iCloud + instrukcja): „Pokaż mój portfel”, „Ile dziś zarobiłem”, „Dodaj transakcję”, „Moje alerty”; konfiguracja Stuknięcia w tył, Siri, automatyzacji i widżetu Skrótów. | P2 | Instrukcja w [`../12-dla-uzytkownika/instrukcja.md`](../12-dla-uzytkownika/instrukcja.md) § 9 przetestowana na aktualnym iOS. | 4.4 |
 | FR-09.06 | Android: skróty aplikacji w manifeście (przytrzymanie ikony), otwieranie linków w zainstalowanej PWA, konfiguracja HTTP Shortcuts (widżet, kafelek Szybkich ustawień); Tasker jako opcja płatna. | P2 | Instrukcja przetestowana na Androidzie ≥ 12. | 4.4 |
 | FR-09.07 | Linki głębokie (https) do instrumentu, rachunku, alertu i wyniku analizy — w powiadomieniach, e-mailach i Skrótach. | P1 | Link z powiadomienia otwiera właściwy ekran (po zalogowaniu powrót do celu). | 4.4 |
 | FR-09.08 | Widżety z danymi (ekran główny/blokady) opcjonalnie przez aplikacje zewnętrzne (Scriptable na iOS, HTTP Shortcuts na Androidzie) korzystające z FR-09.04. | P3 | Przykładowy skrypt widżetu w dokumentacji; brak wymagań serwerowych poza FR-09.04. | 4.4 |
@@ -171,7 +171,7 @@
 | NFR-01.06 | Aktualizacje przez SSE docierają < 2 s od zapisu nowych danych. | P1 | Test integracyjny z pomiarem opóźnienia. | 4.1 |
 | NFR-01.07 | Ciężkie obliczenia wykonywane asynchronicznie z postępem, limitem czasu i pamięci; interfejs pozostaje responsywny. | P1 | Uruchomienie symulacji MC nie zwiększa p95 odczytów API o > 20 %. | 4.1 |
 | NFR-01.08 | Całość działa w VM ≤ 6 GB RAM / 3 vCPU obok Immich przy ≤ 5 równoczesnych użytkownikach. | P0 | Pomiar zużycia zasobów w teście obciążeniowym. | 4.1, 4.5 |
-| NFR-01.09 | Konflikty wydajności z funkcjami zgłaszane jawnie (ADR, `10-ograniczenia.md`), nigdy ukrywane. | P0 | Przegląd spójności w Kroku 7. | 4.1 |
+| NFR-01.09 | Konflikty wydajności z funkcjami zgłaszane jawnie (ADR, [`../10-ograniczenia.md`](../10-ograniczenia.md)), nigdy ukrywane. | P0 | Przegląd spójności w Kroku 7. | 4.1 |
 
 ### NFR-02 Modularność i rozszerzalność (§4.2)
 
@@ -216,7 +216,7 @@
 
 | ID | Wymaganie | P | Weryfikacja | § |
 |---|---|---|---|---|
-| NFR-05.01 | Każdy komponent self-hostowany lub z trwałym darmowym tierem; wyjątki w `10-ograniczenia.md` (koszt najtańszej opcji, darmowy substytut, co tracimy). | P0 | Przegląd stosu w Kroku 7. | 4.5 |
+| NFR-05.01 | Każdy komponent self-hostowany lub z trwałym darmowym tierem; wyjątki w [`../10-ograniczenia.md`](../10-ograniczenia.md) (koszt najtańszej opcji, darmowy substytut, co tracimy). | P0 | Przegląd stosu w Kroku 7. | 4.5 |
 | NFR-05.02 | System działa w pełni na darmowych limitach API (kwoty planowane, twardy cache). | P0 | Plan dobowy vs limity (`03-dane/strategia-cache.md` § 5). | 4.5, 2.1 |
 | NFR-05.03 | Mieści się na posiadanym sprzęcie (Dell 7020 obok Immich) i istniejącym VPS jako edge. | P0 | NFR-01.08. | 4.5 |
 
@@ -232,7 +232,7 @@
 
 | ID | Wymaganie | P | Weryfikacja | § |
 |---|---|---|---|---|
-| NFR-07.01 | Obowiązkowe disclaimery na ekranach analiz, screenera, alertów i eksportów wg `11-zgodnosc-prawna.md`. | P0 | Testy e2e obecności disclaimera. | 6.5 |
+| NFR-07.01 | Obowiązkowe disclaimery na ekranach analiz, screenera, alertów i eksportów wg [`../11-zgodnosc-prawna.md`](../11-zgodnosc-prawna.md) § 4.3. | P0 | Testy e2e obecności disclaimera. | 6.5 |
 | NFR-07.02 | Każda funkcja predykcyjna/backtestowa ma udokumentowane założenia, źródło danych, ograniczenia oraz ryzyko look-ahead, survivorship i przeuczenia; przegląd metodologiczny przed wdrożeniem (checklisty `strategy-critique` i `backtest-review` przeniesione do dokumentacji dla Codex). | P0 | Checklista w szablonie PR. | 6.4 |
 | NFR-07.03 | Atrybucje źródeł i licencji danych w UI (m.in. FRED, NBP, GDELT, TradingView). | P1 | Strona „Źródła danych i licencje” + stopki komponentów. | 2.1, 6.5 |
 | NFR-07.04 | Brak redystrybucji danych rynkowych poza zarejestrowanych użytkowników (brak publicznych stron i API z danymi). | P0 | Wszystkie trasy z danymi wymagają sesji lub PAT. | 2.1 |
@@ -251,7 +251,7 @@
 
 | ID | Wymaganie | P | Weryfikacja | § |
 |---|---|---|---|---|
-| NFR-09.01 | Docelowa dostępność 99 % miesięcznie; pojedyncze punkty awarii udokumentowane (Z-27; szczegóły w `10-ograniczenia.md`). | P1 | Monitoring dostępności. | 4.3 |
+| NFR-09.01 | Docelowa dostępność 99 % miesięcznie; pojedyncze punkty awarii udokumentowane (Z-27; szczegóły w [`../10-ograniczenia.md`](../10-ograniczenia.md) § 2). | P1 | Monitoring dostępności. | 4.3 |
 | NFR-09.02 | Łagodna degradacja przy awarii dostawców danych (dane z flagą „nieaktualne” zamiast błędu). | P0 | Test z wyłączonym adapterem. | 2.1 |
 | NFR-09.03 | Kopie zapasowe 3-2-1, szyfrowane; RPO ≤ 24 h (cel ≤ 1 h dla bazy), RTO ≤ 4 h; test odtworzenia co kwartał z protokołem. | P0 | `07-wdrozenie/backup-dr.md` + protokoły testów. | 4.3 |
 | NFR-09.04 | Monitoring: health-checki, metryki, logi strukturalne JSON z identyfikatorem korelacji, alerty do admina. | P1 | `07-wdrozenie/monitoring.md`. | 4.3 |
@@ -279,17 +279,17 @@
 
 ## 3. Zastrzeżenia do specyfikacji
 
-Zgodnie z §6.3: poniżej miejsca, w których specyfikacja jest sprzeczna, nierealna przy 0 zł lub szkodliwa dla wydajności — z propozycją alternatywy. Koszty i substytuty szczegółowo w `docs/10-ograniczenia.md` (Krok 6).
+Zgodnie z §6.3: poniżej miejsca, w których specyfikacja jest sprzeczna, nierealna przy 0 zł lub szkodliwa dla wydajności — z propozycją alternatywy. Koszty i substytuty szczegółowo w [`../10-ograniczenia.md`](../10-ograniczenia.md).
 
 | ID | Dotyczy | Zastrzeżenie | Propozycja / decyzja | Wpływ |
 |---|---|---|---|---|
 | Z-01 | §3.1.1 „w czasie rzeczywistym” | Darmowe źródła nie dają danych czasu rzeczywistego dla GPW; realtime GPW wymaga licencji dystrybutora danych. | Dane opóźnione (~15 min, best effort) + EOD; każda liczba z wiekiem i źródłem (FR-01.15); SSE zamiast WebSocket ([ADR-007](../09-decyzje/ADR-007-sse-zamiast-websocket.md)). | W UI: „notowania opóźnione”. |
 | Z-02 | §2.1 Stooq | Stooq blokuje automatyczne pobieranie CSV (wyzwanie JS). | EOD GPW z oficjalnego archiwum GPW (XLS, cały rynek w jednym pliku); Stooq tylko jako import ręczny ([ADR-005](../09-decyzje/ADR-005-strategia-danych-rynkowych.md)). | Parser XLS (SheetJS CE). |
-| Z-03 | §2.1 intraday GPW | Jedyne darmowe źródło intraday dla GPW to nieoficjalne API Yahoo („personal use only”), bez gwarancji działania. | Warstwa „best effort” z degradacją do trybu tylko-EOD; płatna alternatywa w `10-ograniczenia.md`. | Ryzyko w rejestrze ryzyk. |
+| Z-03 | §2.1 intraday GPW | Jedyne darmowe źródło intraday dla GPW to nieoficjalne API Yahoo („personal use only”), bez gwarancji działania. | Warstwa „best effort” z degradacją do trybu tylko-EOD; płatna alternatywa w [`../10-ograniczenia.md`](../10-ograniczenia.md) (L-11, L-12). | Ryzyko R-02 w [`../08-plan/ryzyka.md`](../08-plan/ryzyka.md). |
 | Z-04 | §3.2 obowiązkowe 2FA + OAuth | Better Auth domyślnie nie wymusza 2FA dla logowań OAuth/passkey. | MVP: e-mail + hasło + TOTP; OAuth (P2) po spiku „wymuszenie 2FA po OAuth” (własny hook) + bramka MFA w API dla każdej sesji ([ADR-004](../09-decyzje/ADR-004-postgres-better-auth-rls.md)). | FR-07.03 = P2. |
 | Z-05 | §3.2 panel admina „nie od zera” vs §4.1 budżet JS | Frameworki panelu (react-admin, Refine z UI) są ciężkie; osobna aplikacja dubluje uwierzytelnianie. | Minimalny panel w aplikacji (leniwa trasa `/admin`) na gotowych komponentach i API Better Auth admin; Refine headless w rezerwie ([ADR-006](../09-decyzje/ADR-006-panel-administratora.md)). | — |
 | Z-06 | §4.4 iOS: App Intents, URL scheme, x-callback-url, widżety ekranu blokady | Wymagają natywnej aplikacji (konto Apple Developer, 99 USD/rok). PWA nie rejestruje własnego schematu URL, a linki otwierane przez Skróty trafiają do Safari, nie do PWA. | Skróty z akcją „Pobierz zawartość URL” + API szybkich akcji z PAT (FR-09.04); Stuknięcie w tył, Siri, automatyzacje i widżet Skrótów uruchamiają skróty; widżety z danymi opcjonalnie przez Scriptable (darmowa; ostatnia aktualizacja 2024-09 — ryzyko porzucenia) ([ADR-008](../09-decyzje/ADR-008-pwa-i-integracje-mobilne.md)). | FR-09.05, FR-09.08. |
-| Z-07 | §4.4 Android: kafelek Szybkich ustawień, widżety, Tasker | Kafelek i widżet wymagają natywnej aplikacji; Tasker jest płatny (jednorazowo ok. 3,5–4,5 USD). | HTTP Shortcuts (MIT, darmowa: widżety, kafelki, Bearer) + skróty w manifeście PWA; Tasker opcjonalnie (koszt w `10-ograniczenia.md`). | FR-09.06. |
+| Z-07 | §4.4 Android: kafelek Szybkich ustawień, widżety, Tasker | Kafelek i widżet wymagają natywnej aplikacji; Tasker jest płatny (jednorazowo ok. 3,5–4,5 USD). | HTTP Shortcuts (MIT, darmowa: widżety, kafelki, Bearer) + skróty w manifeście PWA; Tasker opcjonalnie (koszt w [`../10-ograniczenia.md`](../10-ograniczenia.md), L-21). | FR-09.06. |
 | Z-08 | §3.1.5 / §4.4 push | Web Push na iOS działa tylko w zainstalowanej PWA (≥ 16.4) i po zgodzie wyrażonej gestem; czas doręczenia bez gwarancji. W 2024 r. Apple zapowiedział usunięcie PWA w UE (DMA) i wycofał się po protestach — polityka może się zmienić. | Alerty krytyczne dodatkowo e-mailem; monitorowanie zmian iOS w rejestrze ryzyk. | FR-05.06. |
 | Z-09 | §3.1.5 e-mail za 0 zł | Wysyłka z domowego IP lub VPS bez reputacji trafia do spamu albo jest blokowana (port 25). | Darmowy tier transakcyjny przez SMTP: Brevo (300 e-maili/dzień, firma z UE) — wymiennie Resend (3 000/mies., 100/dzień); SPF/DKIM/DMARC dla domeny ([ADR-010](../09-decyzje/ADR-010-kanaly-powiadomien.md)). | Logo Brevo w stopce e-maili (plan darmowy). |
 | Z-10 | §3.1.1 heatmapy sektorowe | Brak darmowego źródła klasyfikacji sektorowej spółek GPW. | Klasyfikacja z portfeli subindeksów sektorowych GPW (półautomatycznie + korekta admina); USA — sektor z profilu dostawcy. | FR-01.10 = P2. |
@@ -300,16 +300,16 @@ Zgodnie z §6.3: poniżej miejsca, w których specyfikacja jest sprzeczna, niere
 | Z-15 | §3.1.2 portfel z XTB | Obok akcji i ETF XTB oferuje CFD (dźwignia, punkty swapowe, korekty dywidendowe) — wymagają osobnego modelu. Koszt przewalutowania w XTB (❓ 0,5 % — do weryfikacji w tabeli opłat w Kroku 4) wpływa na koszt nabycia. | MVP: akcje i ETF (także na IKE/IKZE); wiersze CFD rozpoznawane i oznaczane jako nieobsługiwane (nie gubione); koszt przewalutowania wliczany do kosztu nabycia. | FR-03.01. |
 | Z-16 | §3.1.2–3.1.3 wynik w PLN | Wynik ekonomiczny (faktyczne kursy przewalutowania brokera) różni się od wyniku podatkowego (kurs średni NBP z ostatniego dnia roboczego przed dniem transakcji). | Dwa widoki P/L: ekonomiczny (domyślny) i podatkowy (FIFO + kurs NBP D-1) — definicje w `obliczenia-finansowe.md` ([ADR-014](../09-decyzje/ADR-014-pieniadze-waluty-czas.md)). | FR-02.07. |
 | Z-17 | §4.3 2FA vs automatyzacje | Skróty i HTTP Shortcuts nie przejdą TOTP przy każdym wywołaniu. | Tokeny PAT: minimalne zakresy, wygasanie (domyślnie 90 dni), odwołanie, utworzenie po ponownym TOTP, limit żądań; zapis wyłącznie z zakresem `transactions:write`. | FR-07.07. |
-| Z-18 | §4.1 LCP < 2 s przy serwerze domowym | Każde żądanie przechodzi przez VPS i tunel WireGuard do domu; wydajność zależy od łącza domowego (upload) i RTT tunelu. | HTML strumieniowany, zasoby statyczne z długim cache w przeglądarce, pomiar RUM; jeśli budżet nie zostanie osiągnięty — cache zasobów statycznych na VPS pod osobną subdomeną (bez danych użytkowników) lub przeniesienie `web` na VPS, wpis w `10-ograniczenia.md` ([ADR-011](../09-decyzje/ADR-011-topologia-wdrozenia.md)). | NFR-01.01. |
+| Z-18 | §4.1 LCP < 2 s przy serwerze domowym | Każde żądanie przechodzi przez VPS i tunel WireGuard do domu; wydajność zależy od łącza domowego (upload) i RTT tunelu. | HTML strumieniowany, zasoby statyczne z długim cache w przeglądarce, pomiar RUM; jeśli budżet nie zostanie osiągnięty — cache zasobów statycznych na VPS pod osobną subdomeną (bez danych użytkowników) lub przeniesienie `web` na VPS, wpis w [`../10-ograniczenia.md`](../10-ograniczenia.md) L-04 ([ADR-011](../09-decyzje/ADR-011-topologia-wdrozenia.md)). | NFR-01.01. |
 | Z-19 | §3.1.4 MC/backtest/optymalizacja vs §4.1 „nie moloch” | i5-4590 (4 wątki) współdzielony z Immich (w tym uczenie maszynowe); ciężkie zadania trwają sekundy–minuty. | Wykonanie asynchroniczne z postępem; maks. 1 ciężkie zadanie naraz; limity parametrów (np. ≤ 10 000 ścieżek MC, ≤ 500 kombinacji w backteście); dostęp dla roli „pro”. | NFR-01.07. |
 | Z-20 | §3.2 rola „pro” | Aplikacja prywatna bez płatności — rola „pro” nie ma modelu biznesowego. | „pro” = dostęp do zasobożernych analiz i wyższe limity; nadawana przez admina. | FR-07.06. |
 | Z-21 | §3.2 pełny audit log vs RODO | Niemodyfikowalny audyt a prawo do usunięcia danych. | Po usunięciu konta audyt zachowuje pseudonimizowany identyfikator aktora; retencja audytu do ustalenia w dokumencie RODO (propozycja: 2 lata). | NFR-11.02. |
 | Z-22 | §4.3 „dane nie mogą wyciec przez błąd w kodzie” | RLS chroni zapytania SQL, ale nie wycieki przez współdzielony cache, logi, eksporty czy strumienie SSE. | RLS + klucze cache z `user_id` + zakaz logowania danych finansowych + kanały SSE per użytkownik + testy izolacji end-to-end (NFR-03.04, NFR-03.05). | — |
 | Z-23 | Repozytorium publiczne (decyzja z Kroku 2) | Ujawnia architekturę i zależności (ułatwia rekonesans); ryzyko przypadkowego commitu sekretów lub danych. | Bezpieczeństwo nie opiera się na ukryciu; skanowanie sekretów z push protection; brak IP/hostów/portów/konfiguracji VPN w repo; fixtures anonimizowane ([ADR-013](../09-decyzje/ADR-013-repozytorium-publiczne.md)). | NFR-03.12. |
-| Z-24 | §0 `AGENT.md` / budowa w Codex | Codex czyta `AGENTS.md` (limit 32 KiB) i nie ma skilli Claude (`strategy-critique`, `backtest-review`). | `AGENTS.md` zamiast `AGENT.md`; checklisty metodologiczne przeniesione do dokumentacji i `AGENTS.md`. | Krok 6. |
+| Z-24 | §0 `AGENT.md` / budowa w Codex | Codex czyta `AGENTS.md` (limit 32 KiB) i nie ma skilli Claude (`strategy-critique`, `backtest-review`). | `AGENTS.md` zamiast `AGENT.md`; checklisty metodologiczne przeniesione do dokumentacji i `AGENTS.md`. | [`../../AGENTS.md`](../../AGENTS.md) § 7. |
 | Z-25 | §4.3 CSP bez `unsafe-inline` w Next.js | CSP z nonce wymusza dynamiczne renderowanie wszystkich stron (brak optymalizacji statycznej, ISR i PPR). | Akceptowalne: ekrany po zalogowaniu i tak są spersonalizowane; strony publiczne (logowanie) są lekkie. | NFR-03.06. |
 | Z-26 | §3.1.6 tryb demo | Publiczne demo z danymi rynkowymi = redystrybucja danych (licencje) i dodatkowa powierzchnia ataku. | Demo tylko dla zalogowanych (osobny rachunek typu `demo`). | FR-06.04. |
-| Z-27 | §4.5 serwer domowy + VPS jako edge | Awaria domu (prąd, łącze, sprzęt) albo VPS oznacza niedostępność aplikacji; redundancja nie mieści się w 0 zł. | Akceptowane dla aplikacji prywatnej: cel 99 % miesięcznie, monitoring z VPS, odtworzenie ≤ 4 h ([`../07-wdrozenie/backup-dr.md`](../07-wdrozenie/backup-dr.md)); UPS i drugi węzeł jako koszt w `10-ograniczenia.md`. | NFR-09.01, NFR-09.03. |
+| Z-27 | §4.5 serwer domowy + VPS jako edge | Awaria domu (prąd, łącze, sprzęt) albo VPS oznacza niedostępność aplikacji; redundancja nie mieści się w 0 zł. | Akceptowane dla aplikacji prywatnej: cel 99 % miesięcznie, monitoring z VPS, odtworzenie ≤ 4 h ([`../07-wdrozenie/backup-dr.md`](../07-wdrozenie/backup-dr.md)); UPS i drugi węzeł jako koszt w [`../10-ograniczenia.md`](../10-ograniczenia.md) (L-01, L-02; brak UPS potwierdzony 2026-09-19). | NFR-09.01, NFR-09.03. |
 | Z-28 | §4.3 ASVS L2 „kontrola po kontroli” | Kilka wymagań ASVS 5.0 L2 jest nieproporcjonalnych dla jednej VM i kilku użytkowników (TLS między kontenerami jednego hosta, sejf sekretów, logi na osobnym systemie) albo koliduje z funkcjami (migawka offline w przeglądarce, kody zapasowe szyfrowane zamiast haszowanych w Better Auth). | Każde odstępstwo opisane z uzasadnieniem, środkami kompensującymi i warunkiem powrotu ([`../06-bezpieczenstwo/kontrole-bezpieczenstwa.md`](../06-bezpieczenstwo/kontrole-bezpieczenstwa.md) § 8). | NFR-03.01. |
 
 ---
@@ -325,4 +325,5 @@ Zgodnie z §6.3: poniżej miejsca, w których specyfikacja jest sprzeczna, niere
 | A-05 | VPS OVH 1 vCPU / 2 GB RAM / 20 GB (potwierdzone 2026-09-19) pełni funkcję edge: dziś kończy TLS dla Immicha w Caddy, docelowo wyłącznie przekaźnik TCP (routing po SNI) przez WireGuard, bez dostępu do odszyfrowanej treści. | Zmiana projektu edge w ADR-011. |
 | A-06 | Użytkownicy mają rachunki w XTB i/lub mBank eMakler; przed M1 właściciel dostarczy anonimizowane pliki eksportu jako fixtures. | Bez fixtures parsery powstaną na podstawie dokumentacji społecznościowej — wyższe ryzyko błędów. |
 | A-07 | Historia instrumentów: do 10+ lat dziennych danych; ≤ 2 000 śledzonych instrumentów. | Rewizja rozmiaru bazy i czasu batchy. |
-| A-08 | Aplikacja nie składa zleceń i nie łączy się z rachunkami w trybie zapisu. | Zmiana statusu regulacyjnego (`11-zgodnosc-prawna.md`). |
+| A-08 | Aplikacja nie składa zleceń i nie łączy się z rachunkami w trybie zapisu. | Zmiana statusu regulacyjnego ([`../11-zgodnosc-prawna.md`](../11-zgodnosc-prawna.md) § 8). |
+| A-09 | Homelab nie wystawia usług do internetu; cały ruch, także wychodzący z VM, przechodzi przez tunel WireGuard i publiczny adres VPS; rejestrator i DNS domeny: home.pl (potwierdzone 2026-09-19). | Zmiana przepływów w [`../07-wdrozenie/infrastruktura.md`](../07-wdrozenie/infrastruktura.md) § 3 i ponowna ocena T-EDGE-02. |

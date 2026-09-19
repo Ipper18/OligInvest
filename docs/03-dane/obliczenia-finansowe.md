@@ -4,9 +4,9 @@
 
 **Status: dokument normatywny.** Kod musi być z nim zgodny. Zmiana wzoru = zmiana tego dokumentu + aktualizacja [`wektory-testowe.json`](wektory-testowe.json) w tym samym PR. Wartości przykładów policzono skryptem (Decimal dla pieniędzy, float64 dla statystyk) i porównano z bibliotekami referencyjnymi: **empyrical-reloaded** (metryki ryzyka) i **TA-Lib 0.8.0** (wskaźniki) — zgodność co do 6 miejsc po przecinku.
 
-Powiązane: [ADR-014](../09-decyzje/ADR-014-pieniadze-waluty-czas.md) (pieniądze, waluty, czas), [ADR-003](../09-decyzje/ADR-003-hybryda-obliczen-i-kolejki.md) (podział TS/Python), [`model-danych.md`](model-danych.md), [`formaty-importu.md`](formaty-importu.md), `11-zgodnosc-prawna.md` (disclaimery; Krok 6).
+Powiązane: [ADR-014](../09-decyzje/ADR-014-pieniadze-waluty-czas.md) (pieniądze, waluty, czas), [ADR-003](../09-decyzje/ADR-003-hybryda-obliczen-i-kolejki.md) (podział TS/Python), [`model-danych.md`](model-danych.md), [`formaty-importu.md`](formaty-importu.md), [`../11-zgodnosc-prawna.md`](../11-zgodnosc-prawna.md) (disclaimery, podstawy podatkowe).
 
-> ⚠️ Widok podatkowy jest **informacyjny** — nie jest rozliczeniem podatkowym ani poradą podatkową (NFR-07.01). Interpretacje przepisów zweryfikuje `11-zgodnosc-prawna.md`.
+> ⚠️ Widok podatkowy jest **informacyjny** — nie jest rozliczeniem podatkowym ani poradą podatkową (NFR-07.01). Podstawy prawne i interpretacje: [`../11-zgodnosc-prawna.md`](../11-zgodnosc-prawna.md) § 5.
 
 ---
 
@@ -104,8 +104,8 @@ Na podstawie art. 11a ust. 1–2 ustawy o PIT (przeliczenie przychodów i koszt�
 $$\text{koszt}_{\text{PLN}}^{\text{pod}} = q\cdot p \cdot \text{nbp}(\text{prev\_bd}(d_{\text{kupna}})) + \text{prowizja}\cdot \text{nbp}(\text{prev\_bd}(d_{\text{kupna}}))$$
 $$\text{przychód}_{\text{PLN}}^{\text{pod}} = q\cdot p \cdot \text{nbp}(\text{prev\_bd}(d_{\text{sprzedaży}})) - \text{prowizja}\cdot \text{nbp}(\text{prev\_bd}(d_{\text{sprzedaży}}))$$
 
-- Dzień przychodu/kosztu = **data zawarcia transakcji** (`trade_date`). ❓ Część praktyków stosuje datę rozliczenia — rozstrzygnięcie w `11-zgodnosc-prawna.md`; parametr `tax_date_basis = trade|settlement` (domyślnie `trade`).
-- **Koszt przewalutowania brokera w widoku podatkowym:** przeliczenie następuje po kursie NBP, więc marży brokera nie dodajemy do kosztu (❓ do potwierdzenia w `11-zgodnosc-prawna.md`; parametr `tax_include_fx_fee`, domyślnie `false`).
+- Dzień przychodu i kosztu (`d_kupna`, `d_sprzedaży` we wzorach) = **dzień rozliczenia transakcji** (`settle_date`, przeniesienie własności — art. 17 ust. 1ab pkt 1 ustawy o PIT; interpretacja Dyrektora KIS z 29.03.2024, sygn. 0114-KDIP3-1.4011.1149.2023.1.AK; tak samo liczy XTB — [`../11-zgodnosc-prawna.md`](../11-zgodnosc-prawna.md) § 5). Gdy import nie podaje daty rozliczenia, wyliczamy ją z `trade_date` i kalendarza rynku: USA — T+1 (od 28.05.2024, wcześniej T+2); GPW i pozostałe rynki UE — T+2, od 11.10.2027 T+1 (rozporządzenie (UE) 2025/2075). ❓ Dni, w których giełda działa, a system rozliczeń nie (np. niektóre święta federalne w USA), wymagają kalendarza rozliczeń — w MVP wpisy admina w `market.trading_calendar` (`notes`), weryfikacja przed M1. Parametr `tax_date_basis = settlement|trade` (domyślnie `settlement`; `trade` tylko do porównań).
+- **Koszt przewalutowania brokera w widoku podatkowym:** przeliczenie następuje po kursie NBP, więc marży brokera nie dodajemy do kosztu (brak jednolitej praktyki — [`../11-zgodnosc-prawna.md`](../11-zgodnosc-prawna.md) § 5.3; parametr `tax_include_fx_fee`, domyślnie `false`).
 - Rachunki IKE/IKZE: widok podatkowy pokazuje „nie dotyczy” (brak rozliczenia bieżącego).
 
 ### 2.3 Wycena bieżąca pozycji zagranicznych
@@ -122,7 +122,7 @@ Partia `L` w walucie rachunku (widok ekonomiczny) i w PLN (widok podatkowy):
 
 $$\text{koszt}_L = q\cdot p\cdot \text{kurs}_{\text{broker}} + \text{prowizja} + \text{inne opłaty transakcyjne (np. FTT)}$$
 
-Koszt jednostkowy `c_L = koszt_L / q`. Data nabycia partii = `trade_date`.
+Koszt jednostkowy `c_L = koszt_L / q`. Data nabycia partii = `trade_date` (kolejność FIFO); w widoku podatkowym kurs NBP dobieramy do `settle_date` (§ 2.2).
 
 ### 3.2 FIFO (domyślne)
 
@@ -154,11 +154,11 @@ Każda zmiana operacji z datą `d` unieważnia i przelicza partie, pozycje i wyc
 
 Rachunek PLN w XTB, instrument AAPL (USD). Kursy fikcyjne, wyłącznie ilustracyjne. Marża FX `m = 0,5 %`, prowizja 0.
 
-| Operacja | Data | q | p (USD) | mid | kurs brokera | Koszt / przychód ekonomiczny (PLN) | NBP D-1 | Koszt / przychód podatkowy (PLN) |
+| Operacja | Zawarcie / rozliczenie | q | p (USD) | mid | kurs brokera | Koszt / przychód ekonomiczny (PLN) | NBP z dnia przed rozliczeniem | Koszt / przychód podatkowy (PLN) |
 |---|---|---|---|---|---|---|---|---|
-| T1 BUY | 2025-03-03 | 10 | 240,00 | 3,9800 | 3,99990 | 9 599,76 (w tym FX 47,76) | 3,9750 | 9 540,00 |
-| T2 BUY | 2025-06-02 | 5 | 200,00 | 3,7500 | 3,76875 | 3 768,75 (w tym FX 18,75) | 3,7450 | 3 745,00 |
-| T3 SELL | 2025-09-01 | 12 | 230,00 | 3,6500 | 3,63175 | 10 023,63 | 3,6550 | 10 087,80 |
+| T1 BUY | 2025-03-03 / 03-04 | 10 | 240,00 | 3,9800 | 3,99990 | 9 599,76 (w tym FX 47,76) | 3,9750 | 9 540,00 |
+| T2 BUY | 2025-06-02 / 06-03 | 5 | 200,00 | 3,7500 | 3,76875 | 3 768,75 (w tym FX 18,75) | 3,7450 | 3 745,00 |
+| T3 SELL | 2025-09-02 / 09-03 | 12 | 230,00 | 3,6500 | 3,63175 | 10 023,63 | 3,6550 | 10 087,80 |
 
 FIFO: sprzedaż zużywa 10 szt. z T1 (9 599,76) + 2 szt. z T2 (1 507,50) → koszt 11 107,26 PLN.
 

@@ -7,7 +7,7 @@ Powiązane: `zrodla-danych.md` (role dostawców), `model-danych.md` (tabele `mar
 ## 1. Zasady
 
 1. **Baza danych jest źródłem prawdy dla historii.** Dostawcy uzupełniają luki; raz pobrany bar EOD nie jest pobierany ponownie (poza oknem korekt).
-2. **Każda odpowiedź niesie metadane:** `source`, `asOf` (czas danych), `fetchedAt`, `stale: boolean`, `delayMinutes`. UI pokazuje je zawsze (wymóg z `11-zgodnosc-prawna.md`).
+2. **Każda odpowiedź niesie metadane:** `source`, `asOf` (czas danych), `fetchedAt`, `stale: boolean`, `delayMinutes`. UI pokazuje je zawsze (wymóg z [`../11-zgodnosc-prawna.md`](../11-zgodnosc-prawna.md) § 4.2).
 3. **Kwoty są zasobem planowanym**, nie limitem do „zderzenia się”: każdy dostawca ma budżet dzienny/minutowy w `valkey-queue` (trwałe liczniki); zadania deklarują koszt przed wykonaniem.
 4. **Degradacja zamiast błędu:** brak świeżych danych → serwujemy ostatnie znane z flagą `stale` i komunikatem; alert dla admina po N minutach niedostępności.
 5. **Jedna kanoniczna tożsamość instrumentu:** `instrument_id` (ISIN + MIC, np. `PLPKO0000016@XWAR`) ↔ symbole dostawców (`PKO.WA` Yahoo, `PKO` GPW, `PKO.WAR` Alpha Vantage) w tabeli `instrument_provider_symbols`.
@@ -122,7 +122,7 @@ Budżety są konfigurowalne w panelu admina (feature flag + liczby), a zużycie 
 
 | Ryzyko | Mitygacja |
 |---|---|
-| Yahoo blokuje IP serwera | wykładniczy backoff, breaker, fallback Finnhub/Twelve Data dla USA; dla GPW intraday: tryb „EOD only” z komunikatem; opcja płatna EODHD w `10-ograniczenia.md` |
+| Yahoo blokuje IP serwera | wykładniczy backoff, breaker, fallback Finnhub/Twelve Data dla USA; dla GPW intraday: tryb „EOD only” z komunikatem; opcja płatna EODHD w [`../10-ograniczenia.md`](../10-ograniczenia.md) (L-12); ruch wychodzi przez adres VPS — w razie blokad ruch `jobs` bezpośrednio łączem domowym ([`../07-wdrozenie/infrastruktura.md`](../07-wdrozenie/infrastruktura.md) § 1) |
 | GPW zmienia format XLS lub blokuje pobieranie | test kontraktowy parsera (fixture z 2026-09-16), alert po 2 dniach bez danych, ręczny import Stooq/XLS przez admina |
 | NBP niedostępny w dniu wyceny | Frankfurter + oznaczenie „kurs ECB, nie NBP” w wycenie; ponowne przeliczenie po powrocie NBP |
 | Przekroczenie kwot przez backfill | limit 20 % kwoty na backfill, kolejka z priorytetami (intraday > EOD > backfill) |

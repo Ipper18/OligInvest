@@ -2,7 +2,7 @@
 
 **Cel:** opisać, jaki problem rozwiązuje OligInvest, dla kogo, co wchodzi w zakres, a co świadomie z niego wyłączamy — tak, aby każdą decyzję projektową i każde zadanie dało się sprawdzić względem tej wizji.
 
-Powiązane: [`wymagania.md`](wymagania.md) (FR/NFR z ID), [`specyfikacja-zrodlowa.md`](specyfikacja-zrodlowa.md) (treść zadania i decyzje), `docs/08-plan/mvp.md` (Krok 6).
+Powiązane: [`wymagania.md`](wymagania.md) (FR/NFR z ID), [`specyfikacja-zrodlowa.md`](specyfikacja-zrodlowa.md) (treść zadania i decyzje), [`../08-plan/mvp.md`](../08-plan/mvp.md).
 
 ## 1. Problem
 
@@ -60,7 +60,7 @@ Liczba użytkowników: ≤ 10 kont, ≤ 5 jednocześnie (założenie A-03). Reje
 |---|---|---|
 | Składanie zleceń, handel, połączenia z rachunkiem w trybie zapisu | Ryzyko regulacyjne i bezpieczeństwa; nie jest celem produktu | Nie |
 | Doradztwo inwestycyjne, rekomendacje, sygnały „kup/sprzedaj”, prognozy punktowe | MiFID II / rekomendacje inwestycyjne; zasada 1 | Nie |
-| Dane czasu rzeczywistego | Brak darmowego legalnego źródła (Z-01) | Tylko przy płatnym źródle (`10-ograniczenia.md`) |
+| Dane czasu rzeczywistego | Brak darmowego legalnego źródła (Z-01) | Tylko przy płatnym źródle ([`../10-ograniczenia.md`](../10-ograniczenia.md), L-10) |
 | Publiczna rejestracja, SaaS, płatności, subskrypcje | Aplikacja prywatna; licencje danych nie pozwalają na redystrybucję | Nie bez zmiany źródeł danych i statusu prawnego |
 | Natywne aplikacje w App Store / Google Play | Koszt konta Apple (99 USD/rok) i czas; PWA wystarcza (ADR-008) | Tak, jeśli budżet się zmieni |
 | Instrumenty pochodne (CFD, opcje, kontrakty) w modelu portfela | Inny model ryzyka i rozliczeń; w MVP tylko rozpoznanie przy imporcie (Z-15) | Tak, jako osobny moduł |
@@ -86,11 +86,11 @@ Liczba użytkowników: ≤ 10 kont, ≤ 5 jednocześnie (założenie A-03). Reje
 | Używanie przez właściciela | ≥ 3 sesje tygodniowo po 3 miesiącach | Własne, anonimowe liczniki w bazie (bez zewnętrznej analityki) |
 | Zrozumiałość dla początkujących | Każda metryka w UI ma wyjaśnienie | Test pokrycia treści (FR-06.02) |
 | Bezpieczeństwo | 0 incydentów wycieku; test odtworzenia kopii co kwartał zaliczony | Rejestr incydentów, protokoły DR (NFR-09.03) |
-| Koszt | 0 zł miesięcznie | Przegląd `10-ograniczenia.md` |
+| Koszt | 0 zł miesięcznie | Przegląd [`../10-ograniczenia.md`](../10-ograniczenia.md) |
 
 ## 9. Etapy (wysokopoziomowo)
 
-M0 szkielet i infrastruktura → **M1 MVP** (import XTB, wycena opóźniona/EOD, P/L FIFO, wynik dnia, wykres świecowy, zaproszenia + hasło + TOTP, kopie zapasowe) → M2 dane rynkowe i wskaźniki → M3 wyniki historyczne i analizy scenariuszowe → M4 alerty, PWA, Skróty → M5 admin, edukacja, screener, newsy → M6 hardening i dostępność. Szczegóły i kryteria wyjścia: `docs/08-plan/roadmapa.md` (Krok 6).
+M0 szkielet i infrastruktura → **M1 MVP** (import XTB, wycena opóźniona/EOD, P/L FIFO, wynik dnia, wykres świecowy, hasło + TOTP, kopie zapasowe; brama A — właściciel, brama B — zaproszenie zaufanych osób) → M2 dane rynkowe i wskaźniki → M3 wyniki historyczne i analizy scenariuszowe (P1) → M4 alerty, PWA, Skróty → M5a admin, edukacja, screener, heatmapa → M5b analizy zaawansowane (P2), OAuth, offline → M6 hardening i dostępność; newsy i pozostałe funkcje P3 — po M6. Szczegóły i kryteria wyjścia: [`../08-plan/roadmapa.md`](../08-plan/roadmapa.md) (doprecyzowanie z Kroku 6: podział M1 na dwie bramy i M5 na dwie części).
 
 ## 10. Kwestie otwarte
 
@@ -101,3 +101,8 @@ M0 szkielet i infrastruktura → **M1 MVP** (import XTB, wycena opóźniona/EOD,
 | Q-03 | ✅ Rozstrzygnięte 2026-09-19: domyślnie — brak pliku `LICENSE` (wszelkie prawa zastrzeżone, [ADR-013](../09-decyzje/ADR-013-repozytorium-publiczne.md)) | Właściciel | — |
 | Q-04 | ✅ Rozstrzygnięte 2026-09-19: fixtures syntetyczne wygenerowane na podstawie dokumentacji formatów ([`../03-dane/fixtures/anonymized/`](../03-dane/fixtures/anonymized/README.md)); rzeczywiste pliki właściciela — tylko do lokalnej weryfikacji parsera, po anonimizacji | Właściciel | — |
 | Q-05 | ✅ Rozstrzygnięte w Kroku 4: prowizja 0% do 100 000 EUR obrotu miesięcznie, potem 0,2% (min. 10 EUR); przewalutowanie 0,5% kursu ([`../03-dane/obliczenia-finansowe.md`](../03-dane/obliczenia-finansowe.md) § 12.7) | Claude (weryfikacja) | — |
+| Q-06 | ✅ Rozstrzygnięte 2026-09-19: rejestrator i DNS domeny — home.pl (DNSSEC bezpłatny, rekordy CAA w panelu; obsługa parametrów `accounturi` do sprawdzenia w M0 — [`../07-wdrozenie/infrastruktura.md`](../07-wdrozenie/infrastruktura.md) § 7); certyfikat SSL z home.pl nie jest potrzebny dla aplikacji (Let's Encrypt przez ACME) | Właściciel | — |
+| Q-07 | ✅ Rozstrzygnięte 2026-09-19: dom nie wystawia usług do internetu; cały ruch homelabu, także wychodzący, idzie przez WireGuard i adres VPS (założenie A-09) | Właściciel | — |
+| Q-08 | ✅ Rozstrzygnięte 2026-09-19: serwer bez UPS — ograniczenie L-01 w [`../10-ograniczenia.md`](../10-ograniczenia.md) | Właściciel | — |
+| Q-09 | ✅ Rozstrzygnięte 2026-09-19: dysk VM na start bez szyfrowania, ze ścieżką zmiany ([`../10-ograniczenia.md`](../10-ograniczenia.md) § 2.1) | Właściciel | — |
+| Q-10 | ✅ Rozstrzygnięte 2026-09-19: VPS w regionie UE; umowy powierzenia Brevo i OVHcloud — akceptacja i zapis wersji przed bramą B (BL-118); wzory tekstów prawnych zaakceptowane | Właściciel | — |

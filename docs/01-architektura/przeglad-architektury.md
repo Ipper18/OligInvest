@@ -236,7 +236,7 @@ flowchart TB
 | Obserwowalność | Logi JSON (pino / structlog), identyfikator korelacji propagowany do zadań, metryki, health-checki | `07-wdrozenie/monitoring.md` |
 | Konfiguracja | Zmienne środowiskowe walidowane schematem Zod przy starcie; sekrety poza repo | `packages/config`, `07-wdrozenie/` |
 | Wydajność | SSR + streaming, leniwe moduły, decymacja po stronie serwera, brak zewnętrznych wywołań w ścieżce żądania | `04-frontend/wydajnosc.md` |
-| Zgodność regulacyjna | Disclaimery i bloki założeń jako komponenty wspólne, testowane w e2e | `11-zgodnosc-prawna.md` |
+| Zgodność regulacyjna | Disclaimery i bloki założeń jako komponenty wspólne, testowane w e2e | [`../11-zgodnosc-prawna.md`](../11-zgodnosc-prawna.md) § 4 |
 
 ## 7. Scenariusze atrybutów jakości
 

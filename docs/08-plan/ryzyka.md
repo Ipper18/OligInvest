@@ -1,0 +1,48 @@
+# Rejestr ryzyk projektu
+
+**Cel:** zebrać w jednym miejscu ryzyka projektowe, produktowe, prawne i operacyjne OligInvest — z oceną, mitygacją, sygnałem ostrzegawczym i momentem działania — tak, aby właściciel i agent budujący wiedzieli, czego pilnować w każdym etapie.
+
+Powiązane: [`roadmapa.md`](roadmapa.md), [`backlog.md`](backlog.md), [`../06-bezpieczenstwo/model-zagrozen.md`](../06-bezpieczenstwo/model-zagrozen.md) (zagrożenia bezpieczeństwa `T-*`), [`../10-ograniczenia.md`](../10-ograniczenia.md) (ograniczenia `L-*`), [`../00-przeglad/wymagania.md`](../00-przeglad/wymagania.md) § 3 (zastrzeżenia `Z-*`).
+
+## 1. Skala i zasady
+
+- **P** (prawdopodobieństwo) i **W** (wpływ) w skali 1–5, jak w modelu zagrożeń; **ryzyko = P × W**: 1–4 niskie (akceptacja), 5–9 średnie (akceptacja z monitoringiem), 10–16 wysokie (działania przed końcem wskazanego etapu), 20–25 krytyczne (blokuje etap).
+- **Kto pilnuje:** *właściciel* (decyzje, przegląd PR, serwer), *agent* (Codex — w każdym PR), *CI* lub *monitoring* (sygnały automatyczne). Projekt ma jedną osobę odpowiedzialną — kolumna mówi, **czym** ryzyko jest pilnowane.
+- Przegląd rejestru: na końcu każdego etapu (kryteria wspólne w [`roadmapa.md`](roadmapa.md) § 4) i po każdym incydencie. Zmiana oceny lub nowe ryzyko — w PR z uzasadnieniem.
+
+## 2. Rejestr
+
+| ID | Ryzyko | Źródło | P | W | P×W | Mitygacja | Sygnał ostrzegawczy | Kto pilnuje | Kiedy |
+|---|---|---|---|---|---|---|---|---|---|
+| **R-01** | Złośliwa lub przejęta zależność npm/PyPI wykonuje kod w CI lub na serwerze | T-SC-01 | 2 | 5 | **10** | polityka pnpm od pierwszego commita (opóźnienie nowych wersji 3 dni, `trustPolicy`, blokada skryptów instalacyjnych poza listą), lockfile, Renovate z opóźnieniem, osv-scanner, SBOM, podpisy cosign, sieci bez wyjścia dla `web` i `analytics`, minimalizm zależności, kwartalny przegląd drzewa (BL-608) | alert osv-scanner/Dependabot, nowy skrypt instalacyjny w PR, nieoczekiwany ruch wychodzący | CI, właściciel | M0 i stale |
+| **R-02** | Yahoo przestaje działać albo blokuje adres VPS (ruch homelabu wychodzi przez VPS) | Z-03, L-11 | 4 | 2 | 8 | historia EOD w naszej bazie, zapasowe adaptery USA, tryb „tylko EOD”, opcjonalnie ruch `jobs` bezpośrednio łączem domowym, płatny EODHD | > 50 % błędów adaptera przez 24 h, otwarty breaker | monitoring | M1+ |
+| **R-03** | Archiwum GPW zmienia format XLS albo odrzuca klienta automatycznego | ADR-005, L-12 | 2 | 4 | 8 | test kontraktowy parsera, uczciwa identyfikacja i 1 żądanie na sesję, import ręczny przez admina, płatna alternatywa | sonda `eod-gpw`: 2 sesje bez danych | monitoring, właściciel | M1+ |
+| **R-04** | Awaria domu (prąd — brak UPS, łącze, sprzęt) albo VPS wyłącza aplikację | Z-27, T-INF-05, L-01, L-02 | 3 | 3 | 9 | samoczynny start po zaniku prądu, WAL i kopia poza domem co godzinę, procedury D i E (RTO ≤ 4 h), monitoring z VPS; UPS pierwszym zakupem | sonda `app-ready` niedostępna > 15 min; > 2 zaniki prądu w kwartale | monitoring, właściciel | M0–M1, M6 |
+| **R-05** | Apple zmienia politykę PWA w UE albo Web Push traci niezawodność | Z-08, [`../05-mobile/strategia-mobilna.md`](../05-mobile/strategia-mobilna.md) § 8 | 2 | 3 | 6 | e-mail dla alertów krytycznych, Skróty działają bez instalacji PWA, Safari jako zapas | zapowiedzi w notach wydań iOS, wzrost błędów doręczeń push | właściciel | M4+ |
+| **R-06** | Szara strefa licencji: dane z planów „do użytku osobistego” widzi kilka zaproszonych osób | L-40, [`../11-zgodnosc-prawna.md`](../11-zgodnosc-prawna.md) § 6 | 2 | 3 | 6 | dane tylko po zalogowaniu, brak stron publicznych, atrybucje, mała liczba kont, adapter wyłączalny flagą, płatny plan w razie sygnału | kontakt od dostawcy, zmiana regulaminu | właściciel | stale |
+| **R-07** | Błędy obliczeń (FIFO, waluty, P/L, podatki) podważają zaufanie do liczb | NFR-08, Z-16 | 3 | 4 | **12** | wzory w dokumentacji, wspólne wektory testowe (Vitest i pytest), testy właściwości, uzgodnienie z brokerem po każdym imporcie, widok podatkowy informacyjny z disclaimerem | różnica uzgodnienia ≠ 0, zgłoszenie użytkownika | agent, CI | M1–M3 |
+| **R-08** | Broker zmienia format eksportu (XTB, mBank) | A-06, [`../03-dane/formaty-importu.md`](../03-dane/formaty-importu.md) | 3 | 3 | 9 | wykrywanie formatu po zawartości, oba szablony XTB, fixtures, żaden wiersz nie ginie po cichu, import generyczny CSV (M5b) | wzrost wierszy `error`/`needs_mapping`, nowy szablon | agent, właściciel | M1+ |
+| **R-09** | Funkcja przekracza granicę doradztwa lub rekomendacji (MiFID II, MAR) | [`../11-zgodnosc-prawna.md`](../11-zgodnosc-prawna.md) § 2–4 | 2 | 4 | 8 | zakazy i checklista, test zakazanych zwrotów w CI, disclaimery wg klucza, ponowna ocena przy zmianach z § 8 | PR z nową sugestią, rankingiem lub prognozą; test języka czerwony | CI, właściciel | M3–M5b |
+| **R-10** | Budżety wydajności nieosiągnięte (framework zajmuje ok. 130 KB z 200 KB, łącze domowe) | Z-18, L-04 | 3 | 3 | 9 | budżety blokujące w CI, leniwe ładowanie, RUM, opcje z L-04 | czerwone budżety w CI, RUM p75 LCP > 2 s przez 2 tygodnie | CI, właściciel | M1+, M6 |
+| **R-11** | Kod generowany przez agenta niezgodny z dokumentacją albo niebezpieczny | T-SC-06 | 3 | 4 | **12** | reguły w [`../../AGENTS.md`](../../AGENTS.md), małe PR-y, przegląd każdego PR przez właściciela, bramki CI (kontrakty, RLS, budżety, język), `CODEOWNERS` dla ścieżek wrażliwych, dokumentacja przed kodem | PR bez testów, usunięte testy, nowa zależność bez uzasadnienia, zmiana poza zakresem zadania | właściciel, CI | stale |
+| **R-12** | Ograniczenia Better Auth (przedrostek `__Host-`, OAuth bez 2FA, sposób przechowywania sekretów) | O-01, O-02, Z-04 | 3 | 2 | 6 | spiki w M0 (BL-030, BL-031), bramka MFA w API, OAuth za flagą do czasu spiku (BL-564), odstępstwa opisane | nieudany spike, nowe wydanie główne biblioteki | agent, właściciel | M0, M5b |
+| **R-13** | Zasoby i5-4590 współdzielone z Immichem nie wystarczą przy analizach | Z-19, NFR-01.08 | 3 | 2 | 6 | limity kontenerów, jedno ciężkie zadanie naraz, limity parametrów, priorytet CPU w nocy, test obciążeniowy (BL-607) | p95 API > 300 ms, zabicia OOM | monitoring | M3, M6 |
+| **R-14** | Jeden administrator: utrata dostępu (TOTP, klucz SSH) albo niedostępność osoby | [`../06-bezpieczenstwo/plan-reagowania.md`](../06-bezpieczenstwo/plan-reagowania.md) P13 | 2 | 4 | 8 | procedura break-glass, materiały awaryjne offline, depozyt sekretów w menedżerze haseł, instrukcja administratora, testy odtworzenia | utrata telefonu z TOTP, brak klucza | właściciel | stale |
+| **R-15** | Przejęty VPS uzyskuje certyfikat dla `invest.oligi.pl`, jeśli panel home.pl nie przyjmie parametrów CAA | T-EDGE-01, [`../07-wdrozenie/infrastruktura.md`](../07-wdrozenie/infrastruktura.md) § 7 | 1 | 5 | 5 | CAA z `accounturi` i `validationmethods` albo przeniesienie strefy DNS; monitoring CT (także wildcard); przy braku parametrów ocena rośnie do 2×5 = 10 do czasu decyzji | wynik spiku BL-026, nieznany certyfikat w CT | właściciel, monitoring | M0 |
+| **R-16** | Niedoszacowanie: M1 przeciąga się i zniechęca | ADR-001 | 4 | 3 | **12** | dwie bramy M1, cięcia awaryjne z [`mvp.md`](mvp.md) § 4, weryfikacja ADR-001 (koszt > 2× estymacji), przegląd na końcu etapu | M1 > 30 % ponad estymację | właściciel | M1 |
+| **R-17** | Porzucone lub niestabilne zależności (Scriptable, quantstats 0.0.x, yahoo-finance2, SheetJS z CDN) | NFR-10.05, [`../01-architektura/stack-technologiczny.md`](../01-architektura/stack-technologiczny.md) § 1 | 3 | 2 | 6 | polityka zależności (utrzymanie ≤ 6 mies.), adaptery z wymiennymi implementacjami, funkcje opcjonalne za flagami | brak wydań > 12 mies., podatność bez poprawki | CI, właściciel | stale |
+| **R-18** | Kradzież serwera przy nieszyfrowanym dysku VM | L-03, T-INF-04 | 1 | 4 | 4 | ścieżka włączenia szyfrowania ([`../10-ograniczenia.md`](../10-ograniczenia.md) § 2.1), szyfrowane kopie, procedura naruszenia | zmiana kręgu użytkowników, przeniesienie serwera | właściciel | stale |
+| **R-19** | Utrata kluczy kopii lub sekretów uniemożliwia odtworzenie | [`../07-wdrozenie/backup-dr.md`](../07-wdrozenie/backup-dr.md) § 4 | 1 | 5 | 5 | depozyt w menedżerze haseł i kopia offline, test kluczy w kwartalnym ćwiczeniu DR | niezaliczony test odtworzenia | właściciel | M1+ |
+| **R-20** | Niezgodności narzędzi (TypeScript 7, Next.js 16, Better Auth 1.7) spowalniają start | [`../01-architektura/stack-technologiczny.md`](../01-architektura/stack-technologiczny.md) § 3 | 3 | 2 | 6 | spike BL-032, powrót do TypeScript 6.x, grupowanie aktualizacji w Renovate | nieprzechodzący build po aktualizacji | agent | M0 |
+| **R-21** | Zmiana przepisów lub interpretacji podatkowych (data przychodu, T+1 w UE od 11.10.2027) | [`../11-zgodnosc-prawna.md`](../11-zgodnosc-prawna.md) § 5 | 2 | 2 | 4 | parametr `tax_date_basis`, kalendarz rozliczeń z datą przejścia na T+1, coroczny przegląd prawny, widok informacyjny | nowa interpretacja, data 11.10.2027 | właściciel | stale |
+
+## 3. Podsumowanie
+
+21 ryzyk: **4 wysokie** (R-01, R-07, R-11, R-16), 15 średnich, 2 niskie; brak krytycznych.
+
+| Ryzyko wysokie | Działanie przed końcem etapu |
+|---|---|
+| R-01 złośliwa zależność | M0: polityka pnpm, osv-scanner, sieci bez wyjścia; M6: przegląd drzewa zależności (BL-608) |
+| R-07 błędy obliczeń | M1: wektory A, F, G i uzgodnienie z realnym eksportem XTB; M3: wektory B–D w obu językach |
+| R-11 kod agenta | M0: reguły w `AGENTS.md`, ochrona `main`, `CODEOWNERS`; każdy etap: przegląd PR i bramki CI |
+| R-16 niedoszacowanie | M1: brama A przed B, cięcia awaryjne, weryfikacja ADR-001 |

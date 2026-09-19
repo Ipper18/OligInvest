@@ -43,7 +43,7 @@ Konwencja: **Termin (ang. odpowiednik, identyfikator w kodzie)** — definicja. 
 - **Pozycja** (*position*) — łączna ilość instrumentu na rachunku z kosztem nabycia i wyceną.
 - **Partia** (*lot*, `lot`) — część pozycji nabyta jedną transakcją; podstawa rozliczania kosztu metodą FIFO.
 - **Koszt nabycia** (*cost basis*) — wydatek poniesiony na nabycie pozycji wraz z kosztami (prowizje, przewalutowanie).
-- **FIFO** (*First In, First Out*) — metoda przypisywania kosztu: sprzedaż zużywa najpierw najstarsze partie. Wymagana przez polskie prawo podatkowe dla papierów wartościowych (art. 24 ust. 10 ustawy o PIT — potwierdzenie w `11-zgodnosc-prawna.md`).
+- **FIFO** (*First In, First Out*) — metoda przypisywania kosztu: sprzedaż zużywa najpierw najstarsze partie. Wymagana przez polskie prawo podatkowe dla papierów wartościowych (art. 24 ust. 10 ustawy o PIT — odrębnie dla każdego rachunku; [`../11-zgodnosc-prawna.md`](../11-zgodnosc-prawna.md) § 5).
 - **Średnia ważona** (*average cost*) — koszt jednostkowy jako średnia ważona ilością wszystkich zakupów; w OligInvest wyłącznie widok informacyjny.
 - **P/L zrealizowany** (*realized P/L*) — wynik na zamkniętej (sprzedanej) części pozycji.
 - **P/L niezrealizowany** (*unrealized P/L*) — różnica między bieżącą wyceną a kosztem nabycia otwartej pozycji.
@@ -117,7 +117,7 @@ Konwencja: **Termin (ang. odpowiednik, identyfikator w kodzie)** — definicja. 
 - **Tabela A / C NBP** — tabela kursów średnich (A) oraz kupna i sprzedaży (C) Narodowego Banku Polskiego.
 - **IKE / IKZE** — Indywidualne Konto Emerytalne / Indywidualne Konto Zabezpieczenia Emerytalnego; rachunki z preferencjami podatkowymi (transakcje na nich nie są rozliczane jak na rachunku zwykłym).
 - **MiFID II** — dyrektywa UE 2014/65/UE regulująca usługi inwestycyjne, w tym doradztwo inwestycyjne (osobista rekomendacja dla klienta).
-- **Rekomendacja inwestycyjna** — informacja rekomendująca lub sugerująca strategię inwestycyjną (rozporządzenie MAR i akty delegowane); obowiązki i nasza pozycja w `11-zgodnosc-prawna.md`.
+- **Rekomendacja inwestycyjna** — informacja rekomendująca lub sugerująca strategię inwestycyjną (rozporządzenie MAR i akty delegowane); obowiązki i nasza pozycja w [`../11-zgodnosc-prawna.md`](../11-zgodnosc-prawna.md) § 3.
 - **KNF** — Komisja Nadzoru Finansowego.
 - **Disclaimer** — obowiązkowe zastrzeżenie w UI, że treści mają charakter edukacyjny i nie są rekomendacją (NFR-07.01).
 - **RODO / GDPR** — rozporządzenie UE 2016/679 o ochronie danych osobowych.

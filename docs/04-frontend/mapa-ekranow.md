@@ -41,8 +41,8 @@ flowchart LR
 | `/rejestracja` (token w `#t=…`) | rejestracja z zaproszenia: dane konta, akceptacja regulaminu (wymagana), potwierdzenie zapoznania się z informacją o przetwarzaniu danych, zgoda na diagnostykę (opcjonalna, niezaznaczona) | FR-07.01, FR-07.02, FR-07.12 | `previewInvitation`, `authSignUpEmail` | token usuwany z paska adresu po odczytaniu; nieważne zaproszenie → ten sam komunikat dla każdej przyczyny |
 | `/konfiguracja-2fa` | kod QR, ręczny sekret, weryfikacja, 10 kodów zapasowych | FR-07.04 | `authTwoFactorEnable`, `authTwoFactorVerifyTotp` | cel bramki MFA; kody do pobrania jako plik TXT i do skopiowania |
 | `/reset-hasla`, `/reset-hasla/nowe` | prośba o link, nowe hasło | FR-07.10 | `authRequestPasswordReset`, `authResetPassword` | odpowiedź identyczna niezależnie od istnienia konta |
-| `/akceptacja-regulaminu` | ponowna akceptacja po istotnej zmianie regulaminu (bramka `TERMS_ACCEPTANCE_REQUIRED`) ze streszczeniem zmian | FR-07.12 | `getLegalStatus`, `acceptLegalDocuments` | jedyny dostępny ekran (obok wylogowania) do czasu akceptacji |
-| `/regulamin`, `/prywatnosc` | regulamin i informacja o przetwarzaniu danych — publiczne, wersjonowane, do pobrania i wydruku | FR-07.12 | — (treść statyczna) | link w stopce każdego ekranu i w e-mailu z zaproszeniem |
+| `/akceptacja-regulaminu` | ponowna akceptacja po istotnej zmianie regulaminu (bramka `TERMS_ACCEPTANCE_REQUIRED`) ze streszczeniem zmian | FR-07.12 | `getLegalStatus`, `acceptLegalDocuments` | do czasu akceptacji dostępne są tylko ten ekran, wylogowanie oraz eksport danych i usunięcie konta (`/ustawienia/dane`) |
+| `/regulamin`, `/prywatnosc`, `/zrodla-danych` | regulamin, informacja o przetwarzaniu danych oraz źródła danych i licencje — publiczne, wersjonowane, do pobrania i wydruku | FR-07.12, NFR-07.03 | — (treść statyczna) | link w stopce każdego ekranu i w e-mailu z zaproszeniem; strona źródeł bez danych rynkowych ([`../11-zgodnosc-prawna.md`](../11-zgodnosc-prawna.md) § 6) |
 
 ## 3. Start i portfel
 

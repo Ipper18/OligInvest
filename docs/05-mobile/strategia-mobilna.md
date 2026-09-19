@@ -102,7 +102,7 @@ Zasady kontraktu: odpowiedzi tekstowe pl-PL zawsze z czasem i statusem danych; k
 | Oddzielna pamięć Safari i PWA na iOS | dwa logowania z TOTP | sesja w PWA długa (odświeżana przy użyciu), Safari traktowany jako awaryjny |
 | Brak pracy w tle na iOS | dane widoczne po otwarciu aplikacji, nie wcześniej | SSE + odświeżenie przy powrocie; skróty jako szybki podgląd |
 | Doręczalność Web Push nie jest gwarantowana | spóźniony lub utracony alert | e-mail dla alertów krytycznych i bezpieczeństwa; historia alertów w aplikacji |
-| Polityka Apple wobec PWA w UE (DMA) | w 2024 r. Apple zapowiedział, a następnie wycofał wyłączenie aplikacji z ekranu początkowego w UE | monitorowanie; plan awaryjny: aplikacja w Safari + e-mail (rejestr ryzyk, Krok 6) |
+| Polityka Apple wobec PWA w UE (DMA) | w 2024 r. Apple zapowiedział, a następnie wycofał wyłączenie aplikacji z ekranu początkowego w UE | monitorowanie; plan awaryjny: aplikacja w Safari + e-mail ([rejestr ryzyk](../08-plan/ryzyka.md), R-05) |
 | OAuth w trybie samodzielnym iOS (FR-07.03, P2) | przekierowanie do dostawcy może wyjść do Safari | test na urządzeniu przed włączeniem flagi `auth.oauth`; logowanie hasłem + TOTP pozostaje domyślne |
 | Widżety z danymi zależą od aplikacji zewnętrznych | Scriptable (iOS) bez aktualizacji od 2024-09 | funkcja opcjonalna (FR-09.08, P3); Android: widżety HTTP Shortcuts |
 

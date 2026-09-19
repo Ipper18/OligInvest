@@ -93,7 +93,7 @@ Tasker to płatna aplikacja (poza budżetem 0 zł) — akcja „HTTP Request” 
 
 ## 7. Udostępnianie pliku importu (propozycja poza MVP)
 
-Chrome na Androidzie obsługuje w zainstalowanych PWA cel udostępniania (Web Share Target, pole `share_target` w manifeście). Pozwoliłoby to udostępnić plik eksportu z XTB („Udostępnij → OligInvest”) prosto do `/portfel/import`. iOS tego nie obsługuje. Decyzja o wdrożeniu — backlog (Krok 6); ❓ działanie z plikami XLSX do weryfikacji na urządzeniu.
+Chrome na Androidzie obsługuje w zainstalowanych PWA cel udostępniania (Web Share Target, pole `share_target` w manifeście). Pozwoliłoby to udostępnić plik eksportu z XTB („Udostępnij → OligInvest”) prosto do `/portfel/import`. iOS tego nie obsługuje. Decyzja o wdrożeniu — zadanie BL-708 w [`../08-plan/backlog.md`](../08-plan/backlog.md) (po M6); ❓ działanie z plikami XLSX do weryfikacji na urządzeniu.
 
 ## 8. Rozwiązywanie problemów
 

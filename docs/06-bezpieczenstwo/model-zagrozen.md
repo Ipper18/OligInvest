@@ -98,11 +98,11 @@ Litery STRIDE: **S** podszycie, **T** manipulacja, **R** wyparcie się, **I** uj
 | ID | STRIDE | Zagrożenie | Kontrole | P×W | Ryzyko |
 |---|---|---|---|---|---|
 | T-EDGE-01 | S, I | Przejęty VPS uzyskuje certyfikat dla `invest.oligi.pl` (ruch ACME przechodzi przez VPS) i wykonuje MITM | CAA z `accounturi` i `validationmethods`; monitoring CT; klucze TLS tylko w domu | 1×5 | 5 średnie |
-| T-EDGE-02 | I | VPS podsłuchuje ruch | przekazywanie TLS bez terminacji; widoczne tylko metadane (IP, SNI, czas) | 2×2 | 4 niskie |
+| T-EDGE-02 | I, T | VPS podsłuchuje lub modyfikuje ruch — przychodzący i wychodzący (ruch homelabu wychodzi przez VPS) | przekazywanie TLS bez terminacji; widoczne tylko metadane (IP, SNI, czas); ruch wychodzący: TLS z weryfikacją certyfikatów, czas z NTS, DNS-over-TLS | 2×2 | 4 niskie |
 | T-EDGE-03 | E | Przejęty VPS wysyła ruch w tunelu do usług domowych (SSH, panel Proxmox) | zapora po stronie domu: peer VPS dociera wyłącznie do portu 443 Caddy i proxy Immicha; WireGuard administracyjny kończy się w domu | 2×4 | 8 średnie |
 | T-EDGE-04 | S | Sfałszowany adres IP klienta (nagłówek PROXY lub `X-Forwarded-For`) | Caddy przyjmuje PROXY tylko od adresu VPS w tunelu (`fallback_policy reject`); `api` ufa tylko Caddy | 1×2 | 2 niskie |
 | T-EDGE-05 | D | DDoS lub nasycenie łącza domowego | limity połączeń na VPS, CrowdSec; brak ochrony wolumetrycznej (0 zł) — akceptowane | 2×3 | 6 średnie |
-| T-EDGE-06 | T | Przejęcie konta rejestratora lub DNS | 2FA na koncie, blokada transferu domeny, CAA, monitoring CT, DNSSEC jeśli dostępny | 1×5 | 5 średnie |
+| T-EDGE-06 | T | Przejęcie konta rejestratora lub DNS | 2FA na koncie, blokada transferu domeny, CAA, monitoring CT, DNSSEC (bezpłatny w home.pl, włączany w M0) | 1×5 | 5 średnie |
 
 ### 6.2 identity — konta, logowanie, sesje
 
@@ -200,8 +200,8 @@ Litery STRIDE: **S** podszycie, **T** manipulacja, **R** wyparcie się, **I** uj
 | T-INF-01 | E | Ucieczka z kontenera lub przejęcie VM przez podatność | kontenery bez roota, `cap_drop: ALL`, `no-new-privileges`, FS tylko do odczytu, AppArmor i seccomp, aktualizacje | 1×5 | 5 średnie |
 | T-INF-02 | E | Ruch boczny z Immicha do OligInvest | osobna VM, zapora Proxmox (tylko 443 z tunelu i SSH od administratora), brak wspólnych sekretów i ciasteczek (`__Host-`) | 2×4 | 8 średnie |
 | T-INF-03 | E | Przejęcie hosta Proxmox | panel niewystawiony poza sieć administracyjną, 2FA, aktualizacje, SSH kluczem | 1×5 | 5 średnie |
-| T-INF-04 | I | Kradzież serwera lub dysku | kopie szyfrowane; dysk VM nieszyfrowany (restart bez obsługi) — akceptowane; opcja szyfrowania z ręcznym odblokowaniem w [`../10-ograniczenia.md`](../10-ograniczenia.md) | 1×4 | 4 niskie |
-| T-INF-05 | D | Awaria sprzętu, zasilania lub łącza (Z-27) | kopie 3-2-1, RTO ≤ 4 h, monitoring z zewnątrz | 3×3 | 9 średnie |
+| T-INF-04 | I | Kradzież serwera lub dysku | kopie szyfrowane; dysk VM nieszyfrowany (restart bez obsługi) — akceptowane decyzją właściciela 2026-09-19 (użytek prywatny); ścieżka włączenia szyfrowania w [`../10-ograniczenia.md`](../10-ograniczenia.md) § 2 | 1×4 | 4 niskie |
+| T-INF-05 | D | Awaria sprzętu, zasilania lub łącza (Z-27) | kopie 3-2-1, RTO ≤ 4 h, monitoring z zewnątrz; brak UPS (potwierdzone 2026-09-19) — samoczynny start po zaniku prądu, archiwizacja WAL i sumy kontrolne stron (domyślne w PostgreSQL 18) | 3×3 | 9 średnie |
 | T-INF-06 | T, D | Ransomware lub zniszczenie danych na hoście | kopia poza domem w trybie append-only, klucze kopii poza serwerem, test odtworzenia | 1×5 | 5 średnie |
 | T-INF-07 | I | Wyciek sekretów z serwera | pliki `0600`, montowanie tylko do właściwego kontenera, redakcja logów, rotacja | 1×4 | 4 niskie |
 | T-INF-08 | I, T | Nieuwierzytelniony dostęp do Valkey (treść zadań) | ACL per usługa, sieć wewnętrzna, brak publikacji portów | 1×3 | 3 niskie |
@@ -234,7 +234,7 @@ Podsumowanie: 65 zagrożeń; po kontrolach 1 wysokie, 31 średnich, 33 niskich; 
 
 | Ryzyko | Postępowanie | Kiedy |
 |---|---|---|
-| **T-SC-01 złośliwa zależność (10)** | konfiguracja pnpm z [`kontrole-bezpieczenstwa.md`](kontrole-bezpieczenstwa.md) § 4.3 od pierwszego commita; minimalizm zależności (NFR-10.05); sieci bez wyjścia dla `web` i `analytics` ograniczają wyciek; kwartalny przegląd drzewa zależności; w rejestrze ryzyk (Krok 6) z właścicielem | M0 i stale |
+| **T-SC-01 złośliwa zależność (10)** | konfiguracja pnpm z [`kontrole-bezpieczenstwa.md`](kontrole-bezpieczenstwa.md) § 4.3 od pierwszego commita; minimalizm zależności (NFR-10.05); sieci bez wyjścia dla `web` i `analytics` ograniczają wyciek; kwartalny przegląd drzewa zależności; w rejestrze ryzyk ([`../08-plan/ryzyka.md`](../08-plan/ryzyka.md), R-01) z właścicielem | M0 i stale |
 | T-ID-12 / T-QA-01 tokeny PAT | domyślnie tokeny tylko do odczytu; zapis osobnym tokenem; instrukcje w [`../05-mobile/ios-integracje.md`](../05-mobile/ios-integracje.md) § 6 | M4 |
 | T-MK-01 dane rynkowe | bramki jakości przed zapisem; porównanie źródeł dla instrumentów z pozycji | M2 |
 | T-INF-05 dostępność | kopie i test odtworzenia ([`../07-wdrozenie/backup-dr.md`](../07-wdrozenie/backup-dr.md)); UPS jako koszt w [`../10-ograniczenia.md`](../10-ograniczenia.md) | M1 i M6 |

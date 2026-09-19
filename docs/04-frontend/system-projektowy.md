@@ -139,7 +139,7 @@ Czas: znaczniki pokazywane w strefie użytkownika z etykietą źródła i opóź
 | `<ChangeValue/>` | zmiana kwotowa lub procentowa: znak, ▲/▼, kolor `gain`/`loss`/`flat` | ikona `aria-hidden`, tekst dla czytnika „wzrost o …” / „spadek o …” | wszystkie zmiany i P/L |
 | `<DataFreshness/>` | źródło, czas, opóźnienie, flaga `stale` z przyczyną (`DataMeta`) | tekst, nie tylko ikona; `role="status"` przy zmianie na nieaktualne | każdy widok danych rynkowych i wyceny (FR-01.15) |
 | `<AssumptionsBlock/>` | założenia analizy (dane, okno, model, koszty, podatki, ziarno) | rozwijane `<details>`, domyślnie otwarte przy pierwszym wyświetleniu | wyniki analiz FR-04 (NFR-07.02) |
-| `<Disclaimer/>` | treść z `11-zgodnosc-prawna.md` wg klucza i wersji | zwykły tekst, nie obrazek | analizy, screener, alerty, eksporty (NFR-07.01) |
+| `<Disclaimer/>` | treść z [`../11-zgodnosc-prawna.md`](../11-zgodnosc-prawna.md) § 4.3 wg klucza i wersji | zwykły tekst, nie obrazek | analizy, screener, alerty, eksporty (NFR-07.01) |
 | `<Explainer/>` | „?” przy metryce: definicja, jak czytać, pułapki, link do glosariusza | przycisk z nazwą dostępną „Co oznacza …”, treść w `popover` | każda metryka i wskaźnik (FR-06.02) |
 | `<ChartFrame/>` | tytuł, opis, przełącznik „tabela”, `<DataFreshness/>`, leniwe ładowanie biblioteki | opis tekstowy trendu, tabela alternatywna | każdy wykres (NFR-06.01) |
 | `<StatTile/>` | kafelek KPI: etykieta, wartość, zmiana, stan ładowania | etykieta powiązana z wartością | dashboard, podsumowania |

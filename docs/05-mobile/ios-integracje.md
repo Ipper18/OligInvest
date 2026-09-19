@@ -111,4 +111,4 @@ Jak § 4.1 z adresem `…/quick/alerts?format=text&limit=5`. Wymaga zakresu `ale
 ## 8. Widżety z danymi (opcjonalnie, FR-09.08, P3)
 
 - Systemowe widżety iOS nie wyświetlają danych z PWA ani ze Skrótów na stałe — widżet Skróty tylko uruchamia skrót.
-- **Scriptable** (darmowa aplikacja z widżetami w JavaScript) może pobierać `GET /quick/today?format=json` z tokenem trzymanym w pęku kluczy aplikacji i rysować widżet z wartością i czasem danych. Ryzyko: ostatnia aktualizacja aplikacji 2024-09 — funkcja wyłącznie opcjonalna, bez gwarancji działania na kolejnych wersjach iOS. Przykładowy skrypt powstaje w M5 i trafia do `docs/12-dla-uzytkownika/`.
+- **Scriptable** (darmowa aplikacja z widżetami w JavaScript) może pobierać `GET /quick/today?format=json` z tokenem trzymanym w pęku kluczy aplikacji i rysować widżet z wartością i czasem danych. Ryzyko: ostatnia aktualizacja aplikacji 2024-09 — funkcja wyłącznie opcjonalna, bez gwarancji działania na kolejnych wersjach iOS. Przykładowy skrypt to zadanie BL-707 (P3, po M6); trafi do [`../12-dla-uzytkownika/instrukcja.md`](../12-dla-uzytkownika/instrukcja.md).

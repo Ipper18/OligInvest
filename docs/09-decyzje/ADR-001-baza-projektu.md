@@ -30,7 +30,7 @@ Zadanie wymaga, by przed budową czegokolwiek sprawdzić istniejące, darmowe ro
 
 - Pozytywne: pełna kontrola nad wydajnością, RLS, modelem domenowym pod GPW/PLN i polskie podatki; brak zobowiązań AGPL; stos spójny z `packages/core` współdzielonym przez PWA i worker.
 - Negatywne / dług: więcej kodu własnego w M1–M3 (import, wycena, TWR/XIRR) — mitygacja: testy referencyjne vs empyrical/TA-Lib i skille `backtest-review`/`risk-report`; brak gotowego ekosystemu wtyczek (Ghostfolio) — mitygacja: własny rejestr modułów (`01-architektura/moduly.md`).
-- Zadania: przenieść do `03-dane/model-danych.md` model aktywności wzorowany na Ghostfolio; zdefiniować interfejs `DataProvider` w `03-dane/strategia-cache.md`; opisać mapowanie CSV w `12-dla-uzytkownika/instrukcja.md`.
+- Zadania: przenieść do `03-dane/model-danych.md` model aktywności wzorowany na Ghostfolio; zdefiniować interfejs `DataProvider` w `03-dane/strategia-cache.md`; opisać mapowanie CSV w [`../12-dla-uzytkownika/instrukcja.md`](../12-dla-uzytkownika/instrukcja.md) § 3.
 
 ## Weryfikacja
 

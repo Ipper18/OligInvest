@@ -53,7 +53,11 @@ flowchart LR
   PG --> HDD
 ```
 
-Ruch wychodzący z VM (dostawcy danych, SMTP, ACME, aktualizacje) idzie przez łącze domowe, nie przez VPS.
+**Ruch wychodzący.** Homelab właściciela nie wystawia do internetu żadnych usług, a cały jego ruch wychodzi przez tunel WireGuard i publiczny adres VPS (potwierdzone przez właściciela 2026-09-19). Dotyczy to także połączeń VM do dostawców danych, SMTP, ACME i aktualizacji — strzałki do „Internet” na diagramie prowadzą przez tunel. Skutki:
+
+- VPS widzi metadane połączeń wychodzących (adres docelowy, SNI, czas) i może je blokować; treść chroni TLS z weryfikacją certyfikatów.
+- Protokoły bez szyfrowania uwierzytelniamy: czas przez NTS w chrony, DNS przez DNS-over-TLS (`systemd-resolved`). Przejęty VPS nie przestawi zegara (TOTP) ani nie podmieni odpowiedzi DNS (T-EDGE-02).
+- Dostawcy danych widzą adres centrum danych OVH, który Yahoo ogranicza częściej niż adresy domowe, więc fallbacki z [`../03-dane/strategia-cache.md`](../03-dane/strategia-cache.md) § 8 są obowiązkowe. Jeśli blokady będą się powtarzać, ruch samego kontenera `jobs` można kierować bezpośrednio łączem domowym — bez otwierania portów w domu (decyzja właściciela).
 
 ## 2. Założenia sprzętowe i pojemność
 
@@ -79,19 +83,21 @@ Ruch wychodzący z VM (dostawcy danych, SMTP, ACME, aktualizacje) idzie przez ł
 | 7 | VM (tunel) | VPS | TCP `<LAPI_PORT>` | agent CrowdSec → LAPI |
 | 8 | VM (tunel) | VPS | TCP `<REST_PORT>` | restic → rest-server |
 | 9 | VM (tunel) | VPS | TCP `<KUMA_PORT>` | sygnały życia (push) do Uptime Kuma |
-| 10 | VM | internet | TCP 443 | `jobs`: allowlista dostawców i usług push; `api`: Pwned Passwords, OAuth (P2); `caddy`: ACME; system: aktualizacje, obrazy z GHCR |
-| 11 | VM | internet | TCP 587 | `jobs` → SMTP Brevo (STARTTLS wymagany) |
-| 12 | VM | internet | UDP 123 | synchronizacja czasu (chrony) |
+| 10 | VM (przez tunel i VPS) | internet | TCP 443 | `jobs`: allowlista dostawców i usług push; `api`: Pwned Passwords, OAuth (P2); `caddy`: ACME; system: aktualizacje, obrazy z GHCR |
+| 11 | VM (przez tunel i VPS) | internet | TCP 587 | `jobs` → SMTP Brevo (STARTTLS wymagany) |
+| 12 | VM (przez tunel i VPS) | internet | TCP 4460, UDP 123 | synchronizacja czasu z NTS (chrony) |
 | 13 | sieć administracyjna WireGuard | VM, host Proxmox, VPS | SSH, panel Proxmoxa, panel Uptime Kuma | administracja |
+| 14 | VM (przez tunel i VPS) | resolver DNS | TCP 853 | DNS-over-TLS (`systemd-resolved`) |
 
 **Wszystko inne jest blokowane** — zapora domyślnie odrzuca ruch przychodzący na VPS, na granicy domu (dla peera VPS: tylko przepływy 5 i 6), w Proxmoxie (zapora na poziomie VM) i w VM (nftables). Peer VPS nie ma dostępu do SSH, panelu Proxmoxa ani innych urządzeń w sieci domowej (T-EDGE-03).
 
-**Dostęp administracyjny:** urządzenia administratora łączą się z interfejsem WireGuard **kończącym się w domu**; VPS tylko przekazuje zaszyfrowane pakiety UDP (przepływ 4), więc przejęty VPS nie może podszyć się pod administratora. Jeśli dom ma publiczny adres IP, przekaźnik na VPS jest zbędny.
+**Dostęp administracyjny:** urządzenia administratora łączą się z interfejsem WireGuard **kończącym się w domu**; VPS tylko przekazuje zaszyfrowane pakiety UDP (przepływ 4), więc przejęty VPS nie może podszyć się pod administratora. Dom nie wystawia do internetu żadnych portów (potwierdzone 2026-09-19), więc przekaźnik na VPS jest jedyną drogą dostępu administracyjnego spoza domu. Pakiety WireGuard administracyjnego jadą wewnątrz tunelu z domem (WireGuard w WireGuardzie): MTU interfejsu administracyjnego ustaw o 80 bajtów mniejsze niż MTU tunelu (np. 1340 przy 1420), inaczej większe pakiety (SSH, panel Proxmoxa) mogą ginąć.
 
 ## 4. VPS — konfiguracja
 
 - **System:** Debian z automatycznymi aktualizacjami bezpieczeństwa (`unattended-upgrades`), chrony, nftables z domyślnym odrzucaniem ruchu przychodzącego (dozwolone przepływy 1–4 i administracja przez WireGuard), SSH wyłącznie kluczem, bez logowania roota, dostępny tylko z sieci administracyjnej.
 - **Brak na VPS:** kluczy prywatnych TLS aplikacji i Immicha (po migracji z § 9), danych aplikacji, sekretów aplikacji, kluczy szyfrowania kopii.
+- **Ruch wychodzący z domu:** VPS przekazuje z NAT ruch wychodzący homelabu (istniejąca konfiguracja właściciela) — wyłącznie z adresów tunelu w stronę internetu. Ruch z internetu trafia do domu tylko przez nginx `stream` (przepływy 5–6) i przekaźnik WireGuard administracyjnego (przepływ 4).
 - **nginx `stream` (routing po SNI):**
 
 ```nginx
@@ -132,7 +138,7 @@ Panel i SSH hosta dostępne wyłącznie z sieci administracyjnej; 2FA (TOTP) do 
 
 ### 5.2 System w VM
 
-- Debian 13 w instalacji minimalnej; `unattended-upgrades` dla poprawek bezpieczeństwa z automatycznym restartem w oknie nocnym tylko wtedy, gdy wymaga go jądro; `qemu-guest-agent`; chrony (alert przy odchyłce > 2 s — TOTP zależy od czasu).
+- Debian 13 w instalacji minimalnej; `unattended-upgrades` dla poprawek bezpieczeństwa z automatycznym restartem w oknie nocnym tylko wtedy, gdy wymaga go jądro; `qemu-guest-agent`; chrony z NTS (uwierzytelniony czas, bo ruch wychodzi przez VPS; alert przy odchyłce > 2 s — TOTP zależy od czasu); `systemd-resolved` z DNS-over-TLS.
 - **nftables:** wejście domyślnie odrzucane; dozwolone TCP 443 wyłącznie z adresu tunelu VPS i SSH z sieci administracyjnej; wyjście dozwolone (kontrolę ruchu wychodzącego kontenerów zapewniają sieci Dockera i allowlista w aplikacji — § 6).
 - **SSH:** tylko klucze Ed25519, `PermitRootLogin no`, `PasswordAuthentication no`, `AllowUsers` z jednym kontem administracyjnym, `sudo` z hasłem.
 - **Docker Engine** z oficjalnego repozytorium Dockera (odcisk klucza zweryfikowany przy instalacji); AppArmor włączony (domyślny profil kontenerów); seccomp domyślny.
@@ -256,8 +262,18 @@ Fragment `security_headers` ustawia nagłówki z [`../06-bezpieczenstwo/kontrole
 | `invest.oligi.pl` CAA | `0 iodef "mailto:<SECURITY_EMAIL>"` | zgłoszenia od urzędów certyfikacji |
 | `<IMMICH_HOST>` CAA | jak wyżej, z kontem ACME Caddy Immicha (po migracji z § 9) | jw. |
 | SPF, DKIM, DMARC | dla domeny nadawczej e-maili ([ADR-010](../09-decyzje/ADR-010-kanaly-powiadomien.md)) | wiarygodność e-maili, ochrona przed podszywaniem |
+| `oligi.pl` DNSSEC (rekord DS u rejestru) | włączony w panelu home.pl | autentyczność odpowiedzi DNS (T-EDGE-06) |
 
-Rekordu CAA dla samej domeny `oligi.pl` nie ustawiamy — mógłby zablokować certyfikaty innych subdomen właściciela. Konto u rejestratora i dostawcy DNS: 2FA, blokada transferu domeny; DNSSEC, jeśli rejestrator go udostępnia (NIEZWERYFIKOWANE dla obecnego rejestratora). Monitoring Certificate Transparency — [`monitoring.md`](monitoring.md) § 3.
+Rekordu CAA dla samej domeny `oligi.pl` nie ustawiamy — mógłby zablokować certyfikaty innych subdomen właściciela.
+
+**Rejestrator i DNS: home.pl** (potwierdzone przez właściciela 2026-09-19). Według pomocy home.pl (sprawdzone 2026-09-19):
+
+- DNSSEC jest bezpłatny dla większości domen `.pl`; włącza się go w Panelu klienta: Domeny → domena → DNSSEC → Włącz ([pomoc home.pl](https://pomoc.home.pl/baza-wiedzy/jak-wlaczyc-dnssec-w-panelu-klienta-home-pl)).
+- Rekordy CAA z tagami `issue`, `issuewild` i `iodef` dodaje się w Panelu klienta nowej platformy ([pomoc home.pl](https://pomoc.home.pl/baza-wiedzy/rekordy-domeny)).
+- **NIEZWERYFIKOWANE:** czy panel przyjmuje w wartości CAA parametry `accounturi` i `validationmethods` (RFC 8657) i czy pozwala dodać CAA dla subdomeny — sprawdzamy w M0. Bez tych parametrów przejęty VPS mógłby uzyskać certyfikat przez TLS-ALPN-01 (T-EDGE-01); wtedy albo przenosimy strefę do darmowego DNS z pełną obsługą CAA, albo zostajemy przy `0 issue "letsencrypt.org"` z monitoringiem CT co godzinę (decyzja w ADR).
+- Konto home.pl: 2FA i blokada transferu domeny.
+
+**Certyfikat SSL z home.pl** nie jest potrzebny dla `invest.oligi.pl`: Caddy sam uzyskuje i odnawia certyfikaty Let's Encrypt. Certyfikat instalowany ręcznie wymagałby coraz częstszej wymiany, bo maksymalna ważność certyfikatów publicznych spada do 200 dni od 15.03.2026, 100 dni od 15.03.2027 i 47 dni od 15.03.2029 ([CA/B Forum, SC-081v3](https://cabforum.org/2025/04/11/ballot-sc081v3-introduce-schedule-of-reducing-validity-and-data-reuse-periods/), sprawdzone 2026-09-19). Certyfikat z home.pl może dalej obsługiwać inne usługi właściciela. Jeśli jest to certyfikat wildcard `*.oligi.pl`, obejmuje też `invest.oligi.pl`, a rekord CAA na subdomenie tego nie zmienia (przy wildcardzie urząd certyfikacji sprawdza CAA domeny `oligi.pl`) — dlatego monitoring Certificate Transparency obejmuje również certyfikaty wildcard ([`monitoring.md`](monitoring.md) § 3).
 
 ## 8. Sekrety
 
@@ -295,9 +311,9 @@ Dziś Caddy na VPS kończy TLS Immicha i ma jego klucz prywatny. Cel: VPS przeka
 
 ## 10. Pierwsza instalacja (M0)
 
-1. VM w Proxmoxie wg § 2; Debian 13 minimalny; konto administracyjne i klucz SSH.
+1. VM w Proxmoxie wg § 2 z opcją „Start at boot”; Debian 13 minimalny; konto administracyjne i klucz SSH. W BIOS-ie serwera przywracanie zasilania ustawione na włączenie (*AC Recovery: Power On*) — serwer nie ma UPS, więc po zaniku prądu host i VM muszą wstać same ([`../10-ograniczenia.md`](../10-ograniczenia.md) § 2).
 2. Hardening systemu (§ 5.2) — skrypt `infra/scripts/bootstrap-vm.sh` (M0), uruchamiany raz i idempotentny.
-3. WireGuard (tunel, administracja) i reguły zapory na VPS, w domu, w Proxmoxie i w VM (§ 3).
+3. WireGuard (tunel, administracja z MTU z § 3) i reguły zapory na VPS, w domu, w Proxmoxie i w VM (§ 3); w home.pl: rekordy A/AAAA i CAA (§ 7), DNSSEC, 2FA i blokada transferu.
 4. Docker z oficjalnego repozytorium; `daemon.json` (§ 5.2).
 5. Sekrety: `generate-secrets.sh` → `/etc/oliginvest/secrets/`; kopia do menedżera haseł.
 6. Wdrożenie pierwszej wersji ([`ci-cd.md`](ci-cd.md) § 6); migracje bazy.
@@ -307,14 +323,14 @@ Dziś Caddy na VPS kończy TLS Immicha i ma jego klucz prywatny. Cel: VPS przeka
 
 ## 11. Lista kontrolna hardeningu (NFR-03.11)
 
-**Host Proxmox:** ☐ panel i SSH tylko z sieci administracyjnej ☐ 2FA w panelu ☐ zapora VM włączona z regułami § 3 ☐ osobny most/VLAN dla VM wystawionych przez tunel ☐ aktualizacje co miesiąc
+**Host Proxmox:** ☐ panel i SSH tylko z sieci administracyjnej ☐ 2FA w panelu ☐ BIOS: *AC Recovery* = włączenie, VM „Start at boot” ☐ zapora VM włączona z regułami § 3 ☐ osobny most/VLAN dla VM wystawionych przez tunel ☐ aktualizacje co miesiąc
 
-**VM:** ☐ Debian 13 minimalny ☐ `unattended-upgrades` ☐ chrony z alertem odchyłki ☐ nftables: wejście tylko 443 z tunelu i SSH z administracji ☐ SSH: klucze, bez roota, `AllowUsers` ☐ agent CrowdSec (Caddy + SSH) ☐ AppArmor włączony
+**VM:** ☐ Debian 13 minimalny ☐ `unattended-upgrades` ☐ chrony z NTS i alertem odchyłki ☐ DNS-over-TLS ☐ nftables: wejście tylko 443 z tunelu i SSH z administracji ☐ SSH: klucze, bez roota, `AllowUsers` ☐ agent CrowdSec (Caddy + SSH) ☐ AppArmor włączony
 
 **Kontenery:** ☐ obrazy przypięte digestem i zweryfikowane podpisem ☐ użytkownicy nie-root ☐ `read_only` + `tmpfs` ☐ `cap_drop: ALL` ☐ `no-new-privileges` ☐ limity RAM, CPU, PID ☐ `healthcheck` ☐ sieci `internal` dla `web`, `analytics`, bazy i Valkey ☐ tylko `caddy` publikuje port ☐ sekrety jako pliki, nie zmienne w obrazie
 
 **VPS:** ☐ nftables domyślnie odrzuca ☐ SSH tylko z administracji ☐ brak kluczy TLS usług po migracji ☐ nginx `stream` bez celu domyślnego ☐ port 80 tylko przekierowanie i 403 dla `/api` ☐ bouncer CrowdSec aktywny ☐ rest-server `--append-only` na adresie tunelu ☐ Uptime Kuma tylko na adresie tunelu
 
-**DNS i TLS:** ☐ CAA z `accounturi` i `validationmethods` ☐ monitoring CT ☐ 2FA u rejestratora, blokada transferu ☐ TLS 1.3, HSTS ☐ automatyczne odnawianie certyfikatów (Caddy) z alertem ważności < 14 dni
+**DNS i TLS:** ☐ CAA z `accounturi` i `validationmethods` (albo decyzja z § 7) ☐ DNSSEC w home.pl ☐ monitoring CT, także `*.oligi.pl` ☐ 2FA u rejestratora, blokada transferu ☐ TLS 1.3, HSTS ☐ automatyczne odnawianie certyfikatów (Caddy) z alertem ważności < 14 dni
 
 **Aplikacja:** ☐ nagłówki z `kontrole-bezpieczenstwa.md` § 2 ☐ trasy Better Auth spoza listy zablokowane ☐ tryb produkcyjny bez debugowania ☐ skan zewnętrzny po wdrożeniu

@@ -34,7 +34,7 @@
   "realized_pl_economic": [
    {
     "ticker": "AAPL.US",
-    "date": "2025-09-01",
+    "date": "2025-09-02",
     "qty": "12",
     "proceeds_pln": "10023.63",
     "cost_pln": "11107.26",
@@ -63,7 +63,7 @@
     "type": "FEE",
     "subtype": "sec_fee",
     "amount_pln": "-0.28",
-    "linked_sale": "2025-09-01 AAPL.US"
+    "linked_sale": "2025-09-02 AAPL.US"
    }
   ],
   "interest": {

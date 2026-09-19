@@ -2,7 +2,7 @@
 
 **Cel:** ustalić, na jakiej podstawie prawnej OligInvest przetwarza dane osobowe, jakie dokumenty i zgody zbiera przy rejestracji i jak je wersjonuje, jak długo przechowuje dane, jak realizuje prawa użytkowników, komu dane przekazuje i jak postępuje przy naruszeniu — tak, aby prywatna aplikacja dla kilku osób działała legalnie od pierwszego dnia (FR-07.09, FR-07.12, NFR-11.01–NFR-11.03).
 
-Powiązane: [`kontrole-bezpieczenstwa.md`](kontrole-bezpieczenstwa.md), [`plan-reagowania.md`](plan-reagowania.md) § 7, [`model-zagrozen.md`](model-zagrozen.md), [`../03-dane/model-danych.md`](../03-dane/model-danych.md) § 4, [`../03-dane/schema.sql`](../03-dane/schema.sql) (`identity.consent_events`, `platform.erasure_log`), [`../02-api/openapi.yaml`](../02-api/openapi.yaml) (`/me/legal*`, `/me/exports`, `/me/deletion-request`), [`../07-wdrozenie/backup-dr.md`](../07-wdrozenie/backup-dr.md), `11-zgodnosc-prawna.md` (Krok 6: MiFID II, licencje danych).
+Powiązane: [`kontrole-bezpieczenstwa.md`](kontrole-bezpieczenstwa.md), [`plan-reagowania.md`](plan-reagowania.md) § 7, [`model-zagrozen.md`](model-zagrozen.md), [`../03-dane/model-danych.md`](../03-dane/model-danych.md) § 4, [`../03-dane/schema.sql`](../03-dane/schema.sql) (`identity.consent_events`, `platform.erasure_log`), [`../02-api/openapi.yaml`](../02-api/openapi.yaml) (`/me/legal*`, `/me/exports`, `/me/deletion-request`), [`../07-wdrozenie/backup-dr.md`](../07-wdrozenie/backup-dr.md), [`../11-zgodnosc-prawna.md`](../11-zgodnosc-prawna.md) (MiFID II, MAR, licencje danych, podatki).
 
 > Dokument jest projektem technicznym i organizacyjnym przygotowanym bez udziału prawnika — nie jest opinią prawną. Przed udostępnieniem aplikacji innym osobom właściciel powinien przeczytać szablony z § 11 i w razie wątpliwości skonsultować je z prawnikiem.
 
@@ -61,7 +61,7 @@ Rejestr prowadzimy dobrowolnie — zwolnienie z art. 30 ust. 5 nie obejmuje prze
 
 Zasady (art. 7 RODO): zgoda nie jest warunkiem korzystania z aplikacji; jest oddzielona od regulaminu; jej wycofanie jest tak samo proste jak udzielenie i działa od następnego żądania; każda zgoda ma wersję treści, a zmiana treści oznacza ponowne pytanie (do czasu odpowiedzi — brak zgody). Historia zdarzeń jest append-only (dowód z art. 7 ust. 1) i trafia do eksportu RODO.
 
-**Wersje dokumentów:** stałe w `packages/contracts` (np. `2026-09`), treści w `apps/web` (MDX) pod `/regulamin` i `/prywatnosc` — publiczne, z datą obowiązywania, do wydruku i zapisu (wymóg udostępnienia regulaminu przed zawarciem umowy w formie umożliwiającej jego pozyskanie, odtwarzanie i utrwalanie). Zmiana regulaminu: e-mail do użytkowników co najmniej 14 dni przed wejściem w życie (chyba że zmianę wymusza prawo lub bezpieczeństwo); brak akceptacji = możliwość usunięcia konta.
+**Wersje dokumentów:** stałe w `packages/contracts` (np. `2026-09`), treści w `apps/web` (MDX) pod `/regulamin` i `/prywatnosc` — publiczne, z datą obowiązywania, do wydruku i zapisu (wymóg udostępnienia regulaminu przed zawarciem umowy w formie umożliwiającej jego pozyskanie, odtwarzanie i utrwalanie). Zmiana regulaminu: e-mail do użytkowników co najmniej 14 dni przed wejściem w życie (chyba że zmianę wymusza prawo lub bezpieczeństwo); brak akceptacji = dostęp wyłącznie do wylogowania, eksportu danych i usunięcia konta — bramka nie blokuje praw z RODO.
 
 ### 5.2 Ciasteczka i pamięć urządzenia — inwentarz
 
@@ -95,7 +95,7 @@ Zasady (art. 7 RODO): zgoda nie jest warunkiem korzystania z aplikacji; jest odd
 | **Audyt (`platform.audit_log`)** | **2 lata** — rozliczalność działań administracyjnych i wyjaśnianie incydentów; po usunięciu konta tylko pseudonim (Z-21) | partycjonowanie i usuwanie najstarszych miesięcy |
 | `platform.erasure_log` | 40 dni (dłużej niż najdłuższa retencja kopii) | zadanie po `purge_after` |
 | Kopie zapasowe | 35 dni (lokalnie i poza domem) | [`../07-wdrozenie/backup-dr.md`](../07-wdrozenie/backup-dr.md) |
-| Dane u Brevo (logi wysyłki) | wg zasad Brevo (NIEZWERYFIKOWANE — sprawdzić w panelu i DPA przed M1) | — |
+| Dane u Brevo (logi wysyłki i podglądy e-maili) | domyślnie bezterminowo; ustawiamy **1 miesiąc** — minimum dopuszczane przez Brevo ([pomoc Brevo](https://help.brevo.com/hc/en-us/articles/4415743225746-Configure-a-custom-retention-period-for-your-transactional-logs-and-email-previews), sprawdzone 2026-09-19) | ustawienie w panelu Brevo przed M1 |
 
 ## 7. Prawa użytkowników (art. 12–22)
 
@@ -114,8 +114,8 @@ Tożsamość wnioskodawcy: wnioski z aplikacji — sesja z 2FA i step-up; wniosk
 
 | Odbiorca | Rola | Dane | Lokalizacja | Podstawa i umowa |
 |---|---|---|---|---|
-| Brevo (Sendinblue SAS, Francja) | podmiot przetwarzający | adresy e-mail, treść e-maili (bez kwot portfela) | UE | umowa powierzenia (DPA) jako część warunków Brevo — do akceptacji w panelu przed M1 |
-| OVHcloud (VPS) | podmiot przetwarzający | metadane połączeń (adres IP, czas, nazwa SNI); zaszyfrowany ruch; zaszyfrowane kopie zapasowe bez kluczy | UE (region VPS do potwierdzenia przez właściciela) | umowa powierzenia w warunkach OVHcloud — NIEZWERYFIKOWANE, do potwierdzenia w panelu przed M1 |
+| Brevo (Sendinblue SAS, Francja) | podmiot przetwarzający | adresy e-mail, treść e-maili (bez kwot portfela) | UE | umowa powierzenia (DPA) jako część warunków Brevo — właściciel akceptuje ją w panelu przed M1 (ustalone 2026-09-19) |
+| OVHcloud (VPS) | podmiot przetwarzający | metadane połączeń (adres IP, czas, nazwa SNI); zaszyfrowany ruch; zaszyfrowane kopie zapasowe bez kluczy | UE (potwierdzone przez właściciela 2026-09-19) | umowa powierzenia (*Data Processing Agreement*) jest częścią umowy z OVHcloud i ma pierwszeństwo przy sprzeczności ([przykładowa wersja 6.2](https://storage.gra.cloud.ovh.net/v1/AUTH_325716a587c64897acbef9a4a4726e38/contracts/5cec77c-OVH_Data_Protection_Agreement-IE-6.2.pdf), sprawdzone 2026-09-19); wersję obowiązującą dla konta właściciel zapisuje przed M1 |
 | Usługi Web Push (Apple, Google, Mozilla — zależnie od przeglądarki) | operatorzy infrastruktury wybranej przez przeglądarkę | identyfikator subskrypcji, czas wysyłki; treść zaszyfrowana end-to-end (RFC 8291) i bez kwot | mogą być poza EOG (USA) | decyzja Komisji (UE) 2023/1795 w sprawie EU-US Data Privacy Framework dla certyfikowanych podmiotów — NIEZWERYFIKOWANE dla każdego operatora; minimalizacja treści |
 | Pwned Passwords | — | 5 znaków skrótu SHA-1 hasła (k-anonimowość) — nie są danymi osobowymi | — | — |
 | Dostawcy danych rynkowych | — | zapytania o instrumenty bez identyfikatorów użytkowników | — | — |
@@ -134,7 +134,7 @@ GitHub nie otrzymuje danych użytkowników aplikacji (repozytorium zawiera wył�
 
 ## 11. Szablony tekstów
 
-Pola w nawiasach klamrowych wypełnia konfiguracja instancji. Ostateczne brzmienie i regulamin — Krok 6 (`docs/12-dla-uzytkownika/`), przed M1.
+Pola w nawiasach klamrowych wypełnia konfiguracja instancji. Wzory zaakceptował właściciel (2026-09-19); pełne teksty: [`../12-dla-uzytkownika/regulamin.md`](../12-dla-uzytkownika/regulamin.md) i [`../12-dla-uzytkownika/informacja-o-prywatnosci.md`](../12-dla-uzytkownika/informacja-o-prywatnosci.md).
 
 ### 11.1 Informacja o przetwarzaniu danych (skrót na ekranie rejestracji)
 
@@ -156,13 +156,13 @@ Pola w nawiasach klamrowych wypełnia konfiguracja instancji. Ostateczne brzmien
 
 ### 11.4 Regulamin — wymagane elementy
 
-Art. 8 ust. 3 ustawy o świadczeniu usług drogą elektroniczną: rodzaje i zakres usług; warunki świadczenia (w tym wymagania techniczne i zakaz dostarczania treści o charakterze bezprawnym); warunki zawierania i rozwiązywania umów; tryb postępowania reklamacyjnego. Dodatkowo: usługa nieodpłatna i prywatna (dostęp z zaproszenia), brak gwarancji dostępności, charakter informacyjno-edukacyjny analiz (nie są rekomendacją ani doradztwem inwestycyjnym — `11-zgodnosc-prawna.md`), zasady zmiany regulaminu (§ 5.1), rozwiązanie umowy przez usunięcie konta, reklamacje e-mailem z odpowiedzią w 14 dni.
+Art. 8 ust. 3 ustawy o świadczeniu usług drogą elektroniczną: rodzaje i zakres usług; warunki świadczenia (w tym wymagania techniczne i zakaz dostarczania treści o charakterze bezprawnym); warunki zawierania i rozwiązywania umów; tryb postępowania reklamacyjnego. Dodatkowo: usługa nieodpłatna i prywatna (dostęp z zaproszenia), brak gwarancji dostępności, charakter informacyjno-edukacyjny analiz (nie są rekomendacją ani doradztwem inwestycyjnym — [`../11-zgodnosc-prawna.md`](../11-zgodnosc-prawna.md) § 2–3), zasady zmiany regulaminu (§ 5.1), rozwiązanie umowy przez usunięcie konta, reklamacje e-mailem z odpowiedzią w 14 dni.
 
 ## 12. Lista kontrolna przed udostępnieniem aplikacji innym osobom (M1)
 
 - [ ] Uzupełnione pola konfiguracji: `LEGAL_CONTROLLER_NAME`, `LEGAL_CONTACT_EMAIL`, wersje dokumentów.
-- [ ] Opublikowane `/regulamin` i `/prywatnosc` w wersji `2026-09` (Krok 6), sprawdzone przez właściciela.
-- [ ] Zaakceptowana umowa powierzenia w panelu Brevo i sprawdzona w warunkach OVHcloud; zapisane daty i wersje.
+- [ ] Opublikowane `/regulamin` i `/prywatnosc` w wersji `2026-09` (treści: [`../12-dla-uzytkownika/`](../12-dla-uzytkownika/regulamin.md); wzory zaakceptowane 2026-09-19).
+- [ ] Zaakceptowana umowa powierzenia w panelu Brevo, retencja logów Brevo ustawiona na 1 miesiąc, wersja DPA OVHcloud zapisana; daty i wersje w notatkach właściciela.
 - [ ] Rejestracja zapisuje akceptację i potwierdzenie; bramka regulaminu działa (test e2e).
 - [ ] Bez zgody przeglądarka nie wysyła pomiarów RUM (test e2e).
 - [ ] Eksport obejmuje wszystkie tabele z `user_id` (test porównujący z bazą).

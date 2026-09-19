@@ -27,14 +27,15 @@ info:
     poza trasami `/api/auth/two-factor/*`, `/api/auth/sign-out` i `GET /me`.
 
     **Bramka regulaminu:** gdy bieżąca wersja regulaminu wymaga akceptacji (brak zapisu w `identity.consent_events`),
-    sesja i token PAT otrzymują `403 TERMS_ACCEPTANCE_REQUIRED` na wszystkich operacjach poza `GET /me`, `/me/legal*`
-    i `/api/auth/sign-out` (FR-07.12, `docs/06-bezpieczenstwo/prywatnosc-rodo.md`).
+    sesja i token PAT otrzymują `403 TERMS_ACCEPTANCE_REQUIRED` na wszystkich operacjach poza `GET /me`, `/me/legal*`,
+    `/me/step-up`, `/me/exports*`, `/me/deletion-request*` i `/api/auth/sign-out` — prawa z RODO (eksport, usunięcie
+    konta) nie zależą od akceptacji zmian regulaminu (FR-07.12, `docs/06-bezpieczenstwo/prywatnosc-rodo.md`).
 
     **Sekrety nigdy w adresie URL** (ASVS V14.2.1): token zaproszenia i token resetu hasła są we fragmencie adresu
     (`#t=…`) i trafiają do API w treści żądania; PAT wyłącznie w nagłówku `Authorization`.
 
     **Zgodność:** odpowiedzi modułu `analytics` zawierają blok `compliance` i `assumptions`; to materiały analityczne
-    i edukacyjne, nie rekomendacje inwestycyjne w rozumieniu MiFID II (`docs/11-zgodnosc-prawna.md`, Krok 6).
+    i edukacyjne — nie doradztwo inwestycyjne (MiFID II) ani rekomendacje inwestycyjne (MAR); `docs/11-zgodnosc-prawna.md`.
 servers:
   - url: https://{host}/api/v1
     description: Instancja produkcyjna (`invest.oligi.pl`, potwierdzone przez właściciela 2026-09-19).

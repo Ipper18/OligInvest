@@ -46,7 +46,7 @@ Ustalenia z weryfikacji (context7, dokumentacja Better Auth, 2026-09-18):
 
 - Pozytywne: błąd w zapytaniu modułu nie ujawni cudzych danych (RLS); moduły domenowe nie mogą odczytać hashy haseł ani sekretów 2FA (rozdzielone role); PAT pozwalają na Skróty bez osłabiania 2FA sesji.
 - Negatywne: własny kod bramki MFA i step-up; spike dla OAuth; testy RLS muszą towarzyszyć każdej nowej tabeli; dwie pule połączeń w `api`.
-- Zadania: konfiguracja Better Auth + Argon2id + bramka MFA (M1), role i polityki RLS + testy izolacji (M1), step-up TOTP (M1), PAT (M4), spike OAuth (M5).
+- Zadania: konfiguracja Better Auth + Argon2id + bramka MFA (M1), role i polityki RLS + testy izolacji (M1), step-up TOTP (M1), PAT (M4), spike OAuth (M5b).
 
 ## Weryfikacja
 

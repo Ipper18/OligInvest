@@ -20,7 +20,7 @@ Kryterium ze specyfikacji: świece + wolumen + 10 lat danych + płynność na te
 
 ## Decyzja
 
-- **Lightweight Charts** dla wykresów instrumentów (świece, wolumen, nakładki SMA/EMA/Bollinger, panele RSI/MACD/ATR). Atrybucję TradingView zapewniamy zgodnie z licencją (logo atrybucji wbudowane w wykres lub wpis na stronie „Źródła danych i licencje” — decyzja w `04-frontend/system-projektowy.md`).
+- **Lightweight Charts** dla wykresów instrumentów (świece, wolumen, nakładki SMA/EMA/Bollinger, panele RSI/MACD/ATR). Atrybucję TradingView zapewniamy zgodnie z licencją (logo atrybucji wbudowane w wykres lub wpis na stronie „Źródła danych i licencje” — decyzja z Kroku 6: oba sposoby naraz, [`../11-zgodnosc-prawna.md`](../11-zgodnosc-prawna.md) § 6).
 - **uPlot** dla serii liniowych i obszarowych: wartość portfela, obsunięcia („underwater”), wachlarz percentyli, porównanie z benchmarkiem, sparkline.
 - **Heatmapa sektorowa i treemap alokacji**: własny komponent CSS Grid (bez biblioteki), z pełną alternatywą tabelaryczną i obsługą klawiatury.
 - Obie biblioteki **ładowane dynamicznie** wyłącznie na trasach z wykresami; wrappery w `packages/ui` z jednolitymi tokenami kolorów (paleta przyjazna daltonistom) i opisem tekstowym/tabelą danych dla czytników ekranu (NFR-06.01).
@@ -30,7 +30,7 @@ Kryterium ze specyfikacji: świece + wolumen + 10 lat danych + płynność na te
 
 - Pozytywne: ~81 KB gzip łącznie, tylko na trasach wykresów; płynność na telefonie; spójność kolorów.
 - Negatywne: dwie biblioteki o różnych API (ukryte za wrapperami); heatmapa do napisania (prosty komponent).
-- Zadania: wrappery wykresów (M1: świece; M3: uPlot), heatmapa (M5), budżety tras w `size-limit`.
+- Zadania: wrappery wykresów (M1: świece; M3: uPlot), heatmapa (M5a), budżety tras w `size-limit`.
 
 ## Weryfikacja
 

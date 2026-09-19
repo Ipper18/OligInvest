@@ -58,8 +58,8 @@ flowchart LR
 ## Konsekwencje
 
 - Pozytywne: poufność end-to-end między urządzeniem użytkownika a domem dla OligInvest i Immicha; klucze TLS tylko w domu; izolacja OligInvest od Immicha (osobna VM); VPS o 2 GB RAM z dużym zapasem (router L4, WireGuard i bouncer zużywają zwykle kilkaset MB); 0 zł.
-- Negatywne: awaria domu (prąd, łącze, sprzęt) = niedostępność aplikacji (Z-27, akceptowalne dla aplikacji prywatnej — `10-ograniczenia.md`); brak cache na krawędzi; zależność od przepustowości wysyłania łącza domowego; migracja Immicha wymaga krótkiego okna serwisowego.
-- Zadania: VM i Compose (M0), router SNI na VPS i Caddy z protokołem PROXY (M0), migracja TLS Immicha (M0, osobne okno serwisowe), CrowdSec z bouncerem na VPS (M6), pomiar RUM (M1+).
+- Negatywne: awaria domu (prąd, łącze, sprzęt) = niedostępność aplikacji (Z-27, akceptowalne dla aplikacji prywatnej — [`../10-ograniczenia.md`](../10-ograniczenia.md) L-01, L-02); brak cache na krawędzi; zależność od przepustowości wysyłania łącza domowego; migracja Immicha wymaga krótkiego okna serwisowego.
+- Zadania: VM i Compose (M0), router SNI na VPS i Caddy z protokołem PROXY (M0), migracja TLS Immicha (M0, osobne okno serwisowe), CrowdSec z bouncerem na VPS (M1 — przed zaproszeniem innych osób; zmiana w Kroku 6), pomiar RUM (M1+).
 
 ## Weryfikacja
 

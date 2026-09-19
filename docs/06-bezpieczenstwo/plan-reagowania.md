@@ -54,7 +54,7 @@ flowchart LR
 | Odcięcie VPS od domu | żaden ruch z VPS nie dociera do domu | usunięcie peera VPS z WireGuard po stronie domu |
 | Odcięcie VM od sieci | VM bez sieci, dowody zachowane | odłączenie karty sieciowej VM w Proxmoxie |
 
-Polecenia administracyjne (np. `pnpm admin:revoke-all-sessions`) powstają w M1 w `apps/api` i są opisane w `docs/12-dla-uzytkownika/` (Krok 6); każde zapisuje wpis audytu z aktorem `system` i powodem.
+Polecenia administracyjne (np. `pnpm admin:revoke-all-sessions`) powstają w M1 w `apps/api` i są opisane w [`../12-dla-uzytkownika/instrukcja-administratora.md`](../12-dla-uzytkownika/instrukcja-administratora.md) § 2; każde zapisuje wpis audytu z aktorem `system` i powodem.
 
 ## 5. Kanały wykrywania
 

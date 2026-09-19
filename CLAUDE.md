@@ -88,6 +88,7 @@ Pluginy Anthropic: `feature-dev` (projektowanie funkcji), `frontend-design` (UI)
 ```
 docs/            dokumentacja projektowa (00–12) — produkt tej fazy
 .claude/skills/  skille per-projekt (audyt w docs/09-decyzje/audyt-pluginow.md)
-.mcp.json        serwery MCP (klucze z env)      AGENTS.md  instrukcje dla Codex (Krok 6)
+.mcp.json        serwery MCP (klucze z env)      AGENTS.md  instrukcje dla Codex
 .env.example     wzorzec zmiennych              README.md  wejście dla ludzi
+CONTRIBUTING.md  zasady pracy i Definition of Done   SECURITY.md  zgłaszanie podatności
 ```

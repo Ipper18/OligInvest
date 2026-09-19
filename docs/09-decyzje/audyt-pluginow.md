@@ -96,4 +96,4 @@ Wniosek: katalogi nie zawierają lepszej alternatywy dla warstwy krytyki metodol
 2. `security-guidance` działa z katalogu claude.ai; jeśli sesje będą uruchamiane poza aplikacją desktop, zainstalować: `claude plugin install security-guidance@claude-plugins-official`.
 3. Repo `marketcalls/vectorbt-backtesting-skills` nie ma pliku `LICENSE` (tylko wpis „MIT” w README) — traktujemy jako MIT, ale odnotowano.
 4. Skille społecznościowe traktować jako **doradców**, nie źródło prawdy: wzory finansowe obowiązują wg `docs/03-dane/obliczenia-finansowe.md`, a każdy skill z tradermonty jest pisany pod rynek USA (np. godziny sesji, kalendarz NYSE).
-5. Ponowny audyt przy każdej aktualizacji skilli (`git log -1` + ten sam `grep` hostów/env); procedura powtarzalna — komendy w historii tej sesji i w `CONTRIBUTING.md` (Krok 6).
+5. Ponowny audyt przy każdej aktualizacji skilli (`git log -1` + ten sam `grep` hostów/env); procedura powtarzalna — komendy w [`CONTRIBUTING.md`](../../CONTRIBUTING.md) § 7.

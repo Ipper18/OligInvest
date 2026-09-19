@@ -40,7 +40,7 @@ Wariant **A**, z zasadami:
 
 - Pozytywne: 0 zł; pełny rynek GPW do screenera i heatmapy; odporność na awarię intraday (EOD pozostaje).
 - Negatywne: zależność od nieoficjalnego Yahoo (ryzyko w rejestrze ryzyk); brak gwarancji dalszej dostępności archiwum GPW dla klientów automatycznych; odpowiedzialność za jakość danych po naszej stronie (kontrola jakości, korekty splitów).
-- Koszt alternatywy (wariant B) i to, co tracimy bez niej — w `10-ograniczenia.md`.
+- Koszt alternatywy (wariant B) i to, co tracimy bez niej — w [`../10-ograniczenia.md`](../10-ograniczenia.md) (L-11, L-12).
 - Zadania: adaptery `gpw`, `yahoo`, `nbp`, `frankfurter` (M1–M2), `finnhub`, `twelvedata`, `alphavantage`, `fred`, `gdelt`, `marketaux` (M2–M5), testy kontraktowe z zapisanymi odpowiedziami (fixtures bez danych objętych licencją poza minimalną próbką testową).
 
 ## Weryfikacja

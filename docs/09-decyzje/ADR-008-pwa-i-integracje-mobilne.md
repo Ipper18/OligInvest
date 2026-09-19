@@ -32,7 +32,7 @@ Ustalenia (2026-09-18):
 
 1. **PWA** jako jedyna aplikacja mobilna i desktopowa: manifest z Next.js, **własny service worker** (push, kliknięcie powiadomienia, cache powłoki offline: zasoby `/_next/static/*` cache-first, nawigacje network-first z zapasową stroną offline, ostatni stan dashboardu w IndexedDB dla FR-09.02). Bez Serwist/Workbox.
 2. **API szybkich akcji** (`/api/v1/quick/*`, moduł `quick-actions`, oraz `/api/v1/quick/alerts` z modułu `alerts`) z odpowiedziami `text/plain` lub JSON, uwierzytelniane **PAT** (ADR-004).
-3. **iOS:** gotowe Skróty (udostępniane linkiem iCloud) — „Pokaż mój portfel”, „Ile dziś zarobiłem”, „Dodaj transakcję”, „Moje alerty” — plus instrukcja podpięcia pod Stuknięcie w tył, Siri, automatyzacje i widżet Skrótów (`docs/05-mobile/ios-integracje.md`, `12-dla-uzytkownika/`). Widżety z danymi: opcjonalny skrypt Scriptable (P3).
+3. **iOS:** gotowe Skróty (udostępniane linkiem iCloud) — „Pokaż mój portfel”, „Ile dziś zarobiłem”, „Dodaj transakcję”, „Moje alerty” — plus instrukcja podpięcia pod Stuknięcie w tył, Siri, automatyzacje i widżet Skrótów ([`../05-mobile/ios-integracje.md`](../05-mobile/ios-integracje.md), [`../12-dla-uzytkownika/instrukcja.md`](../12-dla-uzytkownika/instrukcja.md) § 9). Widżety z danymi: opcjonalny skrypt Scriptable (P3).
 4. **Android:** skróty aplikacji w manifeście (`shortcuts`), zainstalowana PWA obsługuje linki w swoim zakresie, konfiguracje HTTP Shortcuts (widżet, kafelek) do zaimportowania; Tasker opisany jako opcja płatna.
 5. **Ryzyka iOS** (zmiana polityki PWA w UE, brak gwarancji doręczenia push) mitygujemy dublowaniem alertów krytycznych e-mailem (ADR-010) i monitorowaniem w rejestrze ryzyk.
 
@@ -40,8 +40,8 @@ Ustalenia (2026-09-18):
 
 - Pozytywne: 0 zł, jeden kod, najkrótsza droga do telefonu; Skróty działają bez otwierania aplikacji (odpowiedź tekstowa).
 - Negatywne: brak natywnych App Intents i widżetów WidgetKit; UX instalacji PWA na iOS wymaga instrukcji; zależność od aplikacji firm trzecich dla widżetów.
-- Koszt ścieżki natywnej i co tracimy bez niej — w `10-ograniczenia.md`.
-- Zadania: manifest + service worker + push (M4), API szybkich akcji + PAT (M4), Skróty iOS i konfiguracje HTTP Shortcuts (M4–M5), offline shell (M5).
+- Koszt ścieżki natywnej i co tracimy bez niej — w [`../10-ograniczenia.md`](../10-ograniczenia.md) (L-20).
+- Zadania: manifest + service worker + push (M4), API szybkich akcji + PAT (M4), Skróty iOS i konfiguracje HTTP Shortcuts (M4), powłoka offline (M4), migawka portfela offline (M5b).
 
 ## Weryfikacja
 

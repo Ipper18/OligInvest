@@ -23,7 +23,7 @@ Właściciel wybrał publiczne repozytorium (m.in. darmowe minuty GitHub Actions
 
 - Pozytywne: darmowe CI i narzędzia bezpieczeństwa; przejrzystość.
 - Negatywne: dyscyplina przy każdym commicie (skanowanie pomaga, ale nie zastępuje przeglądu); rekonesans architektury dla potencjalnego atakującego — akceptowane.
-- Zadania: `SECURITY.md`, ochrona gałęzi i ustawienia bezpieczeństwa repo (M0), skrypt anonimizacji fixtures (M1), reguła CI blokująca pliki `.xlsx/.csv` spoza `**/fixtures/anonymized/**` (M0).
+- Zadania: [`SECURITY.md`](../../SECURITY.md) (utworzony w Kroku 6), ochrona gałęzi i ustawienia bezpieczeństwa repo (M0), skrypt anonimizacji fixtures (M1), reguła CI blokująca pliki `.xlsx/.csv` spoza `**/fixtures/anonymized/**` (M0).
 
 ## Weryfikacja
 
