@@ -21,8 +21,8 @@ Powiązane: [`../../AGENTS.md`](../../AGENTS.md) (instrukcje stałe — Codex cz
 | 2 | **Ustawienia repozytorium** (zakładka Security): skanowanie sekretów z blokadą wypchnięcia, CodeQL (konfiguracja domyślna), alerty Dependabot, prywatne zgłaszanie podatności | pliki konfiguracyjne tworzy BL-019, ale przełączniki w GitHubie klika właściciel |
 | 3 | **Ochrona `main`** (ruleset: wymagany PR, wymagane zadania CI, historia liniowa) | wymagane zadania CI da się wskazać dopiero po pierwszym przebiegu — włącz po scaleniu sesji M0-1 |
 | 4 | **Renovate** — zainstaluj aplikację GitHub dla tego repozytorium | konfiguracja `renovate.json` powstaje w BL-019 |
-| 5 | **Codex** — podłącz repozytorium; w środowisku ustaw `corepack enable && corepack prepare pnpm@12 --activate` oraz (po M0) `pnpm install --frozen-lockfile` | Codex czyta `AGENTS.md` sam; nie wklejaj reguł do czatu |
-| 6 | **Narzędzia lokalne** (do przeglądu i testów na Twoim komputerze): Node 24 LTS, pnpm przez Corepack, Docker, Python 3.13 (instaluje `uv`) | wersje: [`../01-architektura/stack-technologiczny.md`](../01-architektura/stack-technologiczny.md) § 2–3 |
+| 5 | **Codex** — podłącz repozytorium; w skrypcie startowym środowiska ustaw `npm i -g pnpm@12`, a po pierwszej sesji dopisz `pnpm install --frozen-lockfile` | Node 25 nie zawiera już corepacka, więc instalujemy pnpm przez npm. Codex czyta `AGENTS.md` sam — nie wklejaj reguł do czatu; lokalnie działa też Codex CLI uruchomiony w katalogu repozytorium |
+| 6 | **Narzędzia lokalne** (do przeglądu i testów na Twoim komputerze): Node 24 LTS, pnpm ≥ 12.4 (`npm i -g pnpm@12`), Docker, Python 3.13 (instaluje `uv`) | wersje: [`../01-architektura/stack-technologiczny.md`](../01-architektura/stack-technologiczny.md) § 2–3 |
 | 7 | **Pliki do weryfikacji parserów** — przygotuj lokalnie prawdziwy eksport z XTB (i mBank) | nie commituj ich; w repozytorium są tylko fikstury syntetyczne (G-05, G-16 w [`../00-przeglad/macierz-pokrycia.md`](../00-przeglad/macierz-pokrycia.md)) |
 
 Opcjonalnie, jeśli Codex pozwala zapisać instrukcje niestandardowe dla projektu, wystarczy krótki tekst — reszta jest w `AGENTS.md`:
