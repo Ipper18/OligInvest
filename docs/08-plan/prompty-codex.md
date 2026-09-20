@@ -18,7 +18,7 @@ Powiązane: [`../../AGENTS.md`](../../AGENTS.md) (instrukcje stałe — Codex cz
 | # | Czynność | Uwagi |
 |---|---|---|
 | 1 | **Repozytorium na GitHubie** — utwórz publiczne repo i wypchnij `main` | skan przed Krokiem 7 nie znalazł sekretów ani adresów; publiczne repozytorium to decyzja z [ADR-013](../09-decyzje/ADR-013-repozytorium-publiczne.md) |
-| 2 | **Ustawienia repozytorium** (zakładka Security): skanowanie sekretów z blokadą wypchnięcia, CodeQL (konfiguracja domyślna), alerty Dependabot, prywatne zgłaszanie podatności | pliki konfiguracyjne tworzy BL-019, ale przełączniki w GitHubie klika właściciel |
+| 2 | **Ustawienia repozytorium**: skanowanie sekretów z blokadą wypchnięcia, alerty Dependabot, prywatne zgłaszanie podatności; **CodeQL w konfiguracji domyślnej po scaleniu M0-1** | pliki tworzy BL-019, przełączniki ustawia właściciel według [instrukcji](../07-wdrozenie/ustawienia-repozytorium.md); po pojawieniu się kodu ponownie sprawdza języki `javascript-typescript`, `python` i dostępność `actions`, zapisując wynik |
 | 3 | **Ochrona `main`** (ruleset: wymagany PR, wymagane zadania CI, historia liniowa) | wymagane zadania CI da się wskazać dopiero po pierwszym przebiegu — włącz po scaleniu sesji M0-1 |
 | 4 | **Renovate** — zainstaluj aplikację GitHub dla tego repozytorium | konfiguracja `renovate.json` powstaje w BL-019 |
 | 5 | **Codex** — podłącz repozytorium; w skrypcie startowym środowiska ustaw `npm i -g pnpm@12`, a po pierwszej sesji dopisz `pnpm install --frozen-lockfile` | Node 25 nie zawiera już corepacka, więc instalujemy pnpm przez npm. Codex czyta `AGENTS.md` sam — nie wklejaj reguł do czatu; lokalnie działa też Codex CLI uruchomiony w katalogu repozytorium |
@@ -90,8 +90,8 @@ aktualizacja statusów w backlog.md i — jeśli etap się kończy — lista kry
 
 | Sesja | Zakres (`BL-…`) | Uwagi do promptu |
 |---|---|---|
-| M0-1 | 001–019, 032–035 | Prompt 0 (§ 2) |
-| M0-2 | 020–023, 030, 031 | obrazy, wydanie, skrypty; spiki Better Auth w lokalnym Compose |
+| M0-1 | 001–019, 032–035 | Prompt 0 (§ 2); BL-034 w całości (zależności BL-013 i BL-014); BL-018: lokalny build produkcyjny + Compose dev; BL-019: pliki i instrukcja, ustawienia potwierdza właściciel po scaleniu |
+| M0-2 | 018 (dokończenie), 020–023, 030, 031 | obrazy, wydanie, skrypty; BL-018: testy na obrazach po BL-020–BL-023; spiki Better Auth w lokalnym Compose |
 | M0-3 | 024–029 | Codex przygotowuje konfiguracje i instrukcje krok po kroku; wykonuje właściciel; wartości `<…>` tylko na serwerach |
 | M1-1 | 101–103, 105–109, 111, 117 | uwierzytelnianie i autoryzacja; testy RLS i 403 dla każdej trasy |
 | M1-2 | 131–139, 125 | dane rynkowe i SSE; testy kontraktowe na zapisanych próbkach, bez sieci w CI |
