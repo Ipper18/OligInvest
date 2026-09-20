@@ -28,6 +28,8 @@ jobs:
         with:
           node-version: '24.21.0'
       - run: node --test scripts/check-repository.test.mjs
+      - run: node --test scripts/check-docs.test.mjs
+      - run: node scripts/check-docs.mjs
       - run: node scripts/check-repository.mjs
         env:
           PR_TITLE: ${{ github.event.pull_request.title || '' }}
