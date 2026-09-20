@@ -155,8 +155,8 @@ sequenceDiagram
 
 | Środowisko | Gdzie | Dane | Uwagi |
 |---|---|---|---|
-| Lokalne | Docker Compose, profil `dev` | seed demo + fixtures syntetyczne | Mailpit jako lokalny serwer SMTP; atrapy dostawców z zapisanych odpowiedzi; bez połączeń do prawdziwych API bez jawnej zmiennej |
-| CI | runnery GitHub (efemeryczne) | fixtures syntetyczne | obrazy produkcyjne w testach e2e |
+| Lokalne | samodzielne `compose.dev.yaml` (bez profilu i produkcyjnych obrazów aplikacji) | seed demo + fixtures syntetyczne (po implementacji) | PostgreSQL, Valkey ×2, Mailpit jako lokalny serwer SMTP; [instrukcja](srodowisko-deweloperskie.md); atrapy dostawców z zapisanych odpowiedzi; bez połączeń do prawdziwych API bez jawnej zmiennej |
+| CI | runnery GitHub (efemeryczne) | fixtures syntetyczne | M0-1: lokalny build produkcyjny i usługi developerskie; obrazy produkcyjne w testach e2e od M0-2 |
 | Produkcja | VM `oliginvest` | prawdziwe | wdrożenie wg § 6 |
 
 Brak osobnego środowiska testowego na serwerze — nie mieści się w budżecie RAM (NFR-01.08). Zastępują je testy e2e na obrazach produkcyjnych w CI i możliwość uruchomienia wydania lokalnie przed wdrożeniem.
