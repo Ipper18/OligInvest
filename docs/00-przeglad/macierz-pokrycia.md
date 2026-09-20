@@ -368,7 +368,7 @@ Kolumna „Dokumenty” pokazuje do trzech dokumentów projektowych, które najc
 | Fixtures importu | porównanie komórek XLSX i JSON po przegenerowaniu | jedyna zmiana: data sprzedaży AAPL 2025-09-01 (święto w USA) → 2025-09-02 |
 | Spójność liczb | wyszukanie w całej dokumentacji | sesje 7/30 dni, PAT 30 żądań/min i 2 000/dobę, import ≤ 10 MB, RPO/RTO — zgodne wszędzie |
 | Nazwy i wersje | wyszukanie przestarzałych nazw (`worker-py`, PostgreSQL 16, Redis 7, Serwist, Debian 12) | brak poza historią zmian i opcjami odrzuconymi (poprawiony opis skilla — § 6) |
-| Repozytorium publiczne | skan sekretów, kluczy, konfiguracji VPN/SSH, adresów IP i hostów | brak; jedyny adres IP `127.0.0.1`; hosty tylko `invest.oligi.pl` i `*.oligi.pl` |
+| Repozytorium publiczne | skan sekretów, kluczy, konfiguracji VPN/SSH, adresów IP i hostów | brak rzeczywistych danych instancji; nowe pliki Compose używają zmiennej adresu i lokalnego wyznaczenia pętli zwrotnej; hosty publiczne `invest.oligi.pl` i `*.oligi.pl` |
 | Zdanie „Cel:” | pierwszy akapit każdego dokumentu w `docs/` i plików w katalogu głównym | 68 z 68 (po uzupełnieniu 14 ADR-ów, szablonu ADR i `CLAUDE.md` — § 6) |
 | `AGENTS.md` | rozmiar pliku | 18,7 KB (limit Codex 32 KiB) |
 

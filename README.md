@@ -8,7 +8,7 @@ OligInvest to prywatna aplikacja webowa (PWA) do analizy inwestycji dla właści
 
 ## Status
 
-**Faza: dokumentacja i plan — gotowe do rozpoczęcia budowy.** Kod aplikacji jeszcze nie istnieje; powstanie w Codex (GPT-6) etapami M0–M6 według [`docs/08-plan/roadmapa.md`](docs/08-plan/roadmapa.md). Pierwszy krok: etap M0 (szkielet i infrastruktura).
+**Faza: M0-1 — przygotowanie plików podczas karencji zależności.** Istnieją manifesty monorepo, konfiguracja narzędzi, Compose dev i kontrole dokumentacji na standardowym Node. Kod aplikacji, lockfile i pełne CI jeszcze nie powstały; manifestów nie zweryfikowano instalacją ani typecheckiem. Stan i brakujące prace: [raport M0-1](docs/08-plan/m0-1-session-report.md); etapy M0–M6: [roadmapa](docs/08-plan/roadmapa.md).
 
 ## Zasady produktu
 

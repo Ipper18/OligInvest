@@ -95,7 +95,7 @@ grep -rnE 'pip install|npm install|npx |uv add' .claude/skills/<skill>
 
 ## 8. Uruchamianie lokalne
 
-Polecenia powstają w etapie M0 (BL-001–BL-035); do tego czasu repozytorium zawiera tylko dokumentację.
+Polecenia powstają w etapie M0 (BL-001–BL-035). Podczas karencji działają kontrole `node scripts/check-docs.mjs`, `node scripts/check-repository.mjs` oraz `node --test scripts/*.test.mjs`, bez zależności. Pozostałe polecenia poniżej są docelowe; przygotowane manifesty i Compose nie stanowią dowodu działającego szkieletu ([raport](docs/08-plan/m0-1-session-report.md), [Compose dev](docs/07-wdrozenie/srodowisko-deweloperskie.md)).
 
 | Polecenie | Co robi |
 |---|---|
