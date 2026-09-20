@@ -2,7 +2,7 @@
 
 **Cel:** zapisać wykonane prace, ich weryfikację i brakujące dowody paczki BL-001–BL-019 oraz BL-032–BL-035, bez utożsamiania przygotowanych plików z działającą aplikacją lub CI.
 
-Stan: **2026-09-20**, gałąź `feat/m0-1-skeleton` utworzona z `main` po scaleniu PR #1. **Konfiguracja przygotowana; nie uruchomiono jeszcze w CI.** Ten raport będzie uzupełniony po instalacji i wykonaniu szkieletu. M0 pozostaje otwarty.
+Stan: **2026-09-20**, gałąź `feat/m0-1-skeleton` utworzona z `main` po scaleniu PR #1. **Konfiguracja przygotowana; nie uruchomiono jeszcze w CI** — dotyczy nowego szkicu własnych workflow. Istniejący CodeQL dla Pythona uruchomił się automatycznie po otwarciu [roboczego PR #2](https://github.com/Ipper18/OligInvest/pull/2); wynik odnotowano w § 3. Ten raport będzie uzupełniony po instalacji i wykonaniu szkieletu. M0 pozostaje otwarty.
 
 ## 1. Zrobione
 
@@ -34,6 +34,8 @@ Stan: **2026-09-20**, gałąź `feat/m0-1-skeleton` utworzona z `main` po scalen
 - Kontrola JSON i lokalnych linków plikowych w zmienionych dokumentach: **PASS** (kotwice nagłówków nie były osobno walidowane). Inwentarz: wszystkie 559 wpisów npm mają SHA-512, wszystkie 2308 plików PyPI mają SHA-256; maksimum dat publikacji + 4320 minut zgadza się z terminem w raporcie: **PASS**.
 - Kontrola statyczna szkicu workflow: **19 odwołań `uses`** do 6 akcji, każde z pełnym SHA; jedna deklaracja `permissions: { contents: read }`, brak `pull_request_target`: **PASS**. Ruleset ma `enforcement: disabled` i brak bypass: **PASS**. To kontrola wskazanych pól, nie pełna walidacja YAML ani test wykonania.
 - `pnpm turbo run lint typecheck test build`, `pnpm db:test`, testy OpenAPI, RLS, e2e i budżety: **NIE URUCHOMIONO**. Skan podatności: **NIE URUCHOMIONO**. Nie ma dowodu zielonego CI.
+- GitHub uruchomił istniejącą konfigurację domyślną CodeQL: `Analyze (python)` i kontrola `CodeQL` — **PASS** dla commita `08cb4cc`, [przebieg](https://github.com/Ipper18/OligInvest/actions/runs/35526140837), zakończony 2026-09-20 17:32:30 UTC. Wynik nie potwierdza skanowania przyszłego TypeScript ani `actions` i nie zastępuje pełnego CI M0-1. Nie zmieniono ustawień CodeQL.
+- Kontrola zmienionych plików pod kątem literalnych IPv4 i przypisań przypominających sekrety — **PASS**; nie zastępuje GitHub secret scanning ani przeglądu właściciela.
 
 ## 4. Estymacje, decyzje i ryzyka
 
@@ -55,3 +57,5 @@ Stan: **2026-09-20**, gałąź `feat/m0-1-skeleton` utworzona z `main` po scalen
 | 8 — część BL-032 | niespełnione; spike dopiero po instalacji |
 
 Kontynuować po upływie karencji na tej samej gałęzi i w tym samym PR: zgodne lokalne narzędzia, lockfile z porównaniem do inwentarza, instalacja frozen, implementacja według zależności, testy i uzupełnienie tego raportu. Nie scalać PR i nie oznaczać M0 jako zakończonego. W czasie oczekiwania nie uruchamiać instalacji świeżych wydań ani nie zmieniać zegara/polityki.
+
+Kontynuację w tym samym zadaniu Codex zaplanowano jednorazowo na **2026-09-21 18:33 Europe/Warsaw**, po upływie wspólnej karencji. Komputer i aplikacja muszą działać, a repozytorium pozostać dostępne lokalnie ([dokumentacja automatyzacji](https://learn.chatgpt.com/docs/automations), sprawdzono 2026-09-20). Harmonogram nie jest dowodem wykonania przyszłej pracy; w razie niewykonania wrócić do tej gałęzi i raportu, bez powtarzania bootstrapu i bez nowego PR.
