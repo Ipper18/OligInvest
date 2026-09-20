@@ -31,13 +31,15 @@ Stan: **2026-09-20**, gałąź `feat/m0-1-skeleton` utworzona z `main` po scalen
 - `node --test scripts/check-repository.test.mjs`: **7/7 PASS** na zastanym Node 25.1.0; testy poprzedzały implementację, dodatkowy przypadek push/PR wykrył i potwierdził poprawkę obsługi pustego tytułu. Ponowić na Node 24 przed zakończeniem BL-001.
 - `node scripts/check-repository.mjs`: PASS dla plików śledzonych w repozytorium; kontrola samej lokalizacji nie dowodzi anonimizacji zawartości fixtures.
 - `git diff --check`: PASS.
-- Kontrola JSON, lokalnych linków w zmienionych dokumentach, kompletności sum i przeliczenia maksymalnego terminu audytu: do zapisania po końcowym sprawdzeniu.
+- Kontrola JSON i lokalnych linków plikowych w zmienionych dokumentach: **PASS** (kotwice nagłówków nie były osobno walidowane). Inwentarz: wszystkie 559 wpisów npm mają SHA-512, wszystkie 2308 plików PyPI mają SHA-256; maksimum dat publikacji + 4320 minut zgadza się z terminem w raporcie: **PASS**.
+- Kontrola statyczna szkicu workflow: **19 odwołań `uses`** do 6 akcji, każde z pełnym SHA; jedna deklaracja `permissions: { contents: read }`, brak `pull_request_target`: **PASS**. Ruleset ma `enforcement: disabled` i brak bypass: **PASS**. To kontrola wskazanych pól, nie pełna walidacja YAML ani test wykonania.
 - `pnpm turbo run lint typecheck test build`, `pnpm db:test`, testy OpenAPI, RLS, e2e i budżety: **NIE URUCHOMIONO**. Skan podatności: **NIE URUCHOMIONO**. Nie ma dowodu zielonego CI.
 
 ## 4. Estymacje, decyzje i ryzyka
 
 - Bazowa suma estymacji wybranych zadań: **31,5 dnia idealnego**; zakres zadania BL-018 obejmuje również pozostałą część w M0-2. Estymacji nie zmieniono.
 - BL-001 (1 d), BL-017 (2 d), BL-019 (1 d) pozostają `w toku` wyłącznie w zakresie przygotowania. Odchylenie nakładu będzie policzone po ich wykonaniu; oczekiwanie do podanego terminu jest opóźnieniem kalendarzowym, nie dniem wykonanej implementacji. Nie przypisano oszczędności estymacji niewykonanym zadaniom.
+- Przy kontynuacji zastano czystą gałąź z wypchniętym commitem `8d91754` (`Document dependency readiness and split M0 CI responsibilities`), zawierającym przygotowane pliki. Jego tytuł nie jest Conventional Commit; zachowano commit właściciela bez przepisywania historii. Kolejne commity i tytuł PR używają wymaganej konwencji. Rozbieżność należy uwzględnić przy uruchamianiu kontroli historii commitów; nie wyłączać jej po cichu.
 - ADR: brak zmian i brak potrzeby zmiany ADR-002 dla wybranego terminu. Późniejsza niż 2026-09-24 wymagana linia, zmiana stosu albo konfiguracja zaawansowana CodeQL wymagają zatrzymania i nowej propozycji decyzji.
 - Do rozstrzygnięcia przed aktywacją rulesetu: GitHub nie pozwala `Ipper18` zatwierdzić PR własnego autorstwa; pytanie właściciela dotyczy odrębnej tożsamości autora albo jawnego przeglądu bez self-approval. Nie zmieniono automatycznie wymagań zatwierdzania.
 - Ryzyka: R-22 uzupełniony o cały graf i granicę oczekiwania; R-23 — blokada self-approval; R-24 — deprecated `@esbuild-kit/*` w Drizzle Kit. Sam znacznik deprecated nie jest wynikiem skanowania podatności.
