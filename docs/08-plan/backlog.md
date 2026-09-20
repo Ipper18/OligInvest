@@ -44,7 +44,7 @@ Bez logiki domenowej; wynik: działające CI, baza z RLS, wydanie podpisane i wd
 
 | ID | Zadanie | Wymagania | Dokumenty | Zależy od | d | Status |
 |---|---|---|---|---|---|---|
-| BL-001 | Bootstrap repozytorium kodu: pnpm 12 (workspace z polityką z SEC §4.3: `minimumReleaseAge`, `trustPolicy`, `strictDepBuilds`, `blockExoticSubdeps`, `allowBuilds`), Turborepo 2.11, `.nvmrc` (Node 24), Biome 2.5, `tsconfig` strict, sprawdzanie tytułów PR (Conventional Commits) | NFR-02.01, NFR-03.09, NFR-10.03, NFR-10.05 | STACK, SEC | — | 1 | todo |
+| BL-001 | Bootstrap repozytorium kodu: pnpm 12 (workspace z polityką z SEC §4.3: `minimumReleaseAge`, `trustPolicy`, `strictDepBuilds`, `blockExoticSubdeps`, `allowBuilds`), Turborepo 2.11, `.nvmrc` (Node 24), Biome 2.5, `tsconfig` strict, sprawdzanie tytułów PR (Conventional Commits) | NFR-02.01, NFR-03.09, NFR-10.03, NFR-10.05 | STACK, SEC | — | 1 | w toku |
 | BL-002 | Struktura `apps/*`, `modules/*`, `packages/*` z pustymi pakietami, polem `exports` w modułach i testami dymnymi | NFR-02.01, NFR-02.02 | MOD | BL-001 | 1 | todo |
 | BL-003 | Skrypt `pnpm check:deps` (reguły warstw) z testem negatywnym | NFR-02.03 | MOD, [ADR-002](../09-decyzje/ADR-002-monorepo.md) | BL-002 | 1 | todo |
 | BL-004 | Generator `pnpm gen:module <nazwa>` według szablonu modułu | NFR-02.02, NFR-02.07 | MOD | BL-002 | 1 | todo |
@@ -80,6 +80,10 @@ Bez logiki domenowej; wynik: działające CI, baza z RLS, wydanie podpisane i wd
 | BL-034 | Środowisko deweloperskie: `compose.dev.yaml` (PostgreSQL, Valkey, Mailpit), `pnpm dev`, dane przykładowe | NFR-10.01 | CI | BL-022 | 1 | todo |
 | BL-035 | Test spójności dokumentacji w CI: każde FR/NFR z `wymagania.md` ma zadanie w `backlog.md` i wiersz w `macierz-pokrycia.md`; linki wewnętrzne w `docs/` działają; każdy dokument zaczyna się od „Cel:” | NFR-10.01 | CI | BL-017 | 0,5 | todo |
 | | **Suma etapu** | | | | **51** | |
+
+### 1.1 Postęp i odchylenia
+
+- **2026-09-20, BL-001:** zakończono analizę startową; implementacja wstrzymana, ponieważ wszystkie opublikowane stabilne wydania Turborepo 2.11 mają mniej niż wymagane 4320 minut. Najwcześniejszy termin dla pakietu `turbo` 2.11.0: 2026-09-21 18:31:36.614 Europe/Warsaw; pozostałe zależności wymagają osobnej kontroli. Estymacja 1 d bez zmian, odchylenie nakładu pracy do ustalenia po implementacji. Dowody, propozycja kolejności paczek i niespełnione kryteria: [raport BL-001](bl-001-bootstrap-readiness.md). Nie zmieniono ADR ani polityki bezpieczeństwa.
 
 ## 2. M1 — MVP
 
