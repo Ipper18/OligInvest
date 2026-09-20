@@ -1,0 +1,28 @@
+{
+  "name": "oliginvest",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@12.4.2",
+  "engines": {
+    "node": ">=24.0.0 <25",
+    "pnpm": "12.4.2"
+  },
+  "scripts": {
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "build": "turbo run build",
+    "check:repository": "node scripts/check-repository.mjs",
+    "check:docs": "node scripts/check-docs.mjs",
+    "test:scripts": "node --test scripts/*.test.mjs"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.14",
+    "@vitest/coverage-v8": "5.0.1",
+    "turbo": "2.11.0",
+    "typescript": "7.0.2",
+    "vitest": "5.0.1"
+  }
+}

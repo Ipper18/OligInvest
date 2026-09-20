@@ -1,0 +1,12 @@
+{
+  "name": "@oliginvest/analytics",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "lint": "uv run --frozen ruff check .",
+    "typecheck": "uv run --frozen mypy --strict src",
+    "test": "uv run --frozen pytest",
+    "build": "uv build --offline --no-sources --no-build-isolation",
+    "dev": "uv run --frozen python -m oliginvest_analytics"
+  }
+}

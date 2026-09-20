@@ -1,0 +1,16 @@
+packages:
+  - apps/*
+  - modules/*
+  - packages/*
+
+minimumReleaseAge: 4320
+trustPolicy: no-downgrade
+strictDepBuilds: true
+blockExoticSubdeps: true
+# No dependency install scripts have been reviewed yet.
+allowBuilds: {}
+
+saveExact: true
+engineStrict: true
+pmOnFail: error
+strictPeerDependencies: true

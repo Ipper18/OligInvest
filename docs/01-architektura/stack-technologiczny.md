@@ -42,6 +42,22 @@ Nowa zależność runtime trafia do projektu tylko, jeśli spełnia **wszystkie*
 | Testy e2e | **Playwright** + `@axe-core/playwright` | 1.63 / 4.13 | Apache-2.0 / MPL-2.0 | Chromium, WebKit (Safari/iOS), Firefox w jednym narzędziu; testy dostępności. | Cypress (brak WebKit). |
 | Budżety wydajności | **Lighthouse** (uruchamiany w CI skryptem z asercjami) + **size-limit** | 13.5 / 14.0 | Apache-2.0 / MIT | LCP/CLS/TBT w CI; twardy limit rozmiaru JS per trasa (NFR-01.02); szczegóły w `04-frontend/wydajnosc.md` § 6. | `@lhci/cli` 0.15.1 — ostatnie wydanie 2025-06, zawiera Lighthouse 12.6.1 (sprawdzone 2026-09-19); tylko ręczne pomiary. |
 
+### 3.1 Pakiety pomocnicze szkieletu M0-1
+
+Przygotowane manifesty (BL-001, 2026-09-20) używają dokładnych wersji z [inwentarza audytu](../08-plan/audits/m0-1-release-age.json). Nie wykonano instalacji ani nie utworzono lockfile; kontrola pochodzenia, licencji całego grafu i zgodności typów pozostaje do wykonania po karencji.
+
+| Pakiet | Wersja | Licencja | Uzasadnienie |
+|---|---|---|---|
+| `@types/node` | 24.13.5 | MIT | Deklaracje API Node 24 dla aplikacji serwerowych i pakietów z I/O; bez kodu runtime |
+| `@types/react`, `@types/react-dom` | 19.3.0 | MIT | Deklaracje React 19.3 dla Next.js i wspólnego UI; bez kodu runtime |
+| `@types/pg` | 8.23.1 | MIT | Deklaracje sterownika `pg` dla typowanych pul i transakcji RLS |
+| `@vitest/coverage-v8` | 5.0.1 | MIT | Provider pokrycia Vitest tej samej wersji, potrzebny do bramki pokrycia `core` |
+| `@tailwindcss/postcss` | 4.3.3 | MIT | Oficjalny adapter Tailwind 4 dla potoku CSS Next.js |
+
+Te pakiety uzupełniają wybrane narzędzia, bez zmiany architektury lub ADR. Inne biblioteki figurujące w audycie (np. Better Auth do spike BL-032, narzędzia e2e i biblioteki naukowe) nie są automatycznie dodawane do manifestów. `apps/analytics/package.json` zawiera wyłącznie polecenia dla Turbo; zależności Pythona będą zapisane w `pyproject.toml` i `uv.lock` w BL-014.
+
+Ustawienia pnpm 12 poza rejestrem są w `pnpm-workspace.yaml`: `saveExact`, `engineStrict`, `pmOnFail: error` (odrzucenie niezgodnej wersji menedżera bez jej automatycznego pobrania). `.npmrc` wskazuje rejestr, bez poświadczeń. `allowBuilds: {}` pozostaje puste do przeglądu skryptów instalacyjnych; przykład `esbuild` w SEC § 4.3 nie stanowi automatycznej zgody na wykonanie skryptu. Źródła konfiguracji, sprawdzone 2026-09-20: [ustawienia pnpm 12](https://pnpm.io/settings), [pmOnFail](https://pnpm.io/settings/cli#pmonfail).
+
 ## 4. Frontend (`apps/web`)
 
 | Element | Wybór | Wersja | Licencja | Uzasadnienie | Odrzucone |
