@@ -18,6 +18,7 @@ Fakty sprawdzone 2026-09-19 w dokumentacji GitHub: runnery hostowane przez GitHu
 - **Model:** trunk-based — krótkie gałęzie tematyczne, PR do `main`, scalanie przez „squash”, tytuł PR w formacie Conventional Commits (sprawdzany w CI).
 - **Reguły ochrony (ruleset) dla `main`:** wymagany PR; wymagane zadania CI z § 3 (status „success”); historia liniowa; zakaz force-push i usuwania gałęzi; wymagane rozwiązanie wątków przeglądu; reguły obowiązują także właściciela (bez obejść). Podpisane commity — zalecane.
 - **Przegląd:** właściciel przegląda każdy PR, także przygotowany przez agenta AI (Codex, Claude) — T-SC-06; plik `CODEOWNERS` wskazuje właściciela dla `docs/06-bezpieczenstwo/`, `infra/`, `.github/`, `packages/db/`, `apps/api/src/auth/`.
+- Przegląd właściciela jest obowiązkiem procesu (R-11), nie jest egzekwowany mechanizmem zatwierdzeń GitHuba; `CODEOWNERS` wskazuje obszary wymagające szczególnej uwagi. Przy jednym współpracowniku ruleset wymaga 0 zatwierdzeń i nie wymaga zatwierdzenia code ownera, bez odrębnej tożsamości autora i bez bypass. Pozostałe reguły ochrony obowiązują bez zmian (decyzja właściciela z 2026-09-20, R-23; bez nowego ADR).
 - **Ustawienia repozytorium:** skanowanie sekretów z push protection, CodeQL, alerty Dependabot, prywatne zgłaszanie podatności (ADR-013); domyślne uprawnienia tokenu zadań: tylko odczyt; akcje tylko z listy dozwolonych (organizacje `actions`, `github`, `docker`, `sigstore`, `pnpm`, `astral-sh` i zweryfikowani twórcy) i przypięte SHA.
 
 ## 3. Zadania CI (pull request i `main`)

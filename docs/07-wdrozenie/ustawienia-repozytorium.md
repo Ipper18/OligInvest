@@ -14,9 +14,9 @@ Plik rulesetu ma `enforcement: disabled` i pustą listę obejść. Import jest w
 
 ### Ograniczenie zatwierdzania własnego PR
 
-GitHub nie pozwala autorowi zatwierdzić własnego PR ([dokumentacja](https://docs.github.com/en/pull-requests/how-tos/review-pull-requests/reviewing-proposed-changes-in-a-pull-request), sprawdzono 2026-09-20). PR utworzony przez `gh` w tej sesji ma autora `Ipper18`, a CODEOWNERS wskazuje tę samą osobę. Obecny szablon wymaga jednego zatwierdzenia i przeglądu code ownera zgodnie z literalnym wymaganiem CONTRIBUTING § 4; przy obecnych kontach nie wolno go aktywować, bo zablokuje scalenia.
+GitHub nie pozwala autorowi zatwierdzić własnego PR ([dokumentacja](https://docs.github.com/en/pull-requests/how-tos/review-pull-requests/reviewing-proposed-changes-in-a-pull-request), sprawdzono 2026-09-20). PR utworzony przez `gh` w tej sesji ma autora `Ipper18`, a CODEOWNERS wskazuje tę samą osobę.
 
-Do decyzji właściciela przed aktywacją: zatwierdzanie przez właściciela PR tworzonych przez odrębną tożsamość albo jawnie udokumentowany przegląd właściciela bez wymaganego self-approval. Drugi wariant wymaga korekty CONTRIBUTING § 4 i definicji rulesetu; nie jest wprowadzany automatycznie. Agent nie tworzy kont, nie zmienia poświadczeń i nie obchodzi przeglądu.
+Decyzja właściciela z 2026-09-20 (R-23): `required_approving_review_count: 0` i `require_code_owner_review: false`. Nie tworzymy odrębnej tożsamości autora. Właściciel dokumentuje przegląd każdego PR w jego checkliście przed scaleniem (R-11); CODEOWNERS wskazuje obszary szczególnej uwagi. GitHub egzekwuje wymagany PR, CI i rozwiązanie wątków, ale nie liczbę zatwierdzeń. Brak bypass. To doprecyzowanie procesu nie wymaga ADR.
 
 ## 2. General i Actions
 
@@ -42,7 +42,7 @@ Do decyzji właściciela przed aktywacją: zatwierdzanie przez właściciela PR 
 
 ## 5. Ruleset main
 
-1. Najpierw rozstrzygnij ograniczenie self-approval z § 1, potwierdź scalony M0-1 i zielone rzeczywiste przebiegi CI/CodeQL.
+1. Potwierdź scalony M0-1 i zielone rzeczywiste przebiegi CI/CodeQL; zachowaj 0 wymaganych zatwierdzeń i wyłączony wymóg zatwierdzenia code ownera zgodnie z § 1.
 2. W Settings → Rules → Rulesets zaimportuj definicję JSON w stanie Disabled albo odwzoruj ją w panelu. Nie wykonuj tego za pomocą agenta. Zachowaj zakres `refs/heads/main`, brak bypass, blokadę usuwania/force-push, historię liniową, wymagany PR i rozwiązanie wątków.
 3. Dla wymaganych status checks zastąp planowane nazwy dokładnymi nazwami z udanego przebiegu i wybierz GitHub Actions jako źródło tam, gdzie panel to umożliwia. Potwierdź wszystkie warianty build, także bez `education`. Włącz wymóg aktualności gałęzi.
 4. Dodaj wymóg wyników skanowania CodeQL z progiem błędów i bezpieczeństwa `high_or_higher`. Plik używa natywnej reguły `code_scanning`, nie wymyślonego zadania `codeql` we własnym workflow. W razie różnic z panelem zapisz je i pozostaw ruleset nieaktywny do rozstrzygnięcia. [Kontrakt GitHub REST](https://docs.github.com/en/rest/repos/rules), sprawdzono 2026-09-20.
@@ -55,7 +55,7 @@ Wypełnić po scaleniu M0-1; brak potwierdzenia oznacza otwarty BL-019 i niespe�
 
 | Kontrola | Wynik / data / dowód |
 |---|---|
-| Przegląd właściciela i rozwiązanie self-approval | do wykonania |
+| Przegląd właściciela udokumentowany w PR; 0 zatwierdzeń, bez wymogu code owner review | decyzja 2026-09-20; przegląd i ustawienia do potwierdzenia |
 | Squash merge i Actions tylko do odczytu | do wykonania |
 | Secret scanning i push protection | do potwierdzenia po scaleniu |
 | Dependency graph i alerty Dependabot | do wykonania |

@@ -36,12 +36,12 @@ Powiązane: [`roadmapa.md`](roadmapa.md), [`backlog.md`](backlog.md), [`../06-be
 | **R-20** | Niezgodności narzędzi (TypeScript 7, Next.js 16, Better Auth 1.7) spowalniają start | [`../01-architektura/stack-technologiczny.md`](../01-architektura/stack-technologiczny.md) § 3 | 3 | 2 | 6 | spike BL-032, powrót do TypeScript 6.x, grupowanie aktualizacji w Renovate | nieprzechodzący build po aktualizacji | agent | M0 |
 | **R-21** | Zmiana przepisów lub interpretacji podatkowych (data przychodu, T+1 w UE od 11.10.2027) | [`../11-zgodnosc-prawna.md`](../11-zgodnosc-prawna.md) § 5 | 2 | 2 | 4 | parametr `tax_date_basis`, kalendarz rozliczeń z datą przejścia na T+1, coroczny przegląd prawny, widok informacyjny | nowa interpretacja, data 11.10.2027 | właściciel | stale |
 | **R-22** | Wymagana linia biblioteki została wydana zbyt niedawno, aby spełnić karencję instalacji | BL-001, SEC § 4.3, [raport startowy](bl-001-bootstrap-readiness.md) | 3 | 2 | 6 | audyt całego grafu npm/PyPI i binariów, odczekanie 4320 minut bez wyjątków; wspólny termin wybranego grafu: 2026-09-21 18:31:49 Europe/Warsaw; porównanie lockfile z inwentarzem; wymagany termin po 2026-09-24 oznacza zatrzymanie i propozycję ADR | dodatkowy węzeł grafu nieobjęty inwentarzem, późniejsza publikacja wymaganej linii lub blokada trustPolicy/skryptu instalacyjnego | agent, właściciel | M0 i aktualizacje |
-| **R-23** | Wymagane zatwierdzenie code ownera blokuje własne PR jedynego właściciela | BL-019, CONTRIBUTING § 4, [instrukcja ustawień](../07-wdrozenie/ustawienia-repozytorium.md) § 1 | 5 | 3 | **15** | ruleset pozostaje nieaktywny; właściciel rozstrzyga odrębną tożsamość autora albo udokumentowany przegląd bez self-approval; nie osłabiać reguł po cichu i nie dodawać bypass | autor PR i jedyny CODEOWNER to `Ipper18`; GitHub nie dopuszcza zatwierdzenia własnego PR | właściciel | przed aktywacją rulesetu M0 |
+| **R-23** | Ponowne włączenie wymaganego zatwierdzenia blokuje własne PR jedynego właściciela | BL-019, CONTRIBUTING § 4, [instrukcja ustawień](../07-wdrozenie/ustawienia-repozytorium.md) § 1 | 1 | 3 | 3 | decyzja właściciela 2026-09-20: 0 zatwierdzeń, bez wymogu code owner review i odrębnej tożsamości autora; przegląd pozostaje obowiązkiem procesu R-11; CODEOWNERS wskazuje obszary uwagi; wymagany PR, CI, rozwiązanie wątków i brak bypass pozostają | panel GitHub wymaga zatwierdzenia pomimo decyzji; sprawdzić przy aktywacji rulesetu | właściciel | rozstrzygnięte; kontrola przy aktywacji M0 |
 | **R-24** | Przypięty Drizzle Kit zawiera wycofane zależności pośrednie | BL-007, BL-017, [audyt](bl-001-bootstrap-readiness.md) § 5 | 3 | 2 | 6 | sprawdzić osv-scanner i licencje po powstaniu lockfile, udokumentować używane ścieżki; nie zastępować zależności przez niezweryfikowane overrides | `@esbuild-kit/esm-loader@2.6.5` i `@esbuild-kit/core-utils@3.3.2` oznaczone deprecated; nie jest to potwierdzenie podatności | agent, CI | M0 i aktualizacje |
 
 ## 3. Podsumowanie
 
-24 ryzyka: **5 wysokich** (R-01, R-07, R-11, R-16, R-23), 17 średnich, 2 niskie; brak krytycznych.
+24 ryzyka: **4 wysokie** (R-01, R-07, R-11, R-16), 17 średnich, 3 niskie; brak krytycznych.
 
 | Ryzyko wysokie | Działanie przed końcem etapu |
 |---|---|
@@ -49,4 +49,4 @@ Powiązane: [`roadmapa.md`](roadmapa.md), [`backlog.md`](backlog.md), [`../06-be
 | R-07 błędy obliczeń | M1: wektory A, F, G i uzgodnienie z realnym eksportem XTB; M3: wektory B–D w obu językach |
 | R-11 kod agenta | M0: reguły w `AGENTS.md`, ochrona `main`, `CODEOWNERS`; każdy etap: przegląd PR i bramki CI |
 | R-16 niedoszacowanie | M1: brama A przed B, cięcia awaryjne, weryfikacja ADR-001 |
-| R-23 blokada zatwierdzania własnego PR | M0: rozstrzygnięcie modelu przeglądu przed aktywacją rulesetu; brak bypass |
+| R-23 blokada zatwierdzania własnego PR | Rozstrzygnięte 2026-09-20: przegląd w procesie R-11, 0 zatwierdzeń w rulesecie, bez code owner review i bypass; potwierdzić w panelu przy aktywacji |
