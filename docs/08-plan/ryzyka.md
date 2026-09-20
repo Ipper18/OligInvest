@@ -35,10 +35,11 @@ Powiązane: [`roadmapa.md`](roadmapa.md), [`backlog.md`](backlog.md), [`../06-be
 | **R-19** | Utrata kluczy kopii lub sekretów uniemożliwia odtworzenie | [`../07-wdrozenie/backup-dr.md`](../07-wdrozenie/backup-dr.md) § 4 | 1 | 5 | 5 | depozyt w menedżerze haseł i kopia offline, test kluczy w kwartalnym ćwiczeniu DR | niezaliczony test odtworzenia | właściciel | M1+ |
 | **R-20** | Niezgodności narzędzi (TypeScript 7, Next.js 16, Better Auth 1.7) spowalniają start | [`../01-architektura/stack-technologiczny.md`](../01-architektura/stack-technologiczny.md) § 3 | 3 | 2 | 6 | spike BL-032, powrót do TypeScript 6.x, grupowanie aktualizacji w Renovate | nieprzechodzący build po aktualizacji | agent | M0 |
 | **R-21** | Zmiana przepisów lub interpretacji podatkowych (data przychodu, T+1 w UE od 11.10.2027) | [`../11-zgodnosc-prawna.md`](../11-zgodnosc-prawna.md) § 5 | 2 | 2 | 4 | parametr `tax_date_basis`, kalendarz rozliczeń z datą przejścia na T+1, coroczny przegląd prawny, widok informacyjny | nowa interpretacja, data 11.10.2027 | właściciel | stale |
+| **R-22** | Wymagana linia biblioteki została wydana zbyt niedawno, aby spełnić karencję instalacji | BL-001, SEC § 4.3, [raport startowy](bl-001-bootstrap-readiness.md) | 3 | 2 | 6 | sprawdzenie dat publikacji przed rozpoczęciem paczki, odczekanie 4320 minut bez osłabiania polityki; zmiana linii zapisanej w ADR tylko przez nowy ADR | brak wersji wymaganej linii spełniającej karencję; potwierdzone 2026-09-20 dla Turborepo 2.11 | agent, właściciel | M0 i aktualizacje |
 
 ## 3. Podsumowanie
 
-21 ryzyk: **4 wysokie** (R-01, R-07, R-11, R-16), 15 średnich, 2 niskie; brak krytycznych.
+22 ryzyka: **4 wysokie** (R-01, R-07, R-11, R-16), 16 średnich, 2 niskie; brak krytycznych.
 
 | Ryzyko wysokie | Działanie przed końcem etapu |
 |---|---|
