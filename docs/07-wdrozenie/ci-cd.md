@@ -45,6 +45,8 @@ Szkic `ci:deps-audit` otrzymuje próg 7,0, ścieżkę konfiguracji OSV, maksymal
 
 Przygotowanie przed upływem karencji: szkice znajdują się w `.github/workflow-drafts/`, więc GitHub ich nie uruchamia. Do `.github/workflows/` trafiają po podłączeniu i lokalnej weryfikacji rzeczywistych poleceń. Status w raporcie: **Konfiguracja przygotowana; nie uruchomiono jeszcze w CI**.
 
+BL-008: osobny [workflow Database](../../.github/workflows/db.yml) uruchamia zadanie `db` na pull requestach i push do main. Sprawdza moduły i pakiet db, następnie `pnpm db:test` tworzy usługę PostgreSQL 18 z przypiętego `compose.dev.yaml`, wykonuje migracje, niezmienione testy RLS, audyt uprawnień, testy pul i pełne porównanie schematu. Hasła są losowe i syntetyczne, bez sekretów GitHub; sprzątanie dotyczy tylko projektu testu. Artefakt zawiera wyłącznie pięć wskazanych plików diagnostycznych z `.git/bl007-db/`, nigdy całego `.git`. Pozostałe własne workflow pozostają szkicami do BL-017; testy API będą dodawane wraz z implementacją endpointów. Rzeczywisty wynik przebiegu zapisujemy w bieżącym raporcie sesji.
+
 ```yaml
 # .github/workflows/ci.yml — fragment ilustracyjny
 name: ci

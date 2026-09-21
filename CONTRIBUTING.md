@@ -95,7 +95,7 @@ grep -rnE 'pip install|npm install|npx |uv add' .claude/skills/<skill>
 
 ## 8. Uruchamianie lokalne
 
-Polecenia powstają w etapie M0 (BL-001–BL-035). Zweryfikowano instalacje frozen i pełne `pnpm turbo run lint typecheck test build` na Node 24.21.0, pnpm 12.4.2, Python 3.13.13 i uv 0.12.16; uv musi być dostępne w PATH bieżącej powłoki. Kontrole `node scripts/check-docs.mjs`, `node scripts/check-repository.mjs` oraz `node --test scripts/*.test.mjs` działają bez zależności. Pozostałe polecenia, w tym pełne `pnpm dev`, `db:test`, `check:deps` i `gen:module`, pozostają docelowe. Compose wymaga decyzji o korekcie sieci ([raport](docs/08-plan/m0-1-session-report.md), [Compose dev](docs/07-wdrozenie/srodowisko-deweloperskie.md)).
+Polecenia powstają w etapie M0 (BL-001–BL-035). Zweryfikowano instalacje frozen i pełne `pnpm turbo run lint typecheck test build` na Node 24.21.0, pnpm 12.4.2, Python 3.13.13 i uv 0.12.16; uv musi być dostępne w PATH bieżącej powłoki. Kontrole `node scripts/check-docs.mjs`, `node scripts/check-repository.mjs` oraz `node --test scripts/*.test.mjs` działają bez zależności. Pozostałe polecenia, w tym pełne `pnpm dev`, `check:deps` i `gen:module`, pozostają docelowe. `pnpm db:test` sprawdzono na PostgreSQL 18.6 (migracje, pełne porównanie, RLS i pule). Korekta sieci Compose jest zatwierdzona ([raport](docs/08-plan/m0-1-session-report.md), [Compose dev](docs/07-wdrozenie/srodowisko-deweloperskie.md)).
 
 | Polecenie | Co robi |
 |---|---|

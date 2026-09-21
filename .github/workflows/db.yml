@@ -1,0 +1,49 @@
+name: Database
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: db-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  db:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version-file: .nvmrc
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+        with:
+          version: '12.4.2'
+          run_install: false
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Check database and module definitions
+        run: pnpm turbo run lint typecheck test build --filter=@oliginvest/db --filter='./modules/*' --output-logs=errors
+      - name: Test PostgreSQL 18 migrations, RLS and role pools
+        # The test owns a fresh Compose service and random synthetic credentials.
+        run: pnpm db:test
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: db-diagnostics
+          path: |
+            .git/bl007-db/reference.sql
+            .git/bl007-db/migrated.sql
+            .git/bl007-db/docker.log
+            .git/bl007-db/rls.log
+            .git/bl007-db/transactions.log
+          include-hidden-files: true
+          if-no-files-found: warn
+          retention-days: 7
