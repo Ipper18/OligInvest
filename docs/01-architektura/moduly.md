@@ -121,6 +121,14 @@ export interface UiModuleDefinition {
 }
 ```
 
+### 3.1 Fundament rejestrów M0 (BL-006)
+
+`packages/platform` zawiera niezależny od frameworka `ModuleCatalog` (metadane), `ApiModuleRegistry`, `JobsModuleRegistry` i `UiModuleRegistry`. API ma generyczny parametr routera: korzeń `apps/api` użyje `OpenAPIHono<AppEnv>` z ilustracji powyżej (BL-009). W BL-006 nie montujemy endpointów ani nie uruchamiamy kolejek. Rejestracje walidują metadane przez Zod `.strict()`, odrzucają duplikaty, nieznane moduły i niespójne definicje; nie przechowują instancji bazy.
+
+Katalog przyjmuje evaluator flag jako port; domyślny evaluator zwraca false, więc moduły funkcjonalne zaczynają jako wyłączone. Cztery moduły fundamentowe nie mają flagi, `admin` jest dostępny tylko roli admin, pozostałe moduły mają `module.<id>`. `require` rejestru API ocenia flagę przy każdym wywołaniu i zgłasza `NOT_FOUND`; adapter HTTP w BL-009 musi użyć tej bramki dla każdego żądania, także tras admin/quick modułu. Nie wolno ocenić flagi tylko podczas startu serwera. Pamięć DB/cache flag i autoryzacja HTTP pozostają do BL-117/M1.
+
+Rejestr jobs pomija wyłączone moduły przed wywołaniem handlera, subskrypcji lub zwróceniem harmonogramu; handler ma jawny kontekst korelacji i waliduje nieznany payload przez `createBoundaryHandler`; rejestr odrzuca funkcje nieutworzone przez ten walidujący adapter. Rejestr UI filtruje nawigację po fladze i uprawnieniu/roli, zwraca opisy leniwych paneli wyłącznie administratorowi; nie wywołuje loaderów. Osobne wejście `@oliginvest/platform/modules` pozwala użyć kontraktów bez importowania loggera Node do web. Rejestry nie zastępują autoryzacji, bramek MFA/PAT ani RLS.
+
 ## 4. Katalog modułów
 
 ### 4.1 Moduły fundamentowe

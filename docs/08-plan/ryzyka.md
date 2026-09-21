@@ -43,7 +43,7 @@ Powiązane: [`roadmapa.md`](roadmapa.md), [`backlog.md`](backlog.md), [`../06-be
 
 ## 3. Podsumowanie
 
-24 ryzyka: **4 wysokie** (R-01, R-07, R-11, R-16), 17 średnich, 3 niskie; brak krytycznych.
+26 ryzyk: **4 wysokie** (R-01, R-07, R-11, R-16), 18 średnich, 4 niskie; brak krytycznych.
 
 | Ryzyko wysokie | Działanie przed końcem etapu |
 |---|---|

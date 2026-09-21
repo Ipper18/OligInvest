@@ -76,6 +76,12 @@ Powiązane: [`openapi.yaml`](openapi.yaml), [`realtime.md`](realtime.md), [ADR-0
 
 Dane rynkowe nieaktualne **nie są błędem** — zwracamy `200` z `meta.stale = true` (NFR-09.02).
 
+### 4.1 Fundament obsługi błędów i korelacji (BL-006)
+
+`withRequestContext` z `packages/platform` otacza handler standardowych `Request`/`Response`. Akceptuje `X-Request-Id` tylko jako poprawny UUID, w przeciwnym razie generuje UUID; zwraca ten sam identyfikator w nagłówku, kontekście `AsyncLocalStorage`, logu i `Problem.instance`, także dla nieobsłużonego wyjątku. Dane uwierzytelnione wprowadza osobny `withIdentity` (bez odczytu tożsamości z nagłówków klienta). `requestLogger()` wiąże logi operacji z bieżącym request_id i uwierzytelnionym user_id, nadpisując przekazane identyfikatory. Log zakończenia/błędu także zawiera uwierzytelnionego użytkownika; próba zmiany aktora w tym samym żądaniu jest odrzucana. Kontekst jest izolowany między równoległymi żądaniami. Adapter Hono i montowanie endpointów pozostają do BL-009.
+
+Status i polski tytuł błędu wynikają z kodu kontraktu; URI typu korzysta z originu PUBLIC_BASE_URL. Nieznane wyjątki i kod INTERNAL nie ujawniają szczegółów, stosu ani przyczyny. Odpowiedzi mają `application/problem+json`, `Cache-Control: no-store`; 429/503 mają dodatni `Retry-After` (domyślnie 1 s, adapter może podać czas rzeczywistego limitu). `parseBoundary(shape, input)` tworzy obiekt Zod `.strict()`; nieznane pola są błędem 422. Zagnieżdżone obiekty w shape również deklarujemy jako strict. Komunikaty walidacji są stałe po polsku, bez wartości wejścia; ścieżka pokazuje tylko znany klucz główny, aby nie odbijać w odpowiedzi kluczy rekordów pochodzących od użytkownika. Nie publikujemy domenowych rozszerzeń Problem przed ich implementacją.
+
 ## 5. Paginacja, sortowanie, filtrowanie
 
 - **Kursor:** `?limit=50&cursor=<nieprzezroczysty>`; odpowiedź `{"data": [...], "page": {"nextCursor": "…", "hasMore": true}}`; `limit` domyślnie 50, maks. 200. Paginacji offsetowej nie stosujemy.

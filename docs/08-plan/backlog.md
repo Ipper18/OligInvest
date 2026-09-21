@@ -49,7 +49,7 @@ Bez logiki domenowej; wynik: działające CI, baza z RLS, wydanie podpisane i wd
 | BL-003 | Skrypt `pnpm check:deps` (reguły warstw) z testem negatywnym | NFR-02.03 | MOD, [ADR-002](../09-decyzje/ADR-002-monorepo.md) | BL-002 | 1 | todo |
 | BL-004 | Generator `pnpm gen:module <nazwa>` według szablonu modułu | NFR-02.02, NFR-02.07 | MOD | BL-002 | 1 | todo |
 | BL-005 | `packages/config`: schemat zmiennych środowiskowych (Zod) z obsługą `*_FILE`, zgodny z `.env.example` | NFR-03.12 | INF | BL-002 | 0,5 | w toku |
-| BL-006 | `packages/platform`: kontrakt i rejestry modułów, kontekst żądania, `request-id`, logger pino z redakcją, błędy RFC 9457, walidacja Zod `.strict()` na granicy | NFR-02.02, NFR-03.07, NFR-09.04 | MOD, KONW, SEC | BL-002 | 3 | todo |
+| BL-006 | `packages/platform`: kontrakt i rejestry modułów, kontekst żądania, `request-id`, logger pino z redakcją, błędy RFC 9457, walidacja Zod `.strict()` na granicy | NFR-02.02, NFR-03.07, NFR-09.04 | MOD, KONW, SEC | BL-002 | 3 | w toku |
 | BL-007 | `packages/db`: Drizzle odzwierciedlający `schema.sql`, migracje, polityki RLS, helper transakcji z `SET LOCAL app.user_id/app.role`, osobne pule per rola | NFR-03.04 | DB, MD, [ADR-004](../09-decyzje/ADR-004-postgres-better-auth-rls.md) | BL-002 | 4 | todo |
 | BL-008 | Zadanie CI `db`: PostgreSQL 18, migracje od zera, porównanie schematu z `schema.sql`, `testy-rls.sql` | NFR-03.04, NFR-10.02 | CI, DB | BL-007 | 1 | todo |
 | BL-009 | `apps/api`: Hono + `@hono/zod-openapi`, `/api/v1/health/live|ready`, `/api/v1/openapi.json` | NFR-09.04 | API, KONW | BL-006 | 1 | todo |
@@ -99,6 +99,8 @@ Bez logiki domenowej; wynik: działające CI, baza z RLS, wydanie podpisane i wd
 - **2026-09-20, BL-017/BL-019:** na wyraźne polecenie właściciela przygotowano podczas karencji szkic CI, CODEOWNERS, szablon PR, Renovate, nieaktywny ruleset i instrukcję ustawień. Status `w toku` obejmuje wyłącznie przygotowanie plików; uruchomienie CI czeka na gotowe zależności. Lokalny skrypt kontroli fixtures/tytułu PR ma 7 przechodzących testów bez instalowania pakietów, na zastanym Node 25; nie zastępuje testów na Node 24. Odchylenia 2 d / 1 d do ustalenia po wykonaniu zadań. Szczegóły i brakujące dowody: [raport sesji](m0-1-session-report.md).
 
 - **2026-09-21, BL-005:** lokalnie wykonane schematy strict, profile usług, bezpieczne odczyty `*_FILE`, walidacja produkcji i 11 testów (w tym dymny). Lint/typecheck/test/build 4/4 PASS. Status `w toku` do wspólnego DoD/CI; estymacja 0,5 d bez zmiany, odchylenia nie wyliczano bez ewidencji. [Raport](m0-1-session-report.md) § 9.1.
+
+- **2026-09-21, BL-006:** lokalnie wykonane rejestry modułów, korelacja/izolacja żądań, logger pino z redakcją, RFC 9457 i walidacja strict; **19 testów PASS**, pełne monorepo 88/88 PASS. Status `w toku` do DoD/CI; estymacja 3 d bez zmiany, odchylenia nie wyliczano bez ewidencji. [Raport](m0-1-session-report.md) § 9.2. BL-007/008 wyłącznie w następnej sesji.
 
 ## 2. M1 — MVP
 

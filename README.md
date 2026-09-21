@@ -8,7 +8,7 @@ OligInvest to prywatna aplikacja webowa (PWA) do analizy inwestycji dla właści
 
 ## Status
 
-**Faza: M0-1 — zweryfikowany lokalnie szkielet.** Istnieją oba lockfile, puste pakiety i moduły, strona testowa oraz testy dymne. Instalacje frozen i `pnpm turbo run lint typecheck test build` przechodzą lokalnie. Własne CI pozostaje szkicem; Compose dev wymaga decyzji o sieci po nieudanym teście portów przy `internal: true`. Stan i brakujące prace: [raport M0-1](docs/08-plan/m0-1-session-report.md); etapy M0–M6: [roadmapa](docs/08-plan/roadmapa.md).
+**Faza: M0-1 — zweryfikowany lokalnie szkielet.** Istnieją oba lockfile, szkielety pakietów i modułów, strona testowa, konfiguracja z obsługą sekretów plikowych i fundament platformy z testami. Instalacje frozen i `pnpm turbo run lint typecheck test build` przechodzą lokalnie. Własne CI pozostaje szkicem; Compose dev używa zatwierdzonego bridge (`internal: false`) z portami na pętli zwrotnej; produkcyjne sieci internal pozostają bez zmian. Stan i brakujące prace: [raport M0-1](docs/08-plan/m0-1-session-report.md); etapy M0–M6: [roadmapa](docs/08-plan/roadmapa.md).
 
 ## Zasady produktu
 
