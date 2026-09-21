@@ -271,3 +271,11 @@ erDiagram
 - **Funkcje `SECURITY DEFINER`** działają jako `oliginvest_owner` — przy `FORCE ROW LEVEL SECURITY` wymagają jawnej polityki dla właściciela (patrz `identity.invitations`); każda taka funkcja ma `SET search_path` i odebrane `EXECUTE` od `PUBLIC`.
 - **Migracje danych** (backfill) na tabelach z FORCE RLS: wykonywane w kontekście właściwego użytkownika (`SET LOCAL app.user_id`) lub zadaniem aplikacyjnym — nigdy przez wyłączenie RLS na produkcji.
 - **Test spójności:** CI stawia PostgreSQL 18, stosuje migracje Drizzle i porównuje wynik z `schema.sql` (np. przez `pg_dump --schema-only` obu wersji), następnie uruchamia `testy-rls.sql`.
+
+### 5.1 Implementacja M0 (BL-007)
+
+Definicje Drizzle są w `modules/*/db/schema.ts`; tabele jądra `platform` są w `packages/db/src/schema.ts`. Moduł identity posiada także schemat `auth`. Tabele potrzebne innym modułom są eksportowane przez publiczne wejście `/server`; kod pakietu db nie importuje modułów. Konfiguracja narzędzia migracji zbiera pliki definicji przez glob. Pola TypeScript używają camelCase, kolumny SQL zachowują snake_case. `numeric` pozostaje ciągiem, `bigint` używa `bigint`, daty i znaczniki czasu są ciągami.
+
+Migracja wygenerowana przez Drizzle Kit obejmuje tabele, indeksy i ograniczenia obsługiwane przez DSL. Towarzyszący SQL odtwarza funkcje, widok, triggery, uprawnienia, RLS i komentarze. Sześć kluczy obcych jest zapisanych w `packages/db/sql/foreign-keys.sql`: pięć z `ON DELETE SET NULL (kolumna)` (zachowanie `user_id`) oraz odwołanie tabeli platformy do `auth.users`, które nie wprowadza odwrotnej zależności pakietu od modułu. To odwzorowanie istniejącego DDL, bez zmiany kontraktu. Bootstrap ról jest oddzielony od migracji właściciela; haseł nie ma w plikach SQL.
+
+Przed `pnpm db:generate` należy zbudować moduły, aby publiczne eksporty tabel odpowiadały źródłom. Każdą wygenerowaną migrację i jej uzupełnienie SQL należy przejrzeć; pliki w `sql/` są źródłami do nowych migracji, nie są wykonywane ponownie na starcie aplikacji. `schema.sql` pozostaje niezależnym wzorcem porównania.

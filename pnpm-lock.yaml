@@ -264,19 +264,71 @@ importers:
 
   modules/admin: {}
 
-  modules/alerts: {}
+  modules/alerts:
+    dependencies:
+      '@oliginvest/mod-identity':
+        specifier: workspace:*
+        version: link:../identity
+      '@oliginvest/mod-market':
+        specifier: workspace:*
+        version: link:../market
+      drizzle-orm:
+        specifier: 0.45.2
+        version: 0.45.2(@types/pg@8.23.1)(kysely@0.29.6)(pg@8.23.0)
 
-  modules/analytics: {}
+  modules/analytics:
+    dependencies:
+      '@oliginvest/mod-identity':
+        specifier: workspace:*
+        version: link:../identity
+      drizzle-orm:
+        specifier: 0.45.2
+        version: 0.45.2(@types/pg@8.23.1)(kysely@0.29.6)(pg@8.23.0)
 
-  modules/education: {}
+  modules/education:
+    dependencies:
+      '@oliginvest/mod-identity':
+        specifier: workspace:*
+        version: link:../identity
+      drizzle-orm:
+        specifier: 0.45.2
+        version: 0.45.2(@types/pg@8.23.1)(kysely@0.29.6)(pg@8.23.0)
 
-  modules/identity: {}
+  modules/identity:
+    dependencies:
+      drizzle-orm:
+        specifier: 0.45.2
+        version: 0.45.2(@types/pg@8.23.1)(kysely@0.29.6)(pg@8.23.0)
 
-  modules/market: {}
+  modules/market:
+    dependencies:
+      '@oliginvest/mod-identity':
+        specifier: workspace:*
+        version: link:../identity
+      drizzle-orm:
+        specifier: 0.45.2
+        version: 0.45.2(@types/pg@8.23.1)(kysely@0.29.6)(pg@8.23.0)
 
-  modules/notifications: {}
+  modules/notifications:
+    dependencies:
+      '@oliginvest/mod-identity':
+        specifier: workspace:*
+        version: link:../identity
+      drizzle-orm:
+        specifier: 0.45.2
+        version: 0.45.2(@types/pg@8.23.1)(kysely@0.29.6)(pg@8.23.0)
 
-  modules/portfolio: {}
+  modules/portfolio:
+    dependencies:
+      '@oliginvest/mod-identity':
+        specifier: workspace:*
+        version: link:../identity
+      '@oliginvest/mod-market':
+        specifier: workspace:*
+        version: link:../market
+      drizzle-orm:
+        specifier: 0.45.2
+        version: 0.45.2(@types/pg@8.23.1)(kysely@0.29.6)(pg@8.23.0)
 
   modules/quick-actions: {}
 

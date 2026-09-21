@@ -2,7 +2,7 @@
 
 **Cel:** zapisać wykonane prace, ich weryfikację i brakujące dowody paczki BL-001–BL-019 oraz BL-032–BL-035, bez utożsamiania przygotowanych plików z działającą aplikacją lub CI.
 
-Stan: **2026-09-21**, gałąź `feat/m0-1-skeleton` utworzona z `main` po scaleniu PR #1. **Konfiguracja przygotowana; nie uruchomiono jeszcze w CI** — dotyczy nowego szkicu własnych workflow. Istniejący CodeQL dla Pythona uruchomił się automatycznie po otwarciu [roboczego PR #2](https://github.com/Ipper18/OligInvest/pull/2); wynik odnotowano w § 3. **Aktualny wynik wykonania: § 9** — BL-005/006 wykonane lokalnie, decyzje Compose i deps-audit zastosowane. Sekcje 1–8 są historią wcześniejszych etapów i diagnozy; otwarte wtedy decyzje sieci/progu rozstrzyga § 9. M0 pozostaje otwarty.
+Stan: **2026-09-21**, gałąź `feat/m0-1-skeleton` utworzona z `main` po scaleniu PR #1. **Konfiguracja przygotowana; nie uruchomiono jeszcze w CI** — dotyczy nowego szkicu własnych workflow. Istniejący CodeQL dla Pythona uruchomił się automatycznie po otwarciu [roboczego PR #2](https://github.com/Ipper18/OligInvest/pull/2); wynik odnotowano w § 3. **Aktualny wynik wykonania: § 10** — BL-005/006 wykonane lokalnie, decyzje Compose i deps-audit zastosowane. Sekcje 1–8 są historią wcześniejszych etapów i diagnozy; otwarte wtedy decyzje sieci/progu rozstrzyga § 9. M0 pozostaje otwarty.
 
 ## 1. Zrobione
 
@@ -184,3 +184,15 @@ Szkic CI: parser YAML z już zainstalowanego grafu potwierdził składnię, peł
 Pominięte zgodnie z zakresem: baza BL-007/008 (następny czat), montowanie endpointów Hono/health BL-009, magazyn/cache flag BL-117, uruchamianie kolejek BL-013/014, pełna autoryzacja/MFA/PAT i pozostałe zadania paczki. Rejestry są fundamentem, nie zastępują tych kontroli. Nie dodano ekranów ani logiki domenowej, nie dotykano serwerów/sekretów produkcji. BL-005/006 pozostają `w toku` wyłącznie do wspólnego DoD i CI; wykonanie lokalne ukończone. Estymacje 0,5 d / 3 d bez zmian; nie podano fikcyjnego odchylenia bez ewidencji pracy. Decyzje do ADR: brak. Nowe ryzyka: brak; R-24 ma zatwierdzony czasowy wyjątek, R-26 ograniczone do 2 (zaktualizowano także sumy rejestru).
 
 Kryteria M0 pozostają jak w § 8.3: nr 1 częściowo (brak BL-003), nr 2/3 niewykonane, nr 7 wymaga działań właściciela. Ta sesja kończy się po BL-006. Wszystkie ukończone kroki są commitowane i wypychane do roboczego PR #2, bez scalania.
+
+## 10. BL-007/008 — część B, 2026-09-21
+
+Na polecenie właściciela BL-002 traktowane jako spełniona zależność (wdrożone i sprawdzone lokalnie; status pozostaje otwarty do CI). Praca na `feat/m0-1-skeleton`, w roboczym PR #2, bez scalania. Estymacja BL-007 pozostaje 4 d; brak wiarygodnej ewidencji dni idealnych do podania odchylenia.
+
+### 10.1 Etap 1 — definicje i migracje: zamknięty
+
+Drizzle obejmuje 64 tabele w dziewięciu schematach: siedem modułów z tabelami oraz platformę w `packages/db`. Dodano konfigurację Drizzle Kit, wygenerowaną migrację tabel ze snapshotem oraz migrację SQL dla funkcji, widoku, triggerów, sześciu specjalnych kluczy obcych, istniejących polityk RLS, uprawnień i komentarzy. Bootstrap administratora jest osobnym plikiem. Źródła `schema.sql` i `testy-rls.sql` pozostają niezmienione. `numeric` zachowuje ciągi; kwoty nie są zamieniane na number.
+
+Dowody: wzorcowy DDL wykonany bez błędu w osobnym tymczasowym projekcie Compose na PostgreSQL 18.6; `drizzle-kit generate` utworzył migracje; lint/typecheck/test/build modułów i db **40/40 PASS**, w tym test kompletności 64 tabel i precyzji numeric. Test nowego kontraktu najpierw wykazał brak definicji. Instalacja `pnpm install --frozen-lockfile --offline` PASS; lockfile zmienia tylko importery workspace, sekcje pakietów i rozwiązanego grafu są identyczne. Brak nowych bibliotek, wersji i wyjątków polityki zależności.
+
+Do wykonania: etap 2 (migracje od zera i pełne porównanie), etap 3 (testy ról, uprawnień i RLS), etap 4 (pule i helper transakcji, izolacja po sukcesie/błędzie), następnie BL-008, jeśli wystarczy limitu. Przygotowanie SQL nie jest dowodem zgodności ani przejścia RLS. Kryterium M0 nr 2 pozostaje otwarte, CI nieuruchomione. Decyzje do ADR: brak. Nowe ryzyka: brak na tym etapie.
