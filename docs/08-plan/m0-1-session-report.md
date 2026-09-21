@@ -2,7 +2,7 @@
 
 **Cel:** zapisać wykonane prace, ich weryfikację i brakujące dowody paczki BL-001–BL-019 oraz BL-032–BL-035, bez utożsamiania przygotowanych plików z działającą aplikacją lub CI.
 
-Stan: **2026-09-20**, gałąź `feat/m0-1-skeleton` utworzona z `main` po scaleniu PR #1. **Konfiguracja przygotowana; nie uruchomiono jeszcze w CI** — dotyczy nowego szkicu własnych workflow. Istniejący CodeQL dla Pythona uruchomił się automatycznie po otwarciu [roboczego PR #2](https://github.com/Ipper18/OligInvest/pull/2); wynik odnotowano w § 3. Ten raport będzie uzupełniony po instalacji i wykonaniu szkieletu. M0 pozostaje otwarty.
+Stan: **2026-09-21**, gałąź `feat/m0-1-skeleton` utworzona z `main` po scaleniu PR #1. **Konfiguracja przygotowana; nie uruchomiono jeszcze w CI** — dotyczy nowego szkicu własnych workflow. Istniejący CodeQL dla Pythona uruchomił się automatycznie po otwarciu [roboczego PR #2](https://github.com/Ipper18/OligInvest/pull/2); wynik odnotowano w § 3. Ten raport będzie uzupełniony po instalacji i wykonaniu szkieletu. Próba wznowienia przed końcem karencji: § 6. M0 pozostaje otwarty.
 
 ## 1. Zrobione
 
@@ -69,3 +69,13 @@ Stan: **2026-09-20**, gałąź `feat/m0-1-skeleton` utworzona z `main` po scalen
 Kontynuować po upływie karencji na tej samej gałęzi i w tym samym PR: zgodne lokalne narzędzia, lockfile z porównaniem do inwentarza, instalacja frozen, implementacja według zależności, testy i uzupełnienie tego raportu. Nie scalać PR i nie oznaczać M0 jako zakończonego. W czasie oczekiwania nie uruchamiać instalacji świeżych wydań ani nie zmieniać zegara/polityki.
 
 Automatyzację „OligInvest — kontynuacja M0-1 po karencji” **usunięto 2026-09-20** na prośbę właściciela (narzędzie aplikacji potwierdziło `deleted`). Nie ma zaplanowanego automatycznego wznowienia; właściciel wróci ręcznie do tej gałęzi i PR #2 po karencji. Nie należy powtarzać bootstrapu ani tworzyć nowego PR.
+
+## 6. Kontrola przed instalacją — 2026-09-21 rano
+
+Na czystej gałęzi `feat/m0-1-skeleton`, od commita `aa388d8`, potwierdzono rzeczywiste wyniki poleceń: **`node --version` → `v24.21.0`**, **`pnpm --version` → `12.4.2`**. Nie zmieniano instalacji globalnych ani polityki zależności.
+
+Deklaracja o zakończeniu karencji nie zgadzała się z czasem kontroli. Zegar hosta wskazał `2026-09-21T07:05:34+02:00` (Europe/Warsaw), narzędzie czasu `2026-09-21 05:05:10 UTC`, a nagłówek HTTP `Date` rejestru npm `Mon, 21 Sep 2026 05:05:33 GMT`. Odczyt [metadanych @turbo/darwin-64](https://registry.npmjs.org/@turbo%2Fdarwin-64) ponownie potwierdził publikację wersji `2.11.0` o `2026-09-18T16:31:48.531Z`; po 4320 minutach termin pozostaje **2026-09-21 18:31:49 Europe/Warsaw**. Nie zmieniła się data wskazana w inwentarzu; to około 11 godzin 26 minut po kontroli.
+
+Zgodnie z poleceniem właściciela „zatrzymaj się i zapytaj, jeśli któraś wersja nie spełnia karencji” przerwano przed rozwiązywaniem grafu. Nie wyłączano opcjonalnych pakietów platformowych, nie zmieniano zegara, ADR ani ustawień pnpm. Nie uruchomiono tworzenia lockfile, instalacji frozen, lint/typecheck/build aplikacji, BL-002, spike BL-032 ani `docker compose up`. **Nie ma rozwiązanego grafu do porównania** — nie należy interpretować tego jako braku różnic względem audytu. Dostępność PostgreSQL i Valkey z hosta przy `internal: true` pozostaje do sprawdzenia przy pierwszym uruchomieniu.
+
+Następny krok po upływie terminu i potwierdzeniu wznowienia: ponownie sprawdzić czas, utworzyć lockfile przy niezmienionej polityce, wypisać wszystkie różnice względem inwentarza i dopiero wtedy instalować frozen. Estymacje pozostają bez zmian; oczekiwanie jest opóźnieniem kalendarzowym. Brak nowej decyzji ADR lub nowego ryzyka — nadal działa ograniczenie R-22. Nie przywrócono automatyzacji.

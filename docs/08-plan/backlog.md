@@ -83,6 +83,8 @@ Bez logiki domenowej; wynik: działające CI, baza z RLS, wydanie podpisane i wd
 
 ### 1.1 Postęp i odchylenia
 
+- **2026-09-21, BL-001 — kontrola przed instalacją:** potwierdzono Node 24.21.0 i pnpm 12.4.2. Host i rejestr npm wskazują około 07:05 Europe/Warsaw, przed terminem karencji 18:31:49; metadane `@turbo/darwin-64@2.11.0` zgadzają się z audytem. Zgodnie z instrukcją właściciela zatrzymano pracę przed rozwiązywaniem grafu i instalacją. Nie powstał lockfile ani porównanie grafu; BL-002/032 i test dostępności usług Compose niewykonane. Statusy i estymacje bez zmian, oczekiwanie kalendarzowe osobno. [Dowody i dalszy krok](m0-1-session-report.md#6-kontrola-przed-instalacją--2026-09-21-rano).
+
 - **2026-09-20, kontynuacja bez instalacji:** BL-001 — 23 manifesty z przypięciami z audytu, konfiguracje pnpm/Turbo/TS/Biome, bez rozwiązania grafu, lockfile, instalacji i typechecku. BL-034 — samodzielny Compose, `docker compose config` PASS, bez uruchomienia usług i aplikacji. BL-035 — kontrola „Cel:”, lokalnych linków i pełnych przypisań FR/NFR ↔ BL: 13 testów PASS, 73 dokumenty PASS na Node 25.1.0; uruchomienie na Node 24 i w CI nadal wymagane. Części plikowe przed gotowymi zależnościami zatwierdzone przez właściciela; zadania nie są `gotowe`. Estymacje bez zmian, odchylenie nakładu po ukończeniu, karencja liczona osobno. [Raport i ograniczenia](m0-1-session-report.md).
 - **2026-09-20, BL-019 / R-23:** właściciel ustalił 0 wymaganych zatwierdzeń w rulesecie, bez code owner review i odrębnej tożsamości autora; przegląd pozostaje obowiązkiem procesu R-11. Definicja nadal nieaktywna, brak bypass. Bez nowego ADR; ustawienia potwierdzi właściciel po scaleniu. Zaplanowane wznowienie usunięto — kontynuacja ręczna.
 
