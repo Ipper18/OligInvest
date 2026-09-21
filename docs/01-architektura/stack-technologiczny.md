@@ -46,7 +46,7 @@ Nowa zależność runtime trafia do projektu tylko, jeśli spełnia **wszystkie*
 
 Decyzja właściciela 2026-09-21: start na `bullmq` npm 6.3.6, `bullmq` PyPI 3.2.2 (najnowsze dojrzałe 3.2.x), `psycopg` i `psycopg-binary` 3.3.5; późniejsze patche proponuje Renovate w zwykłym trybie po karencji. Źródła publikacji i sumy kontrolne: [inwentarz](../08-plan/audits/m0-1-release-age.json). Lighthouse 13.5.0 pozostaje poza manifestami do sesji BL-016; bez zmiany linii na 13.4. Better Auth 1.7.5 jest zależnością deweloperską `apps/api` wyłącznie dla spike BL-032, bez implementacji uwierzytelniania.
 
-Przygotowane manifesty (BL-001, 2026-09-20) używają dokładnych wersji z [inwentarza audytu](../08-plan/audits/m0-1-release-age.json). 2026-09-21 utworzono oba lockfile, porównano wybrane wersje i sumy z audytem oraz wykonano instalacje frozen i lokalne testy; dowody w [raporcie sesji § 8](../08-plan/m0-1-session-report.md#8-lockfile-i-instalacja-po-zatwierdzeniu-patchy--2026-09-21). Pełny audyt CI pozostaje do BL-017.
+Przygotowane manifesty (BL-001, 2026-09-20) używają dokładnych wersji z [inwentarza audytu](../08-plan/audits/m0-1-release-age.json). 2026-09-21 utworzono oba lockfile, porównano wybrane wersje i sumy z audytem oraz wykonano instalacje frozen i lokalne testy; dowody w [raporcie sesji § 8](../08-plan/m0-1-session-history.md#8-lockfile-i-instalacja-po-zatwierdzeniu-patchy--2026-09-21). Pełny audyt CI pozostaje do BL-017.
 
 | Pakiet | Wersja | Licencja | Uzasadnienie |
 |---|---|---|---|

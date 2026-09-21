@@ -4,7 +4,7 @@
 
 Stan: **2026-09-20**. Raport dotyczy przygotowania BL-001; nie potwierdza wykonania bootstrapu ani zamknięcia M0. Podstawa: [`backlog.md`](backlog.md) § 1, [`roadmapa.md`](roadmapa.md) § 3, [`AGENTS.md`](../../AGENTS.md) § 2.5 i [`CONTRIBUTING.md`](../../CONTRIBUTING.md) § 3.
 
-**Aktualizacja 2026-09-21:** § 1–5 zachowują historyczny audyt Turbo 2.11.0. Przyjęto [ADR-015](../09-decyzje/ADR-015-linia-turborepo-na-starcie-m0.md), dojrzałe patche bullmq/psycopg i odroczenie Lighthouse do BL-016. Oba lockfile i instalacje frozen są już zweryfikowane bez wyjątków karencji; wyniki i każda różnica względem audytu: [raport sesji § 8](m0-1-session-report.md#8-lockfile-i-instalacja-po-zatwierdzeniu-patchy--2026-09-21). Historyczne terminy oczekiwania nie blokują obecnego wybranego grafu.
+**Aktualizacja 2026-09-21:** § 1–5 zachowują historyczny audyt Turbo 2.11.0. Przyjęto [ADR-015](../09-decyzje/ADR-015-linia-turborepo-na-starcie-m0.md), dojrzałe patche bullmq/psycopg i odroczenie Lighthouse do BL-016. Oba lockfile i instalacje frozen są już zweryfikowane bez wyjątków karencji; wyniki i każda różnica względem audytu: [raport sesji § 8](m0-1-session-history.md#8-lockfile-i-instalacja-po-zatwierdzeniu-patchy--2026-09-21). Historyczne terminy oczekiwania nie blokują obecnego wybranego grafu.
 
 ## 1. Wynik weryfikacji
 
