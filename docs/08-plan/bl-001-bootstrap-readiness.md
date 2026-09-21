@@ -4,6 +4,8 @@
 
 Stan: **2026-09-20**. Raport dotyczy przygotowania BL-001; nie potwierdza wykonania bootstrapu ani zamknięcia M0. Podstawa: [`backlog.md`](backlog.md) § 1, [`roadmapa.md`](roadmapa.md) § 3, [`AGENTS.md`](../../AGENTS.md) § 2.5 i [`CONTRIBUTING.md`](../../CONTRIBUTING.md) § 3.
 
+**Aktualizacja 2026-09-21:** poniższe § 1–5 zachowują historyczny audyt dla Turbo 2.11.0 i wcześniejszą decyzję o oczekiwaniu. Właściciel przyjął [ADR-015](../09-decyzje/ADR-015-linia-turborepo-na-starcie-m0.md): start 2.10.13, potem osobny PR do 2.11. Aktualny [inwentarz](audits/m0-1-release-age.json) uwzględnia tę zmianę; cały pozostały zestaw spełni karencję najwcześniej **2026-09-21 16:13:56 Europe/Warsaw**, a nie od razu po zmianie Turbo. Pełne sześć pozostałych blokad i rozróżnienie audytu od resolvera: [raport sesji § 7](m0-1-session-report.md#7-adr-015-i-ponowna-kontrola-całego-inwentarza). Nie zmieniono karencji ani nie dodano wyjątków.
+
 ## 1. Wynik weryfikacji
 
 - Repozytorium zawiera dokumentację, bez aplikacji, manifestów pakietów i lockfile. BL-001 nie ma zależności; pozostałe zadania paczki M0-1 mają niespełnione zależności i nie zostały rozpoczęte.

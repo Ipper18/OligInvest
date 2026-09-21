@@ -44,7 +44,7 @@ Bez logiki domenowej; wynik: działające CI, baza z RLS, wydanie podpisane i wd
 
 | ID | Zadanie | Wymagania | Dokumenty | Zależy od | d | Status |
 |---|---|---|---|---|---|---|
-| BL-001 | Bootstrap repozytorium kodu: pnpm 12 (workspace z polityką z SEC §4.3: `minimumReleaseAge`, `trustPolicy`, `strictDepBuilds`, `blockExoticSubdeps`, `allowBuilds`), Turborepo 2.11, `.nvmrc` (Node 24), Biome 2.5, `tsconfig` strict, sprawdzanie tytułów PR (Conventional Commits) | NFR-02.01, NFR-03.09, NFR-10.03, NFR-10.05 | STACK, SEC | — | 1 | w toku |
+| BL-001 | Bootstrap repozytorium kodu: pnpm 12 (workspace z polityką z SEC §4.3: `minimumReleaseAge`, `trustPolicy`, `strictDepBuilds`, `blockExoticSubdeps`, `allowBuilds`), Turborepo 2.10.13 na start (ADR-015), `.nvmrc` (Node 24), Biome 2.5, `tsconfig` strict, sprawdzanie tytułów PR (Conventional Commits) | NFR-02.01, NFR-03.09, NFR-10.03, NFR-10.05 | STACK, SEC | — | 1 | w toku |
 | BL-002 | Struktura `apps/*`, `modules/*`, `packages/*` z pustymi pakietami, polem `exports` w modułach i testami dymnymi | NFR-02.01, NFR-02.02 | MOD | BL-001 | 1 | todo |
 | BL-003 | Skrypt `pnpm check:deps` (reguły warstw) z testem negatywnym | NFR-02.03 | MOD, [ADR-002](../09-decyzje/ADR-002-monorepo.md) | BL-002 | 1 | todo |
 | BL-004 | Generator `pnpm gen:module <nazwa>` według szablonu modułu | NFR-02.02, NFR-02.07 | MOD | BL-002 | 1 | todo |
@@ -82,6 +82,8 @@ Bez logiki domenowej; wynik: działające CI, baza z RLS, wydanie podpisane i wd
 | | **Suma etapu** | | | | **51** | |
 
 ### 1.1 Postęp i odchylenia
+
+- **2026-09-21, BL-001 / ADR-015:** zatwierdzony start Turbo 2.10.13, później osobny PR Renovate do 2.11. Turbo i sześć jego binariów spełniają karencję. Ponownie przeliczono 559 wersji npm i 2308 plików 97 wersji PyPI: nadal blokują 3 wersje npm i 3 PyPI (pełna lista w [raporcie § 7](m0-1-session-report.md#7-adr-015-i-ponowna-kontrola-całego-inwentarza)); wspólny termin obecnego inwentarza to 2026-09-21 16:13:56 Europe/Warsaw. Dalsza część 3 zatrzymana przed lockfile aplikacji i instalacją, bez wyjątków i bez zmiany innych przypięć. BL-002/032 i test Compose pozostają niewykonane. Estymacje bez zmian; odchylenia nakładu po implementacji, oczekiwanie osobno.
 
 - **2026-09-21, BL-001 — kontrola przed instalacją:** potwierdzono Node 24.21.0 i pnpm 12.4.2. Host i rejestr npm wskazują około 07:05 Europe/Warsaw, przed terminem karencji 18:31:49; metadane `@turbo/darwin-64@2.11.0` zgadzają się z audytem. Zgodnie z instrukcją właściciela zatrzymano pracę przed rozwiązywaniem grafu i instalacją aplikacji. Częściowy lockfile samego menedżera, stwierdzony po kontroli wersji pnpm, zachowano lokalnie pod `.git/`; nie jest lockfile aplikacji. Nie ma porównania grafu aplikacji; BL-002/032 i test dostępności usług Compose niewykonane. Statusy i estymacje bez zmian, oczekiwanie kalendarzowe osobno. [Dowody i dalszy krok](m0-1-session-report.md#6-kontrola-przed-instalacją--2026-09-21-rano).
 

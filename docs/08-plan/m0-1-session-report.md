@@ -6,7 +6,7 @@ Stan: **2026-09-21**, gałąź `feat/m0-1-skeleton` utworzona z `main` po scalen
 
 ## 1. Zrobione
 
-- BL-001: utrwalony [audyt grafu](audits/m0-1-release-age.json), wspólny termin karencji **2026-09-21 18:31:49 Europe/Warsaw**; brak osłabienia polityki i zmian ADR-002. Szczegóły metody i jej ograniczeń: [raport BL-001 § 5](bl-001-bootstrap-readiness.md#5-audyt-całego-wybranego-grafu-przed-oczekiwaniem).
+- BL-001: utrwalony [audyt grafu](audits/m0-1-release-age.json); pierwotny termin z Turbo 2.11.0 wynosił **2026-09-21 18:31:49 Europe/Warsaw**. Decyzja właściciela ADR-015 zmienia start na Turbo 2.10.13, bez osłabienia polityki; pozostałe blokady i nowy termin **16:13:56** tego dnia opisuje § 7. Szczegóły pierwotnej metody: [raport BL-001 § 5](bl-001-bootstrap-readiness.md#5-audyt-całego-wybranego-grafu-przed-oczekiwaniem).
 - BL-001, część plikowa: `pnpm-workspace.yaml` z pełną polityką SEC § 4.3, `.npmrc`, `.nvmrc` (24.21.0), Turbo, Biome, bazowy TypeScript strict i 21 konfiguracji TS. **23 prywatne manifesty**: root, 4 aplikacje, 9 modułów i 9 pakietów; eksporty modułów ograniczone do czterech publicznych ścieżek. Przygotowane manifesty i konfiguracje **nie zostały zweryfikowane instalacją, lintem, typecheckiem ani buildem**. Nie powstały jeszcze ich źródła i testy dymne (BL-002 pozostaje otwarty).
 - Wersje 35 deklaracji zależności zewnętrznych są dokładnie zgodne z zapisanym audytem; 7 deklaracji `workspace:*` wskazuje istniejące manifesty. Nie dodano całego grafu naukowego ani funkcji domenowych. Pakiety pomocnicze typów, pokrycia i adapter CSS uzasadniono w STACK § 3.1. `allowBuilds: {}` pozostaje puste do przeglądu konkretnych skryptów. `pmOnFail: error` wymaga właściwego pnpm bez automatycznego pobierania; ustawienia pnpm 12 są w YAML, a `.npmrc` zawiera tylko rejestr.
 - Dokumentacja: BL-034 pozostaje w M0-1, zależy od BL-013/BL-014; BL-018 rozdzielony między lokalny build produkcyjny i późniejsze obrazy; stara propozycja w raporcie PR #1 zastąpiona zatwierdzoną decyzją. Backlog i paczki spójne.
@@ -52,9 +52,9 @@ Stan: **2026-09-21**, gałąź `feat/m0-1-skeleton` utworzona z `main` po scalen
 - Bazowa suma estymacji wybranych zadań: **31,5 dnia idealnego**; zakres zadania BL-018 obejmuje również pozostałą część w M0-2. Estymacji nie zmieniono.
 - BL-001 (1 d), BL-017 (2 d), BL-019 (1 d), BL-034 (1 d), BL-035 (0,5 d) pozostają `w toku`: pliki i wskazane kontrole lokalne są przygotowane, pełne kryteria nie są spełnione. Prace plikowe BL-034/035 przed ukończeniem ich zależności zostały jawnie zlecone przez właściciela. Odchylenie nakładu będzie policzone po wykonaniu; oczekiwanie kalendarzowe liczone osobno. Estymacji nie zmieniono i nie przypisano oszczędności niewykonanym zadaniom.
 - Przy kontynuacji zastano czystą gałąź z wypchniętym commitem `8d91754` (`Document dependency readiness and split M0 CI responsibilities`), zawierającym przygotowane pliki. Jego tytuł nie jest Conventional Commit; zachowano commit właściciela bez przepisywania historii. Kolejne commity i tytuł PR używają wymaganej konwencji. Rozbieżność należy uwzględnić przy uruchamianiu kontroli historii commitów; nie wyłączać jej po cichu.
-- ADR: brak zmian i brak potrzeby zmiany ADR-002 dla wybranego terminu. Późniejsza niż 2026-09-24 wymagana linia, zmiana stosu albo konfiguracja zaawansowana CodeQL wymagają zatrzymania i nowej propozycji decyzji.
+- ADR: przyjęty **ADR-015** na polecenie właściciela 2026-09-21 — start Turbo 2.10.13, potem osobny PR Renovate do 2.11. ADR-002 pozostaje w mocy z odwołaniem do doprecyzowania linii startowej. Innych wersji i decyzji nie zmieniono; późniejsza niż 2026-09-24 wymagana linia, inna zmiana stosu albo konfiguracja zaawansowana CodeQL wymagają zatrzymania i nowej propozycji decyzji.
 - R-23 rozstrzygnięte 2026-09-20 przez właściciela; ocena obniżona z 15 do 3 po zmianie definicji rulesetu. Przy aktywacji trzeba potwierdzić 0 zatwierdzeń i brak code owner review w panelu.
-- Ryzyka nadal otwarte: R-22 — wybrany graf i granica oczekiwania; R-24 — deprecated `@esbuild-kit/*` w Drizzle Kit. Sam znacznik deprecated nie jest wynikiem skanowania podatności. Nowych decyzji do ADR ani nowych ryzyk produktowych w tej części nie dodano; niezweryfikowane manifesty, skrypty instalacyjne, obrazy i połączenia są jawnymi brakami dowodów przed ukończeniem M0.
+- Ryzyka nadal otwarte: R-22 — wybrany graf i granica oczekiwania; R-24 — deprecated `@esbuild-kit/*` w Drizzle Kit. Sam znacznik deprecated nie jest wynikiem skanowania podatności. Poza ADR-015 nie dodano nowych decyzji do ADR ani nowych ryzyk produktowych; niezweryfikowane manifesty, skrypty instalacyjne, obrazy i połączenia są jawnymi brakami dowodów przed ukończeniem M0.
 
 ## 5. Kryteria wyjścia M0 i kontynuacja
 
@@ -79,3 +79,42 @@ Deklaracja o zakończeniu karencji nie zgadzała się z czasem kontroli. Zegar h
 Zgodnie z poleceniem właściciela „zatrzymaj się i zapytaj, jeśli któraś wersja nie spełnia karencji” przerwano przed rozwiązywaniem grafu aplikacji. Nie wyłączano opcjonalnych pakietów platformowych, nie zmieniano zegara, ADR ani ustawień pnpm. Nie uruchomiono polecenia tworzenia lockfile aplikacji, instalacji frozen, lint/typecheck/build aplikacji, BL-002, spike BL-032 ani `docker compose up`. **Nie ma rozwiązanego grafu aplikacji do porównania** — nie należy interpretować tego jako braku różnic względem audytu. Dostępność PostgreSQL i Valkey z hosta przy `internal: true` pozostaje do sprawdzenia przy pierwszym uruchomieniu.
 
 Następny krok po upływie terminu i potwierdzeniu wznowienia: ponownie sprawdzić czas, utworzyć lockfile przy niezmienionej polityce, wypisać wszystkie różnice względem inwentarza i dopiero wtedy instalować frozen. Estymacje pozostają bez zmian; oczekiwanie jest opóźnieniem kalendarzowym. Brak nowej decyzji ADR lub nowego ryzyka — nadal działa ograniczenie R-22. Nie przywrócono automatyzacji.
+
+## 7. ADR-015 i ponowna kontrola całego inwentarza
+
+**Aktualna decyzja właściciela z 2026-09-21:** [ADR-015](../09-decyzje/ADR-015-linia-turborepo-na-starcie-m0.md) akceptuje start na Turborepo 2.10.13 i późniejszą aktualizację do 2.11 osobnym PR Renovate. Zaktualizowano odwołanie w ADR-002, STACK, AGENTS, backlog, root `package.json`, inwentarz i R-22. Dedykowana reguła Renovate wyłącza grupowanie tej aktualizacji, zachowuje 3 dni karencji i brak automerge; działanie aplikacji Renovate nadal wymaga aktywacji przez właściciela. Pozostałe manifesty i polityka pnpm są niezmienione.
+
+Kontrola w **2026-09-21 05:24:55.405 UTC (07:24:55 Europe/Warsaw)** objęła ponowne obliczenie wieku **559 wersji npm i wszystkich 2308 plików 97 wersji PyPI**, także binariów. Świeżo odczytano npm dla Turbo i wszystkich jego platform oraz wszystkich nadal blokowanych wersji npm, a PyPI dla wszystkich nadal blokowanych plików. Daty i sumy pozostałych wersji pochodzą z zapisanego audytu 2026-09-20; nie wykonano ponownego rozwiązywania grafu ani skanowania podatności.
+
+### Turborepo 2.10.13 — wszystkie pakiety spełniają karencję
+
+| Pakiet (2.10.13) | Publikacja UTC 2026-09-14 | Koniec 4320 minut UTC 2026-09-17 |
+|---|---|---|
+| `turbo` | 16:36:00.550 | 16:36:00.550 |
+| `@turbo/linux-64` | 16:43:06.852 | 16:43:06.852 |
+| `@turbo/darwin-64` | 16:33:38.588 | 16:33:38.588 |
+| `@turbo/windows-64` | 16:34:09.008 | 16:34:09.008 |
+| `@turbo/linux-arm64` | 16:39:11.511 | 16:39:11.511 |
+| `@turbo/darwin-arm64` | 16:43:58.850 | 16:43:58.850 |
+| `@turbo/windows-arm64` | 16:53:35.063 | 16:53:35.063 |
+
+Zmiana inwentarza: dokładnie te **7 par nazwa–wersja** zastąpiono z 2.11.0 na 2.10.13, wraz z datami i SHA-512; root audytu `turbo` wskazuje 2.10.13. Pozostałe 552 wpisy npm, wszystkie pliki PyPI i liczby pakietów (w tym 211 platformowych) pozostają bez zmian. Zachowano pierwotny `resolutionCutoffUtc` jako parametr audytu metadanych, a nowe `ageRecheck` dokumentuje kontrolę wieku i blokady.
+
+### Pozostałe blokady — pełna lista na czas kontroli
+
+| Rejestr / pakiet | Wersja | Ostatnia publikacja UTC 2026-09-18 | Bezpieczny termin Europe/Warsaw 2026-09-21 (w górę do sekundy) |
+|---|---|---|---|
+| [npm bullmq](https://registry.npmjs.org/bullmq) | 6.3.7 | 07:00:33.237 | **09:00:34** |
+| [PyPI bullmq](https://pypi.org/pypi/bullmq/3.2.3/json) | 3.2.3 | 07:00:35.997068 | **09:00:36** |
+| [PyPI psycopg-binary](https://pypi.org/pypi/psycopg-binary/3.3.6/json) | 3.3.6 | 13:22:51.283084 | **15:22:52** |
+| [PyPI psycopg](https://pypi.org/pypi/psycopg/3.3.6/json) | 3.3.6 | 13:22:55.152101 | **15:22:56** |
+| [npm @babel/parser](https://registry.npmjs.org/@babel%2Fparser) | 7.29.9 | 13:50:33.592 | **15:50:34** |
+| [npm lighthouse](https://registry.npmjs.org/lighthouse) | 13.5.0 | 14:13:55.261 | **16:13:56** |
+
+Pozostałe **556 wersji npm i 94 wersje PyPI** spełniają karencję według zapisanych dat. Blokowanych jest 70 plików PyPI (2 bullmq, 2 psycopg, 66 psycopg-binary); pozostałe 2238 spełniają limit. Dla psycopg-binary tabela zachowuje przyjętą metodę maksimum dla wszystkich dystrybucji, nie tylko wybranego wheel CPython 3.13. Nie zawężano audytu do Windows, wybranej architektury ani aktualnie zadeklarowanych manifestów. Już sam przypięty `bullmq@6.3.7` w `apps/jobs` blokuje obecną instalację.
+
+**Wniosek:** ADR-015 usuwa blokadę Turborepo, ale cały niezmieniony poza nim inwentarz spełni karencję dopiero **2026-09-21 16:13:56 Europe/Warsaw**. Nie ma wersji wymuszającej oczekiwanie po 2026-09-24. Zgodnie z warunkiem właściciela zatrzymano dalszą część 3: brak lockfile aplikacji, porównania rozwiązanego grafu, instalacji frozen, weryfikacji lint/typecheck/build pakietów, BL-002, spike BL-032 i pierwszego uruchomienia Compose. Lista powyżej nie jest wynikiem resolvera ani dowodem działania `trustPolicy`.
+
+Do decyzji właściciela: audyt i dobór wcześniejszych zgodnych patchy także dla tych pozycji, jeśli rozpoczęcie przed wspólnym terminem nadal jest wymagane. Nie wybrano ich samodzielnie i nie dodano wyjątków karencji. Nie ma nowych ryzyk poza uaktualnionym R-22; estymacje bez zmian, odchylenie nakładu nadal do ustalenia po implementacji. R-24 (wycofane zależności Drizzle Kit) i pełne kryteria M0 pozostają otwarte.
+
+Walidacja tej aktualizacji: **20/20 testów skryptów PASS na Node 24.21.0**, kontrola **74 dokumentów PASS**, JSON manifestu/Renovate/inwentarza i porównanie zmienionych wpisów audytu PASS. Kontrola ustawień reguły Renovate jest statyczna według [dokumentacji](https://docs.renovatebot.com/configuration-options/), bez uruchomienia Renovate/CI. Nie są to testy dymne pakietów ani zamknięcie BL-001/002/032.
