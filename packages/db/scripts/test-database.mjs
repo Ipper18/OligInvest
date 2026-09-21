@@ -151,6 +151,54 @@ try {
     await readFile(resolve(repository, "packages/db/test/security-catalog.sql"), "utf8"),
   );
   console.log("Normative RLS scenarios and full security catalog audit: PASS");
+  const passwords = {
+    app: randomBytes(32).toString("hex"),
+    auth: randomBytes(32).toString("hex"),
+    analytics: randomBytes(32).toString("hex"),
+  };
+  await withClient(migrated, async (client) => {
+    try {
+      await client.query(
+        `SELECT set_config('oliginvest_test.app_password', $1, false),
+        set_config('oliginvest_test.auth_password', $2, false),
+        set_config('oliginvest_test.analytics_password', $3, false)`,
+        [passwords.app, passwords.auth, passwords.analytics],
+      );
+      // Parameters cross the SQL boundary through set_config; format quotes on the server.
+      await client.query(`DO $$ BEGIN
+        EXECUTE format('ALTER ROLE oliginvest_app PASSWORD %L', current_setting('oliginvest_test.app_password'));
+        EXECUTE format('ALTER ROLE oliginvest_auth PASSWORD %L', current_setting('oliginvest_test.auth_password'));
+        EXECUTE format('ALTER ROLE oliginvest_analytics_ro PASSWORD %L', current_setting('oliginvest_test.analytics_password'));
+      END $$`);
+    } catch {
+      throw new Error("Cannot provision synthetic role passwords");
+    }
+  });
+  const integration = spawnSync(
+    process.execPath,
+    [
+      resolve(repository, "node_modules/vitest/vitest.mjs"),
+      "run",
+      "--config",
+      "vitest.database.config.ts",
+      "--reporter=dot",
+    ],
+    {
+      cwd: resolve(repository, "packages/db"),
+      env: {
+        ...process.env,
+        OLIGINVEST_TEST_DATABASE: JSON.stringify({ host, port, database: migrated, passwords }),
+      },
+      encoding: "utf8",
+      timeout: 60_000,
+      maxBuffer: 4 * 1024 * 1024,
+    },
+  );
+  await writeFile(resolve(output, "transactions.log"), integration.stdout + integration.stderr);
+  if (integration.error || integration.status !== 0) {
+    throw new Error("Transaction integration tests failed; inspect .git/bl007-db/transactions.log");
+  }
+  console.log("Role pools and transaction context integration tests: PASS");
   psql(reference, ddl);
   const expected = dump(reference);
   const actual = dump(migrated);

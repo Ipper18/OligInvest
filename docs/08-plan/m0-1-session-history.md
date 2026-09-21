@@ -207,3 +207,9 @@ Etap 2 zamknięty; dalej etapy 3–4 i BL-008. Estymacja 4 d bez zmian, brak now
 Niezmieniony testy-rls.sql PASS na PostgreSQL 18.6; pełne porównanie schematu nadal zero różnic.
 Audyt katalogu: role i członkostwa, FORCE RLS/polityki wszystkich tabel użytkownika, izolacja auth/app, dokładna allowlista SELECT analityki i brak zapisu, funkcje DEFINER, brak obejścia przez właściciela — PASS.
 Bootstrap migracji wykonywany przed wzorcem; źródłowe SQL, granty i polityki bez zmian. Etap zamknięty, bez nowego ADR/ryzyka; pozostają helper/pule i BL-008.
+
+### BL-007 etap 4 — 2026-09-21
+Osobne pule app/auth/analytics, walidacja strict, parametryzowany kontekst lokalny transakcji, weryfikacja roli, savepointy i czyszczenie połączeń.
+9 integracyjnych testów PASS: równoległe połączenia, ponowne użycie tego samego PID po COMMIT/ROLLBACK/błędzie SQL, przechwycony błąd, zmiany sesyjne, savepoint, zerwanie połączenia, pusty kontekst i granice ról.
+Pełne lint/typecheck/test/build 88/88 PASS; pnpm db:test nadal zero różnic i PASS RLS. Instalacja frozen offline; zod z istniejącego grafu.
+BL-007 lokalnie 4/4, status w toku do CI/DoD; następny BL-008. Brak nowego ADR/ryzyka, estymacja 4 d bez zmiany, odchylenie niezmierzone.
