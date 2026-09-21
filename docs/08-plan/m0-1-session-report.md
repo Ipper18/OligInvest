@@ -118,3 +118,15 @@ Pozostałe **556 wersji npm i 94 wersje PyPI** spełniają karencję według zap
 Do decyzji właściciela: audyt i dobór wcześniejszych zgodnych patchy także dla tych pozycji, jeśli rozpoczęcie przed wspólnym terminem nadal jest wymagane. Nie wybrano ich samodzielnie i nie dodano wyjątków karencji. Nie ma nowych ryzyk poza uaktualnionym R-22; estymacje bez zmian, odchylenie nakładu nadal do ustalenia po implementacji. R-24 (wycofane zależności Drizzle Kit) i pełne kryteria M0 pozostają otwarte.
 
 Walidacja tej aktualizacji: **20/20 testów skryptów PASS na Node 24.21.0**, kontrola **74 dokumentów PASS**, JSON manifestu/Renovate/inwentarza i porównanie zmienionych wpisów audytu PASS. Kontrola ustawień reguły Renovate jest statyczna według [dokumentacji](https://docs.renovatebot.com/configuration-options/), bez uruchomienia Renovate/CI. Nie są to testy dymne pakietów ani zamknięcie BL-001/002/032.
+
+## 8. Lockfile i instalacja po zatwierdzeniu patchy — 2026-09-21
+
+Ta sekcja aktualizuje historyczne blokady z § 6–7. Potwierdzono Node 24.21.0 i pnpm 12.4.2. Zastosowano zatwierdzone bullmq npm 6.3.6, bullmq PyPI 3.2.2 (najnowsze dojrzałe 3.2.x), psycopg i psycopg-binary 3.3.5. Lighthouse 13.5.0 nie było w manifestach i pozostaje odroczone do BL-016, bez zmiany linii.
+
+`pnpm install --lockfile-only` utworzyło pełny lockfile 23 projektów. [Każda różnica z audytem](audits/m0-1-lockfile-comparison.json): 377 wersji, 376 zgodnych, jedna zmieniona (`@babel/parser` 7.29.9 → 7.29.8), zero nowych nazw, 183 pominięte wersje szerszego inwentarza kandydatów. Każda pominięta pozycja jest wymieniona osobno w JSON. `magicast@0.5.5` wymaga parsera `^7.29.7`; ani inwentarz, ani rozwiązany graf nie zawiera rodzica przypinającego dokładnie 7.29.9. Brak overrides. Kontrola publikacji i SHA-512 wszystkich 377 wersji PASS, zero blokerów karencji.
+
+`pnpm install --frozen-lockfile` PASS, bez ponownego rozwiązywania. Przejrzano skrypty i dodano zgody/odmowy dla dokładnych wersji ([uzasadnienie](m0-1-install-scripts.md)); skrypty esbuild zakończyły się bez zapasowego pobierania. Polityka karencji i ADR pozostają bez zmian.
+
+`pnpm audit --json`: 1 podatność moderate, 0 high/critical — [GHSA-67mh-4wv8-2f99](https://github.com/advisories/GHSA-67mh-4wv8-2f99), esbuild 0.18.20 przez Drizzle Kit i wycofane `@esbuild-kit/*`. Nie uruchamiamy serwera developerskiego esbuild; nie zastosowano automatycznych overrides ani `audit fix`. R-24 pozostaje otwarte.
+
+Dalsze kroki tej sesji: ukończenie walidacji grafu Pythona, test Compose, szkielety BL-002 i porównanie TypeScript 7/6 w BL-032. Weryfikacja konfiguracji przygotowanej wcześniej wykryła błędy deklaracji bibliotek; właściciel zatwierdził `skipLibCheck: true` przy niezmienionym `strict: true`. Wyniki końcowe zostaną dopisane poniżej. **Własne CI nadal nieuruchomione; żadna z tych kontroli nie zamyka całego M0.**

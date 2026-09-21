@@ -14,7 +14,7 @@
   "dependencies": {
     "@oliginvest/config": "workspace:*",
     "@oliginvest/platform": "workspace:*",
-    "bullmq": "6.3.7"
+    "bullmq": "6.3.6"
   },
   "devDependencies": {
     "@types/node": "24.13.5"
