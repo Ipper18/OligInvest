@@ -48,7 +48,7 @@ Bez logiki domenowej; wynik: działające CI, baza z RLS, wydanie podpisane i wd
 | BL-002 | Struktura `apps/*`, `modules/*`, `packages/*` z pustymi pakietami, polem `exports` w modułach i testami dymnymi | NFR-02.01, NFR-02.02 | MOD | BL-001 | 1 | w toku |
 | BL-003 | Skrypt `pnpm check:deps` (reguły warstw) z testem negatywnym | NFR-02.03 | MOD, [ADR-002](../09-decyzje/ADR-002-monorepo.md) | BL-002 | 1 | todo |
 | BL-004 | Generator `pnpm gen:module <nazwa>` według szablonu modułu | NFR-02.02, NFR-02.07 | MOD | BL-002 | 1 | todo |
-| BL-005 | `packages/config`: schemat zmiennych środowiskowych (Zod) z obsługą `*_FILE`, zgodny z `.env.example` | NFR-03.12 | INF | BL-002 | 0,5 | todo |
+| BL-005 | `packages/config`: schemat zmiennych środowiskowych (Zod) z obsługą `*_FILE`, zgodny z `.env.example` | NFR-03.12 | INF | BL-002 | 0,5 | w toku |
 | BL-006 | `packages/platform`: kontrakt i rejestry modułów, kontekst żądania, `request-id`, logger pino z redakcją, błędy RFC 9457, walidacja Zod `.strict()` na granicy | NFR-02.02, NFR-03.07, NFR-09.04 | MOD, KONW, SEC | BL-002 | 3 | todo |
 | BL-007 | `packages/db`: Drizzle odzwierciedlający `schema.sql`, migracje, polityki RLS, helper transakcji z `SET LOCAL app.user_id/app.role`, osobne pule per rola | NFR-03.04 | DB, MD, [ADR-004](../09-decyzje/ADR-004-postgres-better-auth-rls.md) | BL-002 | 4 | todo |
 | BL-008 | Zadanie CI `db`: PostgreSQL 18, migracje od zera, porównanie schematu z `schema.sql`, `testy-rls.sql` | NFR-03.04, NFR-10.02 | CI, DB | BL-007 | 1 | todo |
@@ -97,6 +97,8 @@ Bez logiki domenowej; wynik: działające CI, baza z RLS, wydanie podpisane i wd
 - **2026-09-20, BL-001:** audyt rozszerzony na graf npm/PyPI i binaria platformowe wyznacza wspólny termin karencji **2026-09-21 18:31:49 Europe/Warsaw**. Właściciel zatwierdził oczekiwanie bez zmiany ADR-002 i bez wyjątków od polityki oraz prace dokumentacyjne i konfiguracyjne przed instalacją. Estymacja 1 d bez zmian; oczekiwanie jest opóźnieniem kalendarzowym, odchylenie nakładu do ustalenia po implementacji. Dowody i ograniczenia: [raport BL-001](bl-001-bootstrap-readiness.md).
 - **2026-09-20, podział M0-1/M0-2:** zatwierdzono pozostawienie BL-034 w M0-1 z zależnościami BL-013 i BL-014. BL-018 pozostaje otwarty do testów obrazów w M0-2; BL-019 i kryterium wyjścia M0 nr 7 wymagają potwierdzenia ustawień przez właściciela po scaleniu M0-1. Przygotowanie plików przed instalacją nie oznacza ukończenia zadań ani zielonego CI.
 - **2026-09-20, BL-017/BL-019:** na wyraźne polecenie właściciela przygotowano podczas karencji szkic CI, CODEOWNERS, szablon PR, Renovate, nieaktywny ruleset i instrukcję ustawień. Status `w toku` obejmuje wyłącznie przygotowanie plików; uruchomienie CI czeka na gotowe zależności. Lokalny skrypt kontroli fixtures/tytułu PR ma 7 przechodzących testów bez instalowania pakietów, na zastanym Node 25; nie zastępuje testów na Node 24. Odchylenia 2 d / 1 d do ustalenia po wykonaniu zadań. Szczegóły i brakujące dowody: [raport sesji](m0-1-session-report.md).
+
+- **2026-09-21, BL-005:** lokalnie wykonane schematy strict, profile usług, bezpieczne odczyty `*_FILE`, walidacja produkcji i 11 testów (w tym dymny). Lint/typecheck/test/build 4/4 PASS. Status `w toku` do wspólnego DoD/CI; estymacja 0,5 d bez zmiany, odchylenia nie wyliczano bez ewidencji. [Raport](m0-1-session-report.md) § 9.1.
 
 ## 2. M1 — MVP
 

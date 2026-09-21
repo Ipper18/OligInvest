@@ -295,6 +295,21 @@ Generowane skryptem instalacyjnym (`infra/scripts/generate-secrets.sh`, M0) z ge
 | klucze WireGuard, SSH | hosty | raz w roku |
 | klucz konta ACME | wolumen `caddy-data` | przy utracie (zmiana CAA) |
 
+### 8.1 Walidacja konfiguracji aplikacji (BL-005)
+
+`packages/config` eksportuje schematy Zod `.strict()` i `loadConfig(service, env, { mode })` dla `web`, `api`, `jobs`, `analytics`. Tryb jest jawny (`development`, `test`, `production`); loader nie czyta `.env` samodzielnie. Korzeń kompozycji przekazuje środowisko procesu i tryb. Loader wybiera wyłącznie klucze danej usługi, dzięki czemu zmienne systemu, MCP, hosta i Compose nie trafiają do wyniku. Bezpośrednie parsowanie schematu odrzuca nieznane pola. Klucze pochodzą z [.env.example](../../.env.example); kontrakt połączeń i uruchamianie workerów pozostają do BL-007/008/013/014.
+
+| Profil | Wymagane klucze | Opcjonalne |
+|---|---|---|
+| web | PUBLIC_BASE_URL, API_INTERNAL_URL | LEGAL_CONTROLLER_NAME, LEGAL_CONTACT_EMAIL |
+| api | PUBLIC_BASE_URL, BETTER_AUTH_SECRETS, AUDIT_PSEUDONYM_KEY, DB_AUTH_PASSWORD, DB_APP_PASSWORD, VALKEY_QUEUE_API_PASSWORD, VALKEY_CACHE_API_PASSWORD | LEGAL_CONTROLLER_NAME, LEGAL_CONTACT_EMAIL, VAPID_PUBLIC_KEY, pary GOOGLE_CLIENT_ID/SECRET i GITHUB_CLIENT_ID/SECRET |
+| jobs | PUBLIC_BASE_URL, AUDIT_PSEUDONYM_KEY, DB_APP_PASSWORD, VALKEY_QUEUE_JOBS_PASSWORD, VALKEY_CACHE_JOBS_PASSWORD | SMTP_HOST/USER/PASSWORD (komplet albo brak), para VAPID_PUBLIC_KEY/PRIVATE_KEY, klucze FINNHUB/TWELVEDATA/ALPHAVANTAGE/FRED/MARKETAUX |
+| analytics | DB_ANALYTICS_RO_PASSWORD, VALKEY_QUEUE_ANALYTICS_PASSWORD | brak |
+
+Sekrety można lokalnie podać jako `NAME` albo `NAME_FILE`. Jednoczesne niepuste wartości są błędem (brak cichego priorytetu). Produkcja wymaga wariantu `_FILE` dla każdego podanego sekretu, również opcjonalnego. `_FILE` nie jest obsługiwane dla publicznych adresów/kluczy. Puste zmienne oznaczają brak wartości; pusty plik sekretu jest błędem. Plik: ścieżka bezwzględna, zwykły plik UTF-8 do 64 KiB; usuwa się tylko jeden końcowy LF/CRLF, zachowując pozostałe znaki. Błąd zawiera nazwę znanego klucza i kod, nigdy wartość, ścieżkę pliku ani oryginalny wyjątek I/O/Zod.
+
+Adresy HTTP(S) nie mogą zawierać poświadczeń, zapytania ani fragmentu; PUBLIC_BASE_URL jest originem, w produkcji HTTPS. API_INTERNAL_URL może używać HTTP w sieci wewnętrznej. BETTER_AUTH_SECRETS ma format Better Auth 1.7.5 `wersja:sekret,wersja:sekret` (najnowszy pierwszy); wersje są unikalnymi nieujemnymi liczbami całkowitymi, każdy sekret ma co najmniej 32 znaki. AUDIT_PSEUDONYM_KEY ma co najmniej 32 znaki. Walidacja długości nie potwierdza losowości — generator kryptograficzny pozostaje wymagany.
+
 ## 9. Migracja: TLS Immicha z VPS do domu
 
 Dziś Caddy na VPS kończy TLS Immicha i ma jego klucz prywatny. Cel: VPS przekazuje tylko TCP, a TLS Immicha kończy się w domu ([ADR-011](../09-decyzje/ADR-011-topologia-wdrozenia.md)). Migracja w czterech krokach; każdy ma plan wycofania. DNS się nie zmienia — ruch nadal wchodzi przez VPS.
