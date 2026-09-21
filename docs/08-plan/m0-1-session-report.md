@@ -156,3 +156,11 @@ Nowe ryzyka: R-25 — niespójne deklaracje bibliotek, kontrolowane testami typo
 Pozostałe prace M0-1: BL-003/004 (granice warstw i generator), BL-005/006 (config/platform), BL-007/008 (baza/migracje/RLS), BL-009/010 (health/OpenAPI), pełne BL-011/012 (CSP, RSC, UI/i18n), BL-013/014 (workery), BL-015 (wektory), BL-016/033 (budżety i Lighthouse), BL-017/018 (aktywne CI i E2E), BL-019 (potwierdzenia właściciela), pełne BL-034 i uruchomienie BL-035 w CI. Lighthouse wraca jako 13.5.0 dopiero przy BL-016. Brak logiki domenowej, wdrożeń i produkcyjnych obrazów.
 
 Kryteria M0: **1 częściowo** — wszystkie lokalne lint/typecheck/test/build oraz usunięcie education PASS, ale brak check:deps BL-003; **2 i 3 niewykonane** (RLS/migracje i kontrakt OpenAPI); **7 otwarte** do ustawień właściciela. Spike BL-032 rozstrzygnięty notatką. Pełne zadania pozostają w toku do wspólnego DoD i CI; nie przedstawiamy lokalnego wyniku jako zielonego CI.
+
+## 9. Decyzje właściciela i paczka BL-005/006 — 2026-09-21
+
+Zastosowano zatwierdzone `internal: false` wyłącznie w `compose.dev.yaml`, z publikacją na loopback przez `DEV_BIND_ADDRESS`. `docker compose --env-file .env.example -f compose.dev.yaml config --quiet` PASS. Wyniki wcześniejszych sond obu wariantów pozostają w [audycie](audits/m0-1-compose-probe.json); nie powtarzano testów usług. Produkcyjne sieci internal (BL-022) bez zmian. R-26 obniżone z 10 do 2, pełne BL-034 nadal otwarte.
+
+Dodano zaakceptowany wyjątek [OSV](../../osv-scanner.toml) dla GHSA-67mh-4wv8-2f99, od 2026-09-21 do 2026-12-20 (90 dni), z odwołaniem do R-24 i warunkiem wcześniejszego usunięcia przy aktualizacji Drizzle Kit eliminującej @esbuild-kit/*. Sprawdzono TOML i datę standardową biblioteką Pythona. Bez overrides, audit fix ani zmian lockfile. Próg deps-audit w CI § 3 był niedookreślony; poproszono właściciela o doprecyzowanie. Wyjątek dotyczy tylko tej podatności, nie zmienia karencji ani ogólnej polityki. Pełny skan OSV pozostaje do BL-017. **Konfiguracja przygotowana; nie uruchomiono jeszcze w CI.**
+
+Dalszy zakres tej sesji na polecenie właściciela: wyłącznie BL-005 i BL-006. Baza BL-007/008 odłożona do osobnej sesji. Brak nowych zależności, zmian ADR i wiarygodnej ewidencji dni idealnych; estymacje pozostają bez zmian.

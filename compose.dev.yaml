@@ -85,7 +85,7 @@ services:
 
 networks:
   default:
-    internal: true
+    internal: false
 
 volumes:
   postgres-data:

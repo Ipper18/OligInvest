@@ -83,7 +83,7 @@ Bez logiki domenowej; wynik: działające CI, baza z RLS, wydanie podpisane i wd
 
 ### 1.1 Postęp i odchylenia
 
-- **2026-09-21, BL-034:** test internal=true FAIL z hosta dla wszystkich czterech usług mimo healthy; wariant diagnostyczny zwykłego bridge PASS. [Propozycja poprawki i dowody](../07-wdrozenie/srodowisko-deweloperskie.md#4-wynik-testu-hosta-i-proponowana-korekta); źródłowy Compose bez zmiany izolacji, zadanie nadal `w toku`. R-26 otwarte.
+- **2026-09-21, BL-034:** test internal=true FAIL z hosta dla wszystkich czterech usług mimo healthy; wariant diagnostyczny zwykłego bridge PASS. [Propozycja poprawki i dowody](../07-wdrozenie/srodowisko-deweloperskie.md#4-wynik-testu-hosta-i-proponowana-korekta); właściciel zatwierdził i zastosowano internal=false wyłącznie w compose.dev.yaml z portami na loopback. R-26 obniżone do 2; zadanie nadal `w toku` (migracje/worker/seed).
 
 - **2026-09-21, BL-001/002/032 — wykonanie:** oba lockfile i instalacje frozen zgodne z karencją; 377 wersji npm oraz 27 wersji PyPI (183 artefakty) porównane z audytem. Pełne `pnpm turbo run lint typecheck test build`: 88/88 PASS, 59 testów Vitest + 1 pytest; po fizycznym usunięciu `education`: build/test 42/42 PASS. BL-002 wykonane lokalnie; status `w toku` do dowodów CI z Definition of Done. [Spike BL-032](bl-032-typescript-7-spike.md) rozstrzygnięty: TypeScript 7.0.2, zatwierdzone `skipLibCheck: true`, niezmienione `strict: true`; 72 błędy Drizzle i 1 Better Auth występują także na 6.0.3. Wynik techniczny zamknięty notatką, status zadania `w toku` do CI. Estymacje 1 d / 1 d / 0,5 d bez zmian; dodatkowa diagnoza bibliotek i środowiska odnotowana bez wymyślania nakładu. Pozostałe kryteria M0 nadal otwarte.
 

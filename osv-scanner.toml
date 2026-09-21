@@ -1,0 +1,6 @@
+# Owner-approved exception, 2026-09-21; R-24 (docs/08-plan/ryzyka.md).
+# Remove when a Drizzle Kit update removes @esbuild-kit/*.
+[[IgnoredVulns]]
+id = "GHSA-67mh-4wv8-2f99"
+ignoreUntil = 2026-12-20
+reason = "R-24: esbuild 0.18.20 is a development-only transitive dependency of Drizzle Kit through @esbuild-kit/*. The affected esbuild development server is never started. Owner accepted this exception for 90 days on 2026-09-21. Remove on the Drizzle Kit update eliminating @esbuild-kit/*; no overrides or audit fix."
