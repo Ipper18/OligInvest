@@ -130,3 +130,9 @@ Ta sekcja aktualizuje historyczne blokady z § 6–7. Potwierdzono Node 24.21.0 
 `pnpm audit --json`: 1 podatność moderate, 0 high/critical — [GHSA-67mh-4wv8-2f99](https://github.com/advisories/GHSA-67mh-4wv8-2f99), esbuild 0.18.20 przez Drizzle Kit i wycofane `@esbuild-kit/*`. Nie uruchamiamy serwera developerskiego esbuild; nie zastosowano automatycznych overrides ani `audit fix`. R-24 pozostaje otwarte.
 
 Dalsze kroki tej sesji: ukończenie walidacji grafu Pythona, test Compose, szkielety BL-002 i porównanie TypeScript 7/6 w BL-032. Weryfikacja konfiguracji przygotowanej wcześniej wykryła błędy deklaracji bibliotek; właściciel zatwierdził `skipLibCheck: true` przy niezmienionym `strict: true`. Wyniki końcowe zostaną dopisane poniżej. **Własne CI nadal nieuruchomione; żadna z tych kontroli nie zamyka całego M0.**
+
+### 8.1 Graf i szkielet Pythona
+
+Python 3.13.13 i lokalny uv 0.12.16 (bez zmiany instalacji globalnych). Wheel uv pobrano z PyPI i porównano SHA-256 z wcześniejszym audytem. `uv lock` z `exclude-newer = "3 days"` utworzyło lockfile od zera; [pełne porównanie](audits/m0-1-python-lockfile-comparison.json): 27 zewnętrznych wersji, 183 pliki w lockfile, wszystkie zgodne z inwentarzem po zatwierdzonych patchach, zero nowych/zmienionych wersji i błędów sum/karencji. 70 pozostałych wersji szerokiego audytu nie jest potrzebne do tego szkieletu; każda wymieniona w JSON.
+
+Instalacja frozen: najpierw przypięte wheels bez budowania, następnie lokalny pakiet bez izolacji z przypiętym setuptools 84.0.0. Ruff, mypy strict, pytest (1 test) oraz offline build sdist/wheel PASS. Minimalny pakiet nie uruchamia workera; BL-014 pozostaje todo. Backend setuptools był już audytowany; jego bezpośrednie użycie uzasadniono w STACK § 3.1.
