@@ -46,7 +46,7 @@ Nowa zależność runtime trafia do projektu tylko, jeśli spełnia **wszystkie*
 
 Decyzja właściciela 2026-09-21: start na `bullmq` npm 6.3.6, `bullmq` PyPI 3.2.2 (najnowsze dojrzałe 3.2.x), `psycopg` i `psycopg-binary` 3.3.5; późniejsze patche proponuje Renovate w zwykłym trybie po karencji. Źródła publikacji i sumy kontrolne: [inwentarz](../08-plan/audits/m0-1-release-age.json). Lighthouse 13.5.0 pozostaje poza manifestami do sesji BL-016; bez zmiany linii na 13.4. Better Auth 1.7.5 jest zależnością deweloperską `apps/api` wyłącznie dla spike BL-032, bez implementacji uwierzytelniania.
 
-Przygotowane manifesty (BL-001, 2026-09-20) używają dokładnych wersji z [inwentarza audytu](../08-plan/audits/m0-1-release-age.json). Nie wykonano instalacji ani nie utworzono lockfile; kontrola pochodzenia, licencji całego grafu i zgodności typów pozostaje do wykonania po karencji.
+Przygotowane manifesty (BL-001, 2026-09-20) używają dokładnych wersji z [inwentarza audytu](../08-plan/audits/m0-1-release-age.json). 2026-09-21 utworzono oba lockfile, porównano wybrane wersje i sumy z audytem oraz wykonano instalacje frozen i lokalne testy; dowody w [raporcie sesji § 8](../08-plan/m0-1-session-report.md#8-lockfile-i-instalacja-po-zatwierdzeniu-patchy--2026-09-21). Pełny audyt CI pozostaje do BL-017.
 
 | Pakiet | Wersja | Licencja | Uzasadnienie |
 |---|---|---|---|
@@ -57,9 +57,9 @@ Przygotowane manifesty (BL-001, 2026-09-20) używają dokładnych wersji z [inwe
 | `setuptools` | 84.0.0 | MIT | Backend budowania minimalnego pakietu Python (BL-002); przypięty w build-system i grupie dev, już uwzględniony w audycie; build bez izolowanego pobierania zależności |
 | `@tailwindcss/postcss` | 4.3.3 | MIT | Oficjalny adapter Tailwind 4 dla potoku CSS Next.js |
 
-Te pakiety uzupełniają wybrane narzędzia, bez zmiany architektury lub ADR. Inne biblioteki figurujące w audycie (np. Better Auth do spike BL-032, narzędzia e2e i biblioteki naukowe) nie są automatycznie dodawane do manifestów. `apps/analytics/package.json` zawiera wyłącznie polecenia dla Turbo; zależności Pythona będą zapisane w `pyproject.toml` i `uv.lock` w BL-014.
+Te pakiety uzupełniają wybrane narzędzia, bez zmiany architektury lub ADR. Inne biblioteki figurujące w audycie (np. Better Auth do spike BL-032, narzędzia e2e i biblioteki naukowe) nie są automatycznie dodawane do manifestów. `apps/analytics/package.json` zawiera wyłącznie polecenia dla Turbo; minimalne zależności Pythona są już zapisane w `pyproject.toml` i `uv.lock`; konsument kolejki pozostaje do BL-014.
 
-Ustawienia pnpm 12 poza rejestrem są w `pnpm-workspace.yaml`: `saveExact`, `engineStrict`, `pmOnFail: error` (odrzucenie niezgodnej wersji menedżera bez jej automatycznego pobrania). `.npmrc` wskazuje rejestr, bez poświadczeń. `allowBuilds: {}` pozostaje puste do przeglądu skryptów instalacyjnych; przykład `esbuild` w SEC § 4.3 nie stanowi automatycznej zgody na wykonanie skryptu. Źródła konfiguracji, sprawdzone 2026-09-20: [ustawienia pnpm 12](https://pnpm.io/settings), [pmOnFail](https://pnpm.io/settings/cli#pmonfail).
+Ustawienia pnpm 12 poza rejestrem są w `pnpm-workspace.yaml`: `saveExact`, `engineStrict`, `pmOnFail: error` (odrzucenie niezgodnej wersji menedżera bez jej automatycznego pobrania). `.npmrc` wskazuje rejestr, bez poświadczeń. `allowBuilds` zawiera decyzje dla dokładnych wersji pnpm/esbuild/fsevents/msgpackr-extract po [przeglądzie skryptów](../08-plan/m0-1-install-scripts.md); nowe wersje wymagają ponownego przeglądu. Źródła konfiguracji, sprawdzone 2026-09-20: [ustawienia pnpm 12](https://pnpm.io/settings), [pmOnFail](https://pnpm.io/settings/cli#pmonfail).
 
 ## 4. Frontend (`apps/web`)
 

@@ -1,8 +1,8 @@
-# M0-1 — raport przygotowania podczas karencji
+# M0-1 — raport sesji
 
 **Cel:** zapisać wykonane prace, ich weryfikację i brakujące dowody paczki BL-001–BL-019 oraz BL-032–BL-035, bez utożsamiania przygotowanych plików z działającą aplikacją lub CI.
 
-Stan: **2026-09-21**, gałąź `feat/m0-1-skeleton` utworzona z `main` po scaleniu PR #1. **Konfiguracja przygotowana; nie uruchomiono jeszcze w CI** — dotyczy nowego szkicu własnych workflow. Istniejący CodeQL dla Pythona uruchomił się automatycznie po otwarciu [roboczego PR #2](https://github.com/Ipper18/OligInvest/pull/2); wynik odnotowano w § 3. Ten raport będzie uzupełniony po instalacji i wykonaniu szkieletu. Próba wznowienia przed końcem karencji: § 6. M0 pozostaje otwarty.
+Stan: **2026-09-21**, gałąź `feat/m0-1-skeleton` utworzona z `main` po scaleniu PR #1. **Konfiguracja przygotowana; nie uruchomiono jeszcze w CI** — dotyczy nowego szkicu własnych workflow. Istniejący CodeQL dla Pythona uruchomił się automatycznie po otwarciu [roboczego PR #2](https://github.com/Ipper18/OligInvest/pull/2); wynik odnotowano w § 3. **Aktualny wynik wykonania: § 8** — lockfile, instalacje i lokalne testy szkieletu przechodzą. Sekcje 1–7 opisują wcześniejsze etapy przygotowania i diagnozy. M0 pozostaje otwarty.
 
 ## 1. Zrobione
 
@@ -146,3 +146,13 @@ BL-002: źródła i testy dymne 22 pakietów (4 aplikacje, 9 modułów, 9 pakiet
 BL-032: [notatka z decyzją](bl-032-typescript-7-spike.md) i [pełna lista diagnostyk](audits/bl-032-library-diagnostics.json). TypeScript 7.0.2 pozostaje; 6.0.3 wykazuje identyczne 72 błędy deklaracji Drizzle i 1 Better Auth. Właściciel zatwierdził `skipLibCheck: true`; `strict: true` i pozostałe opcje kontroli własnego kodu bez zmian. Fixture’y negatywne potwierdzają odrzucanie błędnego typu opcji auth, null i liczbowego UUID w naszym kodzie. Brak shimów/łatek deklaracji; bez nowego ADR.
 
 **Status:** BL-002 i decyzja techniczna BL-032 wykonane lokalnie; zadania pozostają `w toku`, bo wspólne Definition of Done wymaga brakujących dowodów CI. BL-001 również nadal wymaga aktywnego CI. Własnych workflow nie uruchomiono. Estymacji nie zmieniono; nie prowadzono wiarygodnej ewidencji dni idealnych, więc nie podano fikcyjnego odchylenia. Oczekiwanie kalendarzowe i dodatkowa diagnoza typów/hosta są odrębne od wykonania.
+
+### 8.3 Compose, ryzyka i przekazanie
+
+Test sieci `internal: true`: kontenery healthy, ale PostgreSQL, kolejka, cache i Mailpit nieosiągalne z hosta (`ECONNREFUSED`). Po wykluczeniu kolizji domyślnego portu PostgreSQL powtórzono sondy na wolnych portach. Tymczasowy wariant `internal: false` przeszedł wszystkie cztery sondy. [Pełny wynik](audits/m0-1-compose-probe.json) i [konkretna propozycja korekty](../07-wdrozenie/srodowisko-deweloperskie.md#4-wynik-testu-hosta-i-proponowana-korekta). Źródłowy Compose pozostaje internal=true; zgodnie ze zleceniem przekazano propozycję, bez uznania BL-034 za ukończone. Nie dotykano zewnętrznych serwerów ani sekretów; użyto własnych tymczasowych haseł lokalnego testu.
+
+Nowe ryzyka: R-25 — niespójne deklaracje bibliotek, kontrolowane testami typowanych granic; R-26 — niedostępność portów developerskich. R-24 zawiera teraz konkretny wynik audytu moderate, R-22 obejmuje kontrolę kolejnych aktualizacji. Nowych decyzji wymagających ADR nie stwierdzono: zgoda na skipLibCheck nie zmienia strict ani stosu; wybór patchy i odroczenie Lighthouse były jawne.
+
+Pozostałe prace M0-1: BL-003/004 (granice warstw i generator), BL-005/006 (config/platform), BL-007/008 (baza/migracje/RLS), BL-009/010 (health/OpenAPI), pełne BL-011/012 (CSP, RSC, UI/i18n), BL-013/014 (workery), BL-015 (wektory), BL-016/033 (budżety i Lighthouse), BL-017/018 (aktywne CI i E2E), BL-019 (potwierdzenia właściciela), pełne BL-034 i uruchomienie BL-035 w CI. Lighthouse wraca jako 13.5.0 dopiero przy BL-016. Brak logiki domenowej, wdrożeń i produkcyjnych obrazów.
+
+Kryteria M0: **1 częściowo** — wszystkie lokalne lint/typecheck/test/build oraz usunięcie education PASS, ale brak check:deps BL-003; **2 i 3 niewykonane** (RLS/migracje i kontrakt OpenAPI); **7 otwarte** do ustawień właściciela. Spike BL-032 rozstrzygnięty notatką. Pełne zadania pozostają w toku do wspólnego DoD i CI; nie przedstawiamy lokalnego wyniku jako zielonego CI.

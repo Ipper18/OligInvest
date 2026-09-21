@@ -2,7 +2,7 @@
   "purpose": "Porównanie pełnego lockfile npm z inwentarzem kandydatów M0-1; każda dodana, zmieniona i pominięta wersja. Pominięcie kandydata do późniejszego zadania nie jest usunięciem wymagania.",
   "checkedAtUtc": "2026-09-21T05:56:25.355Z",
   "lockfileSha256": "462f6e4fe6b74620c27e353b2d09d145cfdb165521146ea003cf73759c9c0d7e",
-  "auditSha256": "1175fe09e3446835ebdf8922936bf7053ed4c582c98b8407a681ca41edc88244",
+  "auditSha256": "ce9f315b68f701c4f580600c9658f0de739774edf7aaadbca42354043b80e0f5",
   "packages": 377,
   "unchanged": 376,
   "changed": [

@@ -2,7 +2,7 @@
 
 **Cel:** opisać samodzielny plik Compose dla lokalnych danych syntetycznych i sposób jego walidacji bez instalowania zależności aplikacji (BL-034, NFR-10.01).
 
-Stan 2026-09-20: przygotowanie plików podczas karencji. **Konfiguracja przygotowana; nie uruchomiono jeszcze w CI.** Nie uruchomiono kontenerów ani aplikacji. Brakuje migracji, ról RLS, seedów i integracji workerów; pełne BL-034 nadal zależy od BL-013 i BL-014. Źródła: [CI/CD](ci-cd.md), [stos](../01-architektura/stack-technologiczny.md), [raport sesji](../08-plan/m0-1-session-report.md).
+Stan 2026-09-21: kontenery uruchomiono lokalnie; test wykazał niedostępność opublikowanych portów przy `internal: true` (wyniki i propozycja w § 4). **Nie uruchomiono jeszcze w CI.** Brakuje migracji, ról RLS, seedów i integracji workerów; pełne BL-034 nadal zależy od BL-013 i BL-014. Źródła: [CI/CD](ci-cd.md), [stos](../01-architektura/stack-technologiczny.md), [raport sesji](../08-plan/m0-1-session-report.md).
 
 ## 1. Usługi i izolacja
 
@@ -42,3 +42,19 @@ Wynik tej kontroli potwierdza wyłącznie składnię, interpolację i model Comp
 3. Po BL-007/008 utwórz role i wykonaj migracje oraz testy RLS. Dopiero wtedy ustaw połączenia aplikacji z właściwymi rolami.
 4. Po BL-013/014 podłącz aplikacje, wykonaj seed syntetyczny i zweryfikuj `pnpm dev`, kolejki, cache oraz dostarczenie wiadomości do Mailpit. Te polecenia aplikacji nie są jeszcze gotowe w obecnym szkielecie plików.
 5. Zatrzymanie: `docker compose -f compose.dev.yaml down` zachowuje trwałe wolumeny PostgreSQL i kolejki. Nie usuwaj wolumenów automatycznie; reset danych wymaga świadomej decyzji lokalnego operatora.
+
+## 4. Wynik testu hosta i proponowana korekta
+
+2026-09-21, Windows x64, Docker Desktop Linux / Engine 29.4.3 / Compose 5.1.3: cztery kontenery osiągają stan healthy. Przy `internal: true` host otrzymuje `ECONNREFUSED` dla PostgreSQL, obu Valkey i Mailpit. W pierwszej próbie domyślny port PostgreSQL zajmował istniejący proces; jego błąd hasła nie potwierdzał połączenia z kontenerem. Dlatego właściwe porównanie wykonano na wolnych portach hosta wybranych przez system, z osobnym projektem Compose i własnymi tymczasowymi hasłami.
+
+Tymczasowy override diagnostyczny `internal: false` przechodzi wszystkie sondy: uwierzytelnione `SELECT 1`, dwa `AUTH` + `PING` Valkey oraz HTTP `/livez` Mailpit. [Dowód obu wariantów](../08-plan/audits/m0-1-compose-probe.json). Po testach usunięto wyłącznie utworzone projekty i ich puste wolumeny. Istniejącej usługi hosta nie zmieniano.
+
+**Proponowana korekta BL-034:** w developerskim `compose.dev.yaml` użyć zwykłej sieci bridge:
+
+```yaml
+networks:
+  default:
+    internal: false
+```
+
+Publikowanie portów nadal wymaga pętli zwrotnej przez `DEV_BIND_ADDRESS`. Zwykły bridge dopuszcza ruch wychodzący usług developerskich; jest to jawny kompromis dla aplikacji działających na hoście. Topologia produkcyjna jest osobnym zadaniem BL-022. Plik źródłowy pozostaje obecnie `internal: true`, ponieważ właściciel zlecił test i propozycję poprawki w razie niepowodzenia. Zastosowanie propozycji pozostaje do decyzji; pełne BL-034 nadal otwarte. Przed uruchomieniem wybierz wolne porty `DEV_*_PORT`, jeśli domyślne są zajęte.
