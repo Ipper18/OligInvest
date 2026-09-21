@@ -31,7 +31,7 @@ Nowa zależność runtime trafia do projektu tylko, jeśli spełnia **wszystkie*
 | Element | Wybór | Wersja | Licencja | Uzasadnienie | Odrzucone |
 |---|---|---|---|---|---|
 | Menedżer pakietów JS | **pnpm** | 12.4 | MIT | Ścisła izolacja zależności (brak „fantomowych” importów — pomaga egzekwować granice modułów), szybki, workspaces. | npm (hoisting ukrywa brakujące zależności), Yarn (brak przewagi). |
-| Orkiestracja zadań | **Turborepo** | 2.11 | MIT | Graf zadań i cache buildów/testów per pakiet; prosta konfiguracja ([ADR-002](../09-decyzje/ADR-002-monorepo.md)). | Nx (więcej abstrakcji i generatorów niż potrzebujemy). |
+| Orkiestracja zadań | **Turborepo** | 2.10.13 na starcie M0; 2.11 osobnym PR Renovate po karencji | MIT | Graf zadań i cache buildów/testów per pakiet ([ADR-002](../09-decyzje/ADR-002-monorepo.md)); wersja startowa zgodnie z [ADR-015](../09-decyzje/ADR-015-linia-turborepo-na-starcie-m0.md), decyzja 2026-09-21. | Nx (więcej abstrakcji i generatorów niż potrzebujemy). |
 | Język | **TypeScript** | 7.0 (kompilator natywny) | Apache-2.0 | Szybkie sprawdzanie typów w monorepo; `strict`. Jeśli któraś biblioteka okaże się niezgodna — powrót do linii 6.x (decyzja w M0). | JS bez typów. |
 | Lint + format (TS/JS/JSON/CSS) | **Biome** | 2.5 | MIT/Apache-2.0 | Jedno narzędzie zamiast ESLint + Prettier + wtyczek; szybkie; reguły React hooks i dostępności. Next.js 16 nie ma już `next lint`. | ESLint + Prettier (więcej zależności i konfiguracji). |
 | Python: zależności | **uv** | 0.12 | MIT/Apache-2.0 | Lockfile (`uv.lock`), szybkie instalacje, zarządzanie wersją Pythona. | pip-tools, Poetry (wolniejsze). |

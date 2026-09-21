@@ -49,7 +49,7 @@ Monorepo Turborepo + pnpm: `apps/{web,api,jobs,analytics}`, `modules/*` (identit
 | [`docs/06-bezpieczenstwo/`](docs/06-bezpieczenstwo/model-zagrozen.md) | model zagrożeń STRIDE, kontrole i OWASP ASVS 5.0, uwierzytelnianie, RODO, plan reagowania |
 | [`docs/07-wdrozenie/`](docs/07-wdrozenie/infrastruktura.md) | infrastruktura, CI/CD, monitoring, kopie i odtwarzanie |
 | [`docs/08-plan/`](docs/08-plan/roadmapa.md) | roadmapa M0–M6, MVP, backlog z estymacją, rejestr ryzyk, prompty dla Codex |
-| [`docs/09-decyzje/`](docs/09-decyzje/ADR-000-szablon.md) | ADR-001…014, audyt pluginów, research bibliotek |
+| [`docs/09-decyzje/`](docs/09-decyzje/ADR-000-szablon.md) | ADR-001…015, audyt pluginów, research bibliotek |
 | [`docs/10-ograniczenia.md`](docs/10-ograniczenia.md) | czego nie da się zrobić za 0 zł i co tracimy |
 | [`docs/11-zgodnosc-prawna.md`](docs/11-zgodnosc-prawna.md) | MiFID II, MAR, disclaimery, podatki, licencje danych |
 | [`docs/12-dla-uzytkownika/`](docs/12-dla-uzytkownika/instrukcja.md) | instrukcja użytkownika i administratora, samouczki, regulamin, informacja o danych |
