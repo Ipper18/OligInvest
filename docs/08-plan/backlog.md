@@ -45,7 +45,7 @@ Bez logiki domenowej; wynik: działające CI, baza z RLS, wydanie podpisane i wd
 | ID | Zadanie | Wymagania | Dokumenty | Zależy od | d | Status |
 |---|---|---|---|---|---|---|
 | BL-001 | Bootstrap repozytorium kodu: pnpm 12 (workspace z polityką z SEC §4.3: `minimumReleaseAge`, `trustPolicy`, `strictDepBuilds`, `blockExoticSubdeps`, `allowBuilds`), Turborepo 2.10.13 na start (ADR-015), `.nvmrc` (Node 24), Biome 2.5, `tsconfig` strict, sprawdzanie tytułów PR (Conventional Commits) | NFR-02.01, NFR-03.09, NFR-10.03, NFR-10.05 | STACK, SEC | — | 1 | w toku |
-| BL-002 | Struktura `apps/*`, `modules/*`, `packages/*` z pustymi pakietami, polem `exports` w modułach i testami dymnymi | NFR-02.01, NFR-02.02 | MOD | BL-001 | 1 | todo |
+| BL-002 | Struktura `apps/*`, `modules/*`, `packages/*` z pustymi pakietami, polem `exports` w modułach i testami dymnymi | NFR-02.01, NFR-02.02 | MOD | BL-001 | 1 | w toku |
 | BL-003 | Skrypt `pnpm check:deps` (reguły warstw) z testem negatywnym | NFR-02.03 | MOD, [ADR-002](../09-decyzje/ADR-002-monorepo.md) | BL-002 | 1 | todo |
 | BL-004 | Generator `pnpm gen:module <nazwa>` według szablonu modułu | NFR-02.02, NFR-02.07 | MOD | BL-002 | 1 | todo |
 | BL-005 | `packages/config`: schemat zmiennych środowiskowych (Zod) z obsługą `*_FILE`, zgodny z `.env.example` | NFR-03.12 | INF | BL-002 | 0,5 | todo |
@@ -75,13 +75,15 @@ Bez logiki domenowej; wynik: działające CI, baza z RLS, wydanie podpisane i wd
 | BL-029 | Uptime Kuma na VPS: sondy `app-ready`, `app-certificate`, `vm-health`, alerty e-mail | NFR-09.01, NFR-09.04 | MON | BL-023, BL-024 | 1 | todo |
 | BL-030 | Spike: przedrostek `__Host-` w Better Auth — notatka lub ADR (odstępstwo O-01) | NFR-03.03 | AUTH | BL-009 | 1 | todo |
 | BL-031 | Spike: przechowywanie sekretu TOTP, kodów zapasowych (`encrypted`) i kluczy API w Better Auth; czas Argon2id na serwerze (100–250 ms) | NFR-03.02, NFR-03.08 | [ADR-004](../09-decyzje/ADR-004-postgres-better-auth-rls.md), AUTH | BL-009, BL-023 | 1 | todo |
-| BL-032 | Spike: TypeScript 7 z Next.js, Hono, Drizzle i Better Auth — decyzja 7.x albo 6.x | NFR-10.05 | STACK | BL-011 | 0,5 | todo |
+| BL-032 | Spike: TypeScript 7 z Next.js, Hono, Drizzle i Better Auth — decyzja 7.x albo 6.x | NFR-10.05 | STACK | BL-011 | 0,5 | w toku |
 | BL-033 | Raport rozmiarów bazowych (Next.js, Zod, Radix) i aktualizacja PERF §2 | NFR-01.02 | PERF | BL-016 | 0,5 | todo |
 | BL-034 | Środowisko deweloperskie w M0-1: samodzielne `compose.dev.yaml` (PostgreSQL, Valkey ×2, Mailpit), `pnpm dev`, dane syntetyczne; bez zależności od produkcyjnego Compose i obrazów aplikacji | NFR-10.01 | CI | BL-013, BL-014 | 1 | w toku |
 | BL-035 | Test spójności dokumentacji w CI: każde FR/NFR z `wymagania.md` ma zadanie w `backlog.md` i wiersz w `macierz-pokrycia.md`; linki wewnętrzne w `docs/` działają; każdy dokument zaczyna się od „Cel:” | NFR-10.01 | CI | BL-017 | 0,5 | w toku |
 | | **Suma etapu** | | | | **51** | |
 
 ### 1.1 Postęp i odchylenia
+
+- **2026-09-21, BL-001/002/032 — wykonanie:** oba lockfile i instalacje frozen zgodne z karencją; 377 wersji npm oraz 27 wersji PyPI (183 artefakty) porównane z audytem. Pełne `pnpm turbo run lint typecheck test build`: 88/88 PASS, 59 testów Vitest + 1 pytest; po fizycznym usunięciu `education`: build/test 42/42 PASS. BL-002 wykonane lokalnie; status `w toku` do dowodów CI z Definition of Done. [Spike BL-032](bl-032-typescript-7-spike.md) rozstrzygnięty: TypeScript 7.0.2, zatwierdzone `skipLibCheck: true`, niezmienione `strict: true`; 72 błędy Drizzle i 1 Better Auth występują także na 6.0.3. Wynik techniczny zamknięty notatką, status zadania `w toku` do CI. Estymacje 1 d / 1 d / 0,5 d bez zmian; dodatkowa diagnoza bibliotek i środowiska odnotowana bez wymyślania nakładu. Pozostałe kryteria M0 nadal otwarte.
 
 - **2026-09-21, BL-001 / ADR-015:** zatwierdzony start Turbo 2.10.13, później osobny PR Renovate do 2.11. Turbo i sześć jego binariów spełniają karencję. Ponownie przeliczono 559 wersji npm i 2308 plików 97 wersji PyPI: nadal blokują 3 wersje npm i 3 PyPI (pełna lista w [raporcie § 7](m0-1-session-report.md#7-adr-015-i-ponowna-kontrola-całego-inwentarza)); wspólny termin obecnego inwentarza to 2026-09-21 16:13:56 Europe/Warsaw. Dalsza część 3 zatrzymana przed lockfile aplikacji i instalacją, bez wyjątków i bez zmiany innych przypięć. BL-002/032 i test Compose pozostają niewykonane. Estymacje bez zmian; odchylenia nakładu po implementacji, oczekiwanie osobno.
 

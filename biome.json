@@ -6,13 +6,7 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": [
-      "**",
-      "!docs/08-plan/audits/**",
-      "!**/dist/**",
-      "!**/.next/**",
-      "!**/coverage/**"
-    ]
+    "includes": ["**", "!docs/08-plan/audits", "!**/dist", "!**/.next", "!**/coverage"]
   },
   "formatter": {
     "enabled": true,
@@ -23,7 +17,7 @@
   "linter": {
     "enabled": true,
     "rules": {
-      "recommended": true
+      "preset": "recommended"
     }
   },
   "assist": {
