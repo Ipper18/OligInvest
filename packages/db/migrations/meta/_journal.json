@@ -15,6 +15,13 @@
       "when": 1790006540114,
       "tag": "0001_postgres-contract",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790023763537,
+      "tag": "0002_align-indexes-and-consent",
+      "breakpoints": true
     }
   ]
 }

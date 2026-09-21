@@ -60,7 +60,11 @@ export const analyticsAnalyticsRuns = analyticsSchema.table(
       columns: [table.userId],
       foreignColumns: [authUsers.id],
     }).onDelete("cascade"),
-    index("analytics_runs_user_idx").using("btree", sql`user_id`, sql`created_at`),
+    index("analytics_runs_user_idx").using(
+      "btree",
+      sql`user_id`,
+      table.createdAt.desc().nullsFirst(),
+    ),
   ],
 );
 

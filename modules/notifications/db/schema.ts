@@ -52,7 +52,11 @@ export const notificationsNotificationDeliveries = notificationsSchema.table(
       columns: [table.userId],
       foreignColumns: [authUsers.id],
     }).onDelete("cascade"),
-    index("notification_deliveries_user_idx").using("btree", sql`user_id`, sql`created_at`),
+    index("notification_deliveries_user_idx").using(
+      "btree",
+      sql`user_id`,
+      table.createdAt.desc().nullsFirst(),
+    ),
   ],
 );
 

@@ -37,7 +37,7 @@ export const platformAuditLog = platformSchema.table(
     before: jsonb("before"),
     after: jsonb("after"),
   },
-  (_table) => [
+  (table) => [
     check(
       "audit_log_actor_type_check",
       sql`((actor_type = ANY (ARRAY['user'::text, 'admin'::text, 'system'::text, 'pat'::text])))`,
@@ -46,8 +46,12 @@ export const platformAuditLog = platformSchema.table(
       "audit_log_outcome_check",
       sql`((outcome = ANY (ARRAY['success'::text, 'denied'::text, 'error'::text])))`,
     ),
-    index("audit_log_actor_idx").using("btree", sql`actor_user_id`, sql`occurred_at`),
-    index("audit_log_occurred_at_idx").using("btree", sql`occurred_at`),
+    index("audit_log_actor_idx").using(
+      "btree",
+      sql`actor_user_id`,
+      table.occurredAt.desc().nullsFirst(),
+    ),
+    index("audit_log_occurred_at_idx").using("btree", table.occurredAt.desc().nullsFirst()),
   ],
 );
 
@@ -120,7 +124,7 @@ export const platformWebVitals = platformSchema.table(
     deviceClass: text("device_class"),
     connection: text("connection"),
   },
-  (_table) => [
+  (table) => [
     check(
       "web_vitals_metric_check",
       sql`((metric = ANY (ARRAY['LCP'::text, 'INP'::text, 'CLS'::text, 'FCP'::text, 'TTFB'::text])))`,
@@ -129,6 +133,11 @@ export const platformWebVitals = platformSchema.table(
       "web_vitals_rating_check",
       sql`((rating = ANY (ARRAY['good'::text, 'needs-improvement'::text, 'poor'::text])))`,
     ),
-    index("web_vitals_route_idx").using("btree", sql`route`, sql`metric`, sql`recorded_at`),
+    index("web_vitals_route_idx").using(
+      "btree",
+      sql`route`,
+      sql`metric`,
+      table.recordedAt.desc().nullsFirst(),
+    ),
   ],
 );

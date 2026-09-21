@@ -41,7 +41,11 @@ export const alertsAlertEvents = alertsSchema.table(
       columns: [table.ruleId, table.userId],
       foreignColumns: [alertsAlertRules.id, alertsAlertRules.userId],
     }).onDelete("cascade"),
-    index("alert_events_user_idx").using("btree", sql`user_id`, sql`triggered_at`),
+    index("alert_events_user_idx").using(
+      "btree",
+      sql`user_id`,
+      table.triggeredAt.desc().nullsFirst(),
+    ),
   ],
 );
 

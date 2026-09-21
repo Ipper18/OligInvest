@@ -17,7 +17,8 @@
     "check:repository": "node scripts/check-repository.mjs",
     "check:docs": "node scripts/check-docs.mjs",
     "test:scripts": "node --test scripts/*.test.mjs",
-    "db:generate": "pnpm turbo run build --filter=\"./modules/*\" && pnpm --dir packages/db exec drizzle-kit generate"
+    "db:generate": "pnpm turbo run build --filter=\"./modules/*\" && pnpm --dir packages/db exec drizzle-kit generate",
+    "db:test": "node packages/db/scripts/test-database.mjs"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.14",

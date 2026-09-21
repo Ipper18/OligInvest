@@ -242,13 +242,13 @@ export const identityConsentEvents = identitySchema.table(
     }).onDelete("cascade"),
     check(
       "consent_events_version_check",
-      sql`((version ~ '^[0-9]{4}-[0-9]{2}(-[0-9]{2})?(\.[0-9]{1,3})?$'::text))`,
+      sql`((version ~ '^[0-9]{4}-[0-9]{2}(-[0-9]{2})?(\\.[0-9]{1,3})?$'::text))`,
     ),
     index("consent_events_user_doc_idx").using(
       "btree",
       sql`user_id`,
       sql`document`,
-      sql`recorded_at`,
+      table.recordedAt.desc().nullsFirst(),
     ),
   ],
 );

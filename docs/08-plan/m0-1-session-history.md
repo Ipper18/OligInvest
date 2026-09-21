@@ -196,3 +196,9 @@ Drizzle obejmuje 64 tabele w dziewięciu schematach: siedem modułów z tabelami
 Dowody: wzorcowy DDL wykonany bez błędu w osobnym tymczasowym projekcie Compose na PostgreSQL 18.6; `drizzle-kit generate` utworzył migracje; lint/typecheck/test/build modułów i db **40/40 PASS**, w tym test kompletności 64 tabel i precyzji numeric. Test nowego kontraktu najpierw wykazał brak definicji. Instalacja `pnpm install --frozen-lockfile --offline` PASS; lockfile zmienia tylko importery workspace, sekcje pakietów i rozwiązanego grafu są identyczne. Brak nowych bibliotek, wersji i wyjątków polityki zależności.
 
 Do wykonania: etap 2 (migracje od zera i pełne porównanie), etap 3 (testy ról, uprawnień i RLS), etap 4 (pule i helper transakcji, izolacja po sukcesie/błędzie), następnie BL-008, jeśli wystarczy limitu. Przygotowanie SQL nie jest dowodem zgodności ani przejścia RLS. Kryterium M0 nr 2 pozostaje otwarte, CI nieuruchomione. Decyzje do ADR: brak. Nowe ryzyka: brak na tym etapie.
+
+### BL-007 etap 2 — 2026-09-21
+Migracje od zera i ponowne wykonanie na PostgreSQL 18.6 z osobnego projektu Compose: PASS; pełny pg_dump (właściciele, ACL, RLS, funkcje, triggery, komentarze) — zero różnic.
+Poprawiono własne błędy escapowania CHECK wersji zgody i ośmiu indeksów DESC/NULLS FIRST, bez zmian wzorca SQL i polityk.
+Test regresji najpierw czerwony, następnie PASS: odrzucenie 2026-09-19x1, przyjęcie 2026-09-19.1; lint/typecheck/test/build modułów i db 40/40 PASS.
+Etap 2 zamknięty; dalej etapy 3–4 i BL-008. Estymacja 4 d bez zmian, brak nowego ADR/ryzyka.

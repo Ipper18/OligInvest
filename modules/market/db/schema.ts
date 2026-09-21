@@ -381,7 +381,11 @@ export const marketNewsItems = marketSchema.table(
       foreignColumns: [marketInstruments.id],
     }).onDelete("cascade"),
     unique("news_items_url_key").on(table.url),
-    index("news_items_instrument_idx").using("btree", sql`instrument_id`, sql`published_at`),
+    index("news_items_instrument_idx").using(
+      "btree",
+      sql`instrument_id`,
+      table.publishedAt.desc().nullsFirst(),
+    ),
   ],
 );
 
