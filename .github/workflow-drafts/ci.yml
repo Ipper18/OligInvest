@@ -68,9 +68,37 @@ jobs:
         working-directory: apps/analytics
       - if: matrix.check == 'e2e'
         run: pnpm exec playwright install --with-deps chromium firefox webkit
-      - run: pnpm "ci:$CI_CHECK"
+      - if: matrix.check != 'deps-audit'
+        run: pnpm "ci:$CI_CHECK"
         env:
           CI_CHECK: ${{ matrix.check }}
+      # BL-017: implement and test ci:deps-audit before activating this draft.
+      # Do not use osv-scanner's raw finding exit code as the severity gate.
+      # Scanner/parser failures still fail the job. No continue-on-error.
+      - name: Audit dependencies with the approved severity policy
+        if: matrix.check == 'deps-audit'
+        run: pnpm ci:deps-audit
+        env:
+          DEPS_AUDIT_MIN_CVSS: '7.0'
+          DEPS_AUDIT_OSV_CONFIG: osv-scanner.toml
+          DEPS_AUDIT_EXCEPTION_MAX_DAYS: '90'
+          DEPS_AUDIT_SUMMARY_PATH: reports/deps-audit.md
+      - name: Publish dependency findings (including moderate and low)
+        if: always() && matrix.check == 'deps-audit'
+        run: |
+          if [ -f reports/deps-audit.md ]; then
+            cat reports/deps-audit.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo 'Dependency audit report missing; see the failed audit step.' >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always() && matrix.check == 'deps-audit'
+        with:
+          name: deps-audit-report
+          path: reports/deps-audit*
+          retention-days: 7
+          if-no-files-found: error
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always() && matrix.check == 'e2e'
         with:
