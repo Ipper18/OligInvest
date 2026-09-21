@@ -11,7 +11,8 @@ Stan: **2026-09-21**, `feat/m0-1-skeleton`, [roboczy PR #2](https://github.com/I
 | BL-005/006 | konfiguracja i platforma wykonane lokalnie; brak CI |
 | **BL-007 etap 1** | zamknięty, push `4b4d656`: 64 tabele, migracje, 40/40 |
 | **BL-007 etap 2** | **zamknięty: zero różnic w pełnym schemacie** |
-| BL-007 etapy 3–4 | RLS i uprawnienia do weryfikacji; pule/helper do implementacji |
+| **BL-007 etap 3** | **zamknięty: normatywne RLS i audyt uprawnień PASS** |
+| BL-007 etap 4 | pule/helper i izolacja do implementacji |
 | BL-008 | CI `db`: todo, po BL-007 |
 | BL-009–016, BL-033 | todo; Lighthouse dopiero w BL-016 |
 | BL-017/019 | szkice CI i ustawień; aktywacja nadal wymagana |
@@ -23,4 +24,6 @@ Etap 2: `pnpm db:test` PASS na PostgreSQL 18.6 z Compose: migracje od zera, powt
 
 Decyzje: BL-002 jest spełnioną zależnością; Turbo 2.10.13 (ADR-015); bullmq 6.3.6/3.2.2 i psycopg 3.3.5; karencja bez wyjątków; TS strict + skipLibCheck; sieć dev `internal: false`, porty na loopback; high/critical blokują deps-audit, wyjątek OSV esbuild do 2026-12-20 (R-24); ruleset bez wymaganych zatwierdzeń, przegląd właściciela obowiązkowy, CodeQL domyślny po scaleniu.
 
-Następnie: etap 3 (role, uprawnienia, `testy-rls.sql`), etap 4 (pule i helper, izolacja także po błędzie), BL-008. Błędy własnego odwzorowania poprawiać bez pytania; zatrzymanie tylko przy podejrzeniu błędu `schema.sql` lub `testy-rls.sql`. Estymacja BL-007: 4 d, odchylenie niezmierzone. Brak nowego ADR/ryzyka. M0: kryterium 1 częściowo, 2 otwarte do RLS/CI, 3 niewykonane, 7 zależy od właściciela, 8 częściowo (BL-032).
+Etap 3: niezmieniony `testy-rls.sql` PASS; audyt wszystkich tabel z user_id, ról, członkostw, praw auth/app/analytics, funkcji DEFINER i FORCE RLS właściciela PASS. Bootstrap sprawdzany przed utworzeniem wzorca, aby jego granty nie maskowały braków.
+
+Następnie: etap 4 (pule i helper, izolacja także po błędzie), BL-008. Błędy własnego odwzorowania poprawiać bez pytania; zatrzymanie tylko przy podejrzeniu błędu `schema.sql` lub `testy-rls.sql`. Estymacja BL-007: 4 d, odchylenie niezmierzone. Brak nowego ADR/ryzyka. M0: kryterium 1 częściowo, 2 lokalnie spełnione, brak CI, 3 niewykonane, 7 zależy od właściciela, 8 częściowo (BL-032).

@@ -202,3 +202,8 @@ Migracje od zera i ponowne wykonanie na PostgreSQL 18.6 z osobnego projektu Comp
 Poprawiono własne błędy escapowania CHECK wersji zgody i ośmiu indeksów DESC/NULLS FIRST, bez zmian wzorca SQL i polityk.
 Test regresji najpierw czerwony, następnie PASS: odrzucenie 2026-09-19x1, przyjęcie 2026-09-19.1; lint/typecheck/test/build modułów i db 40/40 PASS.
 Etap 2 zamknięty; dalej etapy 3–4 i BL-008. Estymacja 4 d bez zmian, brak nowego ADR/ryzyka.
+
+### BL-007 etap 3 — 2026-09-21
+Niezmieniony testy-rls.sql PASS na PostgreSQL 18.6; pełne porównanie schematu nadal zero różnic.
+Audyt katalogu: role i członkostwa, FORCE RLS/polityki wszystkich tabel użytkownika, izolacja auth/app, dokładna allowlista SELECT analityki i brak zapisu, funkcje DEFINER, brak obejścia przez właściciela — PASS.
+Bootstrap migracji wykonywany przed wzorcem; źródłowe SQL, granty i polityki bez zmian. Etap zamknięty, bez nowego ADR/ryzyka; pozostają helper/pule i BL-008.

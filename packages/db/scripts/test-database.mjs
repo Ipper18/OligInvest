@@ -117,7 +117,6 @@ try {
     console.log(`PostgreSQL ${version}: fresh databases created`);
   });
   const ddl = await readFile(resolve(repository, "docs/03-dane/schema.sql"), "utf8");
-  psql(reference, ddl);
   psql(migrated, await readFile(resolve(repository, "packages/db/sql/bootstrap.sql"), "utf8"));
   await withClient(migrated, async (client) => {
     await client.query("SET ROLE oliginvest_owner");
@@ -140,6 +139,19 @@ try {
     await readFile(resolve(repository, "packages/db/test/consent-version.sql"), "utf8"),
   );
   console.log("Consent version CHECK: dotted suffix accepted, x suffix rejected");
+  // Audit bootstrap before the reference can supply any missing global role grants.
+  const rlsOutput = psql(
+    migrated,
+    await readFile(resolve(repository, "docs/03-dane/testy-rls.sql"), "utf8"),
+  );
+  await writeFile(resolve(output, "rls.log"), rlsOutput);
+  assert.ok(rlsOutput.includes("ALL RLS SMOKE TESTS PASSED"), "RLS scenarios did not finish");
+  psql(
+    migrated,
+    await readFile(resolve(repository, "packages/db/test/security-catalog.sql"), "utf8"),
+  );
+  console.log("Normative RLS scenarios and full security catalog audit: PASS");
+  psql(reference, ddl);
   const expected = dump(reference);
   const actual = dump(migrated);
   await writeFile(resolve(output, "reference.sql"), expected);
