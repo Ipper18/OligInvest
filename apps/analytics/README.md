@@ -14,3 +14,17 @@ pnpm --filter @oliginvest/analytics build
 ```
 
 Pierwszy krok instaluje także przypięty backend setuptools; drugi buduje wyłącznie lokalny pakiet z tym backendem. Karencja wynosi 3 dni, bez wyjątków. Build sdist i wheel działa offline, bez izolowanego rozwiązywania zależności. Pakiet nie uruchamia kolejki, nie łączy się z bazą ani z siecią.
+
+## Wektory referencyjne (BL-015)
+
+`oliginvest_analytics.vectors.load_test_vectors()` czyta ten sam plik A–H co
+loader Vitest: `docs/03-dane/wektory-testowe.json`, względem pliku modułu,
+nie katalogu roboczego. Wymaga checkoutu i instalacji editable powyżej;
+wheel nie zawiera kopii danych. `read_decimal_text(value)` zachowuje tekst
+kwoty, który można przekazać bezpośrednio do `Decimal`. `read_statistic(value)`
+przyjmuje tylko liczby i odrzuca tekst kwoty. Tolerancje i ograniczenia API:
+[README pakietu](../../packages/test-vectors/README.md).
+
+`uv run --frozen --project apps/analytics pytest -q` uruchamia również porównanie
+obu loaderów (wymaga Node 24): wszystkie klucze, długości tablic i wartości,
+kwoty identyczne jako tekst. Żadne wzory finansowe nie są implementowane.

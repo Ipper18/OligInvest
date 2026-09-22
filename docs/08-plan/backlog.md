@@ -58,7 +58,7 @@ Bez logiki domenowej; wynik: działające CI, baza z RLS, wydanie podpisane i wd
 | BL-012 | `packages/i18n` (formatery `Intl` pl-PL, słownik, lint literałów, test zakazanych zwrotów z LAW §4.1, teksty disclaimerów z LAW §4.3) i `packages/ui` (prymitywy, `<DataFreshness/>`, `<AssumptionsBlock/>`, `<Disclaimer/>`) | NFR-10.04, NFR-07.01, FR-04.01 | DS, LAW | BL-011 | 2 | todo |
 | BL-013 | `apps/jobs`: BullMQ 6.3, rejestr kolejek i harmonogramów, health | NFR-09.04 | MOD | BL-006 | 1 | todo |
 | BL-014 | `apps/analytics`: Python 3.13 + uv, Ruff, mypy, pytest, konsument `bullmq` bez logiki | NFR-10.02 | STACK, [ADR-003](../09-decyzje/ADR-003-hybryda-obliczen-i-kolejki.md) | BL-002 | 1 | todo |
-| BL-015 | `packages/test-vectors` z `wektory-testowe.json` i loaderami dla Vitest i pytest | NFR-02.06, NFR-08.02 | OBL, VEC | BL-002, BL-014 | 0,5 | todo |
+| BL-015 | `packages/test-vectors` z loaderami dla Vitest i pytest; jedyne źródło `docs/03-dane/wektory-testowe.json` | NFR-02.06, NFR-08.02 | OBL, VEC | BL-002, BL-014 | 0,5 | w toku |
 | BL-016 | Egzekwowanie budżetów: `size-limit`, `route-budgets.mjs`, wykrywanie zakazanych bibliotek w chunkach początkowych, skrypt Lighthouse 13.5 z asercjami (raport do M1); dodać Lighthouse 13.5.0 do manifestu dopiero w sesji realizującej BL-016 — obecnie odroczony, bez zmiany linii | NFR-01.02, NFR-01.03 | PERF | BL-011 | 2 | todo |
 | BL-017 | CI w GitHub Actions: `lint`, `typecheck`, `unit`, `contracts`, `build` (macierz bez modułów), `budgets`, `deps-audit`; akcje przypięte SHA, token tylko do odczytu; CodeQL przez konfigurację domyślną GitHub po scaleniu M0-1 (BL-019), poza własnymi workflow | NFR-03.09, NFR-10.02, NFR-10.03, NFR-02.02 | CI | BL-003, BL-008, BL-010, BL-016 | 2 | w toku |
 | BL-018 | E2E: Playwright (Chromium, WebKit, Firefox) z `@axe-core/playwright`; M0-1: test dymny lokalnego buildu produkcyjnego z usługami `compose.dev.yaml`; M0-2: ten sam test na obrazach produkcyjnych po BL-020–BL-023; zamknięcie dopiero po obu częściach | NFR-04.01, NFR-06.01 | CI, A11Y | BL-017; część M0-2: BL-020–BL-023 | 1 | todo |
@@ -82,6 +82,8 @@ Bez logiki domenowej; wynik: działające CI, baza z RLS, wydanie podpisane i wd
 | | **Suma etapu** | | | | **51** | |
 
 ### 1.1 Postęp i odchylenia
+
+- **2026-09-22, BL-015:** wykonane lokalnie loadery A–H dla Vitest i pytest, dokładna zgodność wszystkich kluczy/wartości, zachowanie tekstu kwot, odrzucanie odczytu kwoty jako liczby i tolerancje § 0.5. 7 testów Vitest + 6 pytest PASS; pełne lint/typecheck/test/build 88/88 PASS bez cache. Za zgodą właściciela wystarcza szkielet BL-002; BL-014 pozostaje `todo` i nie było realizowane. Status `w toku` do wspólnego DoD/CI paczki. Estymacja 0,5 d bez zmian; odchylenie nakładu niezmierzone. Bez nowych zależności, ADR i ryzyk.
 
 - **2026-09-21, BL-034:** test internal=true FAIL z hosta dla wszystkich czterech usług mimo healthy; wariant diagnostyczny zwykłego bridge PASS. [Propozycja poprawki i dowody](../07-wdrozenie/srodowisko-deweloperskie.md#4-wynik-testu-hosta-i-proponowana-korekta); właściciel zatwierdził i zastosowano internal=false wyłącznie w compose.dev.yaml z portami na loopback. R-26 obniżone do 2; zadanie nadal `w toku` (migracje/worker/seed).
 

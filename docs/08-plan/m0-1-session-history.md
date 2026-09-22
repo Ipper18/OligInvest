@@ -229,3 +229,7 @@ BL-007 lokalnie 4/4, status w toku do CI/DoD; następny BL-008. Brak nowego ADR/
 - Wszystkie 69 testów skryptów PASS; logi w .git; bez nowych zależności/ADR/ryzyk.
 - Estymacje po 1 d bez zmian, odchylenie niezmierzone; statusy w toku do wspólnego DoD.
 - Dalej BL-009/010 i reszta paczki; pełne CI w BL-017, bez scalania PR #2.
+
+### 2026-09-22 — BL-015
+- Loadery TS (`bfa39c5`, push) i Python czytają A–H z jednego JSON; tekst kwot zachowany, odczyt jako float odrzucany przez API, tolerancje § 0.5.
+- Vitest 7 + pytest 6 PASS, zgodność wszystkich kluczy/wartości; lint/typecheck/test/build 88/88 PASS bez cache. BL-014 i wzory poza zakresem; status BL-015 w toku do wspólnego DoD/CI, estymacja 0,5 d bez zmian, odchylenie niezmierzone; bez nowych ADR/ryzyk.
