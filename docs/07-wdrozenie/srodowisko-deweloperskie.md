@@ -43,7 +43,34 @@ Wynik tej kontroli potwierdza wyłącznie składnię, interpolację i model Comp
 4. Po BL-013/014 podłącz aplikacje, wykonaj seed syntetyczny i zweryfikuj `pnpm dev`, kolejki, cache oraz dostarczenie wiadomości do Mailpit. Te polecenia aplikacji nie są jeszcze gotowe w obecnym szkielecie plików.
 5. Zatrzymanie: `docker compose -f compose.dev.yaml down` zachowuje trwałe wolumeny PostgreSQL i kolejki. Nie usuwaj wolumenów automatycznie; reset danych wymaga świadomej decyzji lokalnego operatora.
 
-## 4. Wynik testu hosta i proponowana korekta
+## 4. Dane przykładowe (seed)
+
+Plik [`../03-dane/fixtures/seed-dev.json`](../03-dane/fixtures/seed-dev.json) zawiera kompletny, **w pełni fikcyjny** zestaw danych dla `pnpm dev` (BL-034). Jest deterministyczny (ziarno w `meta.seed`), więc każdy dostaje ten sam obraz aplikacji.
+
+| Blok | Zawartość |
+|---|---|
+| `user` | jedno konto deweloperskie (`dev@example.invalid`, rola `admin`) |
+| `accounts` | dwa rachunki: XTB i mBank eMakler, waluta PLN |
+| `instruments` | sześć pozycji (ETF, dwie spółki z GPW, dwie z NASDAQ, indeks WIG20) z tablicą `closes` dla 798 sesji od 2023-09-01 do 2026-09-22 |
+| `fxRates` | USD/PLN i EUR/PLN, źródło `nbp`, ten sam zakres dat |
+| `transactions` | 19 operacji: wpłaty, zakupy w trzech walutach i dywidenda z podatkiem u źródła |
+| `expected` | stan końcowy (gotówka, pozycje, wartość portfela, wpłaty netto) — do asercji w teście ładowania |
+
+Zasady, których trzyma się loader:
+
+- Nazwy pól odpowiadają kolumnom z [`../03-dane/schema.sql`](../03-dane/schema.sql); `account` i `instrument` to klucze tekstowe, które loader zamienia na UUID.
+- Do `market.bars_daily` trafia wyłącznie `close` (pozostałe kolumny są opcjonalne) — pełne świece OHLC pojawią się z prawdziwym dostawcą w M2. Nie dopisujemy zmyślonych wartości otwarcia, maksimum i minimum.
+- Instrumenty nie mają ISIN: nie podajemy identyfikatorów, których nie zweryfikowaliśmy. Rozpoznanie odbywa się po `mic` i `ticker`.
+- Daty rozliczenia wyliczone zgodnie z [`../03-dane/obliczenia-finansowe.md`](../03-dane/obliczenia-finansowe.md) § 2.2: GPW i XETR T+2, USA T+1.
+- Sesje to dni robocze bez świąt — prawdziwy kalendarz sesji dodaje BL-136.
+- Prowizje w danych: XTB 0 %, mBank 0,39 % min. 5,00 zł. To **przykładowa taryfa na potrzeby danych testowych**, nie odwzorowanie cennika brokera (**NIEZWERYFIKOWANE**).
+- Marża przewalutowania 0,5 % zawarta w kursie `fx_rate` operacji walutowych (`fx_source: broker`), zgodnie z decyzją z [`../11-zgodnosc-prawna.md`](../11-zgodnosc-prawna.md) § 5.
+
+Stan końcowy zestawu: wartość portfela **47 064,47 zł**, gotówka **1220,78 zł**, wpłaty netto **41 500,00 zł**, pięć pozycji (VWCE 36, PKO 200, CDR 25, AAPL 12, MSFT 3). Test ładowania porównuje własne wyliczenia z blokiem `expected` — to pierwszy pełny sprawdzian ścieżki „dane → wycena” jeszcze przed importem prawdziwych plików.
+
+Seed ładuje się wyłącznie do środowiska deweloperskiego i nigdy do produkcji; operacje mają `source: "demo"`.
+
+## 5. Wynik testu hosta i proponowana korekta
 
 2026-09-21, Windows x64, Docker Desktop Linux / Engine 29.4.3 / Compose 5.1.3: cztery kontenery osiągają stan healthy. Przy `internal: true` host otrzymuje `ECONNREFUSED` dla PostgreSQL, obu Valkey i Mailpit. W pierwszej próbie domyślny port PostgreSQL zajmował istniejący proces; jego błąd hasła nie potwierdzał połączenia z kontenerem. Dlatego właściwe porównanie wykonano na wolnych portach hosta wybranych przez system, z osobnym projektem Compose i własnymi tymczasowymi hasłami.
 

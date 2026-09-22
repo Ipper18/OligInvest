@@ -26,6 +26,7 @@ Powiązane: [`roadmapa.md`](roadmapa.md) (etapy i kryteria wyjścia), [`mvp.md`]
 | IMP | [formaty-importu.md](../03-dane/formaty-importu.md) | SRC | [zrodla-danych.md](../03-dane/zrodla-danych.md) |
 | CACHE | [strategia-cache.md](../03-dane/strategia-cache.md) | VEC | [wektory-testowe.json](../03-dane/wektory-testowe.json) |
 | UI | [architektura-ui.md](../04-frontend/architektura-ui.md) | DS | [system-projektowy.md](../04-frontend/system-projektowy.md) |
+| TXT | [teksty-ui.md](../04-frontend/teksty-ui.md) | | |
 | EKR | [mapa-ekranow.md](../04-frontend/mapa-ekranow.md) | PERF | [wydajnosc.md](../04-frontend/wydajnosc.md) |
 | A11Y | [dostepnosc.md](../04-frontend/dostepnosc.md) | MOB | [strategia-mobilna.md](../05-mobile/strategia-mobilna.md) |
 | IOS | [ios-integracje.md](../05-mobile/ios-integracje.md) | AND | [android-integracje.md](../05-mobile/android-integracje.md) |
@@ -55,7 +56,7 @@ Bez logiki domenowej; wynik: działające CI, baza z RLS, wydanie podpisane i wd
 | BL-009 | `apps/api`: Hono + `@hono/zod-openapi`, `/api/v1/health/live\|ready`, `/api/v1/openapi.json` | NFR-09.04 | API, KONW | BL-006 | 1 | w toku |
 | BL-010 | Test spójności OpenAPI (generowany vs `docs/02-api/openapi.yaml`) z listą `apps/api/openapi-pending.json`, która może tylko maleć; lint Redocly | NFR-02.05 | CI, [ADR-012](../09-decyzje/ADR-012-api-jako-granica-domenowa.md), API | BL-009 | 2 | todo |
 | BL-011 | `apps/web`: Next.js 16.3, `proxy.ts` z CSP nonce, klient API dla RSC (ciasteczko, `request-id`), tokeny Tailwind 4 z systemu projektowego, brak zewnętrznych skryptów | NFR-03.06, NFR-01.02, NFR-11.01 | UI, DS, SEC, [ADR-012](../09-decyzje/ADR-012-api-jako-granica-domenowa.md) | BL-006 | 3 | todo |
-| BL-012 | `packages/i18n` (formatery `Intl` pl-PL, słownik, lint literałów, test zakazanych zwrotów z LAW §4.1, teksty disclaimerów z LAW §4.3) i `packages/ui` (prymitywy, `<DataFreshness/>`, `<AssumptionsBlock/>`, `<Disclaimer/>`) | NFR-10.04, NFR-07.01, FR-04.01 | DS, LAW | BL-011 | 2 | todo |
+| BL-012 | `packages/i18n` (formatery `Intl` pl-PL, słownik, lint literałów, test zakazanych zwrotów z LAW §4.1, teksty disclaimerów z LAW §4.3) i `packages/ui` (prymitywy, `<DataFreshness/>`, `<AssumptionsBlock/>`, `<Disclaimer/>`) | NFR-10.04, NFR-07.01, FR-04.01 | DS, TXT, LAW | BL-011 | 2 | todo |
 | BL-013 | `apps/jobs`: BullMQ 6.3, rejestr kolejek i harmonogramów, health | NFR-09.04 | MOD | BL-006 | 1 | todo |
 | BL-014 | `apps/analytics`: Python 3.13 + uv, Ruff, mypy, pytest, konsument `bullmq` bez logiki | NFR-10.02 | STACK, [ADR-003](../09-decyzje/ADR-003-hybryda-obliczen-i-kolejki.md) | BL-002 | 1 | todo |
 | BL-015 | `packages/test-vectors` z loaderami dla Vitest i pytest; jedyne źródło `docs/03-dane/wektory-testowe.json` | NFR-02.06, NFR-08.02 | OBL, VEC | BL-002, BL-014 | 0,5 | w toku |
@@ -87,7 +88,7 @@ Bez logiki domenowej; wynik: działające CI, baza z RLS, wydanie podpisane i wd
 
 - **2026-09-22, BL-015:** wykonane lokalnie loadery A–H dla Vitest i pytest, dokładna zgodność wszystkich kluczy/wartości, zachowanie tekstu kwot, odrzucanie odczytu kwoty jako liczby i tolerancje § 0.5. 7 testów Vitest + 6 pytest PASS; pełne lint/typecheck/test/build 88/88 PASS bez cache. Za zgodą właściciela wystarcza szkielet BL-002; BL-014 pozostaje `todo` i nie było realizowane. Status `w toku` do wspólnego DoD/CI paczki. Estymacja 0,5 d bez zmian; odchylenie nakładu niezmierzone. Bez nowych zależności, ADR i ryzyk.
 
-- **2026-09-21, BL-034:** test internal=true FAIL z hosta dla wszystkich czterech usług mimo healthy; wariant diagnostyczny zwykłego bridge PASS. [Propozycja poprawki i dowody](../07-wdrozenie/srodowisko-deweloperskie.md#4-wynik-testu-hosta-i-proponowana-korekta); właściciel zatwierdził i zastosowano internal=false wyłącznie w compose.dev.yaml z portami na loopback. R-26 obniżone do 2; zadanie nadal `w toku` (migracje/worker/seed).
+- **2026-09-21, BL-034:** test internal=true FAIL z hosta dla wszystkich czterech usług mimo healthy; wariant diagnostyczny zwykłego bridge PASS. [Propozycja poprawki i dowody](../07-wdrozenie/srodowisko-deweloperskie.md#5-wynik-testu-hosta-i-proponowana-korekta); właściciel zatwierdził i zastosowano internal=false wyłącznie w compose.dev.yaml z portami na loopback. R-26 obniżone do 2; zadanie nadal `w toku` (migracje/worker/seed).
 
 - **2026-09-21, BL-001/002/032 — wykonanie:** oba lockfile i instalacje frozen zgodne z karencją; 377 wersji npm oraz 27 wersji PyPI (183 artefakty) porównane z audytem. Pełne `pnpm turbo run lint typecheck test build`: 88/88 PASS, 59 testów Vitest + 1 pytest; po fizycznym usunięciu `education`: build/test 42/42 PASS. BL-002 wykonane lokalnie; status `w toku` do dowodów CI z Definition of Done. [Spike BL-032](bl-032-typescript-7-spike.md) rozstrzygnięty: TypeScript 7.0.2, zatwierdzone `skipLibCheck: true`, niezmienione `strict: true`; 72 błędy Drizzle i 1 Better Auth występują także na 6.0.3. Wynik techniczny zamknięty notatką, status zadania `w toku` do CI. Estymacje 1 d / 1 d / 0,5 d bez zmian; dodatkowa diagnoza bibliotek i środowiska odnotowana bez wymyślania nakładu. Pozostałe kryteria M0 nadal otwarte.
 

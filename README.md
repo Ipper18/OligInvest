@@ -44,7 +44,7 @@ Monorepo Turborepo + pnpm: `apps/{web,api,jobs,analytics}`, `modules/*` (identit
 | [`docs/01-architektura/`](docs/01-architektura/przeglad-architektury.md) | C4, stos z uzasadnieniami, moduły i ich granice, przepływy danych |
 | [`docs/02-api/`](docs/02-api/konwencje-api.md) | OpenAPI 3.1, kontrakty SSE, konwencje API |
 | [`docs/03-dane/`](docs/03-dane/zrodla-danych.md) | źródła danych, model danych, DDL z RLS, strategia cache, wzory finansowe, formaty importu, fixtures |
-| [`docs/04-frontend/`](docs/04-frontend/architektura-ui.md) | architektura UI, system projektowy, mapa ekranów, wydajność, dostępność |
+| [`docs/04-frontend/`](docs/04-frontend/architektura-ui.md) | architektura UI, system projektowy, mapa ekranów, teksty interfejsu, wydajność, dostępność |
 | [`docs/05-mobile/`](docs/05-mobile/strategia-mobilna.md) | strategia PWA, Skróty iOS, integracje Androida |
 | [`docs/06-bezpieczenstwo/`](docs/06-bezpieczenstwo/model-zagrozen.md) | model zagrożeń STRIDE, kontrole i OWASP ASVS 5.0, uwierzytelnianie, RODO, plan reagowania |
 | [`docs/07-wdrozenie/`](docs/07-wdrozenie/infrastruktura.md) | infrastruktura, CI/CD, monitoring, kopie i odtwarzanie |
