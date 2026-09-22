@@ -238,3 +238,11 @@ BL-007 lokalnie 4/4, status w toku do CI/DoD; następny BL-008. Brak nowego ADR/
 - Hono, BL-006, live/ready/OpenAPI z Zod; rzeczywiste sondy PostgreSQL i obu Valkey, limit 1500 ms, bez ujawniania błędów. Commity `74b4dd8`, `4b23266`, `cbce8b8`, `929dae5` wypchnięte.
 - 37 testów API i lint/typecheck/test/build PASS; pełne monorepo 88/88 z cache, frozen install, deps/docs/repository PASS. Docker niedostępny — brak integracji z prawdziwymi usługami; HTTP i timeouty TCP sprawdzone.
 - BL-010 poza zakresem; BL-009 lokalnie wykonane, `w toku` do DoD/CI. Estymacja 1 d bez zmian, odchylenie niezmierzone; brak nowych ADR i ryzyk.
+
+## 2026-09-22 — BL-009: integracja z prawdziwymi usługami
+
+- Poza sesją Codexa, skryptem spoza repozytorium, z losowymi hasłami tylko w pamięci procesu: osobny projekt Compose (PostgreSQL 18.6, Valkey 9.1.2 ×2), `bootstrap.sql` i migracje Drizzle od zera jako `oliginvest_owner` (64 tabele), `apps/api/dist/server.js` na Node 24.21.0 z rolą `oliginvest_app`.
+- Wynik **13/13 PASS**: live 200; ready 200 (wszystkie sondy `ok`); zachowany `X-Request-Id`; `/openapi.json` 200; zatrzymany Valkey cache → 503 tylko ze statusami `ok`/`fail`, live nadal 200, po przywróceniu 200; zatrzymany PostgreSQL → API działa dalej, 503, po przywróceniu 200; logi API bez haseł. Po teście usunięto kontenery, wolumeny i sieć projektu.
+- Pierwsze żądanie po zatrzymaniu PostgreSQL (ok. 10 s bez ruchu) dostało `ECONNRESET` przy działającym API, kolejne zwróciło 503 — zgodne z zamknięciem bezczynnego połączenia keep-alive po domyślnych 5 s serwera Node. Do sprawdzenia przy konfiguracji Caddy (M0-2): czas bezczynności połączeń do upstreamu krótszy niż `keepAliveTimeout` serwera API albo odwrotnie.
+- Do rozważenia w BL-017/BL-018: stały test gotowości na prawdziwych usługach w CI (obecne testy API używają atrap).
+

@@ -22,7 +22,7 @@ BL-009: Hono i `@hono/zod-openapi`, kontekst BL-006, `X-Request-Id`, bezpieczne 
 
 Dowody tej sesji: **37 testów API PASS**, lint/typecheck/test/build API PASS; pełne **lint/typecheck/test/build 88/88 PASS z cache**, instalacja frozen offline i kontrole deps/docs/repository PASS. Test procesu Node potwierdza rzeczywiste HTTP, 503 przy milczących połączeniach TCP i zamknięcie gniazd po limicie czasu. Docker jest niedostępny; nie wykonano integracji z prawdziwym PostgreSQL/Valkey. BL-010 (porównanie całego OpenAPI, pending, Redocly) nie było realizowane. Brak dodatkowych plików raportów.
 
-Pominięte zgodnie z zakresem: pozostałe zadania M0, pełne CI i integracja z prawdziwymi usługami (Docker niedostępny). Estymacja BL-009 1 d bez zmian; odchylenie nakładu niezmierzone. Brak nowych ryzyk i decyzji do ADR. BL-015 nadal korzysta wyłącznie z `docs/03-dane/wektory-testowe.json`; tekst kwot i zera końcowe zachowane, jawne konwersje poza API loaderów zabronione.
+Pominięte zgodnie z zakresem: pozostałe zadania M0 i pełne CI. **Integracja z prawdziwymi usługami potwierdzona 2026-09-22 poza sesją Codexa: 13/13** (szczegóły w historii); stałego testu na prawdziwych usługach w CI jeszcze nie ma. Estymacja BL-009 1 d bez zmian; odchylenie nakładu niezmierzone. Brak nowych ryzyk i decyzji do ADR. BL-015 nadal korzysta wyłącznie z `docs/03-dane/wektory-testowe.json`; tekst kwot i zera końcowe zachowane, jawne konwersje poza API loaderów zabronione.
 
 Decyzje bez zmian: Turbo 2.10.13 (ADR-015), TypeScript 7 strict + skipLibCheck, karencja bez wyjątków, sieć dev internal:false/loopback, wyjątek OSV esbuild do 2026-12-20 (R-24), ruleset 0 zatwierdzeń i przegląd właściciela.
 
