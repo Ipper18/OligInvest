@@ -26,4 +26,4 @@ Pominięte zgodnie z zakresem: pozostałe zadania M0 i pełne CI. **Integracja z
 
 Decyzje bez zmian: Turbo 2.10.13 (ADR-015), TypeScript 7 strict + skipLibCheck, karencja bez wyjątków, sieć dev internal:false/loopback, wyjątek OSV esbuild do 2026-12-20 (R-24), ruleset 0 zatwierdzeń i przegląd właściciela.
 
-Dalej: BL-010, pozostałe zadania paczki i pełne CI w BL-017. M0 nadal otwarty: 1 lokalnie PASS, 2 CI PASS, 3 otwarte, 4–7 dalsze prace/działania właściciela, 8 częściowo. Lokalny uv: `.git/tools/uv-0.12.16/uv.exe` (dopisz katalog do PATH).
+Dalej: najpierw poprawki z [przeglądu kodu](m0-1-przeglad-kodu.md) § 4 (P-01, P-02, P-03, P-06; jeśli wystarczy limitu także P-04, P-05), potem BL-010, pozostałe zadania paczki i pełne CI w BL-017. M0 nadal otwarty: 1 lokalnie PASS, 2 CI PASS, 3 otwarte, 4–7 dalsze prace/działania właściciela, 8 częściowo. Lokalny uv: `.git/tools/uv-0.12.16/uv.exe` (dopisz katalog do PATH).
