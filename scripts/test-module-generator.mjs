@@ -78,6 +78,7 @@ try {
   console.log("Generator: lint, typecheck, test, build i check:deps PASS.");
 } catch (error) {
   console.error(error.message);
+  console.error(readFileSync(log, "utf8").split("\n").slice(-30).join("\n"));
   process.exitCode = 1;
 } finally {
   const withinGit = relative(gitDirectory, resolve(sandbox));
