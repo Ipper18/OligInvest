@@ -5,7 +5,8 @@
     "biome.json",
     "pnpm-workspace.yaml",
     ".npmrc",
-    ".nvmrc"
+    ".nvmrc",
+    "docs/03-dane/wektory-testowe.json"
   ],
   "tasks": {
     "build": {

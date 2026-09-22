@@ -4,7 +4,7 @@
   "generated": "2026-09-19",
   "method": "Decimal (prec 34, ROUND_HALF_EVEN; prezentacja 2 miejsca ROUND_HALF_UP) dla kwot; float64 dla statystyk; porownanie z empyrical-reloaded i TA-Lib 0.8.0",
   "tolerances": "patrz obliczenia-finansowe.md par. 0.5",
-  "destination": "packages/test-vectors/ (przeniesienie w M1)"
+  "destination": "Jedno zrodlo: docs/03-dane/wektory-testowe.json; loadery: packages/test-vectors (Vitest) i apps/analytics (pytest), bez kopii"
  },
  "A_fifo_fx": {
   "lots": [
