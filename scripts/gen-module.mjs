@@ -157,7 +157,7 @@ nie deklaruje tabel, kolejek, uprawnień ani nawigacji.
 Po wygenerowaniu zaktualizuj lokalne powiązania workspace:
 
 \`\`\`sh
-pnpm install --lockfile-only --offline
+pnpm install --lockfile-only
 pnpm install --frozen-lockfile
 pnpm check:deps
 pnpm turbo run lint typecheck test build --filter=@oliginvest/mod-${name}

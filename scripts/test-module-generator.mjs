@@ -62,8 +62,9 @@ try {
   for (const script of ["gen-module.mjs", "check-deps.mjs"])
     cpSync(join(root, "scripts", script), join(sandbox, "scripts", script));
   pnpm(["gen:module", "sample-feature"]);
-  pnpm(["install", "--lockfile-only", "--offline"]);
-  pnpm(["install", "--frozen-lockfile", "--offline"]);
+  // A fresh CI store has tarballs from frozen install, but no registry metadata for resolution.
+  pnpm(["install", "--lockfile-only"]);
+  pnpm(["install", "--frozen-lockfile"]);
   pnpm(["check:deps"]);
   pnpm([
     "turbo",

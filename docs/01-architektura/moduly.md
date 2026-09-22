@@ -248,8 +248,9 @@ endpointów, tabel ani uprawnień; `README.md` modułu prowadzi przez pozostałe
 Pakiet korzysta wyłącznie z istniejącego `@oliginvest/platform` (`workspace:*`);
 generator formatuje pliki zainstalowanym Biome według konfiguracji repozytorium.
 
-Po generacji zaktualizuj lockfile lokalnego workspace bez pobierania nowych wersji:
-`pnpm install --lockfile-only --offline`, potem `pnpm install --frozen-lockfile`.
+Po generacji zaktualizuj lockfile lokalnego workspace: `pnpm install --lockfile-only`,
+potem `pnpm install --frozen-lockfile`. Aktualizacja lockfile potrzebuje metadanych rejestru
+przy pustym cache (także gdy wszystkie wersje są już przypięte); polityka karencji pozostaje aktywna.
 Sprawdź `pnpm check:deps` oraz
 `pnpm turbo run lint typecheck test build --filter=@oliginvest/mod-<nazwa>`.
 Test integracyjny `pnpm test:module-generator` wykonuje ten przepływ w odizolowanej kopii

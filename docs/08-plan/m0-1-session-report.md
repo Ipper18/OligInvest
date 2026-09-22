@@ -18,7 +18,7 @@
 
 Dowody: **69 testów skryptów PASS** (28 granic, 21 generatora, 20 wcześniejszych), lint skryptów i check:deps PASS. Generator w izolacji: instalacja frozen, check:deps i lint/typecheck/test/build **5/5 PASS**, w tym 3 testy modułu. Monorepo **88/88 PASS z cache**; build z fizycznie wyjętym education **21/21 PASS bez cache**, moduł przywrócony. **Kryterium M0 nr 1 spełnione lokalnie**; pełna macierz CI w BL-017. Logi `.git/bl003-*` i `.git/bl004-*`, bez nowych raportów JSON.
 
-Generator tworzy tylko pakiet. Pozostałe kroki § 8.1 (kontrakty domenowe, migracje/RLS, router, rejestracja, UI) dotyczą konkretnej funkcji; opisuje je README. Po generacji: `pnpm install --lockfile-only --offline`, instalacja frozen i kontrole z README.
+Generator tworzy tylko pakiet. Pozostałe kroki § 8.1 (kontrakty domenowe, migracje/RLS, router, rejestracja, UI) dotyczą konkretnej funkcji; opisuje je README. Po generacji: `pnpm install --lockfile-only`, instalacja frozen i kontrole z README. Przy pustym cache aktualizacja lockfile potrzebuje metadanych rejestru; usunięto błędne założenie offline z testu CI, bez zmiany polityki karencji.
 
 Decyzje bez zmian: Turbo 2.10.13 (ADR-015); TypeScript 7 strict + skipLibCheck; karencja bez wyjątków; sieć dev internal:false/loopback; wyjątek OSV esbuild do 2026-12-20 (R-24); ruleset 0 zatwierdzeń i przegląd właściciela. Brak nowych zależności zewnętrznych, ADR i ryzyk. Estymacje BL-003/004 po 1 d bez zmian; odchylenie niezmierzone.
 
