@@ -104,5 +104,5 @@ Polecenia powstają w etapie M0 (BL-001–BL-035). Zweryfikowano instalacje froz
 | `pnpm dev` | aplikacje w trybie deweloperskim |
 | `pnpm turbo run lint typecheck test build` | pełne sprawdzenie jak w CI |
 | `pnpm db:test` | migracje od zera, porównanie z `docs/03-dane/schema.sql`, testy RLS |
-| `pnpm check:deps` | reguły warstw modułów |
+| `pnpm check:deps` | reguły warstw modułów i importów produkcyjnych; test negatywny: `node --test scripts/check-deps.test.mjs` |
 | `pnpm gen:module <nazwa>` | nowy moduł według [`docs/01-architektura/moduly.md`](docs/01-architektura/moduly.md) § 8.1 |

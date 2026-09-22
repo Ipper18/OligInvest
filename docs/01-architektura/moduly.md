@@ -89,6 +89,18 @@ Reguły (egzekwowane skryptem `pnpm check:deps` w CI na podstawie `package.json`
 4. Aplikacje (`apps/*`) są korzeniami kompozycji: importują moduły przez rejestry (`apps/api/src/modules.ts`, `apps/jobs/src/modules.ts`, `apps/web/src/modules.ts`).
 5. `apps/web` nie importuje `modules/*/server` ani `packages/db` (brak dostępu do bazy z warstwy UI — [ADR-012](../09-decyzje/ADR-012-api-jako-granica-domenowa.md)).
 
+`check:deps` kontroluje wszystkie sekcje zależności manifestów, cykle workspace oraz importy
+w kodzie produkcyjnym (`src/`, `db/`, `app/`, `pages/`, `proxy.ts`, `middleware.ts`). Testy,
+fixtures, spiki i narzędzia migracyjne nie są kodem produkcyjnym. Parser przypiętego TypeScript
+sprawdza także re-eksporty, importy typów, `require` i dynamiczne importy. Specyfikator musi być
+literałem; importy workspace wymagają deklaracji i publicznego eksportu. Ścieżki względne nie
+mogą przekraczać granicy pakietu; aliasy spoza zadeklarowanych zależności są odrzucane.
+Moduły w aplikacjach importuje `src/modules.ts`; dodatkowo cienkie re-eksporty `/ui` w trasach
+`apps/web/app/` (lub `src/app/`) realizują § 8.1. Kod web nie importuje również `/jobs`.
+Ograniczenie `core` do `decimal.js` dotyczy zależności wykonawczych i importów produkcyjnych;
+narzędzia testów/budowania mogą być zależnościami deweloperskimi. Kontrola importów nie zastępuje
+przeglądu czystości funkcji (np. użycia globalnych API I/O).
+
 ## 3. Kontrakt modułu
 
 ```ts
