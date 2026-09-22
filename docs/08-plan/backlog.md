@@ -52,7 +52,7 @@ Bez logiki domenowej; wynik: działające CI, baza z RLS, wydanie podpisane i wd
 | BL-006 | `packages/platform`: kontrakt i rejestry modułów, kontekst żądania, `request-id`, logger pino z redakcją, błędy RFC 9457, walidacja Zod `.strict()` na granicy | NFR-02.02, NFR-03.07, NFR-09.04 | MOD, KONW, SEC | BL-002 | 3 | w toku |
 | BL-007 | `packages/db`: Drizzle odzwierciedlający `schema.sql`, migracje, polityki RLS, helper transakcji z `SET LOCAL app.user_id/app.role`, osobne pule per rola | NFR-03.04 | DB, MD, [ADR-004](../09-decyzje/ADR-004-postgres-better-auth-rls.md) | BL-002 | 4 | w toku |
 | BL-008 | Zadanie CI `db`: PostgreSQL 18, migracje od zera, porównanie schematu z `schema.sql`, `testy-rls.sql` | NFR-03.04, NFR-10.02 | CI, DB | BL-007 | 1 | w toku |
-| BL-009 | `apps/api`: Hono + `@hono/zod-openapi`, `/api/v1/health/live|ready`, `/api/v1/openapi.json` | NFR-09.04 | API, KONW | BL-006 | 1 | todo |
+| BL-009 | `apps/api`: Hono + `@hono/zod-openapi`, `/api/v1/health/live|ready`, `/api/v1/openapi.json` | NFR-09.04 | API, KONW | BL-006 | 1 | w toku |
 | BL-010 | Test spójności OpenAPI (generowany vs `docs/02-api/openapi.yaml`) z listą `apps/api/openapi-pending.json`, która może tylko maleć; lint Redocly | NFR-02.05 | CI, [ADR-012](../09-decyzje/ADR-012-api-jako-granica-domenowa.md), API | BL-009 | 2 | todo |
 | BL-011 | `apps/web`: Next.js 16.3, `proxy.ts` z CSP nonce, klient API dla RSC (ciasteczko, `request-id`), tokeny Tailwind 4 z systemu projektowego, brak zewnętrznych skryptów | NFR-03.06, NFR-01.02, NFR-11.01 | UI, DS, SEC, [ADR-012](../09-decyzje/ADR-012-api-jako-granica-domenowa.md) | BL-006 | 3 | todo |
 | BL-012 | `packages/i18n` (formatery `Intl` pl-PL, słownik, lint literałów, test zakazanych zwrotów z LAW §4.1, teksty disclaimerów z LAW §4.3) i `packages/ui` (prymitywy, `<DataFreshness/>`, `<AssumptionsBlock/>`, `<Disclaimer/>`) | NFR-10.04, NFR-07.01, FR-04.01 | DS, LAW | BL-011 | 2 | todo |
@@ -82,6 +82,8 @@ Bez logiki domenowej; wynik: działające CI, baza z RLS, wydanie podpisane i wd
 | | **Suma etapu** | | | | **51** | |
 
 ### 1.1 Postęp i odchylenia
+
+- **2026-09-22, BL-009:** wykonane lokalnie Hono z platformą BL-006, publiczne live/ready i OpenAPI z Zod; gotowość wykonuje uwierzytelnione sondy PostgreSQL i obu Valkey z limitem 1500 ms. 37 testów API PASS (w tym rzeczywisty proces HTTP i TCP z brakiem odpowiedzi), lint/typecheck/test/build API PASS; pełne monorepo 88/88 PASS z cache; check:deps/docs/repository PASS. Docker niedostępny lokalnie, więc nie wykonano integracji z prawdziwymi usługami. BL-010 i pełne CI pozostają poza zakresem. Status `w toku` do wspólnego DoD/CI; estymacja 1 d bez zmian, odchylenie nakładu niezmierzone; brak nowych ADR i ryzyk.
 
 - **2026-09-22, BL-015:** wykonane lokalnie loadery A–H dla Vitest i pytest, dokładna zgodność wszystkich kluczy/wartości, zachowanie tekstu kwot, odrzucanie odczytu kwoty jako liczby i tolerancje § 0.5. 7 testów Vitest + 6 pytest PASS; pełne lint/typecheck/test/build 88/88 PASS bez cache. Za zgodą właściciela wystarcza szkielet BL-002; BL-014 pozostaje `todo` i nie było realizowane. Status `w toku` do wspólnego DoD/CI paczki. Estymacja 0,5 d bez zmian; odchylenie nakładu niezmierzone. Bez nowych zależności, ADR i ryzyk.
 

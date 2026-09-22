@@ -233,3 +233,8 @@ BL-007 lokalnie 4/4, status w toku do CI/DoD; następny BL-008. Brak nowego ADR/
 ### 2026-09-22 — BL-015
 - Loadery TS (`bfa39c5`, push) i Python czytają A–H z jednego JSON; tekst kwot zachowany, odczyt jako float odrzucany przez API, tolerancje § 0.5.
 - Vitest 7 + pytest 6 PASS, zgodność wszystkich kluczy/wartości; lint/typecheck/test/build 88/88 PASS bez cache. BL-014 i wzory poza zakresem; status BL-015 w toku do wspólnego DoD/CI, estymacja 0,5 d bez zmian, odchylenie niezmierzone; bez nowych ADR/ryzyk.
+
+### 2026-09-22 — BL-009
+- Hono, BL-006, live/ready/OpenAPI z Zod; rzeczywiste sondy PostgreSQL i obu Valkey, limit 1500 ms, bez ujawniania błędów. Commity `74b4dd8`, `4b23266`, `cbce8b8`, `929dae5` wypchnięte.
+- 37 testów API i lint/typecheck/test/build PASS; pełne monorepo 88/88 z cache, frozen install, deps/docs/repository PASS. Docker niedostępny — brak integracji z prawdziwymi usługami; HTTP i timeouty TCP sprawdzone.
+- BL-010 poza zakresem; BL-009 lokalnie wykonane, `w toku` do DoD/CI. Estymacja 1 d bez zmian, odchylenie niezmierzone; brak nowych ADR i ryzyk.
