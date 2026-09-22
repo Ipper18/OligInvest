@@ -224,7 +224,7 @@ BL-007 lokalnie 4/4, status w toku do CI/DoD; następny BL-008. Brak nowego ADR/
 
 ## 2026-09-22 — BL-003/004
 - BL-003: check:deps, 28 testów i negatywny CLI; commit 6d733ca, push; CI modules PASS.
-- BL-004: generator feature, 21 testów; izolowany lint/typecheck/test/build 5/5 PASS i 3 testy modułu.
+- BL-004: generator feature, 21 testów; izolowany lint/typecheck/test/build 5/5 PASS i 3 testy modułu; commit 6003611 + poprawka cold cache 042540c; CI 35689454452 PASS.
 - Monorepo 88/88 PASS z cache; świeży build bez education 21/21 PASS; M0 kryterium 1 lokalnie zamknięte.
 - Wszystkie 69 testów skryptów PASS; logi w .git; bez nowych zależności/ADR/ryzyk.
 - Estymacje po 1 d bez zmian, odchylenie niezmierzone; statusy w toku do wspólnego DoD.

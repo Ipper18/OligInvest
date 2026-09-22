@@ -8,7 +8,7 @@
 |---|---|
 | BL-001/002, BL-005/006 | wykonane lokalnie |
 | BL-003 | commit `6d733ca`: graf, cykle, eksporty/importy, 28 testów z negatywnym CLI; [CI modules PASS](https://github.com/Ipper18/OligInvest/actions/runs/35688610340) |
-| BL-004 | generator feature, definicje API/jobs/UI, wyłączona flaga, testy i README; CI rozszerzone o generator |
+| BL-004 | commit `6003611` + poprawka CI `042540c`: generator feature, definicje API/jobs/UI, wyłączona flaga, testy i README; [CI modules z generatorem PASS](https://github.com/Ipper18/OligInvest/actions/runs/35689454452) |
 | BL-007/008 | 64 tabele, migracje bez różnic, role/RLS, 9 testów pul; [CI db PASS](https://github.com/Ipper18/OligInvest/actions/runs/35687884119) |
 | BL-009–016, BL-033 | todo; Lighthouse dopiero w BL-016 |
 | BL-017/019 | szkice pozostałego CI i ustawień; aktywne db i modules |
