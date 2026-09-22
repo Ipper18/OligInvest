@@ -1,0 +1,34 @@
+name: Module boundaries
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions: { contents: read }
+
+concurrency:
+  group: modules-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  modules:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version-file: .nvmrc
+          package-manager-cache: false
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+        with:
+          version: '12.4.2'
+          run_install: false
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm check:deps
+      - run: node --test --test-reporter=dot scripts/check-deps.test.mjs
+      - run: node --test --test-reporter=dot scripts/gen-module.test.mjs
+      - run: pnpm test:module-generator

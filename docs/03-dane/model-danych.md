@@ -271,3 +271,23 @@ erDiagram
 - **Funkcje `SECURITY DEFINER`** działają jako `oliginvest_owner` — przy `FORCE ROW LEVEL SECURITY` wymagają jawnej polityki dla właściciela (patrz `identity.invitations`); każda taka funkcja ma `SET search_path` i odebrane `EXECUTE` od `PUBLIC`.
 - **Migracje danych** (backfill) na tabelach z FORCE RLS: wykonywane w kontekście właściwego użytkownika (`SET LOCAL app.user_id`) lub zadaniem aplikacyjnym — nigdy przez wyłączenie RLS na produkcji.
 - **Test spójności:** CI stawia PostgreSQL 18, stosuje migracje Drizzle i porównuje wynik z `schema.sql` (np. przez `pg_dump --schema-only` obu wersji), następnie uruchamia `testy-rls.sql`.
+
+### 5.1 Implementacja M0 (BL-007)
+
+Definicje Drizzle są w `modules/*/db/schema.ts`; tabele jądra `platform` są w `packages/db/src/schema.ts`. Moduł identity posiada także schemat `auth`. Tabele potrzebne innym modułom są eksportowane przez publiczne wejście `/server`; kod pakietu db nie importuje modułów. Konfiguracja narzędzia migracji zbiera pliki definicji przez glob. Pola TypeScript używają camelCase, kolumny SQL zachowują snake_case. `numeric` pozostaje ciągiem, `bigint` używa `bigint`, daty i znaczniki czasu są ciągami.
+
+Migracja wygenerowana przez Drizzle Kit obejmuje tabele, indeksy i ograniczenia obsługiwane przez DSL. Towarzyszący SQL odtwarza funkcje, widok, triggery, uprawnienia, RLS i komentarze. Sześć kluczy obcych jest zapisanych w `packages/db/sql/foreign-keys.sql`: pięć z `ON DELETE SET NULL (kolumna)` (zachowanie `user_id`) oraz odwołanie tabeli platformy do `auth.users`, które nie wprowadza odwrotnej zależności pakietu od modułu. To odwzorowanie istniejącego DDL, bez zmiany kontraktu. Bootstrap ról jest oddzielony od migracji właściciela; haseł nie ma w plikach SQL.
+
+Przed `pnpm db:generate` należy zbudować moduły, aby publiczne eksporty tabel odpowiadały źródłom. Każdą wygenerowaną migrację i jej uzupełnienie SQL należy przejrzeć; pliki w `sql/` są źródłami do nowych migracji, nie są wykonywane ponownie na starcie aplikacji. `schema.sql` pozostaje niezależnym wzorcem porównania.
+
+`pnpm db:test` tworzy własny losowo nazwany projekt `compose.dev.yaml` z PostgreSQL 18, syntetycznymi hasłami i wolnym portem loopback. Porównuje pełne `pg_dump --schema-only --create` bazy wzorcowej i migracji (także właścicieli, ACL, RLS, funkcje, triggery i komentarze). Pomija wyłącznie techniczny schemat dziennika `drizzle`, losowe znaczniki psql i różnicę nazw baz testowych. Sprawdza powtórne wykonanie migracji i CHECK wersji zgody. Logi i dumpy trafiają do `.git/bl007-db/`; po teście usuwany jest wyłącznie utworzony projekt i jego wolumen. Nie czyta lokalnego `.env`.
+
+Test bazy uruchamia niezmieniony `testy-rls.sql` i audyt katalogu uprawnień przed załadowaniem wzorca, aby bootstrap wzorca nie uzupełniał brakujących grantów globalnych. Audyt obejmuje role, członkostwa, wszystkie tabele z `user_id` poza auth, izolację auth/app/analytics i zabezpieczenia funkcji DEFINER.
+
+### 5.2 Pule i transakcje aplikacji
+
+`createAppDatabase`, `createAuthDatabase` i `createAnalyticsDatabase` tworzą niezależne pule z przypisaną na stałe rolą PostgreSQL. Przyjmują jawne parametry host/port/database/password oraz opcjonalne max/ssl; nie czytają środowiska ani nie przyjmują roli/URL od żądania. Migracje i kopie nie korzystają z tych fabryk. Wejścia mają walidację Zod strict, a błędy konfiguracji nie zawierają wartości ani sekretów.
+
+`app.transaction({userId, role}, callback)` przyjmuje zweryfikowaną tożsamość z API/jobs: role user/pro/admin wymagają UUID, system może mieć UUID lub null, anonymous wymaga null. Walidacja kształtu nie zastępuje uwierzytelnienia/RBAC — kontekst nigdy nie pochodzi bezpośrednio z payloadu klienta. `auth.transaction(callback)` i `analytics.transaction(callback)` mają pusty kontekst użytkownika; analityka dodatkowo otwiera transakcję tylko do odczytu.
+
+Helper rezerwuje jedno połączenie na całą transakcję i ustawia obie zmienne przez parametryzowane `set_config(..., true)` (odpowiednik SET LOCAL). Sprawdza rzeczywistą rolę sesji i brak uprzywilejowanych członkostw. Callback otrzymuje transakcję Drizzle (zagnieżdżenia używają savepointów), nie pulę. Po COMMIT/ROLLBACK helper czyści obie zmienne; niesprawne połączenie usuwa z puli. Błąd SQL przechwycony przez callback nadal nie pozwala zgłosić sukcesu przerwanej transakcji. `close()` zamyka wyłącznie daną pulę.

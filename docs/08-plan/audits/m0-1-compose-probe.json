@@ -1,0 +1,56 @@
+{
+  "purpose": "BL-034: test hosta przy sieci internal i porównanie z tymczasowym bridge. Zmieniono wyłącznie lokalny override diagnostyczny; compose.dev.yaml pozostaje internal=true.",
+  "environment": {
+    "docker": "29.4.3",
+    "compose": "5.1.3",
+    "host": "Windows x64 / Docker Desktop Linux"
+  },
+  "firstAttempt": "Port domyślny PostgreSQL zajęty przez istniejący proces; błąd hasła nie był dowodem połączenia z kontenerem. Ponowiono wszystkie sondy na wolnych portach.",
+  "results": [
+    {
+      "internal": true,
+      "checkedAtUtc": "2026-09-21T10:41:55.666Z",
+      "hostPorts": "Wolne porty wybrane przez system; bez zmiany portów istniejących usług hosta.",
+      "services": {
+        "queue": {
+          "pass": false,
+          "errorCode": "ECONNREFUSED"
+        },
+        "cache": {
+          "pass": false,
+          "errorCode": "ECONNREFUSED"
+        },
+        "postgres": {
+          "pass": false,
+          "errorCode": "ECONNREFUSED"
+        },
+        "mailpit": {
+          "pass": false,
+          "errorCode": "ECONNREFUSED"
+        }
+      },
+      "networkInternal": true
+    },
+    {
+      "internal": false,
+      "checkedAtUtc": "2026-09-21T10:42:07.362Z",
+      "hostPorts": "Wolne porty wybrane przez system; bez zmiany portów istniejących usług hosta.",
+      "services": {
+        "cache": {
+          "pass": true
+        },
+        "queue": {
+          "pass": true
+        },
+        "mailpit": {
+          "pass": true
+        },
+        "postgres": {
+          "pass": true
+        }
+      },
+      "networkInternal": false
+    }
+  ],
+  "cleanup": "Usunięto wyłącznie utworzone projekty testowe i ich puste wolumeny; nie zmieniano istniejącej usługi hosta."
+}

@@ -246,6 +246,8 @@ Logi trafiają wyłącznie do miejsc z tej tabeli (ASVS V16.2.3); znaczniki czas
 
 Nigdy nie logujemy: haseł, kodów TOTP i zapasowych, tokenów (sesji, PAT, zaproszeń, resetu), nagłówków `Cookie` i `Authorization`, treści plików importu, kwot, ilości i cen z portfela użytkownika, treści notatek i dziennika. Maskujemy: adres e-mail (`a***@d***.pl`) w logach aplikacji (pełny adres tylko w audycie), token sesji — wyłącznie jako skrót SHA-256. Logger ma listę ścieżek do redakcji (pino `redact`) i test, który sprawdza, że przykładowe żądania nie zostawiają tych wartości w logu.
 
+BL-006: `createLogger` wystawia ograniczony interfejs strukturalny nad pino, bez dowolnego tekstu wiadomości, surowych wyjątków ani loggera bazowego. Dozwolone pola to stały klucz zdarzenia, UUID korelacji/użytkownika, identyfikator modułu, wzorzec trasy przekazany przez kod (nie URL żądania), status, czas, kod błędu i maskowany e-mail. Nieznane pola są usuwane przed zapisem; pino `redact` dodatkowo usuwa znane ścieżki sekretów i payloadów. Nie przekazujemy danych użytkownika jako klucza zdarzenia ani wzorca trasy. Testy obejmują sekrety w nagłówkach, zagnieżdżone payloady, finanse, treść pliku/notatki, wyjątki i e-mail; obiekty wejściowe nie są modyfikowane. Rejestr audytu działa osobno (późniejsze zadania).
+
 ## 6. OWASP Top 10 — mapowanie (2021 i 2025)
 
 | OWASP Top 10:2021 | Odpowiednik 2025 | Główne kontrole OligInvest | Weryfikacja |

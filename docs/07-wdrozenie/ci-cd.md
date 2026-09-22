@@ -18,6 +18,7 @@ Fakty sprawdzone 2026-09-19 w dokumentacji GitHub: runnery hostowane przez GitHu
 - **Model:** trunk-based — krótkie gałęzie tematyczne, PR do `main`, scalanie przez „squash”, tytuł PR w formacie Conventional Commits (sprawdzany w CI).
 - **Reguły ochrony (ruleset) dla `main`:** wymagany PR; wymagane zadania CI z § 3 (status „success”); historia liniowa; zakaz force-push i usuwania gałęzi; wymagane rozwiązanie wątków przeglądu; reguły obowiązują także właściciela (bez obejść). Podpisane commity — zalecane.
 - **Przegląd:** właściciel przegląda każdy PR, także przygotowany przez agenta AI (Codex, Claude) — T-SC-06; plik `CODEOWNERS` wskazuje właściciela dla `docs/06-bezpieczenstwo/`, `infra/`, `.github/`, `packages/db/`, `apps/api/src/auth/`.
+- Przegląd właściciela jest obowiązkiem procesu (R-11), nie jest egzekwowany mechanizmem zatwierdzeń GitHuba; `CODEOWNERS` wskazuje obszary wymagające szczególnej uwagi. Przy jednym współpracowniku ruleset wymaga 0 zatwierdzeń i nie wymaga zatwierdzenia code ownera, bez odrębnej tożsamości autora i bez bypass. Pozostałe reguły ochrony obowiązują bez zmian (decyzja właściciela z 2026-09-20, R-23; bez nowego ADR).
 - **Ustawienia repozytorium:** skanowanie sekretów z push protection, CodeQL, alerty Dependabot, prywatne zgłaszanie podatności (ADR-013); domyślne uprawnienia tokenu zadań: tylko odczyt; akcje tylko z listy dozwolonych (organizacje `actions`, `github`, `docker`, `sigstore`, `pnpm`, `astral-sh` i zweryfikowani twórcy) i przypięte SHA.
 
 ## 3. Zadania CI (pull request i `main`)
@@ -29,12 +30,22 @@ Fakty sprawdzone 2026-09-19 w dokumentacji GitHub: runnery hostowane przez GitHu
 | `unit` | Vitest (w tym wektory `packages/test-vectors`), pytest (te same wektory dla Pythona) | tak |
 | `contracts` | lint Redocly `docs/02-api/openapi.yaml`; zgodność OpenAPI generowanego z Zod z plikiem w `docs/`; aktualność typów klienta (`openapi-typescript`); zgodność JSON Schema dla zadań; `pnpm check:deps` (reguły warstw modułów) | tak |
 | `db` | PostgreSQL 18 jako usługa: migracje Drizzle od zera, porównanie schematu z `docs/03-dane/schema.sql`, `testy-rls.sql`, testy integracyjne API z prawdziwą bazą | tak |
-| `build` | Turborepo: wszystkie aplikacje; obrazy Docker (bez publikacji); wariant „bez modułu funkcjonalnego” (macierz: po kolei bez `analytics`, `alerts`, `education`, `quick-actions`) | tak |
+| `build` | Turborepo: wszystkie aplikacje; wariant „bez modułu funkcjonalnego” (macierz: po kolei bez `analytics`, `alerts`, `education`, `quick-actions`); obrazy Docker (bez publikacji) od M0-2 / BL-020 | tak |
 | `budgets` | `size-limit`, raport JS per trasa, obecność zakazanych bibliotek w chunkach początkowych ([`../04-frontend/wydajnosc.md`](../04-frontend/wydajnosc.md) § 6) | tak |
-| `e2e` | Playwright (Chromium, WebKit) na obrazach produkcyjnych z bazą testową: ścieżki krytyczne, `@axe-core/playwright`, testy nagłówków, bramek MFA i regulaminu, zgody RUM | tak |
+| `e2e` | Playwright (Chromium, WebKit, Firefox), `@axe-core/playwright` i nagłówki; M0-1: strona testowa z lokalnego buildu produkcyjnego i usługi `compose.dev.yaml`; M0-2: obrazy produkcyjne po BL-020–BL-023; bramki MFA/regulaminu i zgoda RUM wraz z ich implementacją w M1 | tak |
 | `lighthouse` | Lighthouse 13 (profil mobilny, 3 przebiegi, mediana) dla tras z budżetami | tak (od M1) |
-| `deps-audit` | osv-scanner na lockfile'ach; licencje z SBOM (lista dozwolonych) | tak (dla podatności z dostępną poprawką powyżej progu) |
-| `codeql` | CodeQL: JavaScript/TypeScript, Python, GitHub Actions | alerty wysokie — tak |
+| `deps-audit` | osv-scanner na lockfile'ach; licencje z SBOM (lista dozwolonych) | tak — high/critical (CVSS ≥ 7,0), niezależnie od dostępności poprawki |
+| `codeql` (kontrola GitHub) | Konfiguracja domyślna GitHub, poza własnymi workflow; **włączenie lub ponowna konfiguracja po scaleniu M0-1**. Właściciel sprawdza `javascript-typescript`, `python` oraz dostępność `actions` w panelu i zapisuje wynik według [instrukcji](ustawienia-repozytorium.md). Nazwę rzeczywistej kontroli pobiera z zakończonego przebiegu | alerty wysokie — tak; potwierdzenie ustawień jest częścią BL-019 |
+
+Wyjątek właściciela z 2026-09-21: [osv-scanner.toml](../../osv-scanner.toml) pomija wyłącznie GHSA-67mh-4wv8-2f99 (R-24), do 2026-12-20 (90 dni). esbuild 0.18.20 jest zależnością developerską Drizzle Kit; podatny serwer developerski nie jest uruchamiany. Wyjątek usuwa aktualizacja Drizzle Kit eliminująca `@esbuild-kit/*`. Jest to jawne odstępstwo od zwykłego terminu naprawy moderate (30 dni w SEC § 4.2), zaakceptowane przez właściciela; bez overrides i audit fix. Przyszłe polecenie `deps-audit` musi przekazać `--config=osv-scanner.toml`, także dla lockfile Pythona: konfiguracja lokalna OSV nie jest dziedziczona przez podkatalogi ([oficjalny format konfiguracji](https://google.github.io/osv-scanner/configuration/)). Zweryfikowano składnię TOML i datę; samego osv-scanner ani CI jeszcze nie uruchomiono. Decyzja właściciela 2026-09-21 doprecyzowuje próg: **high i critical (CVSS ≥ 7,0) blokują scalenie**, zgodnie z `security_alerts_threshold: high_or_higher` w rulesecie CodeQL. Moderate i low nie blokują; muszą trafić do podsumowania zadania CI i przeglądu przy aktualizacjach Renovate. Wpis esbuild (moderate) pozostaje udokumentowaną decyzją, choć sam poziom nie przekracza progu. Wyjątek od blokady jest możliwy wyłącznie przez `osv-scanner.toml`, z uzasadnieniem, datą wygaśnięcia najwyżej 90 dni od decyzji i odwołaniem do identyfikatora w [ryzyka.md](../08-plan/ryzyka.md). Nie zmienia to karencji ani domyślnych terminów naprawy z SEC § 4.2.
+
+W M0-1 wszystkie własne workflow mają wyłącznie `permissions: { contents: read }`. Nie dodajemy konfiguracji zaawansowanej CodeQL ani `security-events: write`. Stan „tylko Python” przed scaleniem szkieletu nie jest docelową listą języków: na `main` nie ma jeszcze TypeScript ani workflow. Brak `actions` w panelu należy zapisać jako lukę pokrycia do rozstrzygnięcia; nie zakładać dostępności i nie zastępować konfiguracji domyślnej bez nowej decyzji. Kryterium M0 nr 7 nie jest spełnione przez samo dodanie plików.
+
+Szkic `ci:deps-audit` otrzymuje próg 7,0, ścieżkę konfiguracji OSV, maksymalny czas wyjątku 90 dni oraz ścieżkę raportu. Przed aktywacją w BL-017 trzeba zaimplementować i przetestować to polecenie: pełny wynik skanu i ważne wyjątki w raporcie, moderate/low w podsumowaniu, blokada pozostałych high/critical; błędy skanera/parsera nie mogą udawać zielonego audytu. Kontrola licencji z SBOM pozostaje niezależna. Sam kod wyjścia OSV dla dowolnego znaleziska nie realizuje tego progu. Raport jest publikowany także przy czerwonym wyniku.
+
+Przygotowanie przed upływem karencji: szkice znajdują się w `.github/workflow-drafts/`, więc GitHub ich nie uruchamia. Do `.github/workflows/` trafiają po podłączeniu i lokalnej weryfikacji rzeczywistych poleceń. Status w raporcie: **Konfiguracja przygotowana; nie uruchomiono jeszcze w CI**.
+
+BL-008: osobny [workflow Database](../../.github/workflows/db.yml) uruchamia zadanie `db` na pull requestach i push do main. Sprawdza moduły i pakiet db, następnie `pnpm db:test` tworzy usługę PostgreSQL 18 z przypiętego `compose.dev.yaml`, wykonuje migracje, niezmienione testy RLS, audyt uprawnień, testy pul i pełne porównanie schematu. Hasła są losowe i syntetyczne, bez sekretów GitHub; sprzątanie dotyczy tylko projektu testu. Artefakt zawiera wyłącznie pięć wskazanych plików diagnostycznych z `.git/bl007-db/`, nigdy całego `.git`. Pozostałe własne workflow pozostają szkicami do BL-017; testy API będą dodawane wraz z implementacją endpointów. Rzeczywisty wynik przebiegu zapisujemy w bieżącym raporcie sesji.
 
 ```yaml
 # .github/workflows/ci.yml — fragment ilustracyjny
@@ -150,8 +161,8 @@ sequenceDiagram
 
 | Środowisko | Gdzie | Dane | Uwagi |
 |---|---|---|---|
-| Lokalne | Docker Compose, profil `dev` | seed demo + fixtures syntetyczne | Mailpit jako lokalny serwer SMTP; atrapy dostawców z zapisanych odpowiedzi; bez połączeń do prawdziwych API bez jawnej zmiennej |
-| CI | runnery GitHub (efemeryczne) | fixtures syntetyczne | obrazy produkcyjne w testach e2e |
+| Lokalne | samodzielne `compose.dev.yaml` (bez profilu i produkcyjnych obrazów aplikacji) | seed demo + fixtures syntetyczne (po implementacji) | PostgreSQL, Valkey ×2, Mailpit jako lokalny serwer SMTP; [instrukcja](srodowisko-deweloperskie.md); atrapy dostawców z zapisanych odpowiedzi; bez połączeń do prawdziwych API bez jawnej zmiennej |
+| CI | runnery GitHub (efemeryczne) | fixtures syntetyczne | M0-1: lokalny build produkcyjny i usługi developerskie; obrazy produkcyjne w testach e2e od M0-2 |
 | Produkcja | VM `oliginvest` | prawdziwe | wdrożenie wg § 6 |
 
 Brak osobnego środowiska testowego na serwerze — nie mieści się w budżecie RAM (NFR-01.08). Zastępują je testy e2e na obrazach produkcyjnych w CI i możliwość uruchomienia wydania lokalnie przed wdrożeniem.

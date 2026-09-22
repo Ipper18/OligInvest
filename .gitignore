@@ -7,6 +7,8 @@
 
 # Claude Code — ustawienia lokalne (globalne .claude/settings.json i skille SĄ wersjonowane)
 .claude/settings.local.json
+# lokalna konfiguracja podglądu dev (Claude Code)
+.claude/launch.json
 
 # Node
 node_modules/
