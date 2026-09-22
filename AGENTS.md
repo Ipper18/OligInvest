@@ -98,6 +98,15 @@ Szczegóły, licencje i uzasadnienia: [`docs/01-architektura/stack-technologiczn
 - Język: dokumentacja i teksty UI po polsku (klucze w `packages/i18n`, brak literałów w komponentach); kod, identyfikatory, nazwy plików i commity po angielsku.
 - Nazwy: pliki i katalogi `kebab-case`, komponenty i typy `PascalCase`, funkcje `camelCase`, stałe i env `SCREAMING_SNAKE_CASE`, tabele SQL `snake_case` w liczbie mnogiej.
 
+### 6.1 Oszczędzanie kontekstu i limitu (obowiązuje w każdej sesji)
+
+- **Start sesji:** stan paczki czytaj z krótkiego raportu stanu (np. [`docs/08-plan/m0-1-session-report.md`](docs/08-plan/m0-1-session-report.md)); historii sesji nie czytaj bez potrzeby konkretnego dowodu. Po sesji raport stanu **nadpisz** (ok. 3 KB), a do historii dopisz najwyżej 10 linii na zamknięty etap.
+- **Duże dokumenty czytaj fragmentami.** `docs/02-api/openapi.yaml` (ok. 290 KB) nigdy w całości: znajdź operację (`grep -n "operationId: <id>"` albo ścieżkę `grep -n "^  /<ścieżka>:"`), przeczytaj jej blok, a schematy wyszukuj w `components.schemas` (`grep -n "^    <Nazwa>:"`), idąc tylko za potrzebnymi `$ref`. `docs/03-dane/schema.sql` — tylko tabele i sekcje dotyczące zadania. `backlog.md` — tylko wiersze zadań sesji i legendę § 0.1.
+- **Ciche wyjście narzędzi:** reporter `dot`/`summary`, `pnpm -s`, `--output-logs=new-only`; długie wyniki (dumpy, logi Dockera, diffy SQL) zapisuj w `.git/` i czytaj podsumowanie oraz pierwsze różnice. Nie twórz inwentarzy, sum kontrolnych ani raportów JSON, o które nikt nie prosił.
+- **Commit i push po każdym zamkniętym zadaniu lub etapie**, żeby wyczerpanie limitu nie przerwało pracy w połowie niezapisanej.
+- **Zależności:** zadanie wykonane lokalnie ma status `w toku` tylko do zielonego CI i wspólnego DoD — traktuj je jako spełnioną zależność.
+- **Rozbieżność z dokumentem:** błąd własnego odwzorowania (kod ≠ dokument) poprawiaj bez pytania i wymień w raporcie; zatrzymuj się, gdy to dokument źródłowy (`schema.sql`, `testy-rls.sql`, `openapi.yaml`, ADR) wydaje się błędny.
+
 **Zatrzymaj się i zapytaj właściciela, gdy:** zadanie wymaga zmiany decyzji z ADR, nowej usługi zewnętrznej lub kosztu; potrzebne są sekrety, dostęp do serwera albo realne dane; funkcja zbliża się do granicy doradztwa (§ 5.5) albo zmienia status z `11-zgodnosc-prawna.md` § 8; test bezpieczeństwa lub RLS nie przechodzi, a poprawka wymaga osłabienia kontroli.
 
 ## 7. Przegląd metodologiczny (zamiast skilli `backtest-review` i `strategy-critique`)

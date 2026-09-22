@@ -248,6 +248,12 @@ invest.oligi.pl {
 
 Fragment `security_headers` ustawia nagłówki z [`../06-bezpieczenstwo/kontrole-bezpieczenstwa.md`](../06-bezpieczenstwo/kontrole-bezpieczenstwa.md) § 2.2 (CSP ustawia `web`). HTTP/3 wyłączone (VPS przekazuje tylko TCP); `flush_interval -1` dla strumienia SSE; kompresja (`encode zstd gzip`) tylko dla odpowiedzi innych niż `text/event-stream`. Caddy domyślnie redaguje nagłówki `Cookie` i `Authorization` w logach.
 
+**Uzupełnienia z przeglądu kodu M0-1 (2026-09-22, do wdrożenia w M0-2 — [przegląd](../08-plan/m0-1-przeglad-kodu.md)):**
+
+- **`X-Request-Id` (P-09):** Caddy usuwa nagłówek przychodzący z internetu i przekazuje do `api` własny identyfikator (np. `header_up X-Request-Id {http.request.uuid}`), który trafia też do logu dostępu — klient nie może wtedy nadawać identyfikatorów korelacji. Składnię i nazwę placeholdera potwierdzić w dokumentacji Caddy 2.11 (**NIEZWERYFIKOWANE**).
+- **Keep-alive do upstreamu (P-08):** czas bezczynności połączeń Caddy → `api`/`web` musi być krótszy niż `keepAliveTimeout` serwerów Node (domyślnie 5 s) albo `keepAliveTimeout` trzeba jawnie wydłużyć w aplikacji — inaczej proxy użyje połączenia zamkniętego przez Node i zwróci sporadyczne 502. Domyślną wartość w Caddy potwierdzić przy konfiguracji (**NIEZWERYFIKOWANE**).
+- **`/api/v1/health/ready` (P-01):** ścieżka jest publiczna (monitor `app-ready` w [`monitoring.md`](monitoring.md)). Caddy bez dodatkowych modułów nie ogranicza częstotliwości żądań, a VPS widzi wyłącznie TLS, więc podstawową ochroną jest buforowanie wyniku sond w `api`; CrowdSec może blokować jawne nadużycia na podstawie logów.
+
 ### 6.4 PostgreSQL i Valkey
 
 - **PostgreSQL:** `password_encryption = scram-sha-256`; `pg_hba` dopuszcza tylko sieci Dockera i konkretne role do konkretnej bazy; `log_min_duration_statement = 500ms` z `log_parameter_max_length = 0` (bez wartości parametrów w logach); `archive_mode = on`, `archive_command` przez pgBackRest, `archive_timeout = 300s` ([`backup-dr.md`](backup-dr.md)); role wg [`../03-dane/schema.sql`](../03-dane/schema.sql) § 0.
