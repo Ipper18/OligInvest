@@ -213,3 +213,11 @@ Osobne pule app/auth/analytics, walidacja strict, parametryzowany kontekst lokal
 9 integracyjnych testów PASS: równoległe połączenia, ponowne użycie tego samego PID po COMMIT/ROLLBACK/błędzie SQL, przechwycony błąd, zmiany sesyjne, savepoint, zerwanie połączenia, pusty kontekst i granice ról.
 Pełne lint/typecheck/test/build 88/88 PASS; pnpm db:test nadal zero różnic i PASS RLS. Instalacja frozen offline; zod z istniejącego grafu.
 BL-007 lokalnie 4/4, status w toku do CI/DoD; następny BL-008. Brak nowego ADR/ryzyka, estymacja 4 d bez zmiany, odchylenie niezmierzone.
+
+## 11. BL-007 zakończone, BL-008 zielone w CI — 2026-09-22
+
+- Etapy 2–4 BL-007: `8528402` (9 błędów odwzorowania: 8 indeksów `DESC … NULLS FIRST`, `\.` w CHECK wersji zgody; porównanie bez różnic), `fbff68e` (role, uprawnienia, RLS), `7473dbb` (pule per rola, helper transakcji, 9 testów integracyjnych).
+- BL-008: workflow `db.yml` (`e632b23`); dwa pierwsze przebiegi padły na konfiguracji — cache pnpm przed instalacją pnpm (`d3a5f3f`) i nieistniejący tryb `--output-logs=errors` w Turborepo 2.10 (`34848f7`, tryb `new-only`).
+- [Przebieg 35687884119](https://github.com/Ipper18/OligInvest/actions/runs/35687884119): PostgreSQL 18 z `compose.dev.yaml`, CHECK wersji zgody, normatywne scenariusze RLS i audyt katalogu bezpieczeństwa, pule i kontekst transakcji — PASS; porównanie schematu: zero różnic (właściciele, ACL, RLS, funkcje, triggery, komentarze).
+- Kryterium M0 nr 2 spełnione w CI. Ostrzeżenia bez wpływu na wynik: akcje na Node 20 (aktualizacje Renovate) i brak plików logów do artefaktu przy przebiegu bez błędów.
+

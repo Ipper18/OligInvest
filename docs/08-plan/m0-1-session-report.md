@@ -8,8 +8,8 @@
 |---|---|
 | BL-001/002, BL-005/006 | wykonane lokalnie, brak CI |
 | BL-003/004 | granice warstw i generator: todo |
-| **BL-007** | **lokalnie 4/4 etapów zamknięte**; brak CI/DoD |
-| BL-008 | następny: CI `db` |
+| BL-007 | wykonane: 64 tabele Drizzle, migracje od zera **bez różnic** względem `schema.sql`, role i RLS, pule per rola, helper transakcji (9 testów integracyjnych) | CI pozostałych zadań (DoD) |
+| **BL-008** | zadanie CI `db` **zielone** w PR #2 ([przebieg](https://github.com/Ipper18/OligInvest/actions/runs/35687884119), commit `34848f7`) | — |
 | BL-009–016, BL-033 | todo; Lighthouse dopiero w BL-016 |
 | BL-017/019 | szkice workflow i ustawień, aktywacja wymagana |
 | BL-018 | lokalne E2E i obrazy M0-2: todo |
