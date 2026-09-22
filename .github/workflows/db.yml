@@ -31,7 +31,7 @@ jobs:
       - name: Install locked dependencies
         run: pnpm install --frozen-lockfile
       - name: Check database and module definitions
-        run: pnpm turbo run lint typecheck test build --filter=@oliginvest/db --filter='./modules/*' --output-logs=errors
+        run: pnpm turbo run lint typecheck test build --filter=@oliginvest/db --filter='./modules/*' --output-logs=new-only
       - name: Test PostgreSQL 18 migrations, RLS and role pools
         # The test owns a fresh Compose service and random synthetic credentials.
         run: pnpm db:test
