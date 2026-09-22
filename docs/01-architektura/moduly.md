@@ -240,6 +240,21 @@ Admin **nie ma** uprawnienia do danych finansowych innych użytkowników — RLS
 14. **Testy:** jednostkowe, integracyjne z RLS, e2e ścieżki krytycznej; zadanie CI „build bez modułu” nadal zielone.
 15. **Dokumentacja:** katalog w § 4, [`../00-przeglad/macierz-pokrycia.md`](../00-przeglad/macierz-pokrycia.md), [`../08-plan/backlog.md`](../08-plan/backlog.md).
 
+Generator realizuje krok 3: tworzy wyłącznie nowy pakiet (nie nadpisuje plików ani rejestrów).
+Nazwa musi być małymi literami w `kebab-case`; nazwy fundamentowe i `admin` są zarezerwowane.
+Szkielet zawiera metadane `feature`, flagę `module.<nazwa>`, definicje API/jobs/UI zgodne
+z `packages/platform` i test rejestracji z domyślnie wyłączoną flagą. Nie tworzy fikcyjnych
+endpointów, tabel ani uprawnień; `README.md` modułu prowadzi przez pozostałe kroki checklisty.
+Pakiet korzysta wyłącznie z istniejącego `@oliginvest/platform` (`workspace:*`);
+generator formatuje pliki zainstalowanym Biome według konfiguracji repozytorium.
+
+Po generacji zaktualizuj lockfile lokalnego workspace bez pobierania nowych wersji:
+`pnpm install --lockfile-only --offline`, potem `pnpm install --frozen-lockfile`.
+Sprawdź `pnpm check:deps` oraz
+`pnpm turbo run lint typecheck test build --filter=@oliginvest/mod-<nazwa>`.
+Test integracyjny `pnpm test:module-generator` wykonuje ten przepływ w odizolowanej kopii
+pod `.git/` i usuwa ją po zakończeniu. Nie modyfikuje lockfile ani modułów głównego checkoutu.
+
 ### 8.2 Usunięcie modułu funkcjonalnego
 
 1. Wyłącz flagę `module.<nazwa>` na produkcji; odczekaj cykl (brak ruchu, puste kolejki modułu).

@@ -17,6 +17,8 @@
     "check:repository": "node scripts/check-repository.mjs",
     "check:docs": "node scripts/check-docs.mjs",
     "check:deps": "node scripts/check-deps.mjs",
+    "gen:module": "node scripts/gen-module.mjs",
+    "test:module-generator": "node scripts/test-module-generator.mjs",
     "test:scripts": "node --test scripts/*.test.mjs",
     "db:generate": "pnpm turbo run build --filter=\"./modules/*\" && pnpm --dir packages/db exec drizzle-kit generate",
     "db:test": "node packages/db/scripts/test-database.mjs"

@@ -1,25 +1,25 @@
 # M0-1 — stan bieżący
 
-**Cel:** przekazać bieżący stan i następny krok. Plik nadpisywany po sesji (ok. 3 KB); [historia](m0-1-session-history.md) najwyżej 10 linii na zamknięty etap.
+**Cel:** przekazać stan i następny krok. Nadpisywany po sesji; [historia](m0-1-session-history.md) najwyżej 10 linii na sesję.
 
-**2026-09-21**, gałąź `feat/m0-1-skeleton`, [roboczy PR #2](https://github.com/Ipper18/OligInvest/pull/2), bez scalania. Node 24.21.0, pnpm 12.4.2, Python 3.13.13, uv 0.12.16. Własne CI nadal nieaktywne; zadania pozostają `w toku` do wspólnego DoD.
+**2026-09-22**, gałąź `feat/m0-1-skeleton`, [roboczy PR #2](https://github.com/Ipper18/OligInvest/pull/2), bez scalania. Node 24.21.0, pnpm 12.4.2, Python 3.13.13, uv 0.12.16. Zadania wykonane lokalnie spełniają zależności; status `w toku` do wspólnego DoD.
 
 | Zakres | Stan |
 |---|---|
-| BL-001/002, BL-005/006 | wykonane lokalnie, brak CI |
-| BL-003/004 | granice warstw i generator: todo |
-| BL-007 | wykonane: 64 tabele Drizzle, migracje od zera **bez różnic** względem `schema.sql`, role i RLS, pule per rola, helper transakcji (9 testów integracyjnych) | CI pozostałych zadań (DoD) |
-| **BL-008** | zadanie CI `db` **zielone** w PR #2 ([przebieg](https://github.com/Ipper18/OligInvest/actions/runs/35687884119), commit `34848f7`) | — |
+| BL-001/002, BL-005/006 | wykonane lokalnie |
+| BL-003 | commit `6d733ca`: graf, cykle, eksporty/importy, 28 testów z negatywnym CLI; [CI modules PASS](https://github.com/Ipper18/OligInvest/actions/runs/35688610340) |
+| BL-004 | generator feature, definicje API/jobs/UI, wyłączona flaga, testy i README; CI rozszerzone o generator |
+| BL-007/008 | 64 tabele, migracje bez różnic, role/RLS, 9 testów pul; [CI db PASS](https://github.com/Ipper18/OligInvest/actions/runs/35687884119) |
 | BL-009–016, BL-033 | todo; Lighthouse dopiero w BL-016 |
-| BL-017/019 | szkice workflow i ustawień, aktywacja wymagana |
+| BL-017/019 | szkice pozostałego CI i ustawień; aktywne db i modules |
 | BL-018 | lokalne E2E i obrazy M0-2: todo |
-| BL-032 | zamknięty [notatką](bl-032-typescript-7-spike.md) |
-| BL-034/035 | Compose i dokumentacja PASS; brak seedów/integracji/CI |
+| BL-032 | zamknięty technicznie [spike](bl-032-typescript-7-spike.md) |
+| BL-034/035 | Compose i dokumentacja PASS; brak seedów/integracji/pełnego CI |
 
-BL-007: etap 1 `4b4d656` (64 tabele, migracje); etap 2 `8528402` (PostgreSQL 18.6, migracje od zera/powtórnie, pełny pg_dump — zero różnic); etap 3 `fbff68e` (niezmieniony testy-rls.sql i audyt ról/uprawnień/całego RLS PASS). Etap 4: osobne pule app/auth/analytics, Zod strict, parametryzowane SET LOCAL, weryfikacja roli, savepointy, czyszczenie kontekstu i usuwanie uszkodzonych połączeń.
+Dowody: **69 testów skryptów PASS** (28 granic, 21 generatora, 20 wcześniejszych), lint skryptów i check:deps PASS. Generator w izolacji: instalacja frozen, check:deps i lint/typecheck/test/build **5/5 PASS**, w tym 3 testy modułu. Monorepo **88/88 PASS z cache**; build z fizycznie wyjętym education **21/21 PASS bez cache**, moduł przywrócony. **Kryterium M0 nr 1 spełnione lokalnie**; pełna macierz CI w BL-017. Logi `.git/bl003-*` i `.git/bl004-*`, bez nowych raportów JSON.
 
-Dowody etapu 4: 9 testów integracyjnych PASS (równoległość, ten sam PID po COMMIT/ROLLBACK i błędzie SQL, przechwycony błąd, zmiany sesyjne, savepoint, zerwane połączenie, brak kontekstu, izolacja ról); pełne lint/typecheck/test/build 88/88 PASS. `pnpm db:test` nadal daje zero różnic i PASS RLS. Test CHECK odrzuca 2026-09-19x1, przyjmuje 2026-09-19.1. Poprawiono własne błędy escapowania CHECK i ośmiu indeksów DESC/NULLS FIRST. Źródła SQL i polityki bez zmian; logi wyłącznie w .git, kontenery testowe usuwane.
+Generator tworzy tylko pakiet. Pozostałe kroki § 8.1 (kontrakty domenowe, migracje/RLS, router, rejestracja, UI) dotyczą konkretnej funkcji; opisuje je README. Po generacji: `pnpm install --lockfile-only --offline`, instalacja frozen i kontrole z README.
 
-Decyzje: BL-002 spełnione; Turbo 2.10.13 (ADR-015); bullmq 6.3.6/3.2.2, psycopg 3.3.5; karencja bez wyjątków; strict + skipLibCheck; sieć dev internal:false/loopback; high/critical blokują deps-audit, wyjątek OSV esbuild do 2026-12-20 (R-24); ruleset 0 zatwierdzeń i obowiązkowy przegląd właściciela, domyślny CodeQL po scaleniu. Zatrzymanie tylko przy podejrzeniu błędu schema.sql/testy-rls.sql; własne błędy poprawiać samodzielnie.
+Decyzje bez zmian: Turbo 2.10.13 (ADR-015); TypeScript 7 strict + skipLibCheck; karencja bez wyjątków; sieć dev internal:false/loopback; wyjątek OSV esbuild do 2026-12-20 (R-24); ruleset 0 zatwierdzeń i przegląd właściciela. Brak nowych zależności zewnętrznych, ADR i ryzyk. Estymacje BL-003/004 po 1 d bez zmian; odchylenie niezmierzone.
 
-Dalej: BL-008, commit/push po zamknięciu. BL-007: 4 d bez zmiany, odchylenie niezmierzone, brak nowego ADR/ryzyka. M0: 1 częściowo, 2 lokalnie PASS/brak CI, 3 otwarte, 7 działania właściciela, 8 częściowo.
+Dalej: BL-009/010 i reszta paczki, pełne CI w BL-017. M0 nadal otwarty: 1 lokalnie PASS, 2 CI PASS, 3 otwarte, 4–7 dalsze prace/działania właściciela, 8 częściowo. Lokalny uv: `.git/tools/uv-0.12.16/uv.exe` (dopisz katalog do PATH).

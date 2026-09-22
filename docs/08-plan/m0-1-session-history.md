@@ -221,3 +221,11 @@ BL-007 lokalnie 4/4, status w toku do CI/DoD; następny BL-008. Brak nowego ADR/
 - [Przebieg 35687884119](https://github.com/Ipper18/OligInvest/actions/runs/35687884119): PostgreSQL 18 z `compose.dev.yaml`, CHECK wersji zgody, normatywne scenariusze RLS i audyt katalogu bezpieczeństwa, pule i kontekst transakcji — PASS; porównanie schematu: zero różnic (właściciele, ACL, RLS, funkcje, triggery, komentarze).
 - Kryterium M0 nr 2 spełnione w CI. Ostrzeżenia bez wpływu na wynik: akcje na Node 20 (aktualizacje Renovate) i brak plików logów do artefaktu przy przebiegu bez błędów.
 
+
+## 2026-09-22 — BL-003/004
+- BL-003: check:deps, 28 testów i negatywny CLI; commit 6d733ca, push; CI modules PASS.
+- BL-004: generator feature, 21 testów; izolowany lint/typecheck/test/build 5/5 PASS i 3 testy modułu.
+- Monorepo 88/88 PASS z cache; świeży build bez education 21/21 PASS; M0 kryterium 1 lokalnie zamknięte.
+- Wszystkie 69 testów skryptów PASS; logi w .git; bez nowych zależności/ADR/ryzyk.
+- Estymacje po 1 d bez zmian, odchylenie niezmierzone; statusy w toku do wspólnego DoD.
+- Dalej BL-009/010 i reszta paczki; pełne CI w BL-017, bez scalania PR #2.
