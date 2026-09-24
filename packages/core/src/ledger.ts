@@ -1,12 +1,14 @@
 import { type CurrencyCode, currencyCode, PLN } from "./currency.js";
 import type { IsoDate } from "./dates.js";
 import { Decimal } from "./decimal.js";
+import { type DividendTaxView, dividendTaxView } from "./dividends.js";
 import { CoreError } from "./errors.js";
 import type { FxRateTable } from "./fx.js";
-import { type Money, money, type Quantity } from "./money.js";
+import { type Money, money, type Quantity, sumMoney, zeroMoney } from "./money.js";
 import {
   ACCOUNT_TYPES,
   type Account,
+  type DividendTransaction,
   type SecurityTransferTransaction,
   type SplitTransaction,
   sortTransactions,
@@ -125,9 +127,46 @@ export interface RealizedSale {
   readonly consumptions: readonly LotConsumption[];
 }
 
+/** Cash balance of an account in one currency: the sum of signed amounts (§ 1). */
+export interface CashBalance {
+  readonly accountId: string;
+  readonly balance: Money;
+}
+
+/** Open position per account and instrument, aggregated from its open lots (FIFO order). */
+export interface Position {
+  readonly accountId: string;
+  readonly instrumentId: string;
+  readonly quantity: Quantity;
+  /** Remaining economic cost in the account currency. */
+  readonly cost: Money;
+  readonly costInstrument: Money;
+  readonly fxFee: Money;
+  readonly taxCost: Money | null;
+  readonly lots: readonly Lot[];
+}
+
+export interface DividendRecord {
+  readonly transactionId: string;
+  readonly accountId: string;
+  readonly instrumentId: string;
+  readonly paymentDate: IsoDate;
+  readonly gross: Money;
+  readonly withholdingTax: Money;
+  /** Gross − withholding tax, in the payout currency. */
+  readonly net: Money;
+  /** Amount credited to the account (economic view). */
+  readonly credited: Money;
+  readonly taxStatus: TaxStatus;
+  readonly tax: DividendTaxView | null;
+}
+
 export interface Ledger {
   readonly lots: readonly Lot[];
   readonly sales: readonly RealizedSale[];
+  readonly positions: readonly Position[];
+  readonly cash: readonly CashBalance[];
+  readonly dividends: readonly DividendRecord[];
   readonly issues: readonly LedgerIssue[];
 }
 
@@ -588,7 +627,56 @@ export function buildLedger(input: LedgerInput): Ledger {
     }
   }
 
+  const cash = new Map<string, Map<string, Decimal>>();
+  const dividends: DividendRecord[] = [];
+
+  function book(accountId: string, value: Money) {
+    const balances = cash.get(accountId) ?? new Map<string, Decimal>();
+    balances.set(value.currency, (balances.get(value.currency) ?? ZERO).plus(value.amount));
+    cash.set(accountId, balances);
+  }
+
+  /** Income day = payment date (`settleDate` if given, else trade date), NBP D-1 (§ 4.3). */
+  function dividend(tx: DividendTransaction) {
+    const applies = taxApplies(tx);
+    const withholdingTax = tx.withholdingTax ?? zeroMoney(tx.gross.currency);
+    let tax: DividendTaxView | null = null;
+    if (applies) {
+      const taxDate = tx.settleDate ?? tx.tradeDate;
+      const rate =
+        tx.gross.currency === PLN
+          ? undefined
+          : input.taxRates?.before(tx.gross.currency, PLN, taxDate);
+      if (tx.gross.currency !== PLN && !rate) {
+        report({
+          code: "missing_tax_rate",
+          transactionId: tx.id,
+          currency: tx.gross.currency,
+          date: taxDate,
+        });
+      } else {
+        tax = dividendTaxView({ gross: tx.gross, withholdingTax, taxDate, rate });
+      }
+    }
+    dividends.push(
+      Object.freeze({
+        transactionId: tx.id,
+        accountId: tx.accountId,
+        instrumentId: tx.instrumentId,
+        paymentDate: tx.tradeDate,
+        gross: tx.gross,
+        withholdingTax,
+        net: money(tx.gross.amount.minus(withholdingTax.amount), tx.gross.currency),
+        credited: tx.amount,
+        taxStatus: !applies ? "not_applicable" : tax ? "computed" : "missing_data",
+        tax,
+      }),
+    );
+  }
+
   sortTransactions(input.transactions).forEach((tx, order) => {
+    if ("amount" in tx) book(tx.accountId, tx.amount);
+    if (tx.type === "FX_CONVERSION") book(tx.accountId, tx.counterAmount);
     switch (tx.type) {
       case "BUY":
         buy(tx, order);
@@ -605,14 +693,71 @@ export function buildLedger(input: LedgerInput): Ledger {
       case "SECURITY_TRANSFER_IN":
         transferIn(tx);
         break;
+      case "DIVIDEND":
+        dividend(tx);
+        break;
       default:
         break;
     }
   });
 
+  const frozen = new Map(allLots.map((lot) => [lot, freezeLot(lot)] as const));
+  const positions: Position[] = [];
+  for (const list of openLots.values()) {
+    if (list.length === 0) continue;
+    const lots = list.map((lot) => frozen.get(lot) as Lot);
+    const first = lots[0] as Lot;
+    const taxCosts = lots.map((lot) => lot.taxCostRemaining);
+    positions.push(
+      Object.freeze({
+        accountId: first.accountId,
+        instrumentId: first.instrumentId,
+        quantity: lots.reduce((sum, lot) => sum.plus(lot.quantityRemaining), ZERO) as Quantity,
+        cost: sumMoney(
+          lots.map((lot) => lot.costRemaining),
+          first.cost.currency,
+        ),
+        costInstrument: sumMoney(
+          lots.map((lot) => lot.costInstrumentRemaining),
+          first.costInstrument.currency,
+        ),
+        fxFee: sumMoney(
+          lots.map((lot) => lot.fxFeeRemaining),
+          first.fxFee.currency,
+        ),
+        taxCost: taxCosts.includes(null) ? null : sumMoney(taxCosts as Money[], PLN),
+        lots: Object.freeze(lots),
+      }),
+    );
+  }
+
+  const accountOrder = new Map(input.accounts.map((account, index) => [account.id, index]));
+  positions.sort(
+    (a, b) =>
+      (accountOrder.get(a.accountId) as number) - (accountOrder.get(b.accountId) as number) ||
+      (a.instrumentId < b.instrumentId ? -1 : a.instrumentId > b.instrumentId ? 1 : 0),
+  );
+
+  const balances: CashBalance[] = [];
+  for (const account of input.accounts) {
+    const byCurrency = cash.get(account.id);
+    if (!byCurrency) continue;
+    for (const currency of [...byCurrency.keys()].sort()) {
+      balances.push(
+        Object.freeze({
+          accountId: account.id,
+          balance: money(byCurrency.get(currency) as Decimal, currency),
+        }),
+      );
+    }
+  }
+
   return Object.freeze({
-    lots: Object.freeze(allLots.map(freezeLot)),
+    lots: Object.freeze(allLots.map((lot) => frozen.get(lot) as Lot)),
     sales: Object.freeze(sales),
+    positions: Object.freeze(positions),
+    cash: Object.freeze(balances),
+    dividends: Object.freeze(dividends),
     issues: Object.freeze(issues),
   });
 }
