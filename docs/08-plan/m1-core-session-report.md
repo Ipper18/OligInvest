@@ -41,3 +41,4 @@ Wszystko z `@oliginvest/core`; kwoty wyłącznie `Money`/`Decimal`, daty `IsoDat
 - 2026-09-24 BL-551 (rdzeń): metryki ryzyka — wektor D (1e-6).
 - 2026-09-24 BL-315 (rdzeń): rebalancing z kosztami, podatkiem i blokadą — wektor H.
 - 2026-09-24 Decyzje (druga tura): OBL § 3.3 i § 12.5; szacowany podatek rebalancingu od kosztu podatkowego. Następny krok: niezależny przegląd w osobnej sesji.
+- 2026-09-24 Niezależny przegląd rdzenia (osobna sesja): 28 znalezisk, każde z testem pomijanym w `review-findings.test.mjs` (`CORE_REVIEW=1` uruchamia) — [m1-core-przeglad.md](m1-core-przeglad.md); część poprawek przed BL-144 (§ 6 przeglądu).
