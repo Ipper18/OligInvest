@@ -14,7 +14,7 @@ export interface TwrIndexPoint {
   readonly date: IsoDate;
   /** V*: product of (1 + r_d) up to this day, starting from 1 before the first point. */
   readonly index: Decimal;
-  /** r_d = V_d / (V_{d−1} + F_d) − 1; null when V_{d−1} + F_d ≤ 0 (period closed, § 6.2). */
+  /** r_d = V_d / (V_{d−1} + F_d) − 1; null when V_{d−1} + F_d ≤ 0 or V_d ≤ 0 (period closed, § 6.2). */
   readonly dailyReturn: number | null;
 }
 
@@ -40,7 +40,9 @@ export function twrIndex(points: readonly PerformancePoint[]): TwrIndexPoint[] {
     if (point.flow) assertSameCurrency(currency as string, point.flow.currency);
     const base = point.flow ? previous.plus(point.flow.amount) : previous;
     let dailyReturn: number | null = null;
-    if (base.isPositive() && !base.isZero()) {
+    const value = point.value.amount;
+    // § 6.2: a non-positive base or value closes the period; the chain resumes later (C-05).
+    if (base.isPositive() && !base.isZero() && value.isPositive() && !value.isZero()) {
       const growth = point.value.amount.div(base);
       index = index.times(growth);
       dailyReturn = ratio(growth.minus(1));

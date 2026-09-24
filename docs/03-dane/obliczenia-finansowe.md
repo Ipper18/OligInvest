@@ -253,7 +253,7 @@ Dzienna metoda łańcuchowa. **Konwencja:** przepływ zewnętrzny z dnia `d` ksi
 $$r_d = \frac{V_d}{V_{d-1} + F_d} - 1 \qquad \text{TWR}_{[0,T]} = \prod_{d=1}^{T}(1 + r_d) - 1$$
 
 - Pierwszy dzień z wpłatą początkową: `V_0 = 0`, `F_1 = wpłata` → `r_1 = V_1 / F_1 − 1`.
-- Dzień z `V_{d−1} + F_d ≤ 0` (np. wypłata całości): okres zamykamy, kolejny zaczyna się od nowej wpłaty (łańcuch kontynuowany).
+- Dzień z `V_{d−1} + F_d ≤ 0` (np. wypłata całości) albo z `V_d ≤ 0` (np. opłata większa niż reszta gotówki): okres zamykamy bez mnożenia indeksu (stopa dnia „brak”), kolejny zaczyna się od następnej dodatniej bazy — łańcuch kontynuowany, indeks zawsze > 0 (przegląd C-05).
 - Annualizacja tylko dla okresów ≥ 365 dni: `(1 + TWR)^{365/dni} − 1`; dla krótszych pokazujemy wartość skumulowaną. `dni` = dni kalendarzowe od początku okresu do jego końca; dla okresu od pierwszej wpłaty — od daty pierwszego przepływu (jak `t_0` w XIRR; wektor B: 364).
 
 ### 6.3 MWR / XIRR (FR-03.06)
