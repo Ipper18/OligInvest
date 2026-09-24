@@ -434,7 +434,7 @@ describe("ledger, transfers and the tax view", () => {
     );
   });
 
-  failsToday("C-19 a sale whose commission exceeds its value is accepted (§ 1)", () => {
+  test("C-19 a sale whose commission exceeds its value is accepted (§ 1)", () => {
     const buy = trade("B", "BUY", "2025-01-02", "1", "0.50", "-5.50", { fee: pln("5") });
     const sell = trade("S", "SELL", "2025-02-03", "1", "0.40", "-4.60", { fee: pln("5") });
     // Today: invalid_transaction ("Invalid sign of amount for SELL").

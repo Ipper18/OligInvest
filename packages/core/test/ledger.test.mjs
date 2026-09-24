@@ -561,8 +561,8 @@ describe("validation per operation type (schema.sql constraints)", () => {
     ["unknown account", { ...buy, accountId: "nope" }, "invalid_account"],
     ["BUY with a positive amount", { ...buy, amount: money("400", "PLN") }, "invalid_transaction"],
     [
-      "SELL with a negative amount",
-      { ...buy, type: "SELL", amount: money("-1", "PLN") },
+      "SELL in another currency than the account",
+      { ...buy, type: "SELL", amount: money("1", "USD") },
       "invalid_transaction",
     ],
     ["zero quantity", { ...buy, quantity: quantity("0") }, "invalid_transaction"],
