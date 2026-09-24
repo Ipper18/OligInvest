@@ -201,7 +201,7 @@ M3 nie zależy od M4 (etapy mogą iść równolegle).
 | BL-305 | Obsunięcia i wykres „underwater” — wektor C | FR-03.09 | OBL, VEC | BL-302 | 1,5 | todo (rdzeń w `packages/core`, PR `feat/m1-core-engine`) |
 | BL-306 | Ekspozycja walutowa i rozbicie wyniku na efekt ceny i kursu | FR-02.06 | OBL | BL-143 | 1,5 | todo (rdzeń § 4.2 w `packages/core`, PR `feat/m1-core-engine`; ekspozycja walutowa — dalej) |
 | BL-307 | Dywidendy: brutto, podatek u źródła, netto, stopa od kosztu, szacowana dopłata | FR-02.08 | OBL, VEC | BL-143 | 1,5 | todo (rdzeń § 4.3 w `packages/core`, PR `feat/m1-core-engine`) |
-| BL-308 | Średnia ważona jako metoda widoku i przeliczenie po zmianie metody | FR-03.05 | OBL | BL-142 | 1 | todo |
+| BL-308 | Średnia ważona jako metoda widoku i przeliczenie po zmianie metody | FR-03.05 | OBL | BL-142 | 1 | todo (rdzeń § 3.3 w `packages/core`, PR `feat/m1-core-engine`) |
 | BL-309 | Dziennik transakcji i postmortem | FR-03.11 | API, EKR | BL-144 | 2 | todo |
 | BL-310 | Eksport transakcji, pozycji i wyników (CSV/JSON) z neutralizacją formuł i linią `export`; test eksport → import | FR-03.13 | SEC, LAW | BL-144 | 1,5 | todo |
 | BL-311 | Worker `analytics`: kontrakty zadań (JSON Schema z Zod), walidacja `jsonschema`, rola `analytics_ro`, sieć bez wyjścia, limity CPU/RAM/czasu, testy izolacji | NFR-03.13, NFR-01.07 | [ADR-003](../09-decyzje/ADR-003-hybryda-obliczen-i-kolejki.md), INF | BL-014, BL-022 | 3 | todo |

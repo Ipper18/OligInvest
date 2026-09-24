@@ -1,4 +1,4 @@
-import { type CurrencyCode, currencyCode, PLN } from "./currency.js";
+import { type CurrencyCode, PLN } from "./currency.js";
 import type { IsoDate } from "./dates.js";
 import { Decimal } from "./decimal.js";
 import { type DividendTaxView, dividendTaxView } from "./dividends.js";
@@ -6,7 +6,6 @@ import { CoreError } from "./errors.js";
 import type { FxRateTable } from "./fx.js";
 import { type Money, money, type Quantity, sumMoney, zeroMoney } from "./money.js";
 import {
-  ACCOUNT_TYPES,
   type Account,
   type DividendTransaction,
   type SecurityTransferTransaction,
@@ -14,8 +13,8 @@ import {
   sortTransactions,
   type TradeTransaction,
   type Transaction,
-  validateTransaction,
 } from "./transactions.js";
+import { validateInput } from "./validation.js";
 
 /** User settings of the tax view (`identity.user_preferences`, 11-zgodnosc-prawna.md § 5.2). */
 export interface TaxSettings {
@@ -283,24 +282,6 @@ function positionKey(accountId: string, instrumentId: string): string {
   return `${accountId}\u0000${instrumentId}`;
 }
 
-function indexAccounts(accounts: readonly Account[]): Map<string, Account> {
-  const byId = new Map<string, Account>();
-  for (const account of accounts) {
-    if (
-      typeof account?.id !== "string" ||
-      byId.has(account.id) ||
-      !(ACCOUNT_TYPES as readonly string[]).includes(account.accountType)
-    ) {
-      throw new CoreError("invalid_account", "Invalid or duplicate account", {
-        accountId: typeof account?.id === "string" ? account.id : null,
-      });
-    }
-    currencyCode(account.currency);
-    byId.set(account.id, account);
-  }
-  return byId;
-}
-
 /**
  * Replays operations into FIFO lots per account and instrument (§ 3) and realized P/L in the
  * economic view (account currency, broker amounts) and the informational tax view (PLN, NBP D-1).
@@ -308,24 +289,7 @@ function indexAccounts(accounts: readonly Account[]): Map<string, Account> {
  */
 export function buildLedger(input: LedgerInput): Ledger {
   const settings = input.taxSettings ?? DEFAULT_TAX_SETTINGS;
-  const accounts = indexAccounts(input.accounts);
-  const seen = new Set<string>();
-  for (const tx of input.transactions) {
-    const account = accounts.get(tx.accountId);
-    if (!account) {
-      throw new CoreError("invalid_account", "Transaction refers to an unknown account", {
-        transactionId: tx.id,
-        accountId: tx.accountId,
-      });
-    }
-    validateTransaction(tx, account);
-    if (seen.has(tx.id)) {
-      throw new CoreError("invalid_transaction", "Duplicate transaction id", {
-        transactionId: tx.id,
-      });
-    }
-    seen.add(tx.id);
-  }
+  const accounts = validateInput(input.accounts, input.transactions);
 
   const openLots = new Map<string, WorkingLot[]>();
   const allLots: WorkingLot[] = [];
