@@ -88,7 +88,8 @@ describe("weighted average cost as a view (§ 3.3) — vector A", () => {
         type: "SPLIT",
         tradeDate: d("2025-11-03"),
         instrumentId: "AAPL",
-        splitRatio: toDecimal("2"),
+        ratioFrom: 1,
+        ratioTo: 2,
       },
       {
         id: "OUT",

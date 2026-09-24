@@ -92,11 +92,17 @@ export interface FxConversionTransaction extends TransactionBase {
   readonly counterAmount: Money;
 }
 
-/** Split 4:1 → `splitRatio` 4; reverse split 1:10 → 0.1 (§ 3.4). */
+/**
+ * Split as a pair of integers (§ 3.4, owner decision 2026-09-24): `ratioFrom` old units become
+ * `ratioTo` new units — split 4:1 → 1 → 4, reverse split 1:3 → 3 → 1; quantity q·to/from.
+ */
 export interface SplitTransaction extends TransactionBase {
   readonly type: "SPLIT";
   readonly instrumentId: string;
-  readonly splitRatio: Decimal;
+  readonly ratioFrom: number;
+  readonly ratioTo: number;
+  /** Cash paid for the fraction left after a reverse split (`cash_in_lieu`), account currency. */
+  readonly cashInLieu?: Money | undefined;
 }
 
 /**
@@ -260,7 +266,20 @@ export function validateTransaction(tx: Transaction, account: Account): void {
     }
     case "SPLIT":
       checkInstrument(tx, tx.instrumentId);
-      checkPositiveDecimal(tx, "splitRatio", tx.splitRatio);
+      for (const [field, value] of [
+        ["ratioFrom", tx.ratioFrom],
+        ["ratioTo", tx.ratioTo],
+      ] as const) {
+        if (!Number.isSafeInteger(value) || value < 1) {
+          fail(tx, field, "Split ratio must be a pair of positive integers");
+        }
+      }
+      if (tx.cashInLieu !== undefined) {
+        const lieu = checkMoney(tx, "cashInLieu", tx.cashInLieu, "nonneg");
+        if (lieu.currency !== account.currency) {
+          fail(tx, "cashInLieu", "Cash in lieu must be in the account currency");
+        }
+      }
       return;
     case "SECURITY_TRANSFER_IN":
     case "SECURITY_TRANSFER_OUT": {

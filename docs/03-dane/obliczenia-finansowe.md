@@ -144,7 +144,7 @@ Pula średniej (per rachunek i instrument; decyzja właściciela 2026-09-24): za
 
 ### 3.4 Split / scalenie
 
-Współczynnik `k` (split 4:1 → `k = 4`; scalenie 1:10 → `k = 0.1`): dla każdej otwartej partii `q_L ← q_L·k`, `c_L ← c_L / k`, `koszt_L` bez zmian, data nabycia bez zmian. Ułamki powstałe przy scaleniu rozliczane gotówką (`cash_in_lieu`) jak sprzedaż ułamka.
+Split zapisujemy jako **parę liczb całkowitych** `ratioFrom → ratioTo` (decyzja właściciela 2026-09-24, przegląd C-03; ułamek dziesiętny nie zapisze dokładnie scaleń 1:3, 1:7 itd.): split 4:1 → `1 → 4`, scalenie 1:10 → `10 → 1`, `k = ratioTo / ratioFrom`. Dla każdej otwartej partii `q_L ← q_L·ratioTo/ratioFrom`, `c_L ← c_L·ratioFrom/ratioTo`, `koszt_L` bez zmian, data nabycia bez zmian. Ułamek powstały przy scaleniu rozliczany gotówką (`cash_in_lieu`, pole `cashInLieu` operacji `SPLIT`) jak sprzedaż FIFO — w rdzeniu przed przeskalowaniem, w jednostkach sprzed scalenia, tak aby pozostałe całe akcje wyszły dokładnie (31 szt. przy 1:3: sprzedaż 1 szt., zostaje 10 szt.). Zmiana kolumn `schema.sql` (`transactions.split_ratio`, `corporate_actions.ratio`) — zadanie BL-144.
 
 ### 3.5 Przeniesienie papierów między rachunkami
 
