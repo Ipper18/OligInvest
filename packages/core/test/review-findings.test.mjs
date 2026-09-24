@@ -363,7 +363,7 @@ describe("ledger, transfers and the tax view", () => {
     ).toBe("invalid_transaction");
   });
 
-  failsToday("C-06 an NBP rate far older than D-1 is not used silently in the tax view", () => {
+  test("C-06 an NBP rate far older than D-1 is not used silently in the tax view", () => {
     const buy = {
       ...trade("B", "BUY", "2025-03-03", "10", "0", "-4000"),
       settleDate: d("2025-03-04"),
@@ -376,6 +376,32 @@ describe("ledger, transfers and the tax view", () => {
     // D-1 of the settlement is Monday 2025-03-03; today the 2025-01-31 rate gives a tax cost of
     // 4200 PLN without any issue, and the rate date is not part of the result.
     expect(ledger.issues.map((issue) => issue.transactionId)).toContain("B");
+  });
+
+  test("C-06 the rate date is part of the result; a holiday in the NBP calendar is not stale", () => {
+    const buy = {
+      ...trade("B", "BUY", "2025-11-12", "10", "0", "-4000"),
+      settleDate: d("2025-11-12"),
+      price: price("100", "USD"),
+    };
+    // 2025-11-11 is a Polish holiday: the table of 2025-11-10 is the right D-1.
+    const taxRates = createFxRateTable([
+      fxRate({ base: "USD", quote: "PLN", rate: "3.70", date: "2025-11-10", source: "nbp" }),
+    ]);
+    const calendar = (date) =>
+      ![0, 6].includes(new Date(date).getUTCDay()) && date !== "2025-11-11";
+    const ledger = buildLedger({
+      accounts: regular,
+      transactions: [buy],
+      taxRates,
+      isNbpBusinessDay: calendar,
+    });
+    expect(ledger.issues).toEqual([]);
+    expect(ledger.lots[0].taxRateDate).toBe("2025-11-10");
+    const weekdays = buildLedger({ accounts: regular, transactions: [buy], taxRates });
+    expect(weekdays.issues).toEqual([
+      { code: "stale_tax_rate", transactionId: "B", currency: "USD", date: "2025-11-10" },
+    ]);
   });
 
   failsToday(

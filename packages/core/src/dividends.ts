@@ -12,6 +12,8 @@ export const PIT_CAPITAL_RATE = new Decimal("0.19");
 /** Informational tax view of one dividend (obliczenia-finansowe.md § 4.3); amounts unrounded. */
 export interface DividendTaxView {
   readonly taxDate: IsoDate;
+  /** Date of the NBP table used (null for a dividend in PLN). */
+  readonly rateDate: IsoDate | null;
   readonly grossPln: Money;
   /** 19 % of the gross amount in PLN. */
   readonly taxDuePln: Money;
@@ -48,6 +50,7 @@ export function dividendTaxView(input: DividendTaxInput): DividendTaxView {
   const credit = Decimal.min(wht.amount.times(factor), taxDue);
   return Object.freeze({
     taxDate: input.taxDate,
+    rateDate: input.gross.currency === PLN ? null : (input.rate?.date ?? null),
     grossPln: money(grossPln, PLN),
     taxDuePln: money(taxDue, PLN),
     withholdingCreditPln: money(credit, PLN),
