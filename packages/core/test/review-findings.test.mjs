@@ -849,7 +849,7 @@ describe("rebalancing", () => {
     expect(codeOf(tooCostly)).toBe("invalid_allocation");
   });
 
-  failsToday("C-27 a blocked calculation reports no tax estimate (null), not zero", () => {
+  test("C-27 a blocked calculation reports no tax estimate (null), not zero", () => {
     const result = rebalance({
       holdings: [{ instrumentId: "A", value: pln("100") }],
       targets: [{ instrumentId: "A", weight: "1" }],

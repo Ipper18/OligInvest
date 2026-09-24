@@ -151,7 +151,8 @@ export function rebalance(input: RebalanceInput): RebalanceResult {
       weightsBefore,
       weightsAfter: [],
       costs: m(ZERO),
-      estimatedTax: m(ZERO),
+      // No plan, no estimate: null, never a misleading „0 zł” next to the lock warning (C-27).
+      estimatedTax: null,
       cashAfter: m(cash.plus(fresh)),
     });
   }
