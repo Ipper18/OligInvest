@@ -769,7 +769,7 @@ describe("rebalancing", () => {
       expect(t.amount.amount.abs().greaterThanOrEqualTo("600")).toBe(true);
   });
 
-  failsToday("C-11 the estimated tax nets gains and losses of the same calculation", () => {
+  test("C-11 the estimated tax nets gains and losses of the same calculation", () => {
     const ledger = buildLedger({
       accounts: regular,
       transactions: [

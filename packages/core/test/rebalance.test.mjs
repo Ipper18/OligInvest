@@ -133,8 +133,8 @@ describe("rules of § 12.5", () => {
     expect(a.cost.amount.toFixed(2)).toBe("5.00");
     expect(b.cost.amount.toFixed(2)).toBe("5.00");
     // Proceeds 1500 − 5, FIFO tax-view cost 15 × 80 = 1200 → gain 295, 19 % = 56.05 (estimate).
-    expect(a.estimatedTax.amount.toFixed(2)).toBe("56.05");
-    expect(b.estimatedTax.amount.toFixed(2)).toBe("0.00");
+    expect(a.taxableResult.amount.toFixed(2)).toBe("295.00");
+    expect(b.taxableResult.amount.toFixed(2)).toBe("0.00");
     expect(result.estimatedTax.amount.toFixed(2)).toBe("56.05");
     expect(result.costs.amount.toFixed(2)).toBe("10.00");
     expect(result.cashAfter.amount.toFixed(2)).toBe("90.00");
@@ -197,7 +197,7 @@ describe("rules of § 12.5", () => {
 
   test("tax is unknown without lots on a taxable account; zero on IKE", () => {
     const taxed = rebalance({ ...base, mode: "full", taxable: true });
-    expect(taxed.trades[0].estimatedTax).toBeNull();
+    expect(taxed.trades[0].taxableResult).toBeNull();
     expect(taxed.estimatedTax).toBeNull();
     expect(rebalance({ ...base, mode: "full" }).estimatedTax.amount.isZero()).toBe(true);
   });
@@ -278,7 +278,8 @@ describe("rules of § 12.5", () => {
     );
     const result = rebalance({ ...base, holdings, mode: "full", taxable: true });
     // 1000 of 7000 sold → 10 of 70 units, basis 800, gain 200, tax 38.
-    expect(result.trades[0].estimatedTax.amount.toFixed(2)).toBe("38.00");
+    expect(result.trades[0].taxableResult.amount.toFixed(2)).toBe("200.00");
+    expect(result.estimatedTax.amount.toFixed(2)).toBe("38.00");
     expect(
       codeOf(() =>
         rebalance({
@@ -331,7 +332,24 @@ describe("rules of § 12.5", () => {
       reconciled: true,
     });
     // Gain 4500 − 3900 = 600 → 114.00 (the economic cost 4020 would give 91.20).
-    expect(result.trades[0].estimatedTax.amount.toFixed(2)).toBe("114.00");
+    expect(result.trades[0].taxableResult.amount.toFixed(2)).toBe("600.00");
+    expect(result.estimatedTax.amount.toFixed(2)).toBe("114.00");
+    // With tax_include_fx_fee the lots' FX margin (20) is part of the cost: 580 → 110.20.
+    const withFee = rebalance({
+      holdings: [
+        { instrumentId: "US", value: pln("4500"), unitPrice: pln("450"), lots },
+        { instrumentId: "PL", value: pln("0"), unitPrice: pln("10") },
+      ],
+      targets: [
+        { instrumentId: "US", weight: "0" },
+        { instrumentId: "PL", weight: "1" },
+      ],
+      mode: "full",
+      taxable: true,
+      includeFxFee: true,
+      reconciled: true,
+    });
+    expect(withFee.estimatedTax.amount.toFixed(2)).toBe("110.20");
     const onIke = buildLedger({
       accounts: [{ id: "a", currency: "PLN", accountType: "ike" }],
       transactions: [
@@ -357,7 +375,7 @@ describe("rules of § 12.5", () => {
       taxable: true,
       reconciled: true,
     });
-    expect(noTaxCost.trades[0].estimatedTax).toBeNull();
+    expect(noTaxCost.trades[0].taxableResult).toBeNull();
   });
 
   test("leftover cash really buys more units, but never below the minimum order", () => {
