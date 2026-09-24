@@ -539,7 +539,7 @@ describe("valuation, flows and returns", () => {
     expect(result.twr).toBeCloseTo(0, 12);
   });
 
-  failsToday("C-05 a value below zero does not flip the sign of the TWR index", () => {
+  test("C-05 a value below zero does not flip the sign of the TWR index", () => {
     const points = [
       { date: d("2025-01-01"), value: pln("1000"), flow: pln("1000") },
       { date: d("2025-01-02"), value: pln("5"), flow: pln("-990") },
@@ -555,7 +555,7 @@ describe("valuation, flows and returns", () => {
     expect(codeOf(() => drawdowns(index.map((point) => point.index)))).toBe("no-error");
   });
 
-  failsToday("C-05 a value of zero does not freeze the TWR index for good", () => {
+  test("C-05 a value of zero does not freeze the TWR index for good", () => {
     const index = twrIndex([
       { date: d("2025-01-01"), value: pln("1000"), flow: pln("1000") },
       // The last 1 PLN is taken by a fee: V = 0 while V(d−1) + F = 1.
