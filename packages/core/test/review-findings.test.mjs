@@ -673,7 +673,7 @@ describe("risk metrics and drawdowns", () => {
   const D = loadTestVectors().D_risk;
   const returns = D.returns.map(readStatistic);
 
-  failsToday("C-07 constant series give null ratios despite floating-point noise", () => {
+  test("C-07 constant series give null ratios despite floating-point noise", () => {
     // Today: 8.9e16, 3.9e16, 0.2 and 1.1e-16 — the `=== 0` checks miss a rounding residue.
     expect(sharpeRatio(Array(20).fill(0.01))).toBeNull();
     expect(sharpeRatio(Array(60).fill(0.0001))).toBeNull();
