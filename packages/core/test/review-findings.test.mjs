@@ -712,9 +712,19 @@ describe("risk metrics and drawdowns", () => {
     expect(Math.abs(historicalCvar(tied) - 0.03)).toBeLessThanOrEqual(1e-6);
   });
 
-  failsToday("C-24 one observation is reported as „mało danych”, not as an exception", () => {
+  test("C-24 one observation is reported as „mało danych”, not as an exception", () => {
     // Today: invalid_series ("At least 2 observations are required").
     expect(riskMetrics([0.01]).insufficientData).toBe(true);
+    expect(riskMetrics([0.01])).toMatchObject({
+      meanDaily: 0.01,
+      volatilityAnnual: null,
+      sharpe: null,
+    });
+    expect(riskMetrics([])).toMatchObject({
+      insufficientData: true,
+      meanDaily: null,
+      varHistorical: null,
+    });
   });
 });
 
