@@ -239,6 +239,12 @@ export function investorCashflows(input: {
   readonly flows: readonly DatedAmount[];
   readonly end: { readonly date: IsoDate; readonly value: Money };
 }): DatedAmount[] {
+  if (input.start.date > input.end.date) series("Period start after its end");
+  for (const flow of input.flows) {
+    if (flow.date < input.start.date || flow.date > input.end.date) {
+      series("Cash flows must lie within the period [start, end]");
+    }
+  }
   const result: DatedAmount[] = [];
   if (!input.start.value.amount.isZero()) {
     result.push({
