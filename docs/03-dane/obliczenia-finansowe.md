@@ -309,7 +309,7 @@ Wejście: dzienne stopy zwrotu `r_t` z indeksu TWR (w PLN); `N` obserwacji; `P =
 | Sortino | `mean(r − MAR)·P / (DD·√P)`, `DD = √(mean(min(r − MAR, 0)²))` po **wszystkich** obserwacjach, MAR = 0 | 2,793216 |
 | Beta / korelacja | `cov(r, b)/var(b)` (n−1) / Pearson | 1,302072 / 0,996597 |
 | VaR 95 % 1D historyczny | `−percentyl₅(r)` (interpolacja liniowa) | 1,2150 % |
-| CVaR 95 % 1D | `−mean(r | r ≤ percentyl₅)` | 1,5000 % |
+| CVaR 95 % 1D | `−mean` z `k = ⌊(n − 1)·0,05⌋ + 1` najniższych stóp (definicja empyrical, jednoznaczna przy remisach na progu — decyzja właściciela 2026-09-24, przegląd C-23; wektor `D_risk.tied_*`) | 1,5000 % |
 | VaR 95 % 1D parametryczny | `−(mean − z·σ)` (rozkład normalny); z = 1,6449 dla 95 %, dla innego poziomu ufności kwantyl rozkładu normalnego z(c) (przegląd C-08) | 1,2203 % |
 | Calmar | `CAGR / |max DD|` | — |
 

@@ -67,6 +67,12 @@ describe("risk metrics (obliczenia-finansowe.md § 8) vs empyrical-reloaded, vec
     near(parametricVar(returns), "var95_parametric_1d");
   });
 
+  test("ties at the 5 % cut-off: CVaR is the mean of the k lowest returns (empyrical)", () => {
+    const tied = D.tied_returns.map(readStatistic);
+    near(historicalVar(tied), "tied_var95_historical_1d");
+    near(historicalCvar(tied), "tied_cvar95_historical_1d");
+  });
+
   test("summary with its assumptions and the minimum sample flag", () => {
     const summary = riskMetrics(returns, { benchmark, riskFreeAnnual: 0.05 });
     expect(summary.assumptions).toEqual({
