@@ -32,7 +32,7 @@ export interface RebalanceInput {
   /** Proportional cost per order (commission, FX, slippage — cost model of § 12.7). */
   readonly costRate?: DecimalInput | undefined;
   readonly minCost?: Money | undefined;
-  /** Regular account: estimated 19 % tax on FIFO gains of sales; IKE/IKZE: false. */
+  /** Regular account: estimated 19 % tax on FIFO gains of sales (tax-view cost); IKE/IKZE: false. */
   readonly taxable: boolean;
   /** § 12.5 lock: reconciled import within 7 days and no open differences (checked by the caller). */
   readonly reconciled: boolean;
@@ -45,7 +45,11 @@ export interface RebalanceTrade {
   readonly amount: Money;
   readonly quantity: Decimal | null;
   readonly cost: Money;
-  /** Null when the cost basis is unknown (no lots, or lots without a cost). */
+  /**
+   * Estimate only (UI label „szacunek”): 19 % of (sale value − order cost − FIFO tax-view cost of the
+   * lots: settlement date, NBP D-1, FX margin excluded — § 2.2). Null without lots, with lots lacking
+   * a tax cost (missing rate, IKE/IKZE) or on an account not in PLN.
+   */
   readonly estimatedTax: Money | null;
 }
 
@@ -241,7 +245,7 @@ export function rebalance(input: RebalanceInput): RebalanceResult {
   const estimate = (l: Line, cost: Decimal): Decimal | null => {
     if (!input.taxable || !l.amount.isNegative()) return ZERO;
     const lots = l.holding.lots;
-    if (!lots || lots.some((lot) => lot.costRemaining === null)) return null;
+    if (currency !== PLN || !lots || lots.some((lot) => lot.taxCostRemaining === null)) return null;
     const held = lots.reduce((s, lot) => s.plus(lot.quantityRemaining), ZERO);
     let left = l.quantity ?? held.times(l.amount.abs()).div(l.holding.value.amount);
     let basis = ZERO;
@@ -249,7 +253,7 @@ export function rebalance(input: RebalanceInput): RebalanceResult {
       if (left.isZero()) break;
       const take = Decimal.min(left, lot.quantityRemaining);
       basis = basis.plus(
-        (lot.costRemaining as Money).amount.times(take).div(lot.quantityRemaining),
+        (lot.taxCostRemaining as Money).amount.times(take).div(lot.quantityRemaining),
       );
       left = left.minus(take);
     }

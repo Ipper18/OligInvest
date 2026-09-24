@@ -1,5 +1,7 @@
 import {
   buildLedger,
+  createFxRateTable,
+  fxRate,
   isCoreError,
   isoDate,
   money,
@@ -92,6 +94,7 @@ describe("rules of § 12.5", () => {
           accountId: "a",
           type: "BUY",
           tradeDate: isoDate("2024-01-02"),
+          settleDate: isoDate("2024-01-04"),
           instrumentId: "A",
           quantity: quantity("70"),
           price: price("80", "PLN"),
@@ -129,7 +132,7 @@ describe("rules of § 12.5", () => {
     expect(signed(b)).toBe("2400.00");
     expect(a.cost.amount.toFixed(2)).toBe("5.00");
     expect(b.cost.amount.toFixed(2)).toBe("5.00");
-    // Proceeds 1500 − 5, FIFO cost 15 × 80 = 1200 → gain 295, 19 % = 56.05.
+    // Proceeds 1500 − 5, FIFO tax-view cost 15 × 80 = 1200 → gain 295, 19 % = 56.05 (estimate).
     expect(a.estimatedTax.amount.toFixed(2)).toBe("56.05");
     expect(b.estimatedTax.amount.toFixed(2)).toBe("0.00");
     expect(result.estimatedTax.amount.toFixed(2)).toBe("56.05");
@@ -262,6 +265,7 @@ describe("rules of § 12.5", () => {
           accountId: "a",
           type: "BUY",
           tradeDate: isoDate("2024-01-02"),
+          settleDate: isoDate("2024-01-04"),
           instrumentId: "ETF_A",
           quantity: quantity("70"),
           price: price("80", "PLN"),
@@ -287,5 +291,72 @@ describe("rules of § 12.5", () => {
     expect(codeOf(() => rebalance({ ...base, mode: "full", costRate: "-0.01" }))).toBe(
       "invalid_allocation",
     );
+  });
+
+  test("the estimated tax uses the tax-view cost (NBP D-1, FX margin excluded), not the economic one", () => {
+    const ledger = buildLedger({
+      accounts: [{ id: "a", currency: "PLN", accountType: "regular" }],
+      taxRates: createFxRateTable([
+        fxRate({ base: "USD", quote: "PLN", rate: "3.90", date: "2025-03-03", source: "nbp" }),
+      ]),
+      transactions: [
+        {
+          id: "B1",
+          accountId: "a",
+          type: "BUY",
+          tradeDate: isoDate("2025-03-03"),
+          settleDate: isoDate("2025-03-04"),
+          instrumentId: "US",
+          quantity: quantity("10"),
+          price: price("100", "USD"),
+          // 1000 USD at mid 4.00 + 0.5 % margin: economic cost 4020, FX fee 20.
+          amount: pln("-4020"),
+          fxFee: pln("20"),
+        },
+      ],
+    });
+    const lots = ledger.positions[0].lots;
+    expect(lots[0].taxCost.amount.toFixed()).toBe("3900");
+    const result = rebalance({
+      holdings: [
+        { instrumentId: "US", value: pln("4500"), unitPrice: pln("450"), lots },
+        { instrumentId: "PL", value: pln("0"), unitPrice: pln("10") },
+      ],
+      targets: [
+        { instrumentId: "US", weight: "0" },
+        { instrumentId: "PL", weight: "1" },
+      ],
+      mode: "full",
+      taxable: true,
+      reconciled: true,
+    });
+    // Gain 4500 − 3900 = 600 → 114.00 (the economic cost 4020 would give 91.20).
+    expect(result.trades[0].estimatedTax.amount.toFixed(2)).toBe("114.00");
+    const onIke = buildLedger({
+      accounts: [{ id: "a", currency: "PLN", accountType: "ike" }],
+      transactions: [
+        {
+          id: "B1",
+          accountId: "a",
+          type: "BUY",
+          tradeDate: isoDate("2025-03-03"),
+          instrumentId: "US",
+          quantity: quantity("10"),
+          price: price("100", "PLN"),
+          amount: pln("-1000"),
+        },
+      ],
+    });
+    const noTaxCost = rebalance({
+      holdings: [
+        { instrumentId: "US", value: pln("4500"), lots: onIke.positions[0].lots },
+        { instrumentId: "PL", value: pln("0") },
+      ],
+      targets: [{ instrumentId: "PL", weight: "1" }],
+      mode: "full",
+      taxable: true,
+      reconciled: true,
+    });
+    expect(noTaxCost.trades[0].estimatedTax).toBeNull();
   });
 });
