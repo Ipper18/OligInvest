@@ -1,0 +1,202 @@
+import { CoreError } from "./errors.js";
+
+/**
+ * Risk metrics (obliczenia-finansowe.md § 8) on daily returns r_t of the TWR index (fractions,
+ * float64 statistics per § 0.1), matching empyrical-reloaded within 1e-6. Every result must be
+ * shown with its assumptions: risk-free rate, frequency, window and annualization.
+ */
+export const PERIODS_PER_YEAR = 252;
+export const MIN_RISK_OBSERVATIONS = 60;
+/** z for the 95 % one-sided normal quantile used by the parametric VaR (§ 8). */
+export const Z_95 = 1.6449;
+
+function fail(message: string): never {
+  throw new CoreError("invalid_series", message);
+}
+
+function check(series: readonly number[], minimum = 2): void {
+  if (series.length < minimum) fail(`At least ${minimum} observations are required`);
+  for (const value of series) {
+    if (typeof value !== "number" || !Number.isFinite(value))
+      fail("Returns must be finite numbers");
+  }
+}
+
+const mean = (xs: readonly number[]) => xs.reduce((sum, x) => sum + x, 0) / xs.length;
+
+function sampleStdev(xs: readonly number[]): number {
+  const m = mean(xs);
+  return Math.sqrt(xs.reduce((sum, x) => sum + (x - m) ** 2, 0) / (xs.length - 1));
+}
+
+function covariance(xs: readonly number[], ys: readonly number[]): number {
+  const mx = mean(xs);
+  const my = mean(ys);
+  return xs.reduce((sum, x, i) => sum + (x - mx) * ((ys[i] as number) - my), 0) / (xs.length - 1);
+}
+
+function pair(xs: readonly number[], ys: readonly number[]): void {
+  check(xs);
+  check(ys);
+  if (xs.length !== ys.length) fail("Series must have the same length");
+}
+
+/** Daily risk-free rate (1 + R_f)^(1/P) − 1. */
+export function dailyRiskFreeRate(annual: number, periodsPerYear = PERIODS_PER_YEAR): number {
+  if (!Number.isFinite(annual) || annual <= -1) fail("Annual risk-free rate must be > −100 %");
+  return (1 + annual) ** (1 / periodsPerYear) - 1;
+}
+
+/** σ_r·√P with the sample standard deviation (n − 1). */
+export function annualVolatility(returns: readonly number[], periodsPerYear = PERIODS_PER_YEAR) {
+  check(returns);
+  return sampleStdev(returns) * Math.sqrt(periodsPerYear);
+}
+
+export interface RatioOptions {
+  readonly riskFreeAnnual?: number | undefined;
+  readonly periodsPerYear?: number | undefined;
+}
+
+/** mean(r − r_f) / std(r − r_f) · √P; null for a zero standard deviation. */
+export function sharpeRatio(returns: readonly number[], options: RatioOptions = {}): number | null {
+  check(returns);
+  const periods = options.periodsPerYear ?? PERIODS_PER_YEAR;
+  const rf = dailyRiskFreeRate(options.riskFreeAnnual ?? 0, periods);
+  const excess = returns.map((r) => r - rf);
+  const sd = sampleStdev(excess);
+  return sd === 0 ? null : (mean(excess) / sd) * Math.sqrt(periods);
+}
+
+/** mean(r − MAR)·P / (DD·√P), DD = √mean(min(r − MAR, 0)²) over all observations. */
+export function sortinoRatio(
+  returns: readonly number[],
+  options: { readonly mar?: number; readonly periodsPerYear?: number } = {},
+): number | null {
+  check(returns);
+  const mar = options.mar ?? 0;
+  const periods = options.periodsPerYear ?? PERIODS_PER_YEAR;
+  const excess = returns.map((r) => r - mar);
+  const downside = Math.sqrt(mean(excess.map((x) => Math.min(x, 0) ** 2)));
+  return downside === 0 ? null : (mean(excess) * periods) / (downside * Math.sqrt(periods));
+}
+
+/** cov(r, b) / var(b), both with n − 1; null when the benchmark does not move. */
+export function beta(returns: readonly number[], benchmark: readonly number[]): number | null {
+  pair(returns, benchmark);
+  const variance = covariance(benchmark, benchmark);
+  return variance === 0 ? null : covariance(returns, benchmark) / variance;
+}
+
+/** Pearson correlation; null when either series does not move. */
+export function correlation(
+  returns: readonly number[],
+  benchmark: readonly number[],
+): number | null {
+  pair(returns, benchmark);
+  const denominator = Math.sqrt(covariance(returns, returns) * covariance(benchmark, benchmark));
+  return denominator === 0 ? null : covariance(returns, benchmark) / denominator;
+}
+
+function checkConfidence(confidence: number): void {
+  if (!(confidence > 0 && confidence < 1)) fail("Confidence must be in (0, 1)");
+}
+
+/** Percentile with linear interpolation between order statistics (numpy default). */
+function percentile(values: readonly number[], p: number): number {
+  const sorted = [...values].sort((a, b) => a - b);
+  const position = p * (sorted.length - 1);
+  const lower = Math.floor(position);
+  const upper = Math.min(lower + 1, sorted.length - 1);
+  const fraction = position - lower;
+  return (
+    (sorted[lower] as number) + ((sorted[upper] as number) - (sorted[lower] as number)) * fraction
+  );
+}
+
+/** Historical 1-day VaR: −percentile_{1−c}(r), as a positive loss fraction. */
+export function historicalVar(returns: readonly number[], confidence = 0.95): number {
+  check(returns, 1);
+  checkConfidence(confidence);
+  return -percentile(returns, 1 - confidence);
+}
+
+/** Historical 1-day CVaR: −mean(r | r ≤ percentile_{1−c}). */
+export function historicalCvar(returns: readonly number[], confidence = 0.95): number {
+  check(returns, 1);
+  checkConfidence(confidence);
+  const cutoff = percentile(returns, 1 - confidence);
+  return -mean(returns.filter((r) => r <= cutoff));
+}
+
+/** Parametric 1-day VaR 95 %: −(mean − z·σ), normal distribution (§ 8). */
+export function parametricVar(returns: readonly number[], z = Z_95): number {
+  check(returns);
+  return -(mean(returns) - z * sampleStdev(returns));
+}
+
+/** CAGR / |max DD|; null without a drawdown. */
+export function calmarRatio(cagr: number, maxDrawdown: number): number | null {
+  return maxDrawdown === 0 ? null : cagr / Math.abs(maxDrawdown);
+}
+
+export interface RiskMetricsOptions extends RatioOptions {
+  readonly benchmark?: readonly number[] | undefined;
+  readonly mar?: number | undefined;
+  readonly confidence?: number | undefined;
+}
+
+export interface RiskMetrics {
+  readonly assumptions: {
+    readonly riskFreeAnnual: number;
+    readonly periodsPerYear: number;
+    readonly minimumAcceptableReturn: number;
+    readonly confidence: number;
+    readonly observations: number;
+  };
+  /** Fewer than 60 observations: show the values marked „mało danych” (§ 8). */
+  readonly insufficientData: boolean;
+  readonly meanDaily: number;
+  readonly stdevDaily: number;
+  readonly volatilityAnnual: number;
+  readonly sharpe: number | null;
+  readonly sortino: number | null;
+  readonly beta: number | null;
+  readonly correlation: number | null;
+  readonly varHistorical: number;
+  readonly cvarHistorical: number;
+  readonly varParametric: number;
+}
+
+/** All § 8 metrics of one return series with the assumptions they depend on. */
+export function riskMetrics(
+  returns: readonly number[],
+  options: RiskMetricsOptions = {},
+): RiskMetrics {
+  check(returns);
+  const periodsPerYear = options.periodsPerYear ?? PERIODS_PER_YEAR;
+  const riskFreeAnnual = options.riskFreeAnnual ?? 0;
+  const mar = options.mar ?? 0;
+  const confidence = options.confidence ?? 0.95;
+  const bench = options.benchmark;
+  return Object.freeze({
+    assumptions: Object.freeze({
+      riskFreeAnnual,
+      periodsPerYear,
+      minimumAcceptableReturn: mar,
+      confidence,
+      observations: returns.length,
+    }),
+    insufficientData: returns.length < MIN_RISK_OBSERVATIONS,
+    meanDaily: mean(returns),
+    stdevDaily: sampleStdev(returns),
+    volatilityAnnual: annualVolatility(returns, periodsPerYear),
+    sharpe: sharpeRatio(returns, { riskFreeAnnual, periodsPerYear }),
+    sortino: sortinoRatio(returns, { mar, periodsPerYear }),
+    beta: bench ? beta(returns, bench) : null,
+    correlation: bench ? correlation(returns, bench) : null,
+    varHistorical: historicalVar(returns, confidence),
+    cvarHistorical: historicalCvar(returns, confidence),
+    varParametric: parametricVar(returns),
+  });
+}
