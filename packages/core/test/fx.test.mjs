@@ -38,6 +38,11 @@ describe("FxRate", () => {
     expect(codeOf(() => fxRate({ base: "PLN", quote: "PLN", rate: "1", date: "2025-01-02" }))).toBe(
       "invalid_fx_rate",
     );
+    const identity = (rate, source) =>
+      codeOf(() => fxRate({ base: "PLN", quote: "PLN", rate, date: "2025-01-02", source }));
+    expect(identity("2", "derived")).toBe("invalid_fx_rate");
+    expect(identity("1", "nbp")).toBe("invalid_fx_rate");
+    expect(identity("1", "derived")).toBe("no-error");
     expect(codeOf(() => fxRate({ base: "USD", quote: "PLN", rate: "1", date: "2025-01-02" }))).toBe(
       "invalid_fx_rate",
     );

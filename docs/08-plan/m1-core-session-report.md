@@ -7,7 +7,7 @@
 | Zakres | Stan |
 |---|---|
 | BL-141 | wykonane lokalnie: `Decimal` (34 cyfry, HALF_EVEN), `Money`, `Quantity`, `Price`, `FxRate`, tabela kursów, daty i cykle rozliczeń, formatowanie pl-PL |
-| BL-142 | todo — model operacji, FIFO, P/L ekonomiczny i podatkowy (wektor A) |
+| BL-142 | wykonane lokalnie: `Transaction` (unia po `type`, walidacja jak w `schema.sql`), `buildLedger` — FIFO per rachunek, split, przeniesienia, P/L ekonomiczny i podatkowy (`settle_date`, NBP D-1, `fxCosts`, `tax_include_fx_fee`), pełny wektor A |
 | BL-143 | todo — pozycje, gotówka, wycena, wynik dnia (F, G), test integracyjny `seed-dev.json` |
 | Etap 2 | BL-301, 305–308 — po zamknięciu etapu 1 |
 
@@ -18,13 +18,16 @@
 - **Waluty:** `FxRate` (`fxRate`, `convertMoney`, `invertFxRate`, `brokerFxRate` — § 2.1, `fxConversionCost`), `createFxRateTable` z `onOrBefore` (wycena) i `before` (NBP D-1).
 - **Czas:** `IsoDate`, `addDays`, `daysBetween`, `isWeekday`, `settlementCycleDays`, `settlementRegionForMic`, `settlementDate` (kalendarz od wywołującego).
 - **Prezentacja:** `formatMoney`, `formatPrice`, `formatQuantity`, `formatFxRate`, `formatRatio`.
-- **BL-142 (plan):** `Transaction` (unia po `type`, pola jak `portfolio.transactions`), `buildLedger({ accounts, transactions, taxSettings, taxRates })` → partie, zużycia, sprzedaże z widokiem podatkowym, gotówka, problemy danych.
+- **Księga (BL-142):** `Transaction` (unia po `type`, pola jak `portfolio.transactions`), `sortTransactions`, `validateTransaction`, `buildLedger({ accounts, transactions, taxSettings, taxRates })` → `lots`, `sales` (z `consumptions` i `tax`), `issues` (`missing_settle_date`, `missing_tax_rate`); błędy danych jako `CoreError` (`short_position`, `unmatched_security_transfer`, `invalid_transaction`).
 - **BL-143 (plan):** pozycje i gotówka z księgi, `valuePortfolio`, `dayChange`, `netExternalFlows`, `dividendBreakdown`.
 
-Dowody: `pnpm turbo run lint typecheck test build --filter=@oliginvest/core` PASS; 34 testy, pokrycie linii 98,9 %; `pnpm check:deps` PASS. Dosłowne `pnpm --filter @oliginvest/core lint typecheck test build` uruchamia tylko `lint` (reszta trafia jako argumenty do Biome) — dlatego filtr Turbo.
+Dowody: `pnpm turbo run lint typecheck test build --filter=@oliginvest/core` PASS; 72 testy, pokrycie linii 95 %; `pnpm check:deps` PASS. Dosłowne `pnpm --filter @oliginvest/core lint typecheck test build` uruchamia tylko `lint` (reszta trafia jako argumenty do Biome) — dlatego filtr Turbo.
 
-Dalej: BL-142.
+Odwzorowanie § 1 (do potwierdzenia): kolejność w dniu = SPLIT, potem `executedAt` (operacje bez czasu po operacjach z czasem), `sequence`, `id` — porównanie `executedAt` tylko przy obu wartościach nie jest przechodnie. `SECURITY_TRANSFER_IN` musi następować po swoim `_OUT` (niższe `sequence`); przeniesienie spoza śledzonych rachunków (IN bez OUT) jest błędem — potrzebna decyzja, skąd brać koszt i datę.
+
+Dalej: BL-143.
 
 ## Historia
 
 - 2026-09-24 BL-141: typy wartości, kursy i formatowanie; testy na wektorze A (kursy brokera, koszty FX).
+- 2026-09-24 BL-142: księga FIFO z widokiem ekonomicznym i podatkowym; wektor A zgodny co do grosza (także `fxCosts` 105,63 i wariant z marżą −1055,83); testy sprzedaży częściowych, splitów, przeniesień, braków danych, IKE i walidacji.
