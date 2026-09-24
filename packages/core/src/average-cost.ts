@@ -128,7 +128,30 @@ export function buildAverageCostView(input: LedgerInput): AverageCostView {
       }
       case "SPLIT": {
         const p = pool(tx.accountId, tx.instrumentId, currencyOf(tx.accountId));
-        p.quantity = p.quantity.times(tx.splitRatio);
+        const kept = p.quantity
+          .times(tx.ratioTo)
+          .div(tx.ratioFrom)
+          .toDecimalPlaces(0, Decimal.ROUND_DOWN);
+        const fraction = p.quantity.minus(kept.times(tx.ratioFrom).div(tx.ratioTo));
+        if (tx.cashInLieu && fraction.isPositive() && !fraction.isZero()) {
+          const known = p.known;
+          const unitCost = p.cost.div(p.quantity);
+          const cost = take(p, fraction, tx);
+          sales.push(
+            Object.freeze({
+              transactionId: tx.id,
+              accountId: tx.accountId,
+              instrumentId: tx.instrumentId,
+              tradeDate: tx.tradeDate,
+              quantity: fraction as Quantity,
+              unitCost: known ? money(unitCost, p.currency) : null,
+              proceeds: tx.cashInLieu,
+              cost: known ? money(cost, p.currency) : null,
+              realizedPl: known ? money(tx.cashInLieu.amount.minus(cost), p.currency) : null,
+            }),
+          );
+        }
+        p.quantity = p.quantity.times(tx.ratioTo).div(tx.ratioFrom);
         break;
       }
       case "SECURITY_TRANSFER_OUT": {

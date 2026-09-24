@@ -233,16 +233,17 @@ describe("ledger, transfers and the tax view", () => {
     expect(noRate.positions[0]).toMatchObject({ costKnown: false, cost: null });
   });
 
-  failsToday("C-03 a 1:3 reverse split leaves exactly 10 of 30 units, which can be sold", () => {
+  test("C-03 a 1:3 reverse split leaves exactly 10 of 30 units, which can be sold", () => {
     const buy = trade("B", "BUY", "2025-01-02", "30", "1", "-30");
-    // The only representation available (split_ratio numeric(24,12) in schema.sql is no better).
+    // Owner decision 2026-09-24: a split is an integer pair (3 old units → 1 new unit).
     const split = {
       id: "SP",
       accountId: "a",
       type: "SPLIT",
       tradeDate: d("2025-02-03"),
       instrumentId: "X",
-      splitRatio: toDecimal("1").div(3),
+      ratioFrom: 3,
+      ratioTo: 1,
     };
     const sell = trade("S", "SELL", "2025-03-03", "10", "3.30", "33");
     const held = buildLedger({ accounts: regular, transactions: [buy, split] });
@@ -251,6 +252,40 @@ describe("ledger, transfers and the tax view", () => {
     // Today: short_position — the whole recompute of the account fails.
     const sold = buildLedger({ accounts: regular, transactions: [buy, split, sell] });
     expect(sold.sales[0].realizedPlEconomic.amount.toFixed()).toBe("3");
+  });
+
+  test("C-03 (decision) the fraction left by a reverse split is settled as cash in lieu", () => {
+    const buy = trade("B", "BUY", "2025-01-02", "31", "1", "-31");
+    const split = {
+      id: "SP",
+      accountId: "a",
+      type: "SPLIT",
+      tradeDate: d("2025-02-03"),
+      settleDate: d("2025-02-03"),
+      instrumentId: "X",
+      ratioFrom: 3,
+      ratioTo: 1,
+      cashInLieu: pln("1.20"),
+    };
+    const ledger = buildLedger({ accounts: regular, transactions: [buy, split] });
+    expect(ledger.positions[0].quantity.toFixed()).toBe("10");
+    expect(ledger.positions[0].cost.amount.toFixed()).toBe("30");
+    const [sale] = ledger.sales;
+    expect(sale.transactionId).toBe("SP");
+    expect(sale.realizedPlEconomic.amount.toFixed()).toBe("0.2");
+    expect(ledger.cash[0].balance.amount.toFixed()).toBe("-29.8");
+    const view = buildAverageCostView({ accounts: regular, transactions: [buy, split] });
+    expect(view.positions[0].quantity.toFixed()).toBe("10");
+    expect(view.sales[0].realizedPl.amount.toFixed()).toBe("0.2");
+    const noLieu = buildLedger({
+      accounts: regular,
+      transactions: [buy, { ...split, cashInLieu: undefined }],
+    });
+    expect(noLieu.positions[0].quantity.toFixed(6)).toBe("10.333333");
+    const bad = { ...split, ratioFrom: 1.5 };
+    expect(codeOf(() => buildLedger({ accounts: regular, transactions: [buy, bad] }))).toBe(
+      "invalid_transaction",
+    );
   });
 
   failsToday("C-04 an FTT stored as a TAX linked to the purchase is part of the lot cost", () => {

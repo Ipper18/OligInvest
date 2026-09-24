@@ -188,7 +188,8 @@ describe("vector A — FIFO, FX, broker margin and split (obliczenia-finansowe.m
       type: "SPLIT",
       tradeDate: isoDate("2025-10-01"),
       instrumentId: "AAPL",
-      splitRatio: toDecimal("4"),
+      ratioFrom: 1,
+      ratioTo: 4,
     };
     const after = buildLedger({ accounts, transactions: [...vectorA, split], taxRates });
     const lot = after.lots[1];
@@ -530,7 +531,8 @@ describe("processing order (§ 1)", () => {
       tradeDate: isoDate("2024-02-01"),
       sequence: 5,
       instrumentId: "PKO",
-      splitRatio: toDecimal("2"),
+      ratioFrom: 1,
+      ratioTo: 2,
     };
     const ledger = buildLedger({ accounts, transactions: [sell, split, buy] });
     expect(fixed(ledger.sales[0].realizedPlEconomic)).toBe("20.00");
@@ -544,7 +546,8 @@ describe("processing order (§ 1)", () => {
       type: "SPLIT",
       tradeDate: isoDate("2024-02-01"),
       instrumentId: "PKO",
-      splitRatio: toDecimal("0.1"),
+      ratioFrom: 10,
+      ratioTo: 1,
     };
     const lot = buildLedger({ accounts, transactions: [buy, split] }).lots[0];
     expect(lot.quantityRemaining.toFixed()).toBe("2.5");
@@ -584,7 +587,8 @@ describe("validation per operation type (schema.sql constraints)", () => {
         type: "SPLIT",
         tradeDate: "2024-01-01",
         instrumentId: "PKO",
-        splitRatio: toDecimal("0"),
+        ratioFrom: 0,
+        ratioTo: 1,
       },
       "invalid_transaction",
     ],

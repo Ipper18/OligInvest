@@ -4,7 +4,7 @@ import { Decimal } from "./decimal.js";
 import { type DividendTaxView, dividendTaxView } from "./dividends.js";
 import { CoreError } from "./errors.js";
 import type { FxRate, FxRateTable } from "./fx.js";
-import { type Money, money, type Quantity, sumMoney, zeroMoney } from "./money.js";
+import { type Money, money, price, type Quantity, sumMoney, zeroMoney } from "./money.js";
 import {
   type Account,
   type DividendTransaction,
@@ -580,11 +580,38 @@ export function buildLedger(input: LedgerInput): Ledger {
     );
   }
 
+  /**
+   * Split q → q·to/from (§ 3.4). With `cashInLieu`, the units that would become a fraction after a
+   * reverse split are sold FIFO for that amount first (sale under the split's id, in pre-split
+   * units), so the remaining whole units come out exact (31 → 1 sold, 30 → 10).
+   */
   function split(tx: SplitTransaction) {
-    for (const lot of lotsOf(tx.accountId, tx.instrumentId)) {
-      lot.quantityRemaining = lot.quantityRemaining.times(tx.splitRatio);
-      lot.splitFactor = lot.splitFactor.times(tx.splitRatio);
+    const lots = lotsOf(tx.accountId, tx.instrumentId);
+    if (tx.cashInLieu) {
+      const held = lots.reduce((sum, lot) => sum.plus(lot.quantityRemaining), ZERO);
+      const kept = held.times(tx.ratioTo).div(tx.ratioFrom).toDecimalPlaces(0, Decimal.ROUND_DOWN);
+      const fraction = held.minus(kept.times(tx.ratioFrom).div(tx.ratioTo));
+      if (fraction.isPositive() && !fraction.isZero()) sellFraction(tx, fraction);
     }
+    for (const lot of lotsOf(tx.accountId, tx.instrumentId)) {
+      lot.quantityRemaining = lot.quantityRemaining.times(tx.ratioTo).div(tx.ratioFrom);
+      lot.splitFactor = lot.splitFactor.times(tx.ratioTo).div(tx.ratioFrom);
+    }
+  }
+
+  function sellFraction(tx: SplitTransaction, fraction: Decimal) {
+    if (!tx.cashInLieu) return;
+    sell({
+      id: tx.id,
+      accountId: tx.accountId,
+      type: "SELL",
+      tradeDate: tx.tradeDate,
+      settleDate: tx.settleDate,
+      instrumentId: tx.instrumentId,
+      quantity: fraction as Quantity,
+      price: price(tx.cashInLieu.amount.div(fraction), tx.cashInLieu.currency),
+      amount: tx.cashInLieu,
+    });
   }
 
   function transferOut(tx: SecurityTransferTransaction) {
@@ -777,6 +804,7 @@ export function buildLedger(input: LedgerInput): Ledger {
 
   sortTransactions(input.transactions).forEach((tx, order) => {
     if ("amount" in tx) book(tx.accountId, tx.amount);
+    if (tx.type === "SPLIT" && tx.cashInLieu) book(tx.accountId, tx.cashInLieu);
     if (tx.type === "FX_CONVERSION") book(tx.accountId, tx.counterAmount);
     switch (tx.type) {
       case "BUY":
