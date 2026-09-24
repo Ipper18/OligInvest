@@ -48,7 +48,7 @@ interface TransactionBase {
 
 /**
  * BUY/SELL. `amount` is the signed cash impact in the account currency exactly as settled by the
- * broker (BUY < 0, SELL ≥ 0) and already includes `fee`, `tax` (e.g. FTT) and `fxFee`.
+ * broker (BUY ≤ 0; SELL any sign — a commission may exceed the value, § 1) and already includes `fee`, `tax` (e.g. FTT) and `fxFee`.
  */
 export interface TradeTransaction extends TransactionBase {
   readonly type: "BUY" | "SELL";
@@ -215,7 +215,7 @@ export function validateTransaction(tx: Transaction, account: Account): void {
       checkInstrument(tx, tx.instrumentId);
       checkPositiveDecimal(tx, "quantity", tx.quantity);
       if (!isMoney(tx.price) || tx.price.amount.isNegative()) fail(tx, "price", "Invalid price");
-      const amount = checkMoney(tx, "amount", tx.amount, tx.type === "BUY" ? "neg" : "nonneg");
+      const amount = checkMoney(tx, "amount", tx.amount, tx.type === "BUY" ? "neg" : undefined);
       if (amount.currency !== account.currency) {
         fail(tx, "amount", "Trade amount must be in the account currency");
       }
