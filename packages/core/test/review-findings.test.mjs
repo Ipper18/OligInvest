@@ -598,50 +598,47 @@ describe("valuation, flows and returns", () => {
     expect(result.ratio).toBeCloseTo(50 / 10100, 12);
   });
 
-  failsToday(
-    "C-16 a zero balance in a currency without a rate does not make the valuation incomplete",
-    () => {
-      const ledger = buildLedger({
-        accounts: regular,
-        transactions: [
-          {
-            id: "D",
-            accountId: "a",
-            type: "DEPOSIT",
-            tradeDate: d("2025-01-02"),
-            amount: pln("1000"),
-          },
-          {
-            id: "FX1",
-            accountId: "a",
-            type: "FX_CONVERSION",
-            tradeDate: d("2025-01-03"),
-            amount: pln("-430"),
-            counterAmount: money("100", "EUR"),
-          },
-          {
-            id: "FX2",
-            accountId: "a",
-            type: "FX_CONVERSION",
-            tradeDate: d("2025-01-04"),
-            amount: money("-100", "EUR"),
-            counterAmount: pln("428"),
-          },
-        ],
-      });
-      const valuation = valuePortfolio({
-        accounts: regular,
-        positions: ledger.positions,
-        cash: ledger.cash,
-        quotes: [],
-        fxRates: createFxRateTable([]),
-        date: d("2025-06-30"),
-      });
-      // Today: EUR 0 without an EUR rate → isComplete false and an "fx" gap for a known value.
-      expect(valuation.isComplete).toBe(true);
-      expect(valuation.gaps).toEqual([]);
-    },
-  );
+  test("C-16 a zero balance in a currency without a rate does not make the valuation incomplete", () => {
+    const ledger = buildLedger({
+      accounts: regular,
+      transactions: [
+        {
+          id: "D",
+          accountId: "a",
+          type: "DEPOSIT",
+          tradeDate: d("2025-01-02"),
+          amount: pln("1000"),
+        },
+        {
+          id: "FX1",
+          accountId: "a",
+          type: "FX_CONVERSION",
+          tradeDate: d("2025-01-03"),
+          amount: pln("-430"),
+          counterAmount: money("100", "EUR"),
+        },
+        {
+          id: "FX2",
+          accountId: "a",
+          type: "FX_CONVERSION",
+          tradeDate: d("2025-01-04"),
+          amount: money("-100", "EUR"),
+          counterAmount: pln("428"),
+        },
+      ],
+    });
+    const valuation = valuePortfolio({
+      accounts: regular,
+      positions: ledger.positions,
+      cash: ledger.cash,
+      quotes: [],
+      fxRates: createFxRateTable([]),
+      date: d("2025-06-30"),
+    });
+    // Today: EUR 0 without an EUR rate → isComplete false and an "fx" gap for a known value.
+    expect(valuation.isComplete).toBe(true);
+    expect(valuation.gaps).toEqual([]);
+  });
 
   test("C-25 investor cash flows reject flows outside the period", () => {
     // Today the 2024 flow becomes t0, so the start value is no longer at the start.

@@ -159,6 +159,8 @@ export function valuePortfolio(input: ValuationInput): PortfolioValuation {
     let cash = new Decimal(0);
     const balances = input.cash.filter((c) => c.accountId === account.id);
     for (const { balance } of balances) {
+      // A zero balance has a known value without any rate (C-16).
+      if (balance.amount.isZero()) continue;
       const fx = rate(account.id, balance.currency, currency);
       if (fx) cash = cash.plus(balance.amount.times(fx.rate));
       else complete = false;
