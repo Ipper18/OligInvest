@@ -29,6 +29,15 @@ function sampleStdev(xs: readonly number[]): number {
   return Math.sqrt(xs.reduce((sum, x) => sum + (x - m) ** 2, 0) / (xs.length - 1));
 }
 
+/**
+ * A series that does not move: identical values, or a spread that is only floating-point noise
+ * relative to its level (C-07). Ratios over such a series are undefined (null), not ±10¹⁶.
+ */
+function isFlat(xs: readonly number[]): boolean {
+  if (Math.max(...xs) === Math.min(...xs)) return true;
+  return sampleStdev(xs) <= 1e-12 * Math.max(Math.abs(mean(xs)), 1e-12);
+}
+
 function covariance(xs: readonly number[], ys: readonly number[]): number {
   const mx = mean(xs);
   const my = mean(ys);
@@ -65,7 +74,7 @@ export function sharpeRatio(returns: readonly number[], options: RatioOptions = 
   const rf = dailyRiskFreeRate(options.riskFreeAnnual ?? 0, periods);
   const excess = returns.map((r) => r - rf);
   const sd = sampleStdev(excess);
-  return sd === 0 ? null : (mean(excess) / sd) * Math.sqrt(periods);
+  return isFlat(excess) ? null : (mean(excess) / sd) * Math.sqrt(periods);
 }
 
 /** mean(r − MAR)·P / (DD·√P), DD = √mean(min(r − MAR, 0)²) over all observations. */
@@ -85,7 +94,7 @@ export function sortinoRatio(
 export function beta(returns: readonly number[], benchmark: readonly number[]): number | null {
   pair(returns, benchmark);
   const variance = covariance(benchmark, benchmark);
-  return variance === 0 ? null : covariance(returns, benchmark) / variance;
+  return isFlat(benchmark) ? null : covariance(returns, benchmark) / variance;
 }
 
 /** Pearson correlation; null when either series does not move. */
@@ -95,7 +104,7 @@ export function correlation(
 ): number | null {
   pair(returns, benchmark);
   const denominator = Math.sqrt(covariance(returns, returns) * covariance(benchmark, benchmark));
-  return denominator === 0 ? null : covariance(returns, benchmark) / denominator;
+  return isFlat(returns) || isFlat(benchmark) ? null : covariance(returns, benchmark) / denominator;
 }
 
 function checkConfidence(confidence: number): void {
