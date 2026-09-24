@@ -10,8 +10,9 @@ export interface AveragePosition {
   readonly accountId: string;
   readonly instrumentId: string;
   readonly quantity: Quantity;
-  readonly cost: Money;
-  readonly unitCost: Money;
+  /** Null while the pool holds units without an acquisition cost (§ 3.5). */
+  readonly cost: Money | null;
+  readonly unitCost: Money | null;
 }
 
 export interface AverageSale {
@@ -21,10 +22,10 @@ export interface AverageSale {
   readonly tradeDate: IsoDate;
   readonly quantity: Quantity;
   /** c̄ at the moment of the sale. */
-  readonly unitCost: Money;
+  readonly unitCost: Money | null;
   readonly proceeds: Money;
-  readonly cost: Money;
-  readonly realizedPl: Money;
+  readonly cost: Money | null;
+  readonly realizedPl: Money | null;
 }
 
 export interface AverageCostView {
@@ -38,6 +39,7 @@ interface Pool {
   currency: string;
   quantity: Decimal;
   cost: Decimal;
+  known: boolean;
 }
 
 /**
@@ -50,15 +52,29 @@ export function buildAverageCostView(input: LedgerInput): AverageCostView {
   const pools = new Map<string, Pool>();
   const moved = new Map<
     string,
-    { quantity: Decimal; cost: Decimal; currency: string; instrumentId: string }
+    { quantity: Decimal; cost: Decimal; known: boolean; currency: string; instrumentId: string }
   >();
   const sales: AverageSale[] = [];
+  const outIds = new Set<string>();
+  const outLinkedTo = new Set<string>();
+  for (const tx of input.transactions) {
+    if (tx.type !== "SECURITY_TRANSFER_OUT") continue;
+    outIds.add(tx.id);
+    if (tx.relatedTransactionId !== undefined) outLinkedTo.add(tx.relatedTransactionId);
+  }
 
   const pool = (accountId: string, instrumentId: string, currency: string): Pool => {
     const key = `${accountId}\u0000${instrumentId}`;
     let found = pools.get(key);
     if (!found) {
-      found = { accountId, instrumentId, currency, quantity: new Decimal(0), cost: new Decimal(0) };
+      found = {
+        accountId,
+        instrumentId,
+        currency,
+        quantity: new Decimal(0),
+        cost: new Decimal(0),
+        known: true,
+      };
       pools.set(key, found);
     }
     return found;
@@ -75,6 +91,7 @@ export function buildAverageCostView(input: LedgerInput): AverageCostView {
     const cost = units.equals(p.quantity) ? p.cost : p.cost.times(units).div(p.quantity);
     p.quantity = p.quantity.minus(units);
     p.cost = p.cost.minus(cost);
+    if (p.quantity.isZero()) p.known = true;
     return cost;
   };
 
@@ -91,6 +108,7 @@ export function buildAverageCostView(input: LedgerInput): AverageCostView {
       }
       case "SELL": {
         const p = pool(tx.accountId, tx.instrumentId, tx.amount.currency);
+        const known = p.known;
         const unitCost = p.quantity.isZero() ? new Decimal(0) : p.cost.div(p.quantity);
         const cost = take(p, tx.quantity, tx);
         sales.push(
@@ -100,10 +118,10 @@ export function buildAverageCostView(input: LedgerInput): AverageCostView {
             instrumentId: tx.instrumentId,
             tradeDate: tx.tradeDate,
             quantity: tx.quantity,
-            unitCost: money(unitCost, p.currency),
+            unitCost: known ? money(unitCost, p.currency) : null,
             proceeds: tx.amount,
-            cost: money(cost, p.currency),
-            realizedPl: money(tx.amount.amount.minus(cost), p.currency),
+            cost: known ? money(cost, p.currency) : null,
+            realizedPl: known ? money(tx.amount.amount.minus(cost), p.currency) : null,
           }),
         );
         break;
@@ -115,8 +133,10 @@ export function buildAverageCostView(input: LedgerInput): AverageCostView {
       }
       case "SECURITY_TRANSFER_OUT": {
         const p = pool(tx.accountId, tx.instrumentId, currencyOf(tx.accountId));
+        const known = p.known;
         const record = {
           quantity: tx.quantity,
+          known,
           cost: take(p, tx.quantity, tx),
           currency: p.currency,
           instrumentId: tx.instrumentId,
@@ -131,20 +151,30 @@ export function buildAverageCostView(input: LedgerInput): AverageCostView {
           (tx.relatedTransactionId === undefined
             ? undefined
             : moved.get(tx.relatedTransactionId)) ?? moved.get(`in:${tx.id}`);
+        const pendingOut =
+          (tx.relatedTransactionId !== undefined && outIds.has(tx.relatedTransactionId)) ||
+          outLinkedTo.has(tx.id);
         if (
-          !record ||
-          record.instrumentId !== tx.instrumentId ||
-          !record.quantity.equals(tx.quantity)
+          (record &&
+            (record.instrumentId !== tx.instrumentId || !record.quantity.equals(tx.quantity))) ||
+          (!record && pendingOut)
         ) {
           throw new CoreError(
             "unmatched_security_transfer",
-            "SECURITY_TRANSFER_IN needs an earlier matching SECURITY_TRANSFER_OUT (same instrument and quantity)",
+            "SECURITY_TRANSFER_IN must follow a matching SECURITY_TRANSFER_OUT (same instrument and quantity)",
             { transactionId: tx.id },
           );
         }
-        const p = pool(tx.accountId, tx.instrumentId, record.currency);
-        p.quantity = p.quantity.plus(record.quantity);
-        p.cost = p.cost.plus(record.cost);
+        const p = pool(tx.accountId, tx.instrumentId, record?.currency ?? currencyOf(tx.accountId));
+        p.quantity = p.quantity.plus(tx.quantity);
+        if (record) {
+          p.cost = p.cost.plus(record.cost);
+          p.known = p.known && record.known;
+        } else if (tx.acquisitionCost !== undefined) {
+          p.cost = p.cost.plus(tx.acquisitionCost.amount);
+        } else {
+          p.known = false;
+        }
         break;
       }
       default:
@@ -165,8 +195,8 @@ export function buildAverageCostView(input: LedgerInput): AverageCostView {
         accountId: p.accountId,
         instrumentId: p.instrumentId,
         quantity: p.quantity as Quantity,
-        cost: money(p.cost, p.currency),
-        unitCost: money(p.cost.div(p.quantity), p.currency),
+        cost: p.known ? money(p.cost, p.currency) : null,
+        unitCost: p.known ? money(p.cost.div(p.quantity), p.currency) : null,
       }),
     );
   return Object.freeze({ positions: Object.freeze(positions), sales: Object.freeze(sales) });

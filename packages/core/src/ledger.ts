@@ -35,9 +35,17 @@ export interface LedgerInput {
   readonly taxRates?: FxRateTable | undefined;
 }
 
-export type LedgerIssueCode = "missing_settle_date" | "missing_tax_rate";
+export const LEDGER_ISSUE_CODES = [
+  "missing_settle_date",
+  "missing_tax_rate",
+  "missing_acquisition_cost",
+] as const;
+export type LedgerIssueCode = (typeof LEDGER_ISSUE_CODES)[number];
 
-/** Data gap that disables the tax view of an operation; the economic view is unaffected. */
+/**
+ * Data gap. `missing_settle_date` and `missing_tax_rate` disable the tax view only;
+ * `missing_acquisition_cost` (warning „brak kosztu nabycia”, § 3.5) also removes the position from P/L.
+ */
 export interface LedgerIssue {
   readonly code: LedgerIssueCode;
   readonly transactionId: string;
@@ -59,13 +67,15 @@ export interface Lot {
   readonly quantityAcquired: Quantity;
   readonly splitFactor: Decimal;
   readonly quantityRemaining: Quantity;
+  /** False for an inbound transfer without a declared cost: the cost fields are null. */
+  readonly costKnown: boolean;
   /** Economic cost (account currency) incl. commission, taxes and FX margin. */
-  readonly cost: Money;
-  readonly costRemaining: Money;
+  readonly cost: Money | null;
+  readonly costRemaining: Money | null;
   readonly unitCost: Money | null;
-  /** K_i: q·p plus costs charged in the instrument currency (§ 4.2). */
-  readonly costInstrument: Money;
-  readonly costInstrumentRemaining: Money;
+  /** K_i: q·p plus costs charged in the instrument currency (§ 4.2); null when not known. */
+  readonly costInstrument: Money | null;
+  readonly costInstrumentRemaining: Money | null;
   readonly fxFee: Money;
   readonly fxFeeRemaining: Money;
   /** Tax-view cost in PLN without FX margin (NBP D-1); null if not applicable or data missing. */
@@ -89,10 +99,11 @@ export interface LotConsumption {
   readonly instrumentId: string;
   readonly closedOn: IsoDate;
   readonly quantity: Quantity;
-  readonly costEconomic: Money;
+  readonly costKnown: boolean;
+  readonly costEconomic: Money | null;
   readonly proceedsEconomic: Money;
-  readonly realizedPlEconomic: Money;
-  readonly costInstrument: Money;
+  readonly realizedPlEconomic: Money | null;
+  readonly costInstrument: Money | null;
   readonly proceedsInstrument: Money;
   readonly lotFxFee: Money;
   readonly sellFxFee: Money;
@@ -118,8 +129,9 @@ export interface RealizedSale {
   readonly tradeDate: IsoDate;
   readonly quantity: Quantity;
   readonly proceedsEconomic: Money;
-  readonly costEconomic: Money;
-  readonly realizedPlEconomic: Money;
+  /** Null when any consumed lot has an unknown cost (`missing_acquisition_cost`). */
+  readonly costEconomic: Money | null;
+  readonly realizedPlEconomic: Money | null;
   readonly sellFxFee: Money;
   readonly taxStatus: TaxStatus;
   readonly tax: SaleTaxView | null;
@@ -137,9 +149,11 @@ export interface Position {
   readonly accountId: string;
   readonly instrumentId: string;
   readonly quantity: Quantity;
-  /** Remaining economic cost in the account currency. */
-  readonly cost: Money;
-  readonly costInstrument: Money;
+  /** False while any open lot has an unknown cost: valued, but without P/L (§ 3.5). */
+  readonly costKnown: boolean;
+  /** Remaining economic cost in the account currency; null when `costKnown` is false. */
+  readonly cost: Money | null;
+  readonly costInstrument: Money | null;
   readonly fxFee: Money;
   readonly taxCost: Money | null;
   readonly lots: readonly Lot[];
@@ -156,6 +170,8 @@ export interface DividendRecord {
   readonly net: Money;
   /** Amount credited to the account (economic view). */
   readonly credited: Money;
+  /** Gross in PLN at NBP D-1 (as in the tax view) on any account type; basis of the yield on cost. */
+  readonly grossPln: Money | null;
   readonly taxStatus: TaxStatus;
   readonly tax: DividendTaxView | null;
 }
@@ -183,10 +199,11 @@ interface WorkingLot {
   quantityRemaining: Decimal;
   costCurrency: CurrencyCode;
   instrumentCurrency: CurrencyCode;
+  costKnown: boolean;
   cost: Decimal;
   costRemaining: Decimal;
-  costInstrument: Decimal;
-  costInstrumentRemaining: Decimal;
+  costInstrument: Decimal | null;
+  costInstrumentRemaining: Decimal | null;
   fxFee: Decimal;
   fxFeeRemaining: Decimal;
   taxCost: Decimal | null;
@@ -199,7 +216,7 @@ interface WorkingLot {
 interface Share {
   quantity: Decimal;
   cost: Decimal;
-  costInstrument: Decimal;
+  costInstrument: Decimal | null;
   fxFee: Decimal;
   taxCost: Decimal | null;
   fxFeePln: Decimal | null;
@@ -219,14 +236,16 @@ function takeShare(lot: WorkingLot, units: Decimal, date: IsoDate): Share {
   const share: Share = {
     quantity: units,
     cost: part(lot.costRemaining),
-    costInstrument: part(lot.costInstrumentRemaining),
+    costInstrument: lot.costInstrumentRemaining === null ? null : part(lot.costInstrumentRemaining),
     fxFee: part(lot.fxFeeRemaining),
     taxCost: lot.taxCostRemaining === null ? null : part(lot.taxCostRemaining),
     fxFeePln: lot.fxFeePlnRemaining === null ? null : part(lot.fxFeePlnRemaining),
   };
   lot.quantityRemaining = lot.quantityRemaining.minus(units);
   lot.costRemaining = lot.costRemaining.minus(share.cost);
-  lot.costInstrumentRemaining = lot.costInstrumentRemaining.minus(share.costInstrument);
+  if (lot.costInstrumentRemaining !== null && share.costInstrument !== null) {
+    lot.costInstrumentRemaining = lot.costInstrumentRemaining.minus(share.costInstrument);
+  }
   lot.fxFeeRemaining = lot.fxFeeRemaining.minus(share.fxFee);
   if (lot.taxCostRemaining !== null && share.taxCost !== null) {
     lot.taxCostRemaining = lot.taxCostRemaining.minus(share.taxCost);
@@ -252,6 +271,9 @@ function allocate(total: Decimal, weights: readonly Decimal[], sum: Decimal): De
 function freezeLot(lot: WorkingLot): Lot {
   const m = (value: Decimal, currency: CurrencyCode) => money(value, currency);
   const tax = (value: Decimal | null) => (value === null ? null : money(value, PLN));
+  const known = (value: Decimal) => (lot.costKnown ? m(value, lot.costCurrency) : null);
+  const instrument = (value: Decimal | null) =>
+    value === null ? null : m(value, lot.instrumentCurrency);
   return Object.freeze({
     key: lot.key,
     accountId: lot.accountId,
@@ -263,13 +285,15 @@ function freezeLot(lot: WorkingLot): Lot {
     quantityAcquired: lot.quantityAcquired as Quantity,
     splitFactor: lot.splitFactor,
     quantityRemaining: lot.quantityRemaining as Quantity,
-    cost: m(lot.cost, lot.costCurrency),
-    costRemaining: m(lot.costRemaining, lot.costCurrency),
-    unitCost: lot.quantityRemaining.isZero()
-      ? null
-      : m(lot.costRemaining.div(lot.quantityRemaining), lot.costCurrency),
-    costInstrument: m(lot.costInstrument, lot.instrumentCurrency),
-    costInstrumentRemaining: m(lot.costInstrumentRemaining, lot.instrumentCurrency),
+    costKnown: lot.costKnown,
+    cost: known(lot.cost),
+    costRemaining: known(lot.costRemaining),
+    unitCost:
+      lot.quantityRemaining.isZero() || !lot.costKnown
+        ? null
+        : m(lot.costRemaining.div(lot.quantityRemaining), lot.costCurrency),
+    costInstrument: instrument(lot.costInstrument),
+    costInstrumentRemaining: instrument(lot.costInstrumentRemaining),
     fxFee: m(lot.fxFee, lot.costCurrency),
     fxFeeRemaining: m(lot.fxFeeRemaining, lot.costCurrency),
     taxCost: tax(lot.taxCost),
@@ -297,6 +321,13 @@ export function buildLedger(input: LedgerInput): Ledger {
   const issues: LedgerIssue[] = [];
   const issueKeys = new Set<string>();
   const transferred = new Map<string, { tx: SecurityTransferTransaction; lots: WorkingLot[] }>();
+  const outIds = new Set<string>();
+  const outLinkedTo = new Set<string>();
+  for (const tx of input.transactions) {
+    if (tx.type !== "SECURITY_TRANSFER_OUT") continue;
+    outIds.add(tx.id);
+    if (tx.relatedTransactionId !== undefined) outLinkedTo.add(tx.relatedTransactionId);
+  }
 
   function report(issue: LedgerIssue) {
     const key = `${issue.code}|${issue.transactionId}|${issue.currency ?? ""}|${issue.date ?? ""}`;
@@ -408,6 +439,7 @@ export function buildLedger(input: LedgerInput): Ledger {
       quantityRemaining: tx.quantity,
       costCurrency: tx.amount.currency,
       instrumentCurrency: tx.price.currency,
+      costKnown: true,
       cost: tx.amount.amount.negated(),
       costRemaining: tx.amount.amount.negated(),
       costInstrument,
@@ -455,12 +487,12 @@ export function buildLedger(input: LedgerInput): Ledger {
     const sellFxPlnParts =
       sellFxFeePln === null ? null : allocate(sellFxFeePln, weights, tx.quantity);
 
-    let costTotal = ZERO;
+    let costTotal: Decimal | null = ZERO;
     let taxCostTotal: Decimal | null = applies && taxDate !== null ? ZERO : null;
     let fxCostTotal: Decimal | null = taxCostTotal;
     const consumptions = taken.map(({ lot, share }, index): LotConsumption => {
       const proceeds = proceedsParts[index] as Decimal;
-      costTotal = costTotal.plus(share.cost);
+      costTotal = lot.costKnown && costTotal !== null ? costTotal.plus(share.cost) : null;
       const fxCostPln = plus(share.fxFeePln, sellFxPlnParts?.[index] ?? null);
       const baseCostPln = share.taxCost;
       const proceedsPln = proceedsTaxParts?.[index] ?? null;
@@ -491,10 +523,14 @@ export function buildLedger(input: LedgerInput): Ledger {
         instrumentId: tx.instrumentId,
         closedOn: tx.tradeDate,
         quantity: share.quantity as Quantity,
-        costEconomic: money(share.cost, currency),
+        costKnown: lot.costKnown,
+        costEconomic: lot.costKnown ? money(share.cost, currency) : null,
         proceedsEconomic: money(proceeds, currency),
-        realizedPlEconomic: money(proceeds.minus(share.cost), currency),
-        costInstrument: money(share.costInstrument, instrumentCurrency),
+        realizedPlEconomic: lot.costKnown ? money(proceeds.minus(share.cost), currency) : null,
+        costInstrument:
+          share.costInstrument === null
+            ? null
+            : money(share.costInstrument, lot.instrumentCurrency),
         proceedsInstrument: money(proceedsInstrumentParts[index] as Decimal, instrumentCurrency),
         lotFxFee: money(share.fxFee, lot.costCurrency),
         sellFxFee: money(sellFxParts[index] as Decimal, currency),
@@ -520,8 +556,9 @@ export function buildLedger(input: LedgerInput): Ledger {
         tradeDate: tx.tradeDate,
         quantity: tx.quantity,
         proceedsEconomic: tx.amount,
-        costEconomic: money(costTotal, currency),
-        realizedPlEconomic: money(tx.amount.amount.minus(costTotal), currency),
+        costEconomic: costTotal === null ? null : money(costTotal, currency),
+        realizedPlEconomic:
+          costTotal === null ? null : money(tx.amount.amount.minus(costTotal), currency),
         sellFxFee: money(sellFxFee, currency),
         taxStatus: !applies ? "not_applicable" : taxView ? "computed" : "missing_data",
         tax: taxView,
@@ -563,32 +600,83 @@ export function buildLedger(input: LedgerInput): Ledger {
     }
   }
 
-  function transferIn(tx: SecurityTransferTransaction) {
+  function transferIn(tx: SecurityTransferTransaction, order: number) {
     const match =
       (tx.relatedTransactionId === undefined
         ? undefined
         : transferred.get(tx.relatedTransactionId)) ?? transferred.get(`in:${tx.id}`);
-    if (
-      !match ||
-      match.tx.instrumentId !== tx.instrumentId ||
-      !match.tx.quantity.equals(tx.quantity)
-    ) {
+    const pendingOut =
+      (tx.relatedTransactionId !== undefined && outIds.has(tx.relatedTransactionId)) ||
+      outLinkedTo.has(tx.id);
+    if (match) {
+      if (match.tx.instrumentId !== tx.instrumentId || !match.tx.quantity.equals(tx.quantity)) {
+        throw new CoreError(
+          "unmatched_security_transfer",
+          "SECURITY_TRANSFER_IN must match its SECURITY_TRANSFER_OUT (same instrument and quantity)",
+          { transactionId: tx.id },
+        );
+      }
+      transferred.delete(match.tx.id);
+      transferred.delete(`in:${tx.id}`);
+      for (const source of match.lots) {
+        insertLot({
+          ...source,
+          key: `${tx.id}/${source.key}`,
+          accountId: tx.accountId,
+          openTransactionId: tx.id,
+        });
+      }
+      return;
+    }
+    if (pendingOut) {
       throw new CoreError(
         "unmatched_security_transfer",
-        "SECURITY_TRANSFER_IN needs an earlier matching SECURITY_TRANSFER_OUT (same instrument and quantity)",
+        "SECURITY_TRANSFER_IN must follow its SECURITY_TRANSFER_OUT (lower sequence)",
         { transactionId: tx.id },
       );
     }
-    transferred.delete(match.tx.id);
-    transferred.delete(`in:${tx.id}`);
-    for (const source of match.lots) {
-      insertLot({
-        ...source,
-        key: `${tx.id}/${source.key}`,
-        accountId: tx.accountId,
-        openTransactionId: tx.id,
-      });
+    externalIn(tx, order);
+  }
+
+  /** Transfer from outside the tracked accounts: declared cost and date, or an unknown cost (§ 3.5). */
+  function externalIn(tx: SecurityTransferTransaction, order: number) {
+    const account = accounts.get(tx.accountId) as Account;
+    const declared = tx.acquisitionCost;
+    const acquiredOn = tx.acquiredOn ?? tx.tradeDate;
+    let taxCost: Decimal | null = null;
+    if (declared === undefined) {
+      report({ code: "missing_acquisition_cost", transactionId: tx.id });
+    } else if (taxApplies(tx)) {
+      taxCost = toPln(declared, acquiredOn, tx.id);
     }
+    const cost = declared?.amount ?? ZERO;
+    insertLot({
+      key: tx.id,
+      accountId: tx.accountId,
+      instrumentId: tx.instrumentId,
+      openTransactionId: tx.id,
+      originTransactionId: tx.id,
+      acquiredOn,
+      taxDate: declared === undefined ? null : acquiredOn,
+      order,
+      quantityAcquired: tx.quantity,
+      splitFactor: new Decimal(1),
+      quantityRemaining: tx.quantity,
+      costCurrency: account.currency,
+      instrumentCurrency: account.currency,
+      costKnown: declared !== undefined,
+      cost,
+      costRemaining: cost,
+      costInstrument: null,
+      costInstrumentRemaining: null,
+      fxFee: ZERO,
+      fxFeeRemaining: ZERO,
+      taxCost,
+      taxCostRemaining: taxCost,
+      fxFeePln: declared === undefined ? null : ZERO,
+      fxFeePlnRemaining: declared === undefined ? null : ZERO,
+      closedOn: null,
+    });
   }
 
   const cash = new Map<string, Map<string, Decimal>>();
@@ -604,13 +692,19 @@ export function buildLedger(input: LedgerInput): Ledger {
   function dividend(tx: DividendTransaction) {
     const applies = taxApplies(tx);
     const withholdingTax = tx.withholdingTax ?? zeroMoney(tx.gross.currency);
+    const taxDate = tx.settleDate ?? tx.tradeDate;
+    const rate =
+      tx.gross.currency === PLN
+        ? undefined
+        : input.taxRates?.before(tx.gross.currency, PLN, taxDate);
+    const grossPln =
+      tx.gross.currency === PLN
+        ? tx.gross
+        : rate
+          ? money(tx.gross.amount.times(rate.rate), PLN)
+          : null;
     let tax: DividendTaxView | null = null;
     if (applies) {
-      const taxDate = tx.settleDate ?? tx.tradeDate;
-      const rate =
-        tx.gross.currency === PLN
-          ? undefined
-          : input.taxRates?.before(tx.gross.currency, PLN, taxDate);
       if (tx.gross.currency !== PLN && !rate) {
         report({
           code: "missing_tax_rate",
@@ -632,6 +726,7 @@ export function buildLedger(input: LedgerInput): Ledger {
         withholdingTax,
         net: money(tx.gross.amount.minus(withholdingTax.amount), tx.gross.currency),
         credited: tx.amount,
+        grossPln,
         taxStatus: !applies ? "not_applicable" : tax ? "computed" : "missing_data",
         tax,
       }),
@@ -655,7 +750,7 @@ export function buildLedger(input: LedgerInput): Ledger {
         transferOut(tx);
         break;
       case "SECURITY_TRANSFER_IN":
-        transferIn(tx);
+        transferIn(tx, order);
         break;
       case "DIVIDEND":
         dividend(tx);
@@ -672,19 +767,19 @@ export function buildLedger(input: LedgerInput): Ledger {
     const lots = list.map((lot) => frozen.get(lot) as Lot);
     const first = lots[0] as Lot;
     const taxCosts = lots.map((lot) => lot.taxCostRemaining);
+    const costs = lots.map((lot) => lot.costRemaining);
+    const instrumentCosts = lots.map((lot) => lot.costInstrumentRemaining);
+    const costKnown = !costs.includes(null);
     positions.push(
       Object.freeze({
         accountId: first.accountId,
         instrumentId: first.instrumentId,
         quantity: lots.reduce((sum, lot) => sum.plus(lot.quantityRemaining), ZERO) as Quantity,
-        cost: sumMoney(
-          lots.map((lot) => lot.costRemaining),
-          first.cost.currency,
-        ),
-        costInstrument: sumMoney(
-          lots.map((lot) => lot.costInstrumentRemaining),
-          first.costInstrument.currency,
-        ),
+        costKnown,
+        cost: costKnown ? sumMoney(costs as Money[], first.fxFee.currency) : null,
+        costInstrument: instrumentCosts.includes(null)
+          ? null
+          : sumMoney(instrumentCosts as Money[], (instrumentCosts[0] as Money).currency),
         fxFee: sumMoney(
           lots.map((lot) => lot.fxFeeRemaining),
           first.fxFee.currency,

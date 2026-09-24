@@ -402,11 +402,14 @@ describe("security transfers between own accounts (§ 3.5)", () => {
     expect(ledger.lots.find((lot) => lot.key === "B0").closedOn).toBe("2024-07-01");
   });
 
-  test("the inbound leg must follow a matching outbound leg", () => {
+  test("a linked inbound leg must follow its outbound leg with the same quantity", () => {
     const all = [...accounts, second];
-    expect(codeOf(() => buildLedger({ accounts: all, transactions: [buyOld, inbound] }))).toBe(
-      "unmatched_security_transfer",
-    );
+    // The OUT exists but is processed later (sequence): an ordering error, not an external transfer.
+    const early = { ...out, sequence: 5 };
+    const lateIn = { ...inbound, sequence: 0 };
+    expect(
+      codeOf(() => buildLedger({ accounts: all, transactions: [buyOld, lateIn, early] })),
+    ).toBe("unmatched_security_transfer");
     const wrongQty = { ...inbound, quantity: quantity("9") };
     expect(
       codeOf(() => buildLedger({ accounts: all, transactions: [buyOld, out, wrongQty] })),
@@ -421,6 +424,69 @@ describe("security transfers between own accounts (§ 3.5)", () => {
     expect(codeOf(() => buildLedger({ accounts: all, transactions: [out] }))).toBe(
       "short_position",
     );
+  });
+
+  test("inbound transfer from outside with a declared cost and acquisition date", () => {
+    const all = [...accounts, second];
+    const external = {
+      ...inbound,
+      relatedTransactionId: undefined,
+      acquisitionCost: money("280.00", "PLN"),
+      acquiredOn: isoDate("2022-05-05"),
+    };
+    const ledger = buildLedger({ accounts: all, transactions: [buyNew, external, sellOnTarget] });
+    const lot = ledger.lots.find((l) => l.key === "IN");
+    expect(lot).toMatchObject({ acquiredOn: "2022-05-05", costKnown: true, costInstrument: null });
+    expect(lot.taxCost.amount.toFixed(2)).toBe("280.00");
+    // FIFO uses the declared date: the transferred lot is sold first.
+    expect(ledger.sales[0].consumptions.map((c) => c.lotKey)).toEqual(["IN", "B9"]);
+    expect(ledger.sales[0].costEconomic.amount.toFixed(2)).toBe("380.00");
+    expect(ledger.sales[0].taxStatus).toBe("computed");
+    expect(ledger.issues).toEqual([]);
+    const halfDeclared = { ...external, acquiredOn: undefined };
+    expect(codeOf(() => buildLedger({ accounts: all, transactions: [halfDeclared] }))).toBe(
+      "invalid_transaction",
+    );
+    const wrongCurrency = { ...external, acquisitionCost: money("1", "USD") };
+    expect(codeOf(() => buildLedger({ accounts: all, transactions: [wrongCurrency] }))).toBe(
+      "invalid_transaction",
+    );
+  });
+
+  test("inbound transfer without a cost: valued, but excluded from P/L and the tax view", () => {
+    const all = [...accounts, second];
+    const unknown = { ...inbound, relatedTransactionId: undefined };
+    const ledger = buildLedger({ accounts: all, transactions: [buyNew, unknown, sellOnTarget] });
+    expect(ledger.issues).toEqual([{ code: "missing_acquisition_cost", transactionId: "IN" }]);
+    const lot = ledger.lots.find((l) => l.key === "IN");
+    expect(lot).toMatchObject({
+      costKnown: false,
+      cost: null,
+      costRemaining: null,
+      unitCost: null,
+      taxCost: null,
+    });
+    const [sale] = ledger.sales;
+    expect(sale).toMatchObject({
+      costEconomic: null,
+      realizedPlEconomic: null,
+      taxStatus: "missing_data",
+      tax: null,
+    });
+    // Without a declared date the lot is dated on the transfer day: B9 (older) goes first.
+    expect(sale.consumptions.map((c) => c.lotKey)).toEqual(["B9", "IN"]);
+    expect(sale.consumptions[0].realizedPlEconomic.amount.toFixed(2)).toBe("50.00");
+    expect(sale.consumptions[1]).toMatchObject({
+      costKnown: false,
+      costEconomic: null,
+      realizedPlEconomic: null,
+    });
+    const [position] = ledger.positions;
+    expect(position.quantity.toFixed()).toBe("3");
+    expect(position).toMatchObject({ costKnown: false, cost: null });
+    const held = buildLedger({ accounts: all, transactions: [buyNew, unknown] });
+    expect(held.positions[0]).toMatchObject({ costKnown: false, cost: null, taxCost: null });
+    expect(held.positions[0].quantity.toFixed()).toBe("15");
   });
 
   test("an outbound leg without an inbound leg removes the lots from the portfolio", () => {

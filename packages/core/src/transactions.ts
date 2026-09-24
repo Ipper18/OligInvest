@@ -99,11 +99,19 @@ export interface SplitTransaction extends TransactionBase {
   readonly splitRatio: Decimal;
 }
 
-/** Moves lots with their original date and cost; IN links to its OUT via `relatedTransactionId`. */
+/**
+ * Moves lots with their original date and cost; IN links to its OUT via `relatedTransactionId`.
+ * An IN without an OUT (transfer from outside the tracked accounts) takes the cost and acquisition
+ * date declared by the user; without them the lot has an unknown cost (§ 3.5).
+ */
 export interface SecurityTransferTransaction extends TransactionBase {
   readonly type: "SECURITY_TRANSFER_IN" | "SECURITY_TRANSFER_OUT";
   readonly instrumentId: string;
   readonly quantity: Quantity;
+  /** IN only: declared economic cost of the units, in the account currency. */
+  readonly acquisitionCost?: Money | undefined;
+  /** IN only: declared acquisition date (FIFO order and tax day of the cost). */
+  readonly acquiredOn?: IsoDate | undefined;
 }
 
 export type Transaction =
@@ -255,10 +263,22 @@ export function validateTransaction(tx: Transaction, account: Account): void {
       checkPositiveDecimal(tx, "splitRatio", tx.splitRatio);
       return;
     case "SECURITY_TRANSFER_IN":
-    case "SECURITY_TRANSFER_OUT":
+    case "SECURITY_TRANSFER_OUT": {
       checkInstrument(tx, tx.instrumentId);
       checkPositiveDecimal(tx, "quantity", tx.quantity);
+      const declared = [tx.acquisitionCost, tx.acquiredOn].filter((v) => v !== undefined).length;
+      if (declared > 0 && (declared < 2 || tx.type === "SECURITY_TRANSFER_OUT")) {
+        fail(tx, "acquisitionCost", "An inbound transfer declares both cost and acquisition date");
+      }
+      if (tx.acquisitionCost !== undefined) {
+        const cost = checkMoney(tx, "acquisitionCost", tx.acquisitionCost, "nonneg");
+        if (cost.currency !== account.currency) {
+          fail(tx, "acquisitionCost", "Declared cost must be in the account currency");
+        }
+        isoDate(tx.acquiredOn as string);
+      }
       return;
+    }
     default:
       fail(tx, "type", "Unknown transaction type");
   }

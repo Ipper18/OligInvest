@@ -79,3 +79,20 @@ export function yieldOnCost(grossDividends: Money, cost: Money): number | null {
   if (!cost.amount.isPositive() || cost.amount.isZero()) return null;
   return grossDividends.amount.div(cost.amount).toNumber();
 }
+
+/**
+ * Yield on cost in PLN (owner decision 2026-09-24): gross dividends converted at NBP D-1 as in the
+ * tax view (`DividendRecord.grossPln`) over the position cost in PLN; null if a rate is missing.
+ */
+export function yieldOnCostPln(records: readonly DividendRecord[], costPln: Money): number | null {
+  assertSameCurrency(PLN, costPln.currency);
+  const gross = records.map((r) => r.grossPln);
+  if (gross.includes(null)) return null;
+  return yieldOnCost(
+    money(
+      (gross as Money[]).reduce((sum, m) => sum.plus(m.amount), new Decimal(0)),
+      PLN,
+    ),
+    costPln,
+  );
+}

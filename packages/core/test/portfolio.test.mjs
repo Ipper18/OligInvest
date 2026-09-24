@@ -490,3 +490,30 @@ describe("external flows (obliczenia-finansowe.md § 0.4, § 1)", () => {
     ]);
   });
 });
+
+describe("positions without an acquisition cost (owner decision 2026-09-24)", () => {
+  test("are valued, but have no unrealized P/L", () => {
+    const unknown = {
+      id: "IN",
+      accountId: "xtb",
+      type: "SECURITY_TRANSFER_IN",
+      tradeDate: d("2025-01-02"),
+      instrumentId: "PKO",
+      quantity: quantity("10"),
+    };
+    const ledger = buildLedger({ accounts, transactions: [unknown] });
+    const v = valuePortfolio({
+      accounts,
+      positions: ledger.positions,
+      cash: ledger.cash,
+      quotes: [{ instrumentId: "PKO", price: price("50", "PLN"), asOf: "2025-01-02T16:00:00Z" }],
+      fxRates: createFxRateTable([]),
+      date: d("2025-01-02"),
+    });
+    const [p] = v.accounts[0].positions;
+    expect(p).toMatchObject({ cost: null, unrealizedPl: null, unrealizedRatio: null });
+    expect(fixed(p.marketValue)).toBe("500.00");
+    expect(rounded(v.total)).toBe("500.00");
+    expect(v.isComplete).toBe(true);
+  });
+});
