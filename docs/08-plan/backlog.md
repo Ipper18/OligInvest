@@ -196,7 +196,7 @@ M3 nie zależy od M4 (etapy mogą iść równolegle).
 |---|---|---|---|---|---|---|
 | BL-301 | `packages/core`: TWR (metoda łańcuchowa) i XIRR, okresy, waluta stopy — wektor B | FR-03.06, NFR-08.02 | OBL, VEC | BL-143 | 3 | todo (rdzeń w `packages/core`, PR `feat/m1-core-engine`) |
 | BL-302 | Wyceny dzienne i historia wartości (`valuations_daily`, `cash_balances_daily`), `getPortfolioHistory`, wykres uPlot ładowany leniwie | FR-02.10 | OBL, [ADR-009](../09-decyzje/ADR-009-wykresy.md) | BL-146 | 3 | todo |
-| BL-303 | `getPerformance` i ekran wyników (TWR, XIRR, okresy, P/L zrealizowany) | FR-03.06 | EKR | BL-301, BL-302 | 2 | todo |
+| BL-303 | `getPerformance` i ekran wyników (TWR, XIRR, okresy, P/L zrealizowany); zmiana OpenAPI: `ReturnFigures.xirrStatus` += `period_too_short` (okres < 30 dni, § 6.3; decyzja właściciela 2026-09-24, rdzeń już ją zwraca) | FR-03.06 | EKR | BL-301, BL-302 | 2 | todo |
 | BL-304 | Benchmark: TWR portfela kontra indeks i symulacja „te same przepływy” | FR-03.07 | OBL | BL-303, BL-206 | 2 | todo |
 | BL-305 | Obsunięcia i wykres „underwater” — wektor C | FR-03.09 | OBL, VEC | BL-302 | 1,5 | todo (rdzeń w `packages/core`, PR `feat/m1-core-engine`) |
 | BL-306 | Ekspozycja walutowa i rozbicie wyniku na efekt ceny i kursu | FR-02.06 | OBL | BL-143 | 1,5 | todo (rdzeń § 4.2 w `packages/core`, PR `feat/m1-core-engine`; ekspozycja walutowa — dalej) |

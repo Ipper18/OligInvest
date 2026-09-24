@@ -28,7 +28,7 @@ Metryki statystyczne (zmienność, Sharpe, wskaźniki TA) liczymy w `float64` �
 
 - Obliczenia pośrednie: `decimal.js` z precyzją 34 cyfr, tryb `ROUND_HALF_EVEN`; **bez zaokrągleń pośrednich**.
 - Prezentacja i zapis kwot rozliczeniowych: do jednostki waluty (2 miejsca dla PLN, USD, EUR), tryb `ROUND_HALF_UP`.
-- Procenty w UI: 2 miejsca (`0,84 %`); małe wartości (< 0,01 %) jako `< 0,01 %`.
+- Procenty w UI: 2 miejsca (`0,84%` — zapis `Intl` pl-PL bez spacji, [`system-projektowy.md`](../04-frontend/system-projektowy.md) § 5); małe wartości niezerowe (< 0,01%) jako `< 0,01%` (ujemne: `> -0,01%`).
 - Widok podatkowy: kwoty do grosza (informacyjnie). Zeznanie roczne zaokrągla podstawę i podatek do pełnych złotych (Ordynacja podatkowa) — OligInvest tego nie robi, bo nie liczy zeznań.
 
 ### 0.3 Czas i daty
@@ -56,6 +56,8 @@ Metryki statystyczne (zmienność, Sharpe, wskaźniki TA) liczymy w `float64` �
 | Wskaźniki vs TA-Lib | 1e-8 |
 | Porównanie TS ↔ Python (te same wektory) | jak wyżej, w zależności od wielkości |
 
+Wartości w [`wektory-testowe.json`](wektory-testowe.json) są zaokrąglone do podanej liczby miejsc (np. stopy w wektorze B do 6 miejsc w procentach). Test porównuje wynik z wektorem z dokładnością do połowy jednostki ostatniej cyfry wektora, a tolerancję z tabeli sprawdza względem wartości dokładnej, gdy da się ją policzyć (np. łańcuch TWR z ułamków).
+
 ---
 
 ## 1. Model operacji (wejście wszystkich obliczeń)
@@ -77,7 +79,7 @@ Metryki statystyczne (zmienność, Sharpe, wskaźniki TA) liczymy w `float64` �
 | `SECURITY_TRANSFER_IN` / `_OUT` | `±q` | — | przenosi partie z pierwotną datą i kosztem | tak (wartość rynkowa w dniu transferu) na poziomie rachunku |
 | `ADJUSTMENT` (kategoria, np. `cfd_pl`, `corporate_action`, `correction`) | — | `±kwota` | — | nie — wynik okresu w kategorii „inne” (np. wynik CFD z importu XTB, Z-15) |
 
-Kolejność przetwarzania w obrębie dnia: według `executed_at` (lub `trade_date` + `sequence`), przy remisie — `SPLIT` przed transakcjami tego dnia, potem według `id` (UUIDv7, rosnąco).
+Kolejność przetwarzania (porządek całkowity, decyzja właściciela 2026-09-24): (1) `trade_date`; (2) w obrębie dnia `SPLIT` przed pozostałymi operacjami; (3) `executed_at` rosnąco — operacje bez `executed_at` po operacjach z czasem; (4) `sequence`; (5) `id` (UUIDv7, rosnąco). Porównywanie `executed_at` tylko wtedy, gdy obie operacje go mają, nie jest przechodnie, dlatego brak czasu traktujemy jak „koniec dnia”. `SECURITY_TRANSFER_IN` musi w tym porządku następować po powiązanym `SECURITY_TRANSFER_OUT` (niższe `sequence`).
 
 ---
 
@@ -146,6 +148,8 @@ Współczynnik `k` (split 4:1 → `k = 4`; scalenie 1:10 → `k = 0.1`): dla ka�
 
 `SECURITY_TRANSFER_OUT` z rachunku A i `SECURITY_TRANSFER_IN` na rachunek B (powiązane `related_transaction_id`) przenoszą **partie z pierwotną datą i kosztem** (FIFO liczone per rachunek — po przeniesieniu partie należą do B).
 
+`SECURITY_TRANSFER_IN` bez odpowiadającego `_OUT` (przeniesienie spoza śledzonych rachunków; decyzja właściciela 2026-09-24): użytkownik podaje **koszt nabycia** (w walucie rachunku) i **datę nabycia** — partia dostaje ten koszt i datę (kolejność FIFO, widok podatkowy: koszt w PLN wprost albo po NBP D-1 od daty nabycia). Bez tych danych pozycja jest **wyceniana**, ale **wyłączona z P/L i z widoku podatkowego** (partia z nieznanym kosztem, data nabycia = dzień przeniesienia), z ostrzeżeniem „brak kosztu nabycia” — kod `missing_acquisition_cost` w API `packages/core`.
+
 ### 3.6 Edycja operacji
 
 Każda zmiana operacji z datą `d` unieważnia i przelicza partie, pozycje i wyceny od `d` (zadanie `recompute`, [ADR-003](../09-decyzje/ADR-003-hybryda-obliczen-i-kolejki.md)).
@@ -204,7 +208,10 @@ Suma obu efektów = P/L w PLN (tożsamość; test).
 | 19 % od brutto / zaliczenie podatku u źródła | 17,53 / 13,84 PLN |
 | Szacowana dopłata (informacyjnie) | **3,69 PLN** |
 
-Stopa dywidendy od kosztu = suma dywidend brutto z 12 miesięcy / koszt nabycia pozycji.
+- Dzień przychodu dywidendy = dzień wypłaty (`settle_date`, a gdy brak — `trade_date`); kurs NBP z ostatniego dnia roboczego przed nim.
+- Zaliczenie podatku u źródła **najwyżej do wysokości 19 %** od brutto — szacowana dopłata nigdy nie jest ujemna (decyzja właściciela 2026-09-24; podstawa: art. 30a ust. 9 ustawy o PIT — **NIEZWERYFIKOWANE**, do potwierdzenia przy widoku podatkowym).
+
+Stopa dywidendy od kosztu = suma dywidend brutto z 12 miesięcy / koszt nabycia pozycji, **w PLN** (decyzja właściciela 2026-09-24): brutto przeliczone kursem NBP D-1 jak w widoku podatkowym, niezależnie od typu rachunku.
 
 ### 4.4 Pozostałe pozycje gotówkowe
 
@@ -241,7 +248,7 @@ $$r_d = \frac{V_d}{V_{d-1} + F_d} - 1 \qquad \text{TWR}_{[0,T]} = \prod_{d=1}^{T
 
 - Pierwszy dzień z wpłatą początkową: `V_0 = 0`, `F_1 = wpłata` → `r_1 = V_1 / F_1 − 1`.
 - Dzień z `V_{d−1} + F_d ≤ 0` (np. wypłata całości): okres zamykamy, kolejny zaczyna się od nowej wpłaty (łańcuch kontynuowany).
-- Annualizacja tylko dla okresów ≥ 365 dni: `(1 + TWR)^{365/dni} − 1`; dla krótszych pokazujemy wartość skumulowaną.
+- Annualizacja tylko dla okresów ≥ 365 dni: `(1 + TWR)^{365/dni} − 1`; dla krótszych pokazujemy wartość skumulowaną. `dni` = dni kalendarzowe od początku okresu do jego końca; dla okresu od pierwszej wpłaty — od daty pierwszego przepływu (jak `t_0` w XIRR; wektor B: 364).
 
 ### 6.3 MWR / XIRR (FR-03.06)
 
