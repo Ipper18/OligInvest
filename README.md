@@ -8,7 +8,7 @@ OligInvest to prywatna aplikacja webowa (PWA) do analizy inwestycji dla właści
 
 ## Status
 
-**Faza: dokumentacja i plan — gotowe do rozpoczęcia budowy.** Kod aplikacji jeszcze nie istnieje; powstanie w Codex (GPT-6) etapami M0–M6 według [`docs/08-plan/roadmapa.md`](docs/08-plan/roadmapa.md). Pierwszy krok: etap M0 (szkielet i infrastruktura).
+**Faza: M0-1 — zweryfikowany lokalnie szkielet.** Istnieją oba lockfile, szkielety pakietów i modułów, strona testowa, konfiguracja z obsługą sekretów plikowych i fundament platformy z testami. Instalacje frozen i `pnpm turbo run lint typecheck test build` przechodzą lokalnie. Własne CI pozostaje szkicem; Compose dev używa zatwierdzonego bridge (`internal: false`) z portami na pętli zwrotnej; produkcyjne sieci internal pozostają bez zmian. Stan i brakujące prace: [raport M0-1](docs/08-plan/m0-1-session-report.md); etapy M0–M6: [roadmapa](docs/08-plan/roadmapa.md).
 
 ## Zasady produktu
 
@@ -44,12 +44,12 @@ Monorepo Turborepo + pnpm: `apps/{web,api,jobs,analytics}`, `modules/*` (identit
 | [`docs/01-architektura/`](docs/01-architektura/przeglad-architektury.md) | C4, stos z uzasadnieniami, moduły i ich granice, przepływy danych |
 | [`docs/02-api/`](docs/02-api/konwencje-api.md) | OpenAPI 3.1, kontrakty SSE, konwencje API |
 | [`docs/03-dane/`](docs/03-dane/zrodla-danych.md) | źródła danych, model danych, DDL z RLS, strategia cache, wzory finansowe, formaty importu, fixtures |
-| [`docs/04-frontend/`](docs/04-frontend/architektura-ui.md) | architektura UI, system projektowy, mapa ekranów, wydajność, dostępność |
+| [`docs/04-frontend/`](docs/04-frontend/architektura-ui.md) | architektura UI, system projektowy, mapa ekranów, teksty interfejsu, wydajność, dostępność |
 | [`docs/05-mobile/`](docs/05-mobile/strategia-mobilna.md) | strategia PWA, Skróty iOS, integracje Androida |
 | [`docs/06-bezpieczenstwo/`](docs/06-bezpieczenstwo/model-zagrozen.md) | model zagrożeń STRIDE, kontrole i OWASP ASVS 5.0, uwierzytelnianie, RODO, plan reagowania |
 | [`docs/07-wdrozenie/`](docs/07-wdrozenie/infrastruktura.md) | infrastruktura, CI/CD, monitoring, kopie i odtwarzanie |
 | [`docs/08-plan/`](docs/08-plan/roadmapa.md) | roadmapa M0–M6, MVP, backlog z estymacją, rejestr ryzyk, prompty dla Codex |
-| [`docs/09-decyzje/`](docs/09-decyzje/ADR-000-szablon.md) | ADR-001…014, audyt pluginów, research bibliotek |
+| [`docs/09-decyzje/`](docs/09-decyzje/ADR-000-szablon.md) | ADR-001…015, audyt pluginów, research bibliotek |
 | [`docs/10-ograniczenia.md`](docs/10-ograniczenia.md) | czego nie da się zrobić za 0 zł i co tracimy |
 | [`docs/11-zgodnosc-prawna.md`](docs/11-zgodnosc-prawna.md) | MiFID II, MAR, disclaimery, podatki, licencje danych |
 | [`docs/12-dla-uzytkownika/`](docs/12-dla-uzytkownika/instrukcja.md) | instrukcja użytkownika i administratora, samouczki, regulamin, informacja o danych |

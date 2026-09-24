@@ -1,0 +1,38 @@
+{
+  "name": "@oliginvest/mod-analytics",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "lint": "biome check .",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "build": "tsc -p tsconfig.json"
+  },
+  "exports": {
+    "./contracts": {
+      "types": "./dist/src/contracts.d.ts",
+      "import": "./dist/src/contracts.js",
+      "default": "./dist/src/contracts.js"
+    },
+    "./server": {
+      "types": "./dist/src/server/index.d.ts",
+      "import": "./dist/src/server/index.js",
+      "default": "./dist/src/server/index.js"
+    },
+    "./jobs": {
+      "types": "./dist/src/jobs.d.ts",
+      "import": "./dist/src/jobs.js",
+      "default": "./dist/src/jobs.js"
+    },
+    "./ui": {
+      "types": "./dist/src/ui/index.d.ts",
+      "import": "./dist/src/ui/index.js",
+      "default": "./dist/src/ui/index.js"
+    }
+  },
+  "dependencies": {
+    "drizzle-orm": "0.45.2",
+    "@oliginvest/mod-identity": "workspace:*"
+  }
+}

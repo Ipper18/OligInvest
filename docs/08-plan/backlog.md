@@ -26,6 +26,7 @@ Powiązane: [`roadmapa.md`](roadmapa.md) (etapy i kryteria wyjścia), [`mvp.md`]
 | IMP | [formaty-importu.md](../03-dane/formaty-importu.md) | SRC | [zrodla-danych.md](../03-dane/zrodla-danych.md) |
 | CACHE | [strategia-cache.md](../03-dane/strategia-cache.md) | VEC | [wektory-testowe.json](../03-dane/wektory-testowe.json) |
 | UI | [architektura-ui.md](../04-frontend/architektura-ui.md) | DS | [system-projektowy.md](../04-frontend/system-projektowy.md) |
+| TXT | [teksty-ui.md](../04-frontend/teksty-ui.md) | | |
 | EKR | [mapa-ekranow.md](../04-frontend/mapa-ekranow.md) | PERF | [wydajnosc.md](../04-frontend/wydajnosc.md) |
 | A11Y | [dostepnosc.md](../04-frontend/dostepnosc.md) | MOB | [strategia-mobilna.md](../05-mobile/strategia-mobilna.md) |
 | IOS | [ios-integracje.md](../05-mobile/ios-integracje.md) | AND | [android-integracje.md](../05-mobile/android-integracje.md) |
@@ -44,25 +45,25 @@ Bez logiki domenowej; wynik: działające CI, baza z RLS, wydanie podpisane i wd
 
 | ID | Zadanie | Wymagania | Dokumenty | Zależy od | d | Status |
 |---|---|---|---|---|---|---|
-| BL-001 | Bootstrap repozytorium kodu: pnpm 12 (workspace z polityką z SEC §4.3: `minimumReleaseAge`, `trustPolicy`, `strictDepBuilds`, `blockExoticSubdeps`, `allowBuilds`), Turborepo 2.11, `.nvmrc` (Node 24), Biome 2.5, `tsconfig` strict, sprawdzanie tytułów PR (Conventional Commits) | NFR-02.01, NFR-03.09, NFR-10.03, NFR-10.05 | STACK, SEC | — | 1 | w toku |
-| BL-002 | Struktura `apps/*`, `modules/*`, `packages/*` z pustymi pakietami, polem `exports` w modułach i testami dymnymi | NFR-02.01, NFR-02.02 | MOD | BL-001 | 1 | todo |
-| BL-003 | Skrypt `pnpm check:deps` (reguły warstw) z testem negatywnym | NFR-02.03 | MOD, [ADR-002](../09-decyzje/ADR-002-monorepo.md) | BL-002 | 1 | todo |
-| BL-004 | Generator `pnpm gen:module <nazwa>` według szablonu modułu | NFR-02.02, NFR-02.07 | MOD | BL-002 | 1 | todo |
-| BL-005 | `packages/config`: schemat zmiennych środowiskowych (Zod) z obsługą `*_FILE`, zgodny z `.env.example` | NFR-03.12 | INF | BL-002 | 0,5 | todo |
-| BL-006 | `packages/platform`: kontrakt i rejestry modułów, kontekst żądania, `request-id`, logger pino z redakcją, błędy RFC 9457, walidacja Zod `.strict()` na granicy | NFR-02.02, NFR-03.07, NFR-09.04 | MOD, KONW, SEC | BL-002 | 3 | todo |
-| BL-007 | `packages/db`: Drizzle odzwierciedlający `schema.sql`, migracje, polityki RLS, helper transakcji z `SET LOCAL app.user_id/app.role`, osobne pule per rola | NFR-03.04 | DB, MD, [ADR-004](../09-decyzje/ADR-004-postgres-better-auth-rls.md) | BL-002 | 4 | todo |
-| BL-008 | Zadanie CI `db`: PostgreSQL 18, migracje od zera, porównanie schematu z `schema.sql`, `testy-rls.sql` | NFR-03.04, NFR-10.02 | CI, DB | BL-007 | 1 | todo |
-| BL-009 | `apps/api`: Hono + `@hono/zod-openapi`, `/api/v1/health/live|ready`, `/api/v1/openapi.json` | NFR-09.04 | API, KONW | BL-006 | 1 | todo |
+| BL-001 | Bootstrap repozytorium kodu: pnpm 12 (workspace z polityką z SEC §4.3: `minimumReleaseAge`, `trustPolicy`, `strictDepBuilds`, `blockExoticSubdeps`, `allowBuilds`), Turborepo 2.10.13 na start (ADR-015), `.nvmrc` (Node 24), Biome 2.5, `tsconfig` strict, sprawdzanie tytułów PR (Conventional Commits) | NFR-02.01, NFR-03.09, NFR-10.03, NFR-10.05 | STACK, SEC | — | 1 | w toku |
+| BL-002 | Struktura `apps/*`, `modules/*`, `packages/*` z pustymi pakietami, polem `exports` w modułach i testami dymnymi | NFR-02.01, NFR-02.02 | MOD | BL-001 | 1 | w toku |
+| BL-003 | Skrypt `pnpm check:deps` (reguły warstw) z testem negatywnym | NFR-02.03 | MOD, [ADR-002](../09-decyzje/ADR-002-monorepo.md) | BL-002 | 1 | w toku |
+| BL-004 | Generator `pnpm gen:module <nazwa>` według szablonu modułu | NFR-02.02, NFR-02.07 | MOD | BL-002 | 1 | w toku |
+| BL-005 | `packages/config`: schemat zmiennych środowiskowych (Zod) z obsługą `*_FILE`, zgodny z `.env.example` | NFR-03.12 | INF | BL-002 | 0,5 | w toku |
+| BL-006 | `packages/platform`: kontrakt i rejestry modułów, kontekst żądania, `request-id`, logger pino z redakcją, błędy RFC 9457, walidacja Zod `.strict()` na granicy | NFR-02.02, NFR-03.07, NFR-09.04 | MOD, KONW, SEC | BL-002 | 3 | w toku |
+| BL-007 | `packages/db`: Drizzle odzwierciedlający `schema.sql`, migracje, polityki RLS, helper transakcji z `SET LOCAL app.user_id/app.role`, osobne pule per rola | NFR-03.04 | DB, MD, [ADR-004](../09-decyzje/ADR-004-postgres-better-auth-rls.md) | BL-002 | 4 | w toku |
+| BL-008 | Zadanie CI `db`: PostgreSQL 18, migracje od zera, porównanie schematu z `schema.sql`, `testy-rls.sql` | NFR-03.04, NFR-10.02 | CI, DB | BL-007 | 1 | w toku |
+| BL-009 | `apps/api`: Hono + `@hono/zod-openapi`, `/api/v1/health/live\|ready`, `/api/v1/openapi.json` | NFR-09.04 | API, KONW | BL-006 | 1 | w toku |
 | BL-010 | Test spójności OpenAPI (generowany vs `docs/02-api/openapi.yaml`) z listą `apps/api/openapi-pending.json`, która może tylko maleć; lint Redocly | NFR-02.05 | CI, [ADR-012](../09-decyzje/ADR-012-api-jako-granica-domenowa.md), API | BL-009 | 2 | todo |
 | BL-011 | `apps/web`: Next.js 16.3, `proxy.ts` z CSP nonce, klient API dla RSC (ciasteczko, `request-id`), tokeny Tailwind 4 z systemu projektowego, brak zewnętrznych skryptów | NFR-03.06, NFR-01.02, NFR-11.01 | UI, DS, SEC, [ADR-012](../09-decyzje/ADR-012-api-jako-granica-domenowa.md) | BL-006 | 3 | todo |
-| BL-012 | `packages/i18n` (formatery `Intl` pl-PL, słownik, lint literałów, test zakazanych zwrotów z LAW §4.1, teksty disclaimerów z LAW §4.3) i `packages/ui` (prymitywy, `<DataFreshness/>`, `<AssumptionsBlock/>`, `<Disclaimer/>`) | NFR-10.04, NFR-07.01, FR-04.01 | DS, LAW | BL-011 | 2 | todo |
+| BL-012 | `packages/i18n` (formatery `Intl` pl-PL, słownik, lint literałów, test zakazanych zwrotów z LAW §4.1, teksty disclaimerów z LAW §4.3) i `packages/ui` (prymitywy, `<DataFreshness/>`, `<AssumptionsBlock/>`, `<Disclaimer/>`) | NFR-10.04, NFR-07.01, FR-04.01 | DS, TXT, LAW | BL-011 | 2 | todo |
 | BL-013 | `apps/jobs`: BullMQ 6.3, rejestr kolejek i harmonogramów, health | NFR-09.04 | MOD | BL-006 | 1 | todo |
 | BL-014 | `apps/analytics`: Python 3.13 + uv, Ruff, mypy, pytest, konsument `bullmq` bez logiki | NFR-10.02 | STACK, [ADR-003](../09-decyzje/ADR-003-hybryda-obliczen-i-kolejki.md) | BL-002 | 1 | todo |
-| BL-015 | `packages/test-vectors` z `wektory-testowe.json` i loaderami dla Vitest i pytest | NFR-02.06, NFR-08.02 | OBL, VEC | BL-002, BL-014 | 0,5 | todo |
-| BL-016 | Egzekwowanie budżetów: `size-limit`, `route-budgets.mjs`, wykrywanie zakazanych bibliotek w chunkach początkowych, skrypt Lighthouse 13.5 z asercjami (raport do M1) | NFR-01.02, NFR-01.03 | PERF | BL-011 | 2 | todo |
-| BL-017 | CI w GitHub Actions: `lint`, `typecheck`, `unit`, `contracts`, `build` (macierz bez modułów), `budgets`, `deps-audit`, `codeql`; akcje przypięte SHA, token tylko do odczytu | NFR-03.09, NFR-10.02, NFR-10.03, NFR-02.02 | CI | BL-003, BL-008, BL-010, BL-016 | 2 | todo |
-| BL-018 | E2E: Playwright (Chromium, WebKit, Firefox) z `@axe-core/playwright`, test dymny na obrazach produkcyjnych | NFR-04.01, NFR-06.01 | CI, A11Y | BL-017 | 1 | todo |
-| BL-019 | Ustawienia repozytorium: ruleset `main`, skanowanie sekretów z push protection, CodeQL, alerty Dependabot, prywatne zgłaszanie podatności, `CODEOWNERS`, Renovate, reguła CI dla `.xlsx/.csv` spoza fixtures | NFR-03.12, NFR-03.09, NFR-10.03 | CI, [ADR-013](../09-decyzje/ADR-013-repozytorium-publiczne.md) | BL-017 | 1 | todo |
+| BL-015 | `packages/test-vectors` z loaderami dla Vitest i pytest; jedyne źródło `docs/03-dane/wektory-testowe.json` | NFR-02.06, NFR-08.02 | OBL, VEC | BL-002, BL-014 | 0,5 | w toku |
+| BL-016 | Egzekwowanie budżetów: `size-limit`, `route-budgets.mjs`, wykrywanie zakazanych bibliotek w chunkach początkowych, skrypt Lighthouse 13.5 z asercjami (raport do M1); dodać Lighthouse 13.5.0 do manifestu dopiero w sesji realizującej BL-016 — obecnie odroczony, bez zmiany linii | NFR-01.02, NFR-01.03 | PERF | BL-011 | 2 | todo |
+| BL-017 | CI w GitHub Actions: `lint`, `typecheck`, `unit`, `contracts`, `build` (macierz bez modułów), `budgets`, `deps-audit`; akcje przypięte SHA, token tylko do odczytu; CodeQL przez konfigurację domyślną GitHub po scaleniu M0-1 (BL-019), poza własnymi workflow | NFR-03.09, NFR-10.02, NFR-10.03, NFR-02.02 | CI | BL-003, BL-008, BL-010, BL-016 | 2 | w toku |
+| BL-018 | E2E: Playwright (Chromium, WebKit, Firefox) z `@axe-core/playwright`; M0-1: test dymny lokalnego buildu produkcyjnego z usługami `compose.dev.yaml`; M0-2: ten sam test na obrazach produkcyjnych po BL-020–BL-023; zamknięcie dopiero po obu częściach | NFR-04.01, NFR-06.01 | CI, A11Y | BL-017; część M0-2: BL-020–BL-023 | 1 | todo |
+| BL-019 | Ustawienia repozytorium: ruleset `main`, skanowanie sekretów z push protection, CodeQL, alerty Dependabot, prywatne zgłaszanie podatności, `CODEOWNERS`, Renovate, reguła CI dla `.xlsx/.csv` spoza fixtures | NFR-03.12, NFR-03.09, NFR-10.03 | CI, [ADR-013](../09-decyzje/ADR-013-repozytorium-publiczne.md) | BL-017 | 1 | w toku |
 | BL-020 | Obrazy Docker (nie-root, FS tylko do odczytu, bazy przypięte digestem): `web`, `api`, `jobs`, `analytics`, `postgres` z pgBackRest, `migrate` | NFR-03.11 | INF | BL-009, BL-011, BL-013, BL-014 | 2 | todo |
 | BL-021 | Workflow `release.yml`: GHCR, SBOM (syft), poświadczenia, cosign keyless, osv-scanner obrazów, podpisana paczka wdrożeniowa | NFR-03.09 | CI | BL-020 | 2 | todo |
 | BL-022 | `compose.yaml`: sieci `edge`/`backend`/`analytics` (internal) i `egress`, limity zasobów, sekrety jako pliki, dwie instancje Valkey z ACL | NFR-01.08, NFR-03.11 | INF, [ADR-003](../09-decyzje/ADR-003-hybryda-obliczen-i-kolejki.md) | BL-020 | 1,5 | todo |
@@ -75,15 +76,40 @@ Bez logiki domenowej; wynik: działające CI, baza z RLS, wydanie podpisane i wd
 | BL-029 | Uptime Kuma na VPS: sondy `app-ready`, `app-certificate`, `vm-health`, alerty e-mail | NFR-09.01, NFR-09.04 | MON | BL-023, BL-024 | 1 | todo |
 | BL-030 | Spike: przedrostek `__Host-` w Better Auth — notatka lub ADR (odstępstwo O-01) | NFR-03.03 | AUTH | BL-009 | 1 | todo |
 | BL-031 | Spike: przechowywanie sekretu TOTP, kodów zapasowych (`encrypted`) i kluczy API w Better Auth; czas Argon2id na serwerze (100–250 ms) | NFR-03.02, NFR-03.08 | [ADR-004](../09-decyzje/ADR-004-postgres-better-auth-rls.md), AUTH | BL-009, BL-023 | 1 | todo |
-| BL-032 | Spike: TypeScript 7 z Next.js, Hono, Drizzle i Better Auth — decyzja 7.x albo 6.x | NFR-10.05 | STACK | BL-011 | 0,5 | todo |
+| BL-032 | Spike: TypeScript 7 z Next.js, Hono, Drizzle i Better Auth — decyzja 7.x albo 6.x | NFR-10.05 | STACK | BL-011 | 0,5 | w toku |
 | BL-033 | Raport rozmiarów bazowych (Next.js, Zod, Radix) i aktualizacja PERF §2 | NFR-01.02 | PERF | BL-016 | 0,5 | todo |
-| BL-034 | Środowisko deweloperskie: `compose.dev.yaml` (PostgreSQL, Valkey, Mailpit), `pnpm dev`, dane przykładowe | NFR-10.01 | CI | BL-022 | 1 | todo |
-| BL-035 | Test spójności dokumentacji w CI: każde FR/NFR z `wymagania.md` ma zadanie w `backlog.md` i wiersz w `macierz-pokrycia.md`; linki wewnętrzne w `docs/` działają; każdy dokument zaczyna się od „Cel:” | NFR-10.01 | CI | BL-017 | 0,5 | todo |
+| BL-034 | Środowisko deweloperskie w M0-1: samodzielne `compose.dev.yaml` (PostgreSQL, Valkey ×2, Mailpit), `pnpm dev`, dane syntetyczne; bez zależności od produkcyjnego Compose i obrazów aplikacji | NFR-10.01 | CI | BL-013, BL-014 | 1 | w toku |
+| BL-035 | Test spójności dokumentacji w CI: każde FR/NFR z `wymagania.md` ma zadanie w `backlog.md` i wiersz w `macierz-pokrycia.md`; linki wewnętrzne w `docs/` działają; każdy dokument zaczyna się od „Cel:” | NFR-10.01 | CI | BL-017 | 0,5 | w toku |
 | | **Suma etapu** | | | | **51** | |
 
 ### 1.1 Postęp i odchylenia
 
-- **2026-09-20, BL-001:** zakończono analizę startową; implementacja wstrzymana, ponieważ wszystkie opublikowane stabilne wydania Turborepo 2.11 mają mniej niż wymagane 4320 minut. Najwcześniejszy termin dla pakietu `turbo` 2.11.0: 2026-09-21 18:31:36.614 Europe/Warsaw; pozostałe zależności wymagają osobnej kontroli. Estymacja 1 d bez zmian, odchylenie nakładu pracy do ustalenia po implementacji. Dowody, propozycja kolejności paczek i niespełnione kryteria: [raport BL-001](bl-001-bootstrap-readiness.md). Nie zmieniono ADR ani polityki bezpieczeństwa.
+- **2026-09-22, BL-009:** wykonane lokalnie Hono z platformą BL-006, publiczne live/ready i OpenAPI z Zod; gotowość wykonuje uwierzytelnione sondy PostgreSQL i obu Valkey z limitem 1500 ms. 37 testów API PASS (w tym rzeczywisty proces HTTP i TCP z brakiem odpowiedzi), lint/typecheck/test/build API PASS; pełne monorepo 88/88 PASS z cache; check:deps/docs/repository PASS. Docker niedostępny lokalnie, więc nie wykonano integracji z prawdziwymi usługami. BL-010 i pełne CI pozostają poza zakresem. Status `w toku` do wspólnego DoD/CI; estymacja 1 d bez zmian, odchylenie nakładu niezmierzone; brak nowych ADR i ryzyk.
+
+- **2026-09-22, BL-015:** wykonane lokalnie loadery A–H dla Vitest i pytest, dokładna zgodność wszystkich kluczy/wartości, zachowanie tekstu kwot, odrzucanie odczytu kwoty jako liczby i tolerancje § 0.5. 7 testów Vitest + 6 pytest PASS; pełne lint/typecheck/test/build 88/88 PASS bez cache. Za zgodą właściciela wystarcza szkielet BL-002; BL-014 pozostaje `todo` i nie było realizowane. Status `w toku` do wspólnego DoD/CI paczki. Estymacja 0,5 d bez zmian; odchylenie nakładu niezmierzone. Bez nowych zależności, ADR i ryzyk.
+
+- **2026-09-21, BL-034:** test internal=true FAIL z hosta dla wszystkich czterech usług mimo healthy; wariant diagnostyczny zwykłego bridge PASS. [Propozycja poprawki i dowody](../07-wdrozenie/srodowisko-deweloperskie.md#5-wynik-testu-hosta-i-proponowana-korekta); właściciel zatwierdził i zastosowano internal=false wyłącznie w compose.dev.yaml z portami na loopback. R-26 obniżone do 2; zadanie nadal `w toku` (migracje/worker/seed).
+
+- **2026-09-21, BL-001/002/032 — wykonanie:** oba lockfile i instalacje frozen zgodne z karencją; 377 wersji npm oraz 27 wersji PyPI (183 artefakty) porównane z audytem. Pełne `pnpm turbo run lint typecheck test build`: 88/88 PASS, 59 testów Vitest + 1 pytest; po fizycznym usunięciu `education`: build/test 42/42 PASS. BL-002 wykonane lokalnie; status `w toku` do dowodów CI z Definition of Done. [Spike BL-032](bl-032-typescript-7-spike.md) rozstrzygnięty: TypeScript 7.0.2, zatwierdzone `skipLibCheck: true`, niezmienione `strict: true`; 72 błędy Drizzle i 1 Better Auth występują także na 6.0.3. Wynik techniczny zamknięty notatką, status zadania `w toku` do CI. Estymacje 1 d / 1 d / 0,5 d bez zmian; dodatkowa diagnoza bibliotek i środowiska odnotowana bez wymyślania nakładu. Pozostałe kryteria M0 nadal otwarte.
+
+- **2026-09-21, BL-001 / ADR-015:** zatwierdzony start Turbo 2.10.13, później osobny PR Renovate do 2.11. Turbo i sześć jego binariów spełniają karencję. Ponownie przeliczono 559 wersji npm i 2308 plików 97 wersji PyPI: nadal blokują 3 wersje npm i 3 PyPI (pełna lista w [raporcie § 7](m0-1-session-history.md#7-adr-015-i-ponowna-kontrola-całego-inwentarza)); wspólny termin obecnego inwentarza to 2026-09-21 16:13:56 Europe/Warsaw. Dalsza część 3 zatrzymana przed lockfile aplikacji i instalacją, bez wyjątków i bez zmiany innych przypięć. BL-002/032 i test Compose pozostają niewykonane. Estymacje bez zmian; odchylenia nakładu po implementacji, oczekiwanie osobno.
+
+- **2026-09-21, BL-001 — kontrola przed instalacją:** potwierdzono Node 24.21.0 i pnpm 12.4.2. Host i rejestr npm wskazują około 07:05 Europe/Warsaw, przed terminem karencji 18:31:49; metadane `@turbo/darwin-64@2.11.0` zgadzają się z audytem. Zgodnie z instrukcją właściciela zatrzymano pracę przed rozwiązywaniem grafu i instalacją aplikacji. Częściowy lockfile samego menedżera, stwierdzony po kontroli wersji pnpm, zachowano lokalnie pod `.git/`; nie jest lockfile aplikacji. Nie ma porównania grafu aplikacji; BL-002/032 i test dostępności usług Compose niewykonane. Statusy i estymacje bez zmian, oczekiwanie kalendarzowe osobno. [Dowody i dalszy krok](m0-1-session-history.md#6-kontrola-przed-instalacją--2026-09-21-rano).
+
+- **2026-09-20, kontynuacja bez instalacji:** BL-001 — 23 manifesty z przypięciami z audytu, konfiguracje pnpm/Turbo/TS/Biome, bez rozwiązania grafu, lockfile, instalacji i typechecku. BL-034 — samodzielny Compose, `docker compose config` PASS, bez uruchomienia usług i aplikacji. BL-035 — kontrola „Cel:”, lokalnych linków i pełnych przypisań FR/NFR ↔ BL: 13 testów PASS, 73 dokumenty PASS na Node 25.1.0; uruchomienie na Node 24 i w CI nadal wymagane. Części plikowe przed gotowymi zależnościami zatwierdzone przez właściciela; zadania nie są `gotowe`. Estymacje bez zmian, odchylenie nakładu po ukończeniu, karencja liczona osobno. [Raport i ograniczenia](m0-1-session-report.md).
+- **2026-09-20, BL-019 / R-23:** właściciel ustalił 0 wymaganych zatwierdzeń w rulesecie, bez code owner review i odrębnej tożsamości autora; przegląd pozostaje obowiązkiem procesu R-11. Definicja nadal nieaktywna, brak bypass. Bez nowego ADR; ustawienia potwierdzi właściciel po scaleniu. Zaplanowane wznowienie usunięto — kontynuacja ręczna.
+
+- **2026-09-20, BL-001:** audyt rozszerzony na graf npm/PyPI i binaria platformowe wyznacza wspólny termin karencji **2026-09-21 18:31:49 Europe/Warsaw**. Właściciel zatwierdził oczekiwanie bez zmiany ADR-002 i bez wyjątków od polityki oraz prace dokumentacyjne i konfiguracyjne przed instalacją. Estymacja 1 d bez zmian; oczekiwanie jest opóźnieniem kalendarzowym, odchylenie nakładu do ustalenia po implementacji. Dowody i ograniczenia: [raport BL-001](bl-001-bootstrap-readiness.md).
+- **2026-09-20, podział M0-1/M0-2:** zatwierdzono pozostawienie BL-034 w M0-1 z zależnościami BL-013 i BL-014. BL-018 pozostaje otwarty do testów obrazów w M0-2; BL-019 i kryterium wyjścia M0 nr 7 wymagają potwierdzenia ustawień przez właściciela po scaleniu M0-1. Przygotowanie plików przed instalacją nie oznacza ukończenia zadań ani zielonego CI.
+- **2026-09-20, BL-017/BL-019:** na wyraźne polecenie właściciela przygotowano podczas karencji szkic CI, CODEOWNERS, szablon PR, Renovate, nieaktywny ruleset i instrukcję ustawień. Status `w toku` obejmuje wyłącznie przygotowanie plików; uruchomienie CI czeka na gotowe zależności. Lokalny skrypt kontroli fixtures/tytułu PR ma 7 przechodzących testów bez instalowania pakietów, na zastanym Node 25; nie zastępuje testów na Node 24. Odchylenia 2 d / 1 d do ustalenia po wykonaniu zadań. Szczegóły i brakujące dowody: [raport sesji](m0-1-session-report.md).
+
+- **2026-09-22, BL-003:** wykonane lokalnie: graf manifestów, cykle, publiczne eksporty i importy produkcyjne (parser istniejącego TypeScript); 28 testów PASS, w tym CLI odrzucające niedozwolony import. `pnpm check:deps`, lint skryptów, testy skryptów i kontrola dokumentacji PASS. Workflow `modules` [zielony](https://github.com/Ipper18/OligInvest/actions/runs/35688610340); status `w toku` do wspólnego DoD. Estymacja 1 d bez zmian; odchylenie niezmierzone, bez nowego ADR/ryzyka.
+
+- **2026-09-22, BL-004:** generator tworzy kompletny szkielet feature, publiczne eksporty, definicje rejestrów i domyślnie wyłączoną flagę. 21 testów generatora PASS; odizolowana generacja, instalacja frozen, check:deps i lint/typecheck/test/build 5/5 PASS (w tym 3 testy wygenerowanego modułu); [CI modules PASS](https://github.com/Ipper18/OligInvest/actions/runs/35689454452). Pełne monorepo 88/88 PASS z cache; świeży build po fizycznym wyjęciu education 21/21 PASS. Kryterium M0 nr 1 spełnione lokalnie; cały etap nadal otwarty. Status `w toku` do wspólnego DoD; estymacja 1 d bez zmian, odchylenie niezmierzone, bez nowego ADR/ryzyka.
+
+- **2026-09-21, BL-005:** lokalnie wykonane schematy strict, profile usług, bezpieczne odczyty `*_FILE`, walidacja produkcji i 11 testów (w tym dymny). Lint/typecheck/test/build 4/4 PASS. Status `w toku` do wspólnego DoD/CI; estymacja 0,5 d bez zmiany, odchylenia nie wyliczano bez ewidencji. [Raport](m0-1-session-report.md) § 9.1.
+
+- **2026-09-21, BL-006:** lokalnie wykonane rejestry modułów, korelacja/izolacja żądań, logger pino z redakcją, RFC 9457 i walidacja strict; **19 testów PASS**, pełne monorepo 88/88 PASS. Status `w toku` do DoD/CI; estymacja 3 d bez zmiany, odchylenia nie wyliczano bez ewidencji. [Raport](m0-1-session-report.md) § 9.2. BL-007/008 wyłącznie w następnej sesji.
 
 ## 2. M1 — MVP
 
@@ -123,9 +149,9 @@ Brama A (**[A]**) — MVP właściciela; brama B (**[B]**) — funkcje wymagane 
 | BL-137 | **[A]** Karta instrumentu: `getInstrument`, `getQuotes`, `getMarketDataStatus`, status i wiek danych | FR-01.02, FR-01.15 | EKR, API | BL-135, BL-121 | 2 | todo |
 | BL-138 | **[A]** Wykres świecowy: `getInstrumentChart` z decymacją ≤ 3 000 punktów (1W/1M), leniwy wrapper Lightweight Charts, tabela alternatywna, atrybucja TradingView | FR-01.03, NFR-01.04, NFR-06.01 | [ADR-009](../09-decyzje/ADR-009-wykresy.md), PERF, LAW | BL-137 | 3 | todo |
 | BL-139 | **[A]** Minimalna kontrola jakości EOD przy zapisie: integralność OHLC, duplikaty, skoki bez zdarzenia korporacyjnego | NFR-08.04 | OBL | BL-133 | 1,5 | todo |
-| BL-141 | **[A]** `packages/core`: `Money`, `Quantity`, `Price`, `FxRate` (decimal.js, precyzja 34, zaokrąglenia), formatowanie pl-PL | NFR-08.01, NFR-04.04 | OBL, [ADR-014](../09-decyzje/ADR-014-pieniadze-waluty-czas.md) | BL-015 | 2 | todo |
-| BL-142 | **[A]** `packages/core`: model operacji, partie FIFO (sprzedaż częściowa, split, przeniesienie), P/L zrealizowany ekonomiczny i podatkowy (`settle_date`, NBP D-1; marża przewalutowania osobno jako `fxCosts`, ustawienia `tax_date_basis` i `tax_include_fx_fee`) — wektor A | FR-02.07, FR-03.05, NFR-08.02 | OBL, VEC | BL-141 | 4 | todo |
-| BL-143 | **[A]** `packages/core`: pozycje, gotówka per waluta, wycena, P/L niezrealizowany, wynik dnia — wektory F i G | FR-02.02, FR-02.04, FR-02.09 | OBL, VEC | BL-142 | 2 | todo |
+| BL-141 | **[A]** `packages/core`: `Money`, `Quantity`, `Price`, `FxRate` (decimal.js, precyzja 34, zaokrąglenia), formatowanie pl-PL | NFR-08.01, NFR-04.04 | OBL, [ADR-014](../09-decyzje/ADR-014-pieniadze-waluty-czas.md) | BL-015 | 2 | w toku |
+| BL-142 | **[A]** `packages/core`: model operacji, partie FIFO (sprzedaż częściowa, split, przeniesienie), P/L zrealizowany ekonomiczny i podatkowy (`settle_date`, NBP D-1; marża przewalutowania osobno jako `fxCosts`, ustawienia `tax_date_basis` i `tax_include_fx_fee`) — wektor A | FR-02.07, FR-03.05, NFR-08.02 | OBL, VEC | BL-141 | 4 | w toku |
+| BL-143 | **[A]** `packages/core`: pozycje, gotówka per waluta, wycena, P/L niezrealizowany, wynik dnia — wektory F i G | FR-02.02, FR-02.04, FR-02.09 | OBL, VEC | BL-142 | 2 | w toku |
 | BL-144 | **[A]** Moduł `portfolio`: rachunki (zwykły, IKE, IKZE), operacje z walidacją per typ, przeliczenie ≤ 5 s | FR-02.01, FR-03.03 | API, DB | BL-108, BL-143 | 3 | todo |
 | BL-145 | **[A]** Import XTB: upload ≤ 10 MB, parsowanie w `jobs`, oba szablony, statusy wierszy, idempotencja, mapowanie instrumentów, CFD jako `unsupported`, uzgodnienie sald, zatwierdzenie | FR-03.01, NFR-08.03, NFR-03.07 | IMP | BL-144, BL-135 | 5 | todo |
 | BL-146 | **[A]** Przeliczanie pozycji i wycen (kolejka `recompute`), zdarzenie `portfolio.valuation.updated` do SSE, nocne `recompute-all` | FR-02.03 | MOD, FLOW | BL-145, BL-125 | 2 | todo |
@@ -144,7 +170,7 @@ Brama A (**[A]**) — MVP właściciela; brama B (**[B]**) — funkcje wymagane 
 
 | ID | Zadanie | Wymagania | Dokumenty | Zależy od | d | Status |
 |---|---|---|---|---|---|---|
-| BL-201 | `packages/core`: SMA, EMA, wstęgi Bollingera, RSI, MACD, ATR — zgodność z TA-Lib (wektor E, 1e-8) | FR-01.05, NFR-08.02 | OBL, VEC | BL-141 | 3 | todo |
+| BL-201 | `packages/core`: SMA, EMA, wstęgi Bollingera, RSI, MACD, ATR — zgodność z TA-Lib (wektor E, 1e-8) | FR-01.05, NFR-08.02 | OBL, VEC | BL-141 | 3 | w toku |
 | BL-202 | `getInstrumentIndicators`, nakładki i panele na wykresie, parametry wskaźników | FR-01.05 | API, [ADR-009](../09-decyzje/ADR-009-wykresy.md) | BL-201, BL-138 | 2 | todo |
 | BL-203 | Wyjaśnienia kontekstowe `<Explainer/>` (klucze i treści MDX modułu `education`) dla wskaźników i metryk MVP; test pokrycia kluczy | FR-01.07, FR-06.02, NFR-06.03 | DS, MOD | BL-202 | 2 | todo |
 | BL-204 | Glosariusz: indeks statyczny, wyszukiwanie po fragmencie i synonimie, pierwsze 30 haseł ze słownika pojęć | FR-06.03 | EKR, SLOW | BL-203 | 2 | todo |
@@ -168,21 +194,21 @@ M3 nie zależy od M4 (etapy mogą iść równolegle).
 
 | ID | Zadanie | Wymagania | Dokumenty | Zależy od | d | Status |
 |---|---|---|---|---|---|---|
-| BL-301 | `packages/core`: TWR (metoda łańcuchowa) i XIRR, okresy, waluta stopy — wektor B | FR-03.06, NFR-08.02 | OBL, VEC | BL-143 | 3 | todo |
+| BL-301 | `packages/core`: TWR (metoda łańcuchowa) i XIRR, okresy, waluta stopy — wektor B | FR-03.06, NFR-08.02 | OBL, VEC | BL-143 | 3 | todo (rdzeń w `packages/core`, PR `feat/m1-core-engine`) |
 | BL-302 | Wyceny dzienne i historia wartości (`valuations_daily`, `cash_balances_daily`), `getPortfolioHistory`, wykres uPlot ładowany leniwie | FR-02.10 | OBL, [ADR-009](../09-decyzje/ADR-009-wykresy.md) | BL-146 | 3 | todo |
-| BL-303 | `getPerformance` i ekran wyników (TWR, XIRR, okresy, P/L zrealizowany) | FR-03.06 | EKR | BL-301, BL-302 | 2 | todo |
+| BL-303 | `getPerformance` i ekran wyników (TWR, XIRR, okresy, P/L zrealizowany); zmiana OpenAPI: `ReturnFigures.xirrStatus` += `period_too_short` (okres < 30 dni, § 6.3; decyzja właściciela 2026-09-24, rdzeń już ją zwraca) | FR-03.06 | EKR | BL-301, BL-302 | 2 | todo |
 | BL-304 | Benchmark: TWR portfela kontra indeks i symulacja „te same przepływy” | FR-03.07 | OBL | BL-303, BL-206 | 2 | todo |
-| BL-305 | Obsunięcia i wykres „underwater” — wektor C | FR-03.09 | OBL, VEC | BL-302 | 1,5 | todo |
-| BL-306 | Ekspozycja walutowa i rozbicie wyniku na efekt ceny i kursu | FR-02.06 | OBL | BL-143 | 1,5 | todo |
-| BL-307 | Dywidendy: brutto, podatek u źródła, netto, stopa od kosztu, szacowana dopłata | FR-02.08 | OBL, VEC | BL-143 | 1,5 | todo |
-| BL-308 | Średnia ważona jako metoda widoku i przeliczenie po zmianie metody | FR-03.05 | OBL | BL-142 | 1 | todo |
+| BL-305 | Obsunięcia i wykres „underwater” — wektor C | FR-03.09 | OBL, VEC | BL-302 | 1,5 | todo (rdzeń w `packages/core`, PR `feat/m1-core-engine`) |
+| BL-306 | Ekspozycja walutowa i rozbicie wyniku na efekt ceny i kursu | FR-02.06 | OBL | BL-143 | 1,5 | todo (rdzeń § 4.2 w `packages/core`, PR `feat/m1-core-engine`; ekspozycja walutowa — dalej) |
+| BL-307 | Dywidendy: brutto, podatek u źródła, netto, stopa od kosztu, szacowana dopłata | FR-02.08 | OBL, VEC | BL-143 | 1,5 | todo (rdzeń § 4.3 w `packages/core`, PR `feat/m1-core-engine`) |
+| BL-308 | Średnia ważona jako metoda widoku i przeliczenie po zmianie metody | FR-03.05 | OBL | BL-142 | 1 | todo (rdzeń § 3.3 w `packages/core`, PR `feat/m1-core-engine`) |
 | BL-309 | Dziennik transakcji i postmortem | FR-03.11 | API, EKR | BL-144 | 2 | todo |
 | BL-310 | Eksport transakcji, pozycji i wyników (CSV/JSON) z neutralizacją formuł i linią `export`; test eksport → import | FR-03.13 | SEC, LAW | BL-144 | 1,5 | todo |
 | BL-311 | Worker `analytics`: kontrakty zadań (JSON Schema z Zod), walidacja `jsonschema`, rola `analytics_ro`, sieć bez wyjścia, limity CPU/RAM/czasu, testy izolacji | NFR-03.13, NFR-01.07 | [ADR-003](../09-decyzje/ADR-003-hybryda-obliczen-i-kolejki.md), INF | BL-014, BL-022 | 3 | todo |
 | BL-312 | Moduł `analytics`: uruchomienia, postęp i wynik przez SSE, limity roli, anulowanie, zapis wyników w kontekście RLS | FR-04.01, NFR-01.07 | API, MOD | BL-311, BL-125 | 3 | todo |
 | BL-313 | Monte Carlo: bootstrap stacjonarny i t-Student, proxy klas aktywów, przepływy, inflacja, podatek; wachlarz, P(cel), rozkład obsunięć, tabela wrażliwości, ziarno | FR-04.02, NFR-08.05 | OBL | BL-312 | 5 | todo |
 | BL-314 | Ekran wyników analiz: rozkłady, „jak czytać”, blok założeń, disclaimer, dane do odtworzenia | FR-04.01, FR-06.06 | EKR, LAW | BL-313 | 2 | todo |
-| BL-315 | Kalkulator rebalancingu: alokacje docelowe, tryby `full` i `buy_only`, koszty, szacowany podatek, blokada przy nieuzgodnionych danych — wektor H | FR-04.06 | OBL, VEC, LAW | BL-143, BL-207 | 3 | todo |
+| BL-315 | Kalkulator rebalancingu: alokacje docelowe, tryby `full` i `buy_only`, koszty, szacowany podatek, blokada przy nieuzgodnionych danych — wektor H; przyszła opcja: `buy_only` z wolnej gotówki na rachunku (nie tylko nowej) | FR-04.06 | OBL, VEC, LAW | BL-143, BL-207 | 3 | todo (rdzeń § 12.5 w `packages/core`, PR #3) |
 | BL-316 | Bramkowanie roli `pro` dla analiz ciężkich, komunikaty w UI | FR-07.06 | MOD | BL-312 | 1 | todo |
 | BL-317 | Wektory B–D w pytest kontra empyrical-reloaded | NFR-02.06, NFR-08.02 | OBL | BL-311 | 1 | todo |
 | BL-318 | Przegląd metodologiczny Monte Carlo i rebalancingu (checklisty z AGENTS.md) zapisany w PR | NFR-07.02 | LAW, OBL | BL-314, BL-315 | 0,5 | todo |
@@ -236,7 +262,7 @@ Każde zadanie z analizą przyszłości kończy się przeglądem metodologicznym
 
 | ID | Zadanie | Wymagania | Dokumenty | Zależy od | d | Status |
 |---|---|---|---|---|---|---|
-| BL-551 | Metryki ryzyka: zmienność, Sharpe, Sortino, beta, korelacja, VaR i CVaR historyczne — wektor D; ekran z założeniami | FR-03.10 | OBL, VEC | BL-319, BL-302 | 3 | todo |
+| BL-551 | Metryki ryzyka: zmienność, Sharpe, Sortino, beta, korelacja, VaR i CVaR historyczne — wektor D; ekran z założeniami | FR-03.10 | OBL, VEC | BL-319, BL-302 | 3 | todo (rdzeń § 8 w `packages/core`, PR #3) |
 | BL-552 | Atrybucja wyniku: pozycje, sektory, waluty | FR-03.08 | OBL | BL-303, BL-207 | 2 | todo |
 | BL-553 | Statystyki skuteczności decyzji z dziennika | FR-03.12 | OBL | BL-309 | 1,5 | todo |
 | BL-554 | Import generyczny CSV z szablonami mapowania kolumn | FR-03.04 | IMP | BL-145 | 3 | todo |

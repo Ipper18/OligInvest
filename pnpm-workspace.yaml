@@ -1,0 +1,22 @@
+packages:
+  - apps/*
+  - modules/*
+  - packages/*
+
+minimumReleaseAge: 4320
+trustPolicy: no-downgrade
+strictDepBuilds: true
+blockExoticSubdeps: true
+# Reviewed sources and rationale: docs/08-plan/m0-1-install-scripts.md.
+allowBuilds:
+  pnpm@12.4.2: true
+  esbuild@0.18.20: true
+  esbuild@0.25.12: true
+  esbuild@0.28.2: true
+  fsevents@2.3.3: false
+  msgpackr-extract@3.0.4: false
+
+saveExact: true
+engineStrict: true
+pmOnFail: error
+strictPeerDependencies: true

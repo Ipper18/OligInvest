@@ -89,6 +89,18 @@ Reguły (egzekwowane skryptem `pnpm check:deps` w CI na podstawie `package.json`
 4. Aplikacje (`apps/*`) są korzeniami kompozycji: importują moduły przez rejestry (`apps/api/src/modules.ts`, `apps/jobs/src/modules.ts`, `apps/web/src/modules.ts`).
 5. `apps/web` nie importuje `modules/*/server` ani `packages/db` (brak dostępu do bazy z warstwy UI — [ADR-012](../09-decyzje/ADR-012-api-jako-granica-domenowa.md)).
 
+`check:deps` kontroluje wszystkie sekcje zależności manifestów, cykle workspace oraz importy
+w kodzie produkcyjnym (`src/`, `db/`, `app/`, `pages/`, `proxy.ts`, `middleware.ts`). Testy,
+fixtures, spiki i narzędzia migracyjne nie są kodem produkcyjnym. Parser przypiętego TypeScript
+sprawdza także re-eksporty, importy typów, `require` i dynamiczne importy. Specyfikator musi być
+literałem; importy workspace wymagają deklaracji i publicznego eksportu. Ścieżki względne nie
+mogą przekraczać granicy pakietu; aliasy spoza zadeklarowanych zależności są odrzucane.
+Moduły w aplikacjach importuje `src/modules.ts`; dodatkowo cienkie re-eksporty `/ui` w trasach
+`apps/web/app/` (lub `src/app/`) realizują § 8.1. Kod web nie importuje również `/jobs`.
+Ograniczenie `core` do `decimal.js` dotyczy zależności wykonawczych i importów produkcyjnych;
+narzędzia testów/budowania mogą być zależnościami deweloperskimi. Kontrola importów nie zastępuje
+przeglądu czystości funkcji (np. użycia globalnych API I/O).
+
 ## 3. Kontrakt modułu
 
 ```ts
@@ -120,6 +132,14 @@ export interface UiModuleDefinition {
   explainers?: ExplainerKey[];           // klucze wyjaśnień kontekstowych (FR-06.02)
 }
 ```
+
+### 3.1 Fundament rejestrów M0 (BL-006)
+
+`packages/platform` zawiera niezależny od frameworka `ModuleCatalog` (metadane), `ApiModuleRegistry`, `JobsModuleRegistry` i `UiModuleRegistry`. API ma generyczny parametr routera: korzeń `apps/api` użyje `OpenAPIHono<AppEnv>` z ilustracji powyżej (BL-009). W BL-006 nie montujemy endpointów ani nie uruchamiamy kolejek. Rejestracje walidują metadane przez Zod `.strict()`, odrzucają duplikaty, nieznane moduły i niespójne definicje; nie przechowują instancji bazy.
+
+Katalog przyjmuje evaluator flag jako port; domyślny evaluator zwraca false, więc moduły funkcjonalne zaczynają jako wyłączone. Cztery moduły fundamentowe nie mają flagi, `admin` jest dostępny tylko roli admin, pozostałe moduły mają `module.<id>`. `require` rejestru API ocenia flagę przy każdym wywołaniu i zgłasza `NOT_FOUND`; adapter HTTP w BL-009 musi użyć tej bramki dla każdego żądania, także tras admin/quick modułu. Nie wolno ocenić flagi tylko podczas startu serwera. Pamięć DB/cache flag i autoryzacja HTTP pozostają do BL-117/M1.
+
+Rejestr jobs pomija wyłączone moduły przed wywołaniem handlera, subskrypcji lub zwróceniem harmonogramu; handler ma jawny kontekst korelacji i waliduje nieznany payload przez `createBoundaryHandler`; rejestr odrzuca funkcje nieutworzone przez ten walidujący adapter. Rejestr UI filtruje nawigację po fladze i uprawnieniu/roli, zwraca opisy leniwych paneli wyłącznie administratorowi; nie wywołuje loaderów. Osobne wejście `@oliginvest/platform/modules` pozwala użyć kontraktów bez importowania loggera Node do web. Rejestry nie zastępują autoryzacji, bramek MFA/PAT ani RLS.
 
 ## 4. Katalog modułów
 
@@ -219,6 +239,22 @@ Admin **nie ma** uprawnienia do danych finansowych innych użytkowników — RLS
 13. **Edukacja i zgodność:** wyjaśnienia dla nowych metryk (FR-06.02); disclaimery i blok założeń, jeśli moduł pokazuje analizy (NFR-07).
 14. **Testy:** jednostkowe, integracyjne z RLS, e2e ścieżki krytycznej; zadanie CI „build bez modułu” nadal zielone.
 15. **Dokumentacja:** katalog w § 4, [`../00-przeglad/macierz-pokrycia.md`](../00-przeglad/macierz-pokrycia.md), [`../08-plan/backlog.md`](../08-plan/backlog.md).
+
+Generator realizuje krok 3: tworzy wyłącznie nowy pakiet (nie nadpisuje plików ani rejestrów).
+Nazwa musi być małymi literami w `kebab-case`; nazwy fundamentowe i `admin` są zarezerwowane.
+Szkielet zawiera metadane `feature`, flagę `module.<nazwa>`, definicje API/jobs/UI zgodne
+z `packages/platform` i test rejestracji z domyślnie wyłączoną flagą. Nie tworzy fikcyjnych
+endpointów, tabel ani uprawnień; `README.md` modułu prowadzi przez pozostałe kroki checklisty.
+Pakiet korzysta wyłącznie z istniejącego `@oliginvest/platform` (`workspace:*`);
+generator formatuje pliki zainstalowanym Biome według konfiguracji repozytorium.
+
+Po generacji zaktualizuj lockfile lokalnego workspace: `pnpm install --lockfile-only`,
+potem `pnpm install --frozen-lockfile`. Aktualizacja lockfile potrzebuje metadanych rejestru
+przy pustym cache (także gdy wszystkie wersje są już przypięte); polityka karencji pozostaje aktywna.
+Sprawdź `pnpm check:deps` oraz
+`pnpm turbo run lint typecheck test build --filter=@oliginvest/mod-<nazwa>`.
+Test integracyjny `pnpm test:module-generator` wykonuje ten przepływ w odizolowanej kopii
+pod `.git/` i usuwa ją po zakończeniu. Nie modyfikuje lockfile ani modułów głównego checkoutu.
 
 ### 8.2 Usunięcie modułu funkcjonalnego
 

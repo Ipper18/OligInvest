@@ -2,6 +2,8 @@
 
 **Cel:** wymienić wszystkie ekrany OligInvest z adresem, wymaganiami, operacjami API, obowiązkowymi komponentami zgodności i uwagami dla telefonu oraz opisać nawigację i ścieżki kluczowe — jako kontrakt między wymaganiami, [`openapi.yaml`](../02-api/openapi.yaml) i implementacją `web`.
 
+Teksty widoczne na ekranach: [`teksty-ui.md`](teksty-ui.md).
+
 Powiązane: [`architektura-ui.md`](architektura-ui.md), [`system-projektowy.md`](system-projektowy.md), [`wydajnosc.md`](wydajnosc.md) § 4 (renderowanie i budżety per trasa), [`dostepnosc.md`](dostepnosc.md), [`../05-mobile/strategia-mobilna.md`](../05-mobile/strategia-mobilna.md).
 
 Oznaczenia komponentów zgodności: **F** = `<DataFreshness/>`, **Z** = `<AssumptionsBlock/>`, **D** = `<Disclaimer/>`, **W** = `<Explainer/>` przy metrykach.

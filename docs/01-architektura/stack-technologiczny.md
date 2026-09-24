@@ -31,7 +31,7 @@ Nowa zależność runtime trafia do projektu tylko, jeśli spełnia **wszystkie*
 | Element | Wybór | Wersja | Licencja | Uzasadnienie | Odrzucone |
 |---|---|---|---|---|---|
 | Menedżer pakietów JS | **pnpm** | 12.4 | MIT | Ścisła izolacja zależności (brak „fantomowych” importów — pomaga egzekwować granice modułów), szybki, workspaces. | npm (hoisting ukrywa brakujące zależności), Yarn (brak przewagi). |
-| Orkiestracja zadań | **Turborepo** | 2.11 | MIT | Graf zadań i cache buildów/testów per pakiet; prosta konfiguracja ([ADR-002](../09-decyzje/ADR-002-monorepo.md)). | Nx (więcej abstrakcji i generatorów niż potrzebujemy). |
+| Orkiestracja zadań | **Turborepo** | 2.10.13 na starcie M0; 2.11 osobnym PR Renovate po karencji | MIT | Graf zadań i cache buildów/testów per pakiet ([ADR-002](../09-decyzje/ADR-002-monorepo.md)); wersja startowa zgodnie z [ADR-015](../09-decyzje/ADR-015-linia-turborepo-na-starcie-m0.md), decyzja 2026-09-21. | Nx (więcej abstrakcji i generatorów niż potrzebujemy). |
 | Język | **TypeScript** | 7.0 (kompilator natywny) | Apache-2.0 | Szybkie sprawdzanie typów w monorepo; `strict`. Jeśli któraś biblioteka okaże się niezgodna — powrót do linii 6.x (decyzja w M0). | JS bez typów. |
 | Lint + format (TS/JS/JSON/CSS) | **Biome** | 2.5 | MIT/Apache-2.0 | Jedno narzędzie zamiast ESLint + Prettier + wtyczek; szybkie; reguły React hooks i dostępności. Next.js 16 nie ma już `next lint`. | ESLint + Prettier (więcej zależności i konfiguracji). |
 | Python: zależności | **uv** | 0.12 | MIT/Apache-2.0 | Lockfile (`uv.lock`), szybkie instalacje, zarządzanie wersją Pythona. | pip-tools, Poetry (wolniejsze). |
@@ -41,6 +41,25 @@ Nowa zależność runtime trafia do projektu tylko, jeśli spełnia **wszystkie*
 | Testy Python | **pytest** + **hypothesis** | 9.1 / 6.168 | MIT / MPL-2.0 | Testy właściwości (property-based) dla wzorów i symulacji. | unittest. |
 | Testy e2e | **Playwright** + `@axe-core/playwright` | 1.63 / 4.13 | Apache-2.0 / MPL-2.0 | Chromium, WebKit (Safari/iOS), Firefox w jednym narzędziu; testy dostępności. | Cypress (brak WebKit). |
 | Budżety wydajności | **Lighthouse** (uruchamiany w CI skryptem z asercjami) + **size-limit** | 13.5 / 14.0 | Apache-2.0 / MIT | LCP/CLS/TBT w CI; twardy limit rozmiaru JS per trasa (NFR-01.02); szczegóły w `04-frontend/wydajnosc.md` § 6. | `@lhci/cli` 0.15.1 — ostatnie wydanie 2025-06, zawiera Lighthouse 12.6.1 (sprawdzone 2026-09-19); tylko ręczne pomiary. |
+
+### 3.1 Pakiety pomocnicze szkieletu M0-1
+
+Decyzja właściciela 2026-09-21: start na `bullmq` npm 6.3.6, `bullmq` PyPI 3.2.2 (najnowsze dojrzałe 3.2.x), `psycopg` i `psycopg-binary` 3.3.5; późniejsze patche proponuje Renovate w zwykłym trybie po karencji. Źródła publikacji i sumy kontrolne: [inwentarz](../08-plan/audits/m0-1-release-age.json). Lighthouse 13.5.0 pozostaje poza manifestami do sesji BL-016; bez zmiany linii na 13.4. Better Auth 1.7.5 jest zależnością deweloperską `apps/api` wyłącznie dla spike BL-032, bez implementacji uwierzytelniania.
+
+Przygotowane manifesty (BL-001, 2026-09-20) używają dokładnych wersji z [inwentarza audytu](../08-plan/audits/m0-1-release-age.json). 2026-09-21 utworzono oba lockfile, porównano wybrane wersje i sumy z audytem oraz wykonano instalacje frozen i lokalne testy; dowody w [raporcie sesji § 8](../08-plan/m0-1-session-history.md#8-lockfile-i-instalacja-po-zatwierdzeniu-patchy--2026-09-21). Pełny audyt CI pozostaje do BL-017.
+
+| Pakiet | Wersja | Licencja | Uzasadnienie |
+|---|---|---|---|
+| `@types/node` | 24.13.5 | MIT | Deklaracje API Node 24 dla aplikacji serwerowych i pakietów z I/O; bez kodu runtime |
+| `@types/react`, `@types/react-dom` | 19.3.0 | MIT | Deklaracje React 19.3 dla Next.js i wspólnego UI; bez kodu runtime |
+| `@types/pg` | 8.23.1 | MIT | Deklaracje sterownika `pg` dla typowanych pul i transakcji RLS |
+| `@vitest/coverage-v8` | 5.0.1 | MIT | Provider pokrycia Vitest tej samej wersji, potrzebny do bramki pokrycia `core` |
+| `setuptools` | 84.0.0 | MIT | Backend budowania minimalnego pakietu Python (BL-002); przypięty w build-system i grupie dev, już uwzględniony w audycie; build bez izolowanego pobierania zależności |
+| `@tailwindcss/postcss` | 4.3.3 | MIT | Oficjalny adapter Tailwind 4 dla potoku CSS Next.js |
+
+Te pakiety uzupełniają wybrane narzędzia, bez zmiany architektury lub ADR. Inne biblioteki figurujące w audycie (np. Better Auth do spike BL-032, narzędzia e2e i biblioteki naukowe) nie są automatycznie dodawane do manifestów. `apps/analytics/package.json` zawiera wyłącznie polecenia dla Turbo; minimalne zależności Pythona są już zapisane w `pyproject.toml` i `uv.lock`; konsument kolejki pozostaje do BL-014.
+
+Ustawienia pnpm 12 poza rejestrem są w `pnpm-workspace.yaml`: `saveExact`, `engineStrict`, `pmOnFail: error` (odrzucenie niezgodnej wersji menedżera bez jej automatycznego pobrania). `.npmrc` wskazuje rejestr, bez poświadczeń. `allowBuilds` zawiera decyzje dla dokładnych wersji pnpm/esbuild/fsevents/msgpackr-extract po [przeglądzie skryptów](../08-plan/m0-1-install-scripts.md); nowe wersje wymagają ponownego przeglądu. Źródła konfiguracji, sprawdzone 2026-09-20: [ustawienia pnpm 12](https://pnpm.io/settings), [pmOnFail](https://pnpm.io/settings/cli#pmonfail).
 
 ## 4. Frontend (`apps/web`)
 
@@ -60,6 +79,8 @@ Nowa zależność runtime trafia do projektu tylko, jeśli spełnia **wszystkie*
 | Internacjonalizacja | **`Intl`** (liczby, waluty, daty) + słowniki komunikatów w `packages/i18n` | — | — | Standard platformy; PL na start, klucze gotowe na EN (NFR-10.04). | next-intl/i18next (zbędne przy jednym języku). |
 | Stan globalny | **Brak biblioteki** (stan w URL, TanStack Query, lokalny stan React) | — | — | Mniej warstw. | Redux/Zustand. |
 
+BL-007: pakiet db deklaruje także istniejące `zod@4.6.5` do walidacji konfiguracji puli i kontekstu transakcji; siedem modułów posiadających tabele deklaruje istniejące `drizzle-orm@0.45.2` bezpośrednio, aby pnpm egzekwował zależności definicji `db/schema.ts`. Odwołania do tabel modułów fundamentowych przechodzą przez `/server`; warunek `default` eksportu wskazuje ten sam plik ESM co `import`, także dla narzędzia Drizzle Kit działającego w Node 24. Nie dodano nowej biblioteki ani wersji; pozostałe wiersze tej tabeli zachowują dotychczasowe decyzje.
+
 ## 5. Backend (`apps/api`, `apps/jobs`, moduły)
 
 | Element | Wybór | Wersja | Licencja | Uzasadnienie | Odrzucone |
@@ -69,7 +90,7 @@ Nowa zależność runtime trafia do projektu tylko, jeśli spełnia **wszystkie*
 | Uwierzytelnianie | **Better Auth** + wtyczki `twoFactor`, `admin`, `haveIBeenPwned`, `@better-auth/api-key` | 1.7.5 | MIT | TOTP + kody zapasowe, role i bany, klucze API z zakresami i limitami (PAT), adapter Drizzle ([ADR-004](../09-decyzje/ADR-004-postgres-better-auth-rls.md)). | Auth.js (brak TOTP), Keycloak (Java, ~1 GB RAM), Lucia (wycofana). |
 | Hashowanie haseł | **@node-rs/argon2** (Argon2id) | 2.2 | MIT | Better Auth domyślnie używa scrypt; specyfikacja wymaga Argon2id → własne funkcje `hash`/`verify`. Natywne wiązania Rust, bez kompilacji node-gyp. | `argon2` (node-gyp), scrypt (niezgodne z wymaganiem). |
 | ORM i migracje | **Drizzle ORM** + **drizzle-kit** | 0.45.2 / 0.31.10 | Apache-2.0 / MIT | SQL-owy, bez silnika pośredniczącego, pełna kontrola nad transakcjami (`SET LOCAL` dla RLS); wspierany przez Better Auth. | Prisma (silnik zapytań, trudniejsze RLS per transakcja), Kysely (brak migracji z pudełka). |
-| Sterownik PostgreSQL | **pg** (node-postgres) | 8.23 | MIT | Dojrzały, wspierany przez Drizzle i Better Auth. | postgres.js (Unlicense; brak przewagi). |
+| Sterownik PostgreSQL | **pg** (node-postgres) | 8.23 | MIT | Dojrzały, wspierany przez Drizzle i Better Auth. BL-009: także bezpośrednia zależność `apps/api` (`pg` 8.23.0, `@types/pg` 8.23.1) wyłącznie do sondy `SELECT 1`; bez nowych wersji w lockfile. Sonda Valkey używa `node:net` i ograniczonej wymiany AUTH/PING bez dodatkowego klienta. | postgres.js (Unlicense; brak przewagi). |
 | Kolejki | **BullMQ** (Node) / **bullmq** (Python) | 6.3 / 3.2 | MIT | Jeden system kolejek dla dwóch runtime'ów; priorytety, opóźnienia, ponowienia, limity, zdarzenia postępu ([ADR-003](../09-decyzje/ADR-003-hybryda-obliczen-i-kolejki.md)). | Celery + BullMQ (dwa systemy), pg-boss (brak Pythona). |
 | Logi | **pino** | 10.3 | MIT | Szybkie logi JSON, redakcja pól wrażliwych. | winston (wolniejszy). |
 | Pieniądze | **decimal.js** | 10.6 | MIT | Arytmetyka dziesiętna o konfigurowalnej precyzji ([ADR-014](../09-decyzje/ADR-014-pieniadze-waluty-czas.md)). | `number` (błędy zmiennoprzecinkowe), big.js (brak funkcji potrzebnych w XIRR, np. `pow` z ułamkiem), Dinero.js (zbędna warstwa). |
@@ -102,6 +123,7 @@ Nowa zależność runtime trafia do projektu tylko, jeśli spełnia **wszystkie*
 | Kopie zapasowe | **pgBackRest** (PostgreSQL: kopie pełne i różnicowe + ciągła archiwizacja WAL, odtwarzanie do punktu w czasie) + **restic** z **rest-server** `--append-only` na VPS (kopia poza domem) | 2.59 / 0.19 / 0.14 | MIT / BSD-2 / BSD-2 | RPO bazy: minuty lokalnie, ≤ 1 h poza domem; szyfrowane repozytoria; tryb append-only chroni kopię przed skasowaniem z zainfekowanego serwera ([`../07-wdrozenie/backup-dr.md`](../07-wdrozenie/backup-dr.md)). | Sam `pg_dump` (RPO 24 h), WAL-G 3.0 (równorzędna alternatywa), Barman (cięższy), Duplicati. |
 | Monitoring | **Uptime Kuma** na VPS (sondy z zewnątrz, sygnały życia zadań, alerty e-mail) + wykresy VM w Proxmoxie + metryki aplikacji w panelu admina | 2.5 | MIT | Wykrywa także awarię całego domu; bez dodatkowych kontenerów z dostępem do gniazda Dockera ([`../07-wdrozenie/monitoring.md`](../07-wdrozenie/monitoring.md)). | Prometheus/Grafana/Loki (RAM), Dozzle i Beszel (wymagają gniazda Dockera), GlitchTip/Sentry self-hosted (RAM). |
 | CI | **GitHub Actions** | — | — | Darmowe dla repozytoriów publicznych na standardowych runnerach (dokumentacja GitHub, 2026-09-18). | Self-hosted runner od startu (niepotrzebny). |
+| Lokalny SMTP do testów | **Mailpit** | 1.31.1 (tylko Compose dev) | MIT | Przechwycenie syntetycznych wiadomości bez wysyłki do Brevo; zaplanowane w BL-034 i CI/CD § 8. Wersja i licencja sprawdzone 2026-09-20 w [wydaniu projektu](https://github.com/axllent/mailpit/releases/tag/v1.31.1); digest i instrukcja w [środowisku developerskim](../07-wdrozenie/srodowisko-deweloperskie.md). | Rzeczywisty SMTP w testach (wysyłka i poświadczenia poza potrzebami dev). |
 | Aktualizacje zależności | **Renovate** (aplikacja GitHub) + alerty **Dependabot** | 44.x | AGPL-3.0 (usługa zewnętrzna, nie w kodzie) | Grupowanie aktualizacji, reguły niestandardowe (np. tarball SheetJS). | Tylko Dependabot (słabsza obsługa niestandardowych źródeł). |
 | SCA | **osv-scanner** | 2.6 | Apache-2.0 | Baza OSV obejmuje npm i PyPI. | npm audit + pip-audit osobno. |
 | SBOM | **syft** (CycloneDX) | 1.52 | Apache-2.0 | SBOM dla obrazów kontenerów. | — |

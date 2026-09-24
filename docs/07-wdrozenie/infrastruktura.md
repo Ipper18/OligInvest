@@ -248,6 +248,12 @@ invest.oligi.pl {
 
 Fragment `security_headers` ustawia nagłówki z [`../06-bezpieczenstwo/kontrole-bezpieczenstwa.md`](../06-bezpieczenstwo/kontrole-bezpieczenstwa.md) § 2.2 (CSP ustawia `web`). HTTP/3 wyłączone (VPS przekazuje tylko TCP); `flush_interval -1` dla strumienia SSE; kompresja (`encode zstd gzip`) tylko dla odpowiedzi innych niż `text/event-stream`. Caddy domyślnie redaguje nagłówki `Cookie` i `Authorization` w logach.
 
+**Uzupełnienia z przeglądu kodu M0-1 (2026-09-22, do wdrożenia w M0-2 — [przegląd](../08-plan/m0-1-przeglad-kodu.md)):**
+
+- **`X-Request-Id` (P-09):** Caddy usuwa nagłówek przychodzący z internetu i przekazuje do `api` własny identyfikator (np. `header_up X-Request-Id {http.request.uuid}`), który trafia też do logu dostępu — klient nie może wtedy nadawać identyfikatorów korelacji. Składnię i nazwę placeholdera potwierdzić w dokumentacji Caddy 2.11 (**NIEZWERYFIKOWANE**).
+- **Keep-alive do upstreamu (P-08):** czas bezczynności połączeń Caddy → `api`/`web` musi być krótszy niż `keepAliveTimeout` serwerów Node (domyślnie 5 s) albo `keepAliveTimeout` trzeba jawnie wydłużyć w aplikacji — inaczej proxy użyje połączenia zamkniętego przez Node i zwróci sporadyczne 502. Domyślną wartość w Caddy potwierdzić przy konfiguracji (**NIEZWERYFIKOWANE**).
+- **`/api/v1/health/ready` (P-01):** ścieżka jest publiczna (monitor `app-ready` w [`monitoring.md`](monitoring.md)). Caddy bez dodatkowych modułów nie ogranicza częstotliwości żądań, a VPS widzi wyłącznie TLS, więc podstawową ochroną jest buforowanie wyniku sond w `api`; CrowdSec może blokować jawne nadużycia na podstawie logów.
+
 ### 6.4 PostgreSQL i Valkey
 
 - **PostgreSQL:** `password_encryption = scram-sha-256`; `pg_hba` dopuszcza tylko sieci Dockera i konkretne role do konkretnej bazy; `log_min_duration_statement = 500ms` z `log_parameter_max_length = 0` (bez wartości parametrów w logach); `archive_mode = on`, `archive_command` przez pgBackRest, `archive_timeout = 300s` ([`backup-dr.md`](backup-dr.md)); role wg [`../03-dane/schema.sql`](../03-dane/schema.sql) § 0.
@@ -294,6 +300,21 @@ Generowane skryptem instalacyjnym (`infra/scripts/generate-secrets.sh`, M0) z ge
 | poświadczenia agenta CrowdSec | agent na hoście | przy odbudowie |
 | klucze WireGuard, SSH | hosty | raz w roku |
 | klucz konta ACME | wolumen `caddy-data` | przy utracie (zmiana CAA) |
+
+### 8.1 Walidacja konfiguracji aplikacji (BL-005)
+
+`packages/config` eksportuje schematy Zod `.strict()` i `loadConfig(service, env, { mode })` dla `web`, `api`, `jobs`, `analytics`. Tryb jest jawny (`development`, `test`, `production`); loader nie czyta `.env` samodzielnie. Korzeń kompozycji przekazuje środowisko procesu i tryb. Loader wybiera wyłącznie klucze danej usługi, dzięki czemu zmienne systemu, MCP, hosta i Compose nie trafiają do wyniku. Bezpośrednie parsowanie schematu odrzuca nieznane pola. Klucze pochodzą z [.env.example](../../.env.example); kontrakt połączeń i uruchamianie workerów pozostają do BL-007/008/013/014.
+
+| Profil | Wymagane klucze | Opcjonalne |
+|---|---|---|
+| web | PUBLIC_BASE_URL, API_INTERNAL_URL | LEGAL_CONTROLLER_NAME, LEGAL_CONTACT_EMAIL |
+| api | PUBLIC_BASE_URL, BETTER_AUTH_SECRETS, AUDIT_PSEUDONYM_KEY, DB_AUTH_PASSWORD, DB_APP_PASSWORD, VALKEY_QUEUE_API_PASSWORD, VALKEY_CACHE_API_PASSWORD | LEGAL_CONTROLLER_NAME, LEGAL_CONTACT_EMAIL, VAPID_PUBLIC_KEY, pary GOOGLE_CLIENT_ID/SECRET i GITHUB_CLIENT_ID/SECRET |
+| jobs | PUBLIC_BASE_URL, AUDIT_PSEUDONYM_KEY, DB_APP_PASSWORD, VALKEY_QUEUE_JOBS_PASSWORD, VALKEY_CACHE_JOBS_PASSWORD | SMTP_HOST/USER/PASSWORD (komplet albo brak), para VAPID_PUBLIC_KEY/PRIVATE_KEY, klucze FINNHUB/TWELVEDATA/ALPHAVANTAGE/FRED/MARKETAUX |
+| analytics | DB_ANALYTICS_RO_PASSWORD, VALKEY_QUEUE_ANALYTICS_PASSWORD | brak |
+
+Sekrety można lokalnie podać jako `NAME` albo `NAME_FILE`. Jednoczesne niepuste wartości są błędem (brak cichego priorytetu). Produkcja wymaga wariantu `_FILE` dla każdego podanego sekretu, również opcjonalnego. `_FILE` nie jest obsługiwane dla publicznych adresów/kluczy. Puste zmienne oznaczają brak wartości; pusty plik sekretu jest błędem. Plik: ścieżka bezwzględna, zwykły plik UTF-8 do 64 KiB; usuwa się tylko jeden końcowy LF/CRLF, zachowując pozostałe znaki. Błąd zawiera nazwę znanego klucza i kod, nigdy wartość, ścieżkę pliku ani oryginalny wyjątek I/O/Zod.
+
+Adresy HTTP(S) nie mogą zawierać poświadczeń, zapytania ani fragmentu; PUBLIC_BASE_URL jest originem, w produkcji HTTPS. API_INTERNAL_URL może używać HTTP w sieci wewnętrznej. BETTER_AUTH_SECRETS ma format Better Auth 1.7.5 `wersja:sekret,wersja:sekret` (najnowszy pierwszy); wersje są unikalnymi nieujemnymi liczbami całkowitymi, każdy sekret ma co najmniej 32 znaki. AUDIT_PSEUDONYM_KEY ma co najmniej 32 znaki. Walidacja długości nie potwierdza losowości — generator kryptograficzny pozostaje wymagany.
 
 ## 9. Migracja: TLS Immicha z VPS do domu
 
