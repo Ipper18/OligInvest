@@ -130,12 +130,15 @@ export function historicalVar(returns: readonly number[], confidence = 0.95): nu
   return -percentile(returns, 1 - confidence);
 }
 
-/** Historical 1-day CVaR: −mean(r | r ≤ percentile_{1−c}). */
+/**
+ * Historical 1-day CVaR as in empyrical (§ 8, owner decision 2026-09-24, C-23): the mean of the
+ * k = ⌊(n − 1)·(1 − c)⌋ + 1 lowest returns, as a positive loss — well defined with ties.
+ */
 export function historicalCvar(returns: readonly number[], confidence = 0.95): number {
   check(returns, 1);
   checkConfidence(confidence);
-  const cutoff = percentile(returns, 1 - confidence);
-  return -mean(returns.filter((r) => r <= cutoff));
+  const k = Math.floor((returns.length - 1) * (1 - confidence)) + 1;
+  return -mean([...returns].sort((a, b) => a - b).slice(0, k));
 }
 
 /** Parametric 1-day VaR 95 %: −(mean − z·σ), normal distribution (§ 8). */

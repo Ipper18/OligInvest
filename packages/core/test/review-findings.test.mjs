@@ -706,7 +706,7 @@ describe("risk metrics and drawdowns", () => {
     expect(result.peakIndex).toBe(2);
   });
 
-  failsToday("C-23 (document) historical CVaR with ties at the cut-off matches empyrical", () => {
+  test("C-23 (document) historical CVaR with ties at the cut-off matches empyrical", () => {
     const tied = [-0.05, -0.04, -0.03, -0.02, -0.01, -0.01, -0.01, ...Array(93).fill(0.001)];
     // empyrical: mean of the int((n − 1)·0.05) + 1 = 5 lowest → 0.03; today 0.0242857 (7 values).
     expect(Math.abs(historicalCvar(tied) - 0.03)).toBeLessThanOrEqual(1e-6);
