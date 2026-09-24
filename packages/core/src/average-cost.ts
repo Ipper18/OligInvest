@@ -4,7 +4,7 @@ import { CoreError } from "./errors.js";
 import type { LedgerInput } from "./ledger.js";
 import { type Money, money, type Quantity } from "./money.js";
 import { sortTransactions, type Transaction } from "./transactions.js";
-import { validateInput } from "./validation.js";
+import { linkedCharges, validateInput } from "./validation.js";
 
 export interface AveragePosition {
   readonly accountId: string;
@@ -49,6 +49,9 @@ interface Pool {
  */
 export function buildAverageCostView(input: LedgerInput): AverageCostView {
   validateInput(input.accounts, input.transactions);
+  const linked = linkedCharges(input.transactions);
+  const chargeSum = (id: string) =>
+    (linked.get(id) ?? []).reduce((s, m) => s.plus(m.amount), new Decimal(0));
   const pools = new Map<string, Pool>();
   const moved = new Map<
     string,
@@ -103,7 +106,7 @@ export function buildAverageCostView(input: LedgerInput): AverageCostView {
       case "BUY": {
         const p = pool(tx.accountId, tx.instrumentId, currencyOf(tx.accountId));
         p.quantity = p.quantity.plus(tx.quantity);
-        p.cost = p.cost.plus(tx.amount.amount.negated());
+        p.cost = p.cost.plus(tx.amount.amount.negated()).minus(chargeSum(tx.id));
         break;
       }
       case "SELL": {
@@ -111,6 +114,7 @@ export function buildAverageCostView(input: LedgerInput): AverageCostView {
         const known = p.known;
         const unitCost = p.quantity.isZero() ? new Decimal(0) : p.cost.div(p.quantity);
         const cost = take(p, tx.quantity, tx);
+        const proceeds = money(tx.amount.amount.plus(chargeSum(tx.id)), p.currency);
         sales.push(
           Object.freeze({
             transactionId: tx.id,
@@ -119,9 +123,9 @@ export function buildAverageCostView(input: LedgerInput): AverageCostView {
             tradeDate: tx.tradeDate,
             quantity: tx.quantity,
             unitCost: known ? money(unitCost, p.currency) : null,
-            proceeds: tx.amount,
+            proceeds,
             cost: known ? money(cost, p.currency) : null,
-            realizedPl: known ? money(tx.amount.amount.minus(cost), p.currency) : null,
+            realizedPl: known ? money(proceeds.amount.minus(cost), p.currency) : null,
           }),
         );
         break;

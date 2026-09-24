@@ -219,7 +219,7 @@ Stopa dywidendy od kosztu = suma dywidend brutto z 12 miesięcy / koszt nabycia 
 
 ### 4.4 Pozostałe pozycje gotówkowe
 
-Odsetki od wolnych środków (`INTEREST`) i podatek od nich (`TAX`), opłaty (`FEE`), podatki transakcyjne (FTT — `TAX` powiązany z transakcją lub część kosztu partii) wchodzą do wyniku okresu jako osobne kategorie; nie zmieniają kosztu nabycia (poza FTT przypisanym do zakupu).
+Odsetki od wolnych środków (`INTEREST`) i podatek od nich (`TAX`), opłaty (`FEE`), podatki transakcyjne (FTT — `TAX` powiązany z transakcją lub część kosztu partii) wchodzą do wyniku okresu jako osobne kategorie; nie zmieniają kosztu nabycia (poza FTT przypisanym do zakupu). `TAX`/`FEE` powiązane przez `related_transaction_id` z `BUY`, `SELL` lub `DIVIDEND` tego samego rachunku (import zapisuje tak FTT, opłatę SEC i podatek u źródła z osobnego wiersza — [`formaty-importu.md`](formaty-importu.md) § 2.2) rdzeń przypisuje operacji docelowej w obu widokach: do kosztu partii, do przychodu sprzedaży albo do podatku u źródła dywidendy; gotówka jest księgowana raz, z wiersza `TAX`/`FEE` (przegląd C-04). Powiązanie z innym rachunkiem lub w innej walucie jest błędem danych.
 
 ---
 
