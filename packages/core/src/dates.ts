@@ -35,6 +35,17 @@ export function addDays(date: string, days: number): IsoDate {
   return fromUtcMs(toUtcMs(isoDate(date)) + days * DAY_MS);
 }
 
+/** Calendar months; the day is clamped to the month's end (2026-03-31 − 1 month = 2026-02-28). */
+export function addMonths(date: string, months: number): IsoDate {
+  const d = isoDate(date);
+  const total = Number(d.slice(0, 4)) * 12 + Number(d.slice(5, 7)) - 1 + months;
+  const year = Math.floor(total / 12);
+  const month = total - year * 12;
+  const lastDay = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
+  const day = Math.min(Number(d.slice(8, 10)), lastDay);
+  return fromUtcMs(Date.UTC(year, month, day));
+}
+
 /** Calendar days from `from` to `to` (ACT convention). */
 export function daysBetween(from: string, to: string): number {
   return Math.round((toUtcMs(isoDate(to)) - toUtcMs(isoDate(from))) / DAY_MS);
