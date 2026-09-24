@@ -402,7 +402,7 @@ describe("ledger, transfers and the tax view", () => {
     },
   );
 
-  failsToday("C-17 executedAt must carry an explicit offset", () => {
+  test("C-17 executedAt must carry an explicit offset", () => {
     const deposit = {
       id: "x",
       accountId: "a",

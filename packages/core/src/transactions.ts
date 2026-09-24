@@ -39,7 +39,7 @@ interface TransactionBase {
   readonly tradeDate: IsoDate;
   /** Settlement date = tax day (§ 2.2); fill with `settlementDate` when the source lacks it. */
   readonly settleDate?: IsoDate | undefined;
-  /** ISO 8601 instant; orders operations within a day (§ 1). */
+  /** ISO 8601 instant with `Z` or an offset; orders operations within a day (§ 1). */
   readonly executedAt?: string | undefined;
   /** Order within a day for operations without `executedAt` (default 0). */
   readonly sequence?: number | undefined;
@@ -128,6 +128,9 @@ export type Transaction =
   | SplitTransaction
   | SecurityTransferTransaction;
 
+/** ISO 8601 instant with `Z` or an explicit offset — never the server's local time (C-17). */
+const INSTANT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:\d{2})$/;
+
 function executedAtMs(tx: Transaction): number {
   return tx.executedAt === undefined ? Number.POSITIVE_INFINITY : Date.parse(tx.executedAt);
 }
@@ -203,7 +206,12 @@ export function validateTransaction(tx: Transaction, account: Account): void {
   if (typeof tx.id !== "string" || tx.id === "") fail(tx, "id", "Missing id");
   isoDate(tx.tradeDate);
   if (tx.settleDate !== undefined) isoDate(tx.settleDate);
-  if (tx.executedAt !== undefined && Number.isNaN(Date.parse(tx.executedAt))) {
+  if (
+    tx.executedAt !== undefined &&
+    (typeof tx.executedAt !== "string" ||
+      !INSTANT.test(tx.executedAt) ||
+      Number.isNaN(Date.parse(tx.executedAt)))
+  ) {
     fail(tx, "executedAt", "executedAt must be an ISO 8601 instant");
   }
   if (tx.sequence !== undefined && !Number.isInteger(tx.sequence)) {
