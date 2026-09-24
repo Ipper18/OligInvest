@@ -14,7 +14,7 @@ import {
   type TradeTransaction,
   type Transaction,
 } from "./transactions.js";
-import { validateInput } from "./validation.js";
+import { linkedCharges, validateInput } from "./validation.js";
 
 /** User settings of the tax view (`identity.user_preferences`, 11-zgodnosc-prawna.md § 5.2). */
 export interface TaxSettings {
@@ -319,6 +319,15 @@ function positionKey(accountId: string, instrumentId: string): string {
 export function buildLedger(input: LedgerInput): Ledger {
   const settings = input.taxSettings ?? DEFAULT_TAX_SETTINGS;
   const accounts = validateInput(input.accounts, input.transactions);
+  const linked = linkedCharges(input.transactions);
+  const charges = (id: string) => linked.get(id) ?? [];
+  const chargeSum = (id: string) => charges(id).reduce((s, m) => s.plus(m.amount), ZERO);
+  /** Σ of linked charges in PLN for the tax view (a cost is the negated cash amount). */
+  const chargesPln = (id: string, date: IsoDate | null, sign: 1 | -1) =>
+    charges(id).reduce<Decimal | null>(
+      (s, m) => plus(s, toPln(money(m.amount.times(sign), m.currency), date, id)),
+      ZERO,
+    );
 
   const openLots = new Map<string, WorkingLot[]>();
   const allLots: WorkingLot[] = [];
@@ -417,16 +426,21 @@ export function buildLedger(input: LedgerInput): Ledger {
     const taxDate = applies ? taxDateOf(tx) : null;
     const gross = tx.price.amount.times(tx.quantity);
     const fxFee = tx.fxFee?.amount ?? ZERO;
+    const linkedCost = chargeSum(tx.id).negated();
     const costInstrument = gross
       .plus(inInstrumentCurrency(tx, tx.fee))
-      .plus(inInstrumentCurrency(tx, tx.tax));
+      .plus(inInstrumentCurrency(tx, tx.tax))
+      .plus(tx.amount.currency === tx.price.currency ? linkedCost : ZERO);
     let taxCost: Decimal | null = null;
     let fxFeePln: Decimal | null = null;
     if (applies) {
       const grossMoney = money(gross, tx.price.currency);
       taxCost = plus(
-        plus(toPln(grossMoney, taxDate, tx.id), toPln(tx.fee, taxDate, tx.id)),
-        toPln(tx.tax, taxDate, tx.id),
+        plus(
+          plus(toPln(grossMoney, taxDate, tx.id), toPln(tx.fee, taxDate, tx.id)),
+          toPln(tx.tax, taxDate, tx.id),
+        ),
+        chargesPln(tx.id, taxDate, -1),
       );
       fxFeePln = toPln(tx.fxFee, taxDate, tx.id);
     }
@@ -445,8 +459,8 @@ export function buildLedger(input: LedgerInput): Ledger {
       costCurrency: tx.amount.currency,
       instrumentCurrency: tx.price.currency,
       costKnown: true,
-      cost: tx.amount.amount.negated(),
-      costRemaining: tx.amount.amount.negated(),
+      cost: tx.amount.amount.negated().plus(linkedCost),
+      costRemaining: tx.amount.amount.negated().plus(linkedCost),
       costInstrument,
       costInstrumentRemaining: costInstrument,
       fxFee,
@@ -467,9 +481,12 @@ export function buildLedger(input: LedgerInput): Ledger {
     const currency = tx.amount.currency;
     const instrumentCurrency = tx.price.currency;
     const gross = tx.price.amount.times(tx.quantity);
+    const linkedProceeds = chargeSum(tx.id);
+    const proceedsTotal = tx.amount.amount.plus(linkedProceeds);
     const proceedsInstrument = gross
       .minus(inInstrumentCurrency(tx, tx.fee))
-      .minus(inInstrumentCurrency(tx, tx.tax));
+      .minus(inInstrumentCurrency(tx, tx.tax))
+      .plus(currency === instrumentCurrency ? linkedProceeds : ZERO);
     const sellFxFee = tx.fxFee?.amount ?? ZERO;
     let proceedsTax: Decimal | null = null;
     let sellFxFeePln: Decimal | null = null;
@@ -477,15 +494,16 @@ export function buildLedger(input: LedgerInput): Ledger {
       const grossPln = toPln(money(gross, instrumentCurrency), taxDate, tx.id);
       const feePln = toPln(tx.fee, taxDate, tx.id);
       const taxPln = toPln(tx.tax, taxDate, tx.id);
+      const linkedPln = chargesPln(tx.id, taxDate, 1);
       proceedsTax =
-        grossPln === null || feePln === null || taxPln === null
+        grossPln === null || feePln === null || taxPln === null || linkedPln === null
           ? null
-          : grossPln.minus(feePln).minus(taxPln);
+          : grossPln.minus(feePln).minus(taxPln).plus(linkedPln);
       sellFxFeePln = toPln(tx.fxFee, taxDate, tx.id);
     }
 
     const weights = taken.map(({ share }) => share.quantity);
-    const proceedsParts = allocate(tx.amount.amount, weights, tx.quantity);
+    const proceedsParts = allocate(proceedsTotal, weights, tx.quantity);
     const proceedsInstrumentParts = allocate(proceedsInstrument, weights, tx.quantity);
     const sellFxParts = allocate(sellFxFee, weights, tx.quantity);
     const proceedsTaxParts =
@@ -568,10 +586,10 @@ export function buildLedger(input: LedgerInput): Ledger {
         instrumentId: tx.instrumentId,
         tradeDate: tx.tradeDate,
         quantity: tx.quantity,
-        proceedsEconomic: tx.amount,
+        proceedsEconomic: money(proceedsTotal, currency),
         costEconomic: costTotal === null ? null : money(costTotal, currency),
         realizedPlEconomic:
-          costTotal === null ? null : money(tx.amount.amount.minus(costTotal), currency),
+          costTotal === null ? null : money(proceedsTotal.minus(costTotal), currency),
         sellFxFee: money(sellFxFee, currency),
         taxStatus: !applies ? "not_applicable" : taxView ? "computed" : "missing_data",
         tax: taxView,
@@ -760,7 +778,10 @@ export function buildLedger(input: LedgerInput): Ledger {
   /** Income day = payment date (`settleDate` if given, else trade date), NBP D-1 (§ 4.3). */
   function dividend(tx: DividendTransaction) {
     const applies = taxApplies(tx);
-    const withholdingTax = tx.withholdingTax ?? zeroMoney(tx.gross.currency);
+    const withholdingTax = money(
+      (tx.withholdingTax?.amount ?? ZERO).minus(chargeSum(tx.id)),
+      tx.gross.currency,
+    );
     const taxDate = tx.settleDate ?? tx.tradeDate;
     const rate =
       tx.gross.currency === PLN

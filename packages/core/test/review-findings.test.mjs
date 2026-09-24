@@ -288,7 +288,7 @@ describe("ledger, transfers and the tax view", () => {
     );
   });
 
-  failsToday("C-04 an FTT stored as a TAX linked to the purchase is part of the lot cost", () => {
+  test("C-04 an FTT stored as a TAX linked to the purchase is part of the lot cost", () => {
     const buy = trade("B", "BUY", "2025-01-02", "100", "10", "-1000");
     // formaty-importu.md § 2.2: `Tax IFTT` → TAX(ftt) linked to the purchase; OBL § 4.4: FTT
     // assigned to a purchase is part of its acquisition cost.
@@ -307,7 +307,7 @@ describe("ledger, transfers and the tax view", () => {
     expect(lot.taxCost.amount.toFixed()).toBe("1001");
   });
 
-  failsToday("C-04 a withholding tax stored as a TAX linked to the dividend is credited", () => {
+  test("C-04 a withholding tax stored as a TAX linked to the dividend is credited", () => {
     const accounts = [{ id: "u", currency: "USD", accountType: "regular" }];
     // XTB credits the gross dividend and books the withholding tax as a separate row; when the
     // import cannot pair them, it stores a TAX linked to the dividend (formaty-importu.md § 2.2).
@@ -334,6 +334,33 @@ describe("ledger, transfers and the tax view", () => {
     const [record] = buildLedger({ accounts, transactions: [dividend, wht], taxRates }).dividends;
     // Vector G: estimated top-up 3.69 PLN; today 17.53 PLN (withholding tax taken as zero).
     expect(roundMoney(record.tax.topUpPln).amount.toFixed(2)).toBe("3.69");
+  });
+
+  test("C-04 a SEC fee stored as a FEE linked to the sale reduces its proceeds in both views", () => {
+    const buy = trade("B", "BUY", "2025-01-02", "10", "10", "-100");
+    const sell = trade("S", "SELL", "2025-02-03", "10", "12", "120");
+    const fee = {
+      id: "SEC",
+      accountId: "a",
+      type: "FEE",
+      tradeDate: d("2025-02-03"),
+      amount: pln("-0.50"),
+      category: "sec_fee",
+      relatedTransactionId: "S",
+    };
+    const ledger = buildLedger({ accounts: regular, transactions: [buy, sell, fee] });
+    const [sale] = ledger.sales;
+    expect(sale.proceedsEconomic.amount.toFixed()).toBe("119.5");
+    expect(sale.realizedPlEconomic.amount.toFixed()).toBe("19.5");
+    expect(sale.tax.realizedPlPln.amount.toFixed()).toBe("19.5");
+    // Cash is booked once, from the FEE row itself.
+    expect(ledger.cash[0].balance.amount.toFixed()).toBe("19.5");
+    const view = buildAverageCostView({ accounts: regular, transactions: [buy, sell, fee] });
+    expect(view.sales[0].realizedPl.amount.toFixed()).toBe("19.5");
+    const foreign = { ...fee, amount: usd("-0.5") };
+    expect(
+      codeOf(() => buildLedger({ accounts: regular, transactions: [buy, sell, foreign] })),
+    ).toBe("invalid_transaction");
   });
 
   failsToday("C-06 an NBP rate far older than D-1 is not used silently in the tax view", () => {
