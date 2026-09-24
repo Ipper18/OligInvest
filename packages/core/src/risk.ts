@@ -202,16 +202,17 @@ export interface RiskMetrics {
   };
   /** Fewer than 60 observations: show the values marked „mało danych” (§ 8). */
   readonly insufficientData: boolean;
-  readonly meanDaily: number;
-  readonly stdevDaily: number;
-  readonly volatilityAnnual: number;
+  /** Metrics that need more observations than available (0 or 1, C-24) are null. */
+  readonly meanDaily: number | null;
+  readonly stdevDaily: number | null;
+  readonly volatilityAnnual: number | null;
   readonly sharpe: number | null;
   readonly sortino: number | null;
   readonly beta: number | null;
   readonly correlation: number | null;
-  readonly varHistorical: number;
-  readonly cvarHistorical: number;
-  readonly varParametric: number;
+  readonly varHistorical: number | null;
+  readonly cvarHistorical: number | null;
+  readonly varParametric: number | null;
 }
 
 /** All § 8 metrics of one return series with the assumptions they depend on. */
@@ -219,12 +220,15 @@ export function riskMetrics(
   returns: readonly number[],
   options: RiskMetricsOptions = {},
 ): RiskMetrics {
-  check(returns);
+  check(returns, 0);
   const periodsPerYear = options.periodsPerYear ?? PERIODS_PER_YEAR;
   const riskFreeAnnual = options.riskFreeAnnual ?? 0;
   const mar = options.mar ?? 0;
   const confidence = options.confidence ?? 0.95;
   const bench = options.benchmark;
+  checkConfidence(confidence);
+  const some = returns.length > 0;
+  const enough = returns.length > 1;
   return Object.freeze({
     assumptions: Object.freeze({
       riskFreeAnnual,
@@ -234,15 +238,15 @@ export function riskMetrics(
       observations: returns.length,
     }),
     insufficientData: returns.length < MIN_RISK_OBSERVATIONS,
-    meanDaily: mean(returns),
-    stdevDaily: sampleStdev(returns),
-    volatilityAnnual: annualVolatility(returns, periodsPerYear),
-    sharpe: sharpeRatio(returns, { riskFreeAnnual, periodsPerYear }),
-    sortino: sortinoRatio(returns, { mar, periodsPerYear }),
-    beta: bench ? beta(returns, bench) : null,
-    correlation: bench ? correlation(returns, bench) : null,
-    varHistorical: historicalVar(returns, confidence),
-    cvarHistorical: historicalCvar(returns, confidence),
-    varParametric: parametricVar(returns, zForConfidence(confidence)),
+    meanDaily: some ? mean(returns) : null,
+    stdevDaily: enough ? sampleStdev(returns) : null,
+    volatilityAnnual: enough ? annualVolatility(returns, periodsPerYear) : null,
+    sharpe: enough ? sharpeRatio(returns, { riskFreeAnnual, periodsPerYear }) : null,
+    sortino: enough ? sortinoRatio(returns, { mar, periodsPerYear }) : null,
+    beta: bench && enough ? beta(returns, bench) : null,
+    correlation: bench && enough ? correlation(returns, bench) : null,
+    varHistorical: some ? historicalVar(returns, confidence) : null,
+    cvarHistorical: some ? historicalCvar(returns, confidence) : null,
+    varParametric: enough ? parametricVar(returns, zForConfidence(confidence)) : null,
   });
 }
