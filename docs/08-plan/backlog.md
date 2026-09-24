@@ -208,7 +208,7 @@ M3 nie zależy od M4 (etapy mogą iść równolegle).
 | BL-312 | Moduł `analytics`: uruchomienia, postęp i wynik przez SSE, limity roli, anulowanie, zapis wyników w kontekście RLS | FR-04.01, NFR-01.07 | API, MOD | BL-311, BL-125 | 3 | todo |
 | BL-313 | Monte Carlo: bootstrap stacjonarny i t-Student, proxy klas aktywów, przepływy, inflacja, podatek; wachlarz, P(cel), rozkład obsunięć, tabela wrażliwości, ziarno | FR-04.02, NFR-08.05 | OBL | BL-312 | 5 | todo |
 | BL-314 | Ekran wyników analiz: rozkłady, „jak czytać”, blok założeń, disclaimer, dane do odtworzenia | FR-04.01, FR-06.06 | EKR, LAW | BL-313 | 2 | todo |
-| BL-315 | Kalkulator rebalancingu: alokacje docelowe, tryby `full` i `buy_only`, koszty, szacowany podatek, blokada przy nieuzgodnionych danych — wektor H | FR-04.06 | OBL, VEC, LAW | BL-143, BL-207 | 3 | todo |
+| BL-315 | Kalkulator rebalancingu: alokacje docelowe, tryby `full` i `buy_only`, koszty, szacowany podatek, blokada przy nieuzgodnionych danych — wektor H | FR-04.06 | OBL, VEC, LAW | BL-143, BL-207 | 3 | todo (rdzeń § 12.5 w `packages/core`, PR #3) |
 | BL-316 | Bramkowanie roli `pro` dla analiz ciężkich, komunikaty w UI | FR-07.06 | MOD | BL-312 | 1 | todo |
 | BL-317 | Wektory B–D w pytest kontra empyrical-reloaded | NFR-02.06, NFR-08.02 | OBL | BL-311 | 1 | todo |
 | BL-318 | Przegląd metodologiczny Monte Carlo i rebalancingu (checklisty z AGENTS.md) zapisany w PR | NFR-07.02 | LAW, OBL | BL-314, BL-315 | 0,5 | todo |
