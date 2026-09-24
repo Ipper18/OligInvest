@@ -170,7 +170,7 @@ Brama A (**[A]**) — MVP właściciela; brama B (**[B]**) — funkcje wymagane 
 
 | ID | Zadanie | Wymagania | Dokumenty | Zależy od | d | Status |
 |---|---|---|---|---|---|---|
-| BL-201 | `packages/core`: SMA, EMA, wstęgi Bollingera, RSI, MACD, ATR — zgodność z TA-Lib (wektor E, 1e-8) | FR-01.05, NFR-08.02 | OBL, VEC | BL-141 | 3 | todo |
+| BL-201 | `packages/core`: SMA, EMA, wstęgi Bollingera, RSI, MACD, ATR — zgodność z TA-Lib (wektor E, 1e-8) | FR-01.05, NFR-08.02 | OBL, VEC | BL-141 | 3 | w toku |
 | BL-202 | `getInstrumentIndicators`, nakładki i panele na wykresie, parametry wskaźników | FR-01.05 | API, [ADR-009](../09-decyzje/ADR-009-wykresy.md) | BL-201, BL-138 | 2 | todo |
 | BL-203 | Wyjaśnienia kontekstowe `<Explainer/>` (klucze i treści MDX modułu `education`) dla wskaźników i metryk MVP; test pokrycia kluczy | FR-01.07, FR-06.02, NFR-06.03 | DS, MOD | BL-202 | 2 | todo |
 | BL-204 | Glosariusz: indeks statyczny, wyszukiwanie po fragmencie i synonimie, pierwsze 30 haseł ze słownika pojęć | FR-06.03 | EKR, SLOW | BL-203 | 2 | todo |
