@@ -15,7 +15,8 @@ export type CoreErrorCode =
   | "invalid_transaction"
   | "short_position"
   | "unmatched_security_transfer"
-  | "invalid_series";
+  | "invalid_series"
+  | "invalid_allocation";
 
 export type CoreErrorDetails = Readonly<Record<string, string | number | boolean | null>>;
 
