@@ -1,8 +1,9 @@
 import { PLN } from "./currency.js";
-import type { IsoDate } from "./dates.js";
+import { addMonths, type IsoDate } from "./dates.js";
 import { Decimal } from "./decimal.js";
 import { CoreError } from "./errors.js";
 import type { FxRate } from "./fx.js";
+import type { DividendRecord } from "./ledger.js";
 import { assertSameCurrency, type Money, money, zeroMoney } from "./money.js";
 
 /** Flat PIT rate on dividends and capital gains (ustawa o PIT, art. 30a–30b; 11-zgodnosc-prawna.md § 5). */
@@ -52,4 +53,29 @@ export function dividendTaxView(input: DividendTaxInput): DividendTaxView {
     withholdingCreditPln: money(credit, PLN),
     topUpPln: money(taxDue.minus(credit), PLN),
   });
+}
+
+/** Dividends paid in the 12 months up to and including `asOf` (optionally one account/instrument). */
+export function trailingDividends(
+  records: readonly DividendRecord[],
+  filter: { readonly asOf: IsoDate; readonly accountId?: string; readonly instrumentId?: string },
+): DividendRecord[] {
+  const from = addMonths(filter.asOf, -12);
+  return records.filter(
+    (r) =>
+      r.paymentDate > from &&
+      r.paymentDate <= filter.asOf &&
+      (filter.accountId === undefined || r.accountId === filter.accountId) &&
+      (filter.instrumentId === undefined || r.instrumentId === filter.instrumentId),
+  );
+}
+
+/**
+ * Yield on cost (§ 4.3): gross dividends of the trailing 12 months / cost of the position, in one
+ * currency chosen by the caller; null when the cost is not positive.
+ */
+export function yieldOnCost(grossDividends: Money, cost: Money): number | null {
+  assertSameCurrency(cost.currency, grossDividends.currency);
+  if (!cost.amount.isPositive() || cost.amount.isZero()) return null;
+  return grossDividends.amount.div(cost.amount).toNumber();
 }
