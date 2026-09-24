@@ -310,7 +310,7 @@ Wejście: dzienne stopy zwrotu `r_t` z indeksu TWR (w PLN); `N` obserwacji; `P =
 | Beta / korelacja | `cov(r, b)/var(b)` (n−1) / Pearson | 1,302072 / 0,996597 |
 | VaR 95 % 1D historyczny | `−percentyl₅(r)` (interpolacja liniowa) | 1,2150 % |
 | CVaR 95 % 1D | `−mean(r | r ≤ percentyl₅)` | 1,5000 % |
-| VaR 95 % 1D parametryczny | `−(mean − 1,6449·σ)` (rozkład normalny) | 1,2203 % |
+| VaR 95 % 1D parametryczny | `−(mean − z·σ)` (rozkład normalny); z = 1,6449 dla 95 %, dla innego poziomu ufności kwantyl rozkładu normalnego z(c) (przegląd C-08) | 1,2203 % |
 | Calmar | `CAGR / |max DD|` | — |
 
 - **Stopa wolna od ryzyka** jest zawsze pokazywanym założeniem. Domyślnie: dla PLN — stopa referencyjna NBP wprowadzana przez admina jako szereg z datami obowiązywania; dla USD — rentowność 3M bonów skarbowych z FRED (`DGS3MO`). ❓ Źródło szeregu stopy referencyjnej NBP w formie API — do ustalenia w M3 (w razie braku: wpis ręczny).
