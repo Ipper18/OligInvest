@@ -797,7 +797,7 @@ describe("rebalancing", () => {
     expect(result.estimatedTax.amount.toFixed(2)).toBe("0.00");
   });
 
-  failsToday("C-12 buy_only with a band does not push an instrument far above its target", () => {
+  test("C-12 buy_only with a band does not push an instrument far above its target", () => {
     const targets = { A: 0.52, B: 0.28, C: 0.2 };
     const result = rebalance({
       holdings: [
