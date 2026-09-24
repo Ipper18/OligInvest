@@ -1,3 +1,4 @@
+export * from "./average-cost.js";
 export * from "./currency.js";
 export * from "./dates.js";
 export * from "./decimal.js";
