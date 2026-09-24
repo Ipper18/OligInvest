@@ -12,5 +12,6 @@ export * from "./indicators.js";
 export * from "./ledger.js";
 export * from "./money.js";
 export * from "./returns.js";
+export * from "./risk.js";
 export * from "./transactions.js";
 export * from "./valuation.js";

@@ -262,7 +262,7 @@ Każde zadanie z analizą przyszłości kończy się przeglądem metodologicznym
 
 | ID | Zadanie | Wymagania | Dokumenty | Zależy od | d | Status |
 |---|---|---|---|---|---|---|
-| BL-551 | Metryki ryzyka: zmienność, Sharpe, Sortino, beta, korelacja, VaR i CVaR historyczne — wektor D; ekran z założeniami | FR-03.10 | OBL, VEC | BL-319, BL-302 | 3 | todo |
+| BL-551 | Metryki ryzyka: zmienność, Sharpe, Sortino, beta, korelacja, VaR i CVaR historyczne — wektor D; ekran z założeniami | FR-03.10 | OBL, VEC | BL-319, BL-302 | 3 | todo (rdzeń § 8 w `packages/core`, PR #3) |
 | BL-552 | Atrybucja wyniku: pozycje, sektory, waluty | FR-03.08 | OBL | BL-303, BL-207 | 2 | todo |
 | BL-553 | Statystyki skuteczności decyzji z dziennika | FR-03.12 | OBL | BL-309 | 1,5 | todo |
 | BL-554 | Import generyczny CSV z szablonami mapowania kolumn | FR-03.04 | IMP | BL-145 | 3 | todo |
