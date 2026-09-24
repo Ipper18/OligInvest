@@ -237,31 +237,70 @@ export interface ExternalFlow {
 }
 
 export interface ExternalFlowOptions {
-  /** `portfolio`: deposits and withdrawals; `account`: also transfers between own accounts. */
+  /**
+   * `portfolio`: deposits, withdrawals and transfers without a counterpart among the given
+   * (tracked) accounts; `account`: also transfers between own accounts (§ 1).
+   */
   readonly level: "portfolio" | "account";
-  /** Market value of a security transfer on its day; transfers without a value are skipped. */
+  /** Market value of a security transfer on its day; required for every transfer that is a flow. */
   readonly securityTransferValue?: ((tx: Transaction) => Money | undefined) | undefined;
 }
 
-/** External flows F (§ 0.4, § 1) in processing order. */
+const TRANSFERS = new Set([
+  "CASH_TRANSFER_IN",
+  "CASH_TRANSFER_OUT",
+  "SECURITY_TRANSFER_IN",
+  "SECURITY_TRANSFER_OUT",
+]);
+const COUNTERPART: Readonly<Record<string, string>> = {
+  CASH_TRANSFER_IN: "CASH_TRANSFER_OUT",
+  CASH_TRANSFER_OUT: "CASH_TRANSFER_IN",
+  SECURITY_TRANSFER_IN: "SECURITY_TRANSFER_OUT",
+  SECURITY_TRANSFER_OUT: "SECURITY_TRANSFER_IN",
+};
+
+/**
+ * External flows F (§ 0.4, § 1) in processing order. A transfer whose other leg is among the
+ * given transactions is internal to the portfolio; without it (untracked account, transfer from
+ * another broker) it is a flow of the portfolio at its market value (owner decision 2026-09-24).
+ */
 export function externalFlows(
   transactions: readonly Transaction[],
   options: ExternalFlowOptions,
 ): ExternalFlow[] {
+  const byId = new Map(transactions.map((tx) => [tx.id, tx]));
+  const pairedIds = new Set<string>();
+  for (const tx of transactions) {
+    const other =
+      tx.relatedTransactionId === undefined ? undefined : byId.get(tx.relatedTransactionId);
+    if (TRANSFERS.has(tx.type) && other && other.type === COUNTERPART[tx.type]) {
+      pairedIds.add(tx.id);
+      pairedIds.add(other.id);
+    }
+  }
   const flows: ExternalFlow[] = [];
   for (const tx of sortTransactions(transactions)) {
     let amount: Money | undefined;
-    if (tx.type === "DEPOSIT" || tx.type === "WITHDRAWAL") amount = tx.amount;
-    else if (options.level === "account") {
-      if (tx.type === "CASH_TRANSFER_IN" || tx.type === "CASH_TRANSFER_OUT") amount = tx.amount;
-      if (tx.type === "SECURITY_TRANSFER_IN" || tx.type === "SECURITY_TRANSFER_OUT") {
-        const value = options.securityTransferValue?.(tx);
-        if (value)
-          amount =
-            tx.type === "SECURITY_TRANSFER_IN"
-              ? value
-              : money(value.amount.negated(), value.currency);
+    const counts =
+      tx.type === "DEPOSIT" ||
+      tx.type === "WITHDRAWAL" ||
+      (TRANSFERS.has(tx.type) && (options.level === "account" || !pairedIds.has(tx.id)));
+    if (!counts) continue;
+    if (tx.type === "SECURITY_TRANSFER_IN" || tx.type === "SECURITY_TRANSFER_OUT") {
+      const value = options.securityTransferValue?.(tx);
+      if (!value) {
+        throw new CoreError(
+          "missing_transfer_value",
+          "A security transfer flow needs its market value",
+          {
+            transactionId: tx.id,
+          },
+        );
       }
+      amount =
+        tx.type === "SECURITY_TRANSFER_IN" ? value : money(value.amount.negated(), value.currency);
+    } else if ("amount" in tx) {
+      amount = tx.amount;
     }
     if (amount) {
       flows.push(

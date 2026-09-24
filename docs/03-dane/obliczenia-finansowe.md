@@ -73,11 +73,13 @@ Wartości w [`wektory-testowe.json`](wektory-testowe.json) są zaokrąglone do p
 | `FEE` | — | `−kwota` | — (koszt okresu) | nie |
 | `TAX` | — | `−kwota` (np. podatek od odsetek, FTT) | — | nie |
 | `DEPOSIT` / `WITHDRAWAL` | — | `+kwota` / `−kwota` | — | **tak** (`+` / `−`) |
-| `CASH_TRANSFER_IN` / `_OUT` (między własnymi rachunkami) | — | `±kwota` | — | tak na poziomie rachunku, **nie** na poziomie portfela zbiorczego |
+| `CASH_TRANSFER_IN` / `_OUT` | — | `±kwota` | — | tak na poziomie rachunku; na poziomie portfela **tylko bez drugiej strony** wśród śledzonych rachunków (np. subkonto bez importu) |
 | `FX_CONVERSION` (wymiana walut w rachunku) | — | `−kwota A` i `+kwota B` | — | nie |
 | `SPLIT` (współczynnik `k`) | `q → q·k` | — | koszt bez zmian | nie |
-| `SECURITY_TRANSFER_IN` / `_OUT` | `±q` | — | przenosi partie z pierwotną datą i kosztem | tak (wartość rynkowa w dniu transferu) na poziomie rachunku |
+| `SECURITY_TRANSFER_IN` / `_OUT` | `±q` | — | przenosi partie z pierwotną datą i kosztem (§ 3.5) | tak (wartość rynkowa w dniu transferu) na poziomie rachunku; na poziomie portfela **tylko bez drugiej strony** wśród śledzonych rachunków; brak wartości rynkowej = błąd (`missing_transfer_value`) |
 | `ADJUSTMENT` (kategoria, np. `cfd_pl`, `corporate_action`, `correction`) | — | `±kwota` | — | nie — wynik okresu w kategorii „inne” (np. wynik CFD z importu XTB, Z-15) |
+
+Przeniesienie jest wewnętrzne dla portfela, gdy jego druga strona (`related_transaction_id`, typ przeciwny) jest wśród operacji śledzonych rachunków; w przeciwnym razie jest przepływem portfela o wartości rynkowej z dnia przeniesienia (decyzja właściciela 2026-09-24, przegląd C-02) — inaczej TWR i XIRR liczyłyby wniesione papiery jako zysk.
 
 Kolejność przetwarzania (porządek całkowity, decyzja właściciela 2026-09-24): (1) `trade_date`; (2) w obrębie dnia `SPLIT` przed pozostałymi operacjami; (3) `executed_at` rosnąco — operacje bez `executed_at` po operacjach z czasem; (4) `sequence`; (5) `id` (UUIDv7, rosnąco). Porównywanie `executed_at` tylko wtedy, gdy obie operacje go mają, nie jest przechodnie, dlatego brak czasu traktujemy jak „koniec dnia”. `SECURITY_TRANSFER_IN` musi w tym porządku następować po powiązanym `SECURITY_TRANSFER_OUT` (niższe `sequence`).
 
