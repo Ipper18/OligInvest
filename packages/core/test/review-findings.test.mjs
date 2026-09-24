@@ -567,7 +567,7 @@ describe("valuation, flows and returns", () => {
     expect(periodReturn(index, d("2025-01-06"), d("2025-01-07"))).toBeCloseTo(0.1, 12);
   });
 
-  failsToday("C-13 (document) the day's percent uses the TWR base V(D−1) + F", () => {
+  test("C-13 (document) the day's percent uses the TWR base V(D−1) + F", () => {
     const result = dayChange({
       valueNow: pln("10150"),
       valuePrevClose: pln("100"),

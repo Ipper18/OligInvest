@@ -237,7 +237,7 @@ Wartość portfela zbiorczego w PLN: `V(t) = Σ_a V_a(t)·kurs_{CCY_a→PLN}(t)`
 
 $$\Delta_{\text{dzień}} = V(t) - V(\text{zamknięcie } D{-}1) - F_{\text{dzień}}$$
 
-Przykład: 53 120,55 − 52 340,10 − 500,00 (wpłata dziś) = **280,45 PLN (0,54 %)**; procent względem `V(D−1)`.
+Przykład: 53 120,55 − 52 340,10 − 500,00 (wpłata dziś) = **280,45 PLN (0,53%)**; procent względem `V(D−1) + F_dzień` = 52 840,10 — ta sama baza co stopa dnia w TWR (§ 6.2), więc duża wpłata nie zawyża procentu (decyzja właściciela 2026-09-24, przegląd C-13; wcześniej `V(D−1)` i 0,54%).
 
 ---
 

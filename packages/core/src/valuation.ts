@@ -206,11 +206,14 @@ export function valuePortfolio(input: ValuationInput): PortfolioValuation {
 
 export interface DayChange {
   readonly change: Money;
-  /** Change / V(D−1); null when V(D−1) ≤ 0. */
+  /** Change / (V(D−1) + F_day); null when that base is ≤ 0. */
   readonly ratio: number | null;
 }
 
-/** Day result (§ 5.1): Δ = V(t) − V(close D−1) − F_day; percent relative to V(D−1). */
+/**
+ * Day result (§ 5.1): Δ = V(t) − V(close D−1) − F_day; percent relative to V(D−1) + F_day, the same
+ * base as the TWR day (§ 6.2, owner decision 2026-09-24).
+ */
 export function dayChange(input: {
   readonly valueNow: Money;
   readonly valuePrevClose: Money;
@@ -220,11 +223,10 @@ export function dayChange(input: {
     subtractMoney(input.valueNow, input.valuePrevClose),
     input.externalFlows,
   );
-  const previous = input.valuePrevClose.amount;
+  const base = input.valuePrevClose.amount.plus(input.externalFlows.amount);
   return Object.freeze({
     change,
-    ratio:
-      previous.isPositive() && !previous.isZero() ? change.amount.div(previous).toNumber() : null,
+    ratio: base.isPositive() && !base.isZero() ? change.amount.div(base).toNumber() : null,
   });
 }
 

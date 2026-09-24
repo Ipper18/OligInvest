@@ -418,7 +418,7 @@ describe("valuation (obliczenia-finansowe.md § 5, § 4.1, § 2.3)", () => {
 });
 
 describe("vector F — day result (obliczenia-finansowe.md § 5.1)", () => {
-  test("Δ = V(t) − V(D−1) − F; percent relative to V(D−1)", () => {
+  test("Δ = V(t) − V(D−1) − F; percent relative to V(D−1) + F", () => {
     const result = dayChange({
       valueNow: money(readDecimalText(F.value_now), "PLN"),
       valuePrevClose: money(readDecimalText(F.value_prev_close), "PLN"),
@@ -428,14 +428,20 @@ describe("vector F — day result (obliczenia-finansowe.md § 5.1)", () => {
     expect(`${toDecimal(String(result.ratio)).times(100).toFixed(2)}%`).toBe(F.day_change_pct);
   });
 
-  test("no ratio without a positive previous value", () => {
+  test("no ratio without a positive base", () => {
     const first = dayChange({
-      valueNow: money("1000", "PLN"),
+      valueNow: money("1010", "PLN"),
       valuePrevClose: money("0", "PLN"),
       externalFlows: money("1000", "PLN"),
     });
-    expect(fixed(first.change)).toBe("0.00");
-    expect(first.ratio).toBeNull();
+    expect(fixed(first.change)).toBe("10.00");
+    expect(first.ratio).toBeCloseTo(0.01, 12);
+    const emptied = dayChange({
+      valueNow: money("0", "PLN"),
+      valuePrevClose: money("500", "PLN"),
+      externalFlows: money("-500", "PLN"),
+    });
+    expect(emptied.ratio).toBeNull();
     expect(
       codeOf(() =>
         dayChange({
