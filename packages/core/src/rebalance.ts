@@ -34,6 +34,8 @@ export interface RebalanceInput {
   readonly minCost?: Money | undefined;
   /** Regular account: estimated 19 % tax on FIFO gains of sales (tax-view cost); IKE/IKZE: false. */
   readonly taxable: boolean;
+  /** User setting `tax_include_fx_fee` (§ 2.2): the lots' FX margin is part of the tax cost. */
+  readonly includeFxFee?: boolean | undefined;
   /** § 12.5 lock: reconciled import within 7 days and no open differences (checked by the caller). */
   readonly reconciled: boolean;
 }
@@ -46,11 +48,11 @@ export interface RebalanceTrade {
   readonly quantity: Decimal | null;
   readonly cost: Money;
   /**
-   * Estimate only (UI label „szacunek”): 19 % of (sale value − order cost − FIFO tax-view cost of the
-   * lots: settlement date, NBP D-1, FX margin excluded — § 2.2). Null without lots, with lots lacking
-   * a tax cost (missing rate, IKE/IKZE) or on an account not in PLN.
+   * Signed taxable result of a sale (UI label „szacunek”): sale value − order cost − FIFO tax-view
+   * cost of the lots (settlement date, NBP D-1; FX margin of the lots only with `includeFxFee`).
+   * 0 for purchases and on IKE/IKZE; null without lots, with lots lacking a tax cost or outside PLN.
    */
-  readonly estimatedTax: Money | null;
+  readonly taxableResult: Money | null;
 }
 
 export interface RebalanceWeight {
@@ -69,6 +71,7 @@ export interface RebalanceResult {
   readonly weightsBefore: readonly RebalanceWeight[];
   readonly weightsAfter: readonly RebalanceWeight[];
   readonly costs: Money;
+  /** Estimate („szacunek”): 19 % × max(0, Σ taxableResult); null when a result is unknown. */
   readonly estimatedTax: Money | null;
   readonly cashAfter: Money;
 }
@@ -254,7 +257,7 @@ export function rebalance(input: RebalanceInput): RebalanceResult {
     }
   }
 
-  const estimate = (l: Line, cost: Decimal): Decimal | null => {
+  const result = (l: Line, cost: Decimal): Decimal | null => {
     if (!input.taxable || !l.amount.isNegative()) return ZERO;
     const lots = l.holding.lots;
     if (currency !== PLN || !lots || lots.some((lot) => lot.taxCostRemaining === null)) return null;
@@ -264,24 +267,24 @@ export function rebalance(input: RebalanceInput): RebalanceResult {
     for (const lot of lots) {
       if (left.isZero()) break;
       const take = Decimal.min(left, lot.quantityRemaining);
-      basis = basis.plus(
-        (lot.taxCostRemaining as Money).amount.times(take).div(lot.quantityRemaining),
-      );
+      const lotBasis = input.includeFxFee
+        ? (lot.taxCostRemaining as Money).amount.plus(lot.fxFeeRemaining.amount)
+        : (lot.taxCostRemaining as Money).amount;
+      basis = basis.plus(lotBasis.times(take).div(lot.quantityRemaining));
       left = left.minus(take);
     }
-    const gain = l.amount.abs().minus(cost).minus(basis);
-    return gain.isPositive() ? gain.times(PIT_CAPITAL_RATE) : ZERO;
+    return l.amount.abs().minus(cost).minus(basis);
   };
 
   const trades: RebalanceTrade[] = [];
   let costs = ZERO;
-  let tax: Decimal | null = ZERO;
+  let taxable: Decimal | null = ZERO;
   for (const l of lines) {
     if (l.amount.isZero()) continue;
     const cost = costOf(l.amount);
-    const estimated = estimate(l, cost);
+    const estimated = result(l, cost);
     costs = costs.plus(cost);
-    tax = tax === null || estimated === null ? null : tax.plus(estimated);
+    taxable = taxable === null || estimated === null ? null : taxable.plus(estimated);
     trades.push(
       Object.freeze({
         instrumentId: l.holding.instrumentId,
@@ -289,7 +292,7 @@ export function rebalance(input: RebalanceInput): RebalanceResult {
         amount: m(l.amount),
         quantity: l.quantity,
         cost: m(cost),
-        estimatedTax: estimated === null ? null : m(estimated),
+        taxableResult: estimated === null ? null : m(estimated),
       }),
     );
   }
@@ -311,7 +314,8 @@ export function rebalance(input: RebalanceInput): RebalanceResult {
       ),
     ),
     costs: m(costs),
-    estimatedTax: tax === null ? null : m(tax),
+    // Gains and losses of the plan net within the tax year: 19 % × max(0, Σ results) (C-11).
+    estimatedTax: taxable === null ? null : m(Decimal.max(taxable, ZERO).times(PIT_CAPITAL_RATE)),
     cashAfter: m(cashAfter),
   });
 }
