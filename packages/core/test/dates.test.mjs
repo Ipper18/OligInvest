@@ -53,12 +53,13 @@ describe("settlement date (obliczenia-finansowe.md § 2.2, 11-zgodnosc-prawna.md
     expect(settlementCycleDays("EU", "2027-10-11")).toBe(1);
   });
 
-  test("maps only the MICs named in the documentation", () => {
+  test("maps US and EU venues; non-EU markets such as XLON stay unmapped", () => {
     expect(settlementRegionForMic("XNYS")).toBe("US");
     expect(settlementRegionForMic("XNAS")).toBe("US");
     expect(settlementRegionForMic("XWAR")).toBe("EU");
     expect(settlementRegionForMic("XETR")).toBe("EU");
     expect(settlementRegionForMic("XLON")).toBeUndefined();
+    expect(settlementRegionForMic("XSWX")).toBeUndefined();
   });
 
   test("counts settlement days with the caller's calendar", () => {
