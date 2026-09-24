@@ -206,8 +206,10 @@ export function rebalance(input: RebalanceInput): RebalanceResult {
     amount.isZero()
       ? ZERO
       : Decimal.max(amount.abs().times(costRate), input.minCost?.amount ?? ZERO);
-  const available = () =>
-    lines.reduce((s, l) => s.minus(l.amount).minus(costOf(l.amount)), cash.plus(fresh));
+  // buy_only spends only the new cash (§ 12.5, C-09); cash already on the account stays.
+  const budget = input.mode === "buy_only" ? fresh : cash.plus(fresh);
+  const idle = input.mode === "buy_only" ? cash : ZERO;
+  const available = () => lines.reduce((s, l) => s.minus(l.amount).minus(costOf(l.amount)), budget);
 
   // Buys may exceed the cash (band skips, rounding, costs): trim the largest purchase.
   for (let guard = 0; available().isNegative() && guard < 10_000; guard += 1) {
@@ -281,7 +283,7 @@ export function rebalance(input: RebalanceInput): RebalanceResult {
       }),
     );
   }
-  const cashAfter = available();
+  const cashAfter = available().plus(idle);
   const after = lines.map((l) => l.holding.value.amount.plus(l.amount));
   const totalAfter = after.reduce((s, v) => s.plus(v), cashAfter);
   return Object.freeze({
