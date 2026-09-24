@@ -464,30 +464,62 @@ describe("external flows (obliczenia-finansowe.md § 0.4, § 1)", () => {
     },
   ];
 
-  test("portfolio level: only deposits and withdrawals, in date order", () => {
-    const flows = externalFlows(transactions, { level: "portfolio" });
+  const value = (tx) => (tx.id === "SO" ? money("450", "PLN") : undefined);
+
+  test("portfolio level: deposits, withdrawals and transfers without a tracked counterpart", () => {
+    const flows = externalFlows(transactions, { level: "portfolio", securityTransferValue: value });
     expect(flows.map((f) => [f.transactionId, f.date, fixed(f.amount)])).toEqual([
       ["D1", "2025-01-02", "1000.00"],
+      ["CO", "2025-01-03", "-300.00"],
       ["W1", "2025-01-05", "-200.00"],
+      ["SO", "2025-01-06", "-450.00"],
     ]);
   });
 
-  test("account level adds cash transfers and, when valued, security transfers", () => {
-    const flows = externalFlows(transactions, {
+  test("transfers between tracked accounts are flows of the account only", () => {
+    const paired = [
+      ...transactions,
+      {
+        ...cash("CI", "CASH_TRANSFER_IN", "2025-01-03", "300"),
+        accountId: "ike",
+        relatedTransactionId: "CO",
+      },
+      {
+        id: "SI",
+        accountId: "ike",
+        type: "SECURITY_TRANSFER_IN",
+        tradeDate: d("2025-01-06"),
+        instrumentId: "KO",
+        quantity: quantity("1"),
+        relatedTransactionId: "SO",
+      },
+    ];
+    const portfolio = externalFlows(paired, { level: "portfolio" });
+    expect(portfolio.map((f) => f.transactionId)).toEqual(["D1", "W1"]);
+    const account = externalFlows(paired, {
       level: "account",
-      securityTransferValue: (tx) => (tx.id === "SO" ? money("450", "PLN") : undefined),
+      securityTransferValue: () => money("450", "PLN"),
     });
-    expect(flows.map((f) => [f.transactionId, fixed(f.amount)])).toEqual([
+    expect(account.map((f) => [f.transactionId, fixed(f.amount)])).toEqual([
       ["D1", "1000.00"],
+      ["CI", "300.00"],
       ["CO", "-300.00"],
       ["W1", "-200.00"],
+      ["SI", "450.00"],
       ["SO", "-450.00"],
     ]);
-    expect(externalFlows(transactions, { level: "account" }).map((f) => f.transactionId)).toEqual([
-      "D1",
-      "CO",
-      "W1",
-    ]);
+  });
+
+  test("a security transfer that is a flow needs its market value", () => {
+    const error = (() => {
+      try {
+        externalFlows(transactions, { level: "portfolio" });
+      } catch (e) {
+        return e;
+      }
+    })();
+    expect(error.code).toBe("missing_transfer_value");
+    expect(error.details).toEqual({ transactionId: "SO" });
   });
 });
 

@@ -504,43 +504,40 @@ describe("ledger, transfers and the tax view", () => {
 });
 
 describe("valuation, flows and returns", () => {
-  failsToday(
-    "C-02 a transfer from outside the tracked accounts is an external flow of the portfolio",
-    () => {
-      const transactions = [
-        {
-          id: "D1",
-          accountId: "a",
-          type: "DEPOSIT",
-          tradeDate: d("2025-01-02"),
-          amount: pln("1000"),
-        },
-        {
-          id: "IN",
-          accountId: "a",
-          type: "SECURITY_TRANSFER_IN",
-          tradeDate: d("2025-01-03"),
-          instrumentId: "X",
-          quantity: quantity("10"),
-          acquisitionCost: pln("900"),
-          acquiredOn: d("2020-01-02"),
-        },
-      ];
-      const flows = externalFlows(transactions, {
-        level: "portfolio",
-        securityTransferValue: () => pln("1000"),
-      });
-      // Today: ["D1"] — shares worth 1000 PLN enter the portfolio without a flow.
-      expect(flows.map((flow) => flow.transactionId)).toEqual(["D1", "IN"]);
-      const flowOn = (date) => flows.find((flow) => flow.date === date)?.amount;
-      const result = timeWeightedReturn([
-        { date: d("2025-01-02"), value: pln("1000"), flow: flowOn("2025-01-02") },
-        { date: d("2025-01-03"), value: pln("2000"), flow: flowOn("2025-01-03") },
-      ]);
-      // Today: +100 % TWR for a portfolio whose prices did not move.
-      expect(result.twr).toBeCloseTo(0, 12);
-    },
-  );
+  test("C-02 a transfer from outside the tracked accounts is an external flow of the portfolio", () => {
+    const transactions = [
+      {
+        id: "D1",
+        accountId: "a",
+        type: "DEPOSIT",
+        tradeDate: d("2025-01-02"),
+        amount: pln("1000"),
+      },
+      {
+        id: "IN",
+        accountId: "a",
+        type: "SECURITY_TRANSFER_IN",
+        tradeDate: d("2025-01-03"),
+        instrumentId: "X",
+        quantity: quantity("10"),
+        acquisitionCost: pln("900"),
+        acquiredOn: d("2020-01-02"),
+      },
+    ];
+    const flows = externalFlows(transactions, {
+      level: "portfolio",
+      securityTransferValue: () => pln("1000"),
+    });
+    // Today: ["D1"] — shares worth 1000 PLN enter the portfolio without a flow.
+    expect(flows.map((flow) => flow.transactionId)).toEqual(["D1", "IN"]);
+    const flowOn = (date) => flows.find((flow) => flow.date === date)?.amount;
+    const result = timeWeightedReturn([
+      { date: d("2025-01-02"), value: pln("1000"), flow: flowOn("2025-01-02") },
+      { date: d("2025-01-03"), value: pln("2000"), flow: flowOn("2025-01-03") },
+    ]);
+    // Today: +100 % TWR for a portfolio whose prices did not move.
+    expect(result.twr).toBeCloseTo(0, 12);
+  });
 
   failsToday("C-05 a value below zero does not flip the sign of the TWR index", () => {
     const points = [
