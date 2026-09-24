@@ -264,7 +264,7 @@ $$\sum_{k} \frac{CF_k}{(1 + x)^{(t_k - t_0)/365}} = 0$$
 
 gdzie `CF_k` to wpłaty (−), wypłaty (+) i wartość końcowa (+) w dniu końca okresu; wartość początkowa (jeśli okres nie zaczyna się od zera) wchodzi jako wpłata w `t_0`.
 
-Algorytm: Newton-Raphson od `x₀ = 0,1` (maks. 100 iteracji, tolerancja 1e-12), przy braku zbieżności — bisekcja na przedziale `[−0,9999; 10]`. Brak zmiany znaku → wynik `null` („nie da się wyznaczyć”). Okresy < 30 dni: XIRR niepokazywany (niestabilny).
+Algorytm: Newton-Raphson od `x₀ = 0,1` (maks. 100 iteracji, tolerancja 1e-12), przy braku zbieżności — bisekcja na przedziale `[−0,9999; 10]`. Brak zmiany znaku → wynik `null` („nie da się wyznaczyć”). Solver liczy w float64 na bezwymiarowych wagach `CF_k / max|CF|` (XIRR jest stopą, § 0.1; kwoty pozostają `Decimal`) — tolerancja z § 0.5 bez zmian, czas mieści się w budżecie żądania (przegląd C-28). Okresy < 30 dni: XIRR niepokazywany (niestabilny).
 
 ### 6.4 Przykład B — TWR a XIRR (wektor `B_twr_xirr`)
 

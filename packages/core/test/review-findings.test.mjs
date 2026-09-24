@@ -635,7 +635,7 @@ describe("valuation, flows and returns", () => {
     ).toBe("invalid_series");
   });
 
-  failsToday("C-28 XIRR for ten years of monthly flows fits the request budget", () => {
+  test("C-28 XIRR for ten years of monthly flows fits the request budget", () => {
     const flows = Array.from({ length: 120 }, (_, i) => ({
       date: d(`${2015 + Math.floor(i / 12)}-${String((i % 12) + 1).padStart(2, "0")}-15`),
       amount: pln("-1000"),
