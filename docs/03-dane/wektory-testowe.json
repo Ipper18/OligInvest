@@ -4,7 +4,8 @@
   "generated": "2026-09-19",
   "method": "Decimal (prec 34, ROUND_HALF_EVEN; prezentacja 2 miejsca ROUND_HALF_UP) dla kwot; float64 dla statystyk; porownanie z empyrical-reloaded i TA-Lib 0.8.0",
   "tolerances": "patrz obliczenia-finansowe.md par. 0.5",
-  "destination": "Jedno zrodlo: docs/03-dane/wektory-testowe.json; loadery: packages/test-vectors (Vitest) i apps/analytics (pytest), bez kopii"
+  "destination": "Jedno zrodlo: docs/03-dane/wektory-testowe.json; loadery: packages/test-vectors (Vitest) i apps/analytics (pytest), bez kopii",
+  "changes": "2026-09-24 F_day_change.day_change_pct 0.54% -> 0.53%: mianownik wyniku dnia V(D-1) + przeplywy dnia (280.45 / 52840.10), spojnie z TWR par. 6.2 - decyzja wlasciciela, przeglad C-13"
  },
  "A_fifo_fx": {
   "lots": [
@@ -490,7 +491,7 @@
   "value_now": "53120.55",
   "net_flows_today": "500.00",
   "day_change_pln": "280.45",
-  "day_change_pct": "0.54%"
+  "day_change_pct": "0.53%"
  },
  "G_dividend": {
   "gross_usd": "25.00",
