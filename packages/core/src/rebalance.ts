@@ -216,21 +216,28 @@ export function rebalance(input: RebalanceInput): RebalanceResult {
   const idle = input.mode === "buy_only" ? cash : ZERO;
   const available = () => lines.reduce((s, l) => s.minus(l.amount).minus(costOf(l.amount)), budget);
 
-  // Buys may exceed the cash (band skips, rounding, costs): trim the largest purchase.
-  for (let guard = 0; available().isNegative() && guard < 10_000; guard += 1) {
+  // Buys may exceed the cash (band skips, rounding, costs): trim the largest purchase by the
+  // shortfall computed directly, not unit by unit (C-14).
+  for (let guard = 0; available().isNegative() && guard < 1_000; guard += 1) {
     const largest = lines
       .filter((l) => l.amount.isPositive())
       .sort((a, b) => b.amount.comparedTo(a.amount))[0];
     if (!largest) break;
+    const shortfall = available().negated().div(costRate.plus(1));
     const p = largest.holding.unitPrice?.amount;
     if (p && wholeUnits(largest)) {
-      largest.quantity = (largest.quantity as Decimal).minus(1);
+      const held = largest.quantity as Decimal;
+      const units = Decimal.min(held, Decimal.max(shortfall.div(p).ceil(), new Decimal(1)));
+      largest.quantity = held.minus(units);
       largest.amount = (largest.quantity as Decimal).times(p);
     } else {
-      largest.amount = Decimal.max(largest.amount.plus(available()), ZERO);
+      largest.amount = Decimal.max(largest.amount.minus(shortfall), ZERO);
       if (p) largest.quantity = largest.amount.div(p);
     }
     if (largest.amount.isZero()) largest.quantity = null;
+  }
+  if (available().isNegative()) {
+    throw new CoreError("invalid_allocation", "Order costs exceed the available cash");
   }
 
   // Leftover cash buys further whole units while a target is not exceeded (§ 12.5 step 4).
