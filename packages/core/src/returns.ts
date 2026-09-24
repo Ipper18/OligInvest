@@ -163,9 +163,9 @@ export interface XirrOptions {
 }
 
 export const XIRR_MIN_DAYS = 30;
-const TOLERANCE = new Decimal("1e-12");
-const LOWER = new Decimal("-0.9999");
-const UPPER = new Decimal(10);
+const TOLERANCE = 1e-12;
+const LOWER = -0.9999;
+const UPPER = 10;
 
 /**
  * XIRR (§ 6.3): Σ CF_k / (1 + x)^((t_k − t_0)/365) = 0, investor view (deposits −, withdrawals and
@@ -186,28 +186,26 @@ export function xirr(cashflows: readonly DatedAmount[], options: XirrOptions = {
   if (daysBetween(t0, dates.at(-1) as IsoDate) < (options.minDays ?? XIRR_MIN_DAYS)) {
     return { rate: null, status: "period_too_short" };
   }
+  // XIRR is a ratio (§ 0.1): the solver runs in float64 on dimensionless weights a_k / max|a|, so
+  // no amount is ever a float; tolerance 1e-6 of § 0.5 holds (C-28: Decimal pow was ~200 ms).
+  const scale = cashflows.reduce((m, f) => Decimal.max(m, f.amount.amount.abs()), new Decimal(0));
   const terms = cashflows.map((f) => ({
-    amount: f.amount.amount,
-    exponent: new Decimal(daysBetween(t0, f.date)).div(365),
+    weight: f.amount.amount.div(scale).toNumber(),
+    exponent: daysBetween(t0, f.date) / 365,
   }));
-  const npv = (x: Decimal) =>
-    terms.reduce((sum, t) => sum.plus(t.amount.div(x.plus(1).pow(t.exponent))), new Decimal(0));
-  const slope = (x: Decimal) =>
-    terms.reduce(
-      (sum, t) => sum.minus(t.exponent.times(t.amount).div(x.plus(1).pow(t.exponent.plus(1)))),
-      new Decimal(0),
-    );
+  const npv = (x: number) => terms.reduce((sum, t) => sum + t.weight / (1 + x) ** t.exponent, 0);
+  const slope = (x: number) =>
+    terms.reduce((sum, t) => sum - (t.exponent * t.weight) / (1 + x) ** (t.exponent + 1), 0);
+  const done = (rate: number): XirrResult => ({ rate: rate === 0 ? 0 : rate, status: "ok" });
 
-  let x = new Decimal(options.guess ?? 0.1);
+  let x = options.guess ?? 0.1;
   for (let i = 0; i < (options.maxIterations ?? 100); i += 1) {
-    if (!x.plus(1).isPositive() || x.plus(1).isZero()) break;
+    if (!(1 + x > 0)) break;
     const derivative = slope(x);
-    if (derivative.isZero()) break;
-    const next = x.minus(npv(x).div(derivative));
-    if (!next.isFinite()) break;
-    if (next.minus(x).abs().lessThan(TOLERANCE) && next.plus(1).isPositive()) {
-      return { rate: ratio(next), status: "ok" };
-    }
+    if (derivative === 0 || !Number.isFinite(derivative)) break;
+    const next = x - npv(x) / derivative;
+    if (!Number.isFinite(next)) break;
+    if (Math.abs(next - x) < TOLERANCE && 1 + next > 0) return done(next);
     x = next;
   }
 
@@ -215,19 +213,19 @@ export function xirr(cashflows: readonly DatedAmount[], options: XirrOptions = {
   let high = UPPER;
   let fLow = npv(low);
   const fHigh = npv(high);
-  if (fLow.isZero()) return { rate: ratio(low), status: "ok" };
-  if (fHigh.isZero()) return { rate: ratio(high), status: "ok" };
-  if (fLow.isNegative() === fHigh.isNegative()) return { rate: null, status: "no_convergence" };
-  while (high.minus(low).greaterThan(TOLERANCE)) {
-    const middle = low.plus(high).div(2);
+  if (fLow === 0) return done(low);
+  if (fHigh === 0) return done(high);
+  if (fLow < 0 === fHigh < 0) return { rate: null, status: "no_convergence" };
+  while (high - low > TOLERANCE) {
+    const middle = (low + high) / 2;
     const fMiddle = npv(middle);
-    if (fMiddle.isZero()) return { rate: ratio(middle), status: "ok" };
-    if (fMiddle.isNegative() === fLow.isNegative()) {
+    if (fMiddle === 0) return done(middle);
+    if (fMiddle < 0 === fLow < 0) {
       low = middle;
       fLow = fMiddle;
     } else high = middle;
   }
-  return { rate: ratio(low.plus(high).div(2)), status: "ok" };
+  return done((low + high) / 2);
 }
 
 /**
