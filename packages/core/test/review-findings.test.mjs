@@ -820,7 +820,7 @@ describe("rebalancing", () => {
     }
   });
 
-  failsToday("C-14 trimming purchases never leaves negative cash", () => {
+  test("C-14 trimming purchases never leaves negative cash", () => {
     const result = rebalance({
       holdings: [whole("A", "0", "1")],
       targets: [{ instrumentId: "A", weight: "1" }],
@@ -832,6 +832,21 @@ describe("rebalancing", () => {
     });
     // Today the loop stops after 10 000 one-unit steps with cashAfter −9800.00.
     expect(result.cashAfter.amount.isNegative()).toBe(false);
+    expect(result.trades[0].quantity.toFixed()).toBe("980392");
+    // Minimum costs larger than everything the plan frees: an error, never negative cash.
+    const tooCostly = () =>
+      rebalance({
+        holdings: [
+          { instrumentId: "A", value: pln("3") },
+          { instrumentId: "B", value: pln("0") },
+        ],
+        targets: [{ instrumentId: "B", weight: "1" }],
+        mode: "full",
+        minCost: pln("5"),
+        taxable: false,
+        reconciled: true,
+      });
+    expect(codeOf(tooCostly)).toBe("invalid_allocation");
   });
 
   failsToday("C-27 a blocked calculation reports no tax estimate (null), not zero", () => {
