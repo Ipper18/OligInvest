@@ -302,7 +302,9 @@ export function validateTransaction(tx: Transaction, account: Account): void {
         if (cost.currency !== account.currency) {
           fail(tx, "acquisitionCost", "Declared cost must be in the account currency");
         }
-        isoDate(tx.acquiredOn as string);
+        if (isoDate(tx.acquiredOn as string) > tx.tradeDate) {
+          fail(tx, "acquiredOn", "Acquisition date cannot follow the transfer date");
+        }
       }
       return;
     }

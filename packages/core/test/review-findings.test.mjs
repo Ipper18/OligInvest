@@ -418,7 +418,7 @@ describe("ledger, transfers and the tax view", () => {
     }
   });
 
-  failsToday("C-18 a declared acquisition date cannot follow the transfer date", () => {
+  test("C-18 a declared acquisition date cannot follow the transfer date", () => {
     const inbound = {
       id: "IN",
       accountId: "a",
