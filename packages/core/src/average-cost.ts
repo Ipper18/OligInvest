@@ -101,13 +101,13 @@ export function buildAverageCostView(input: LedgerInput): AverageCostView {
   for (const tx of sortTransactions(input.transactions)) {
     switch (tx.type) {
       case "BUY": {
-        const p = pool(tx.accountId, tx.instrumentId, tx.amount.currency);
+        const p = pool(tx.accountId, tx.instrumentId, currencyOf(tx.accountId));
         p.quantity = p.quantity.plus(tx.quantity);
         p.cost = p.cost.plus(tx.amount.amount.negated());
         break;
       }
       case "SELL": {
-        const p = pool(tx.accountId, tx.instrumentId, tx.amount.currency);
+        const p = pool(tx.accountId, tx.instrumentId, currencyOf(tx.accountId));
         const known = p.known;
         const unitCost = p.quantity.isZero() ? new Decimal(0) : p.cost.div(p.quantity);
         const cost = take(p, tx.quantity, tx);
@@ -165,11 +165,19 @@ export function buildAverageCostView(input: LedgerInput): AverageCostView {
             { transactionId: tx.id },
           );
         }
-        const p = pool(tx.accountId, tx.instrumentId, record?.currency ?? currencyOf(tx.accountId));
+        const p = pool(tx.accountId, tx.instrumentId, currencyOf(tx.accountId));
         p.quantity = p.quantity.plus(tx.quantity);
         if (record) {
-          p.cost = p.cost.plus(record.cost);
-          p.known = p.known && record.known;
+          // Between currencies: the NBP rate of the transfer day (§ 3.5), else an unknown cost.
+          const rate =
+            record.currency === p.currency
+              ? undefined
+              : input.taxRates?.onOrBefore(record.currency, p.currency, tx.tradeDate);
+          const converted = record.currency === p.currency || rate !== undefined;
+          p.cost = p.cost.plus(
+            rate ? record.cost.times(rate.rate) : converted ? record.cost : new Decimal(0),
+          );
+          p.known = p.known && record.known && converted;
         } else if (tx.acquisitionCost !== undefined) {
           p.cost = p.cost.plus(tx.acquisitionCost.amount);
         } else {

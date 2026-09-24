@@ -131,7 +131,7 @@ describe("ledger, transfers and the tax view", () => {
     amount: usd("-205"),
   });
 
-  failsToday("C-01 a sale after a transfer to a USD account does not relabel the PLN cost", () => {
+  test("C-01 a sale after a transfer to a USD account does not relabel the PLN cost", () => {
     const sell = {
       ...buyOnUsd("S1", "2025-03-03"),
       type: "SELL",
@@ -152,7 +152,7 @@ describe("ledger, transfers and the tax view", () => {
     expect(sale.costEconomic?.amount.toFixed()).not.toBe("8040");
   });
 
-  failsToday("C-01 a position on a USD account never carries a PLN cost", () => {
+  test("C-01 a position on a USD account never carries a PLN cost", () => {
     const outcome = attempt(() =>
       buildLedger({ accounts, transactions: [buyOnPln, out, inbound] }),
     );
@@ -165,21 +165,18 @@ describe("ledger, transfers and the tax view", () => {
     expect(position.cost === null || position.cost.currency === "USD").toBe(true);
   });
 
-  failsToday(
-    "C-01 lots in two currencies in one position name the operation instead of crashing",
-    () => {
-      const outcome = attempt(() =>
-        buildLedger({
-          accounts,
-          transactions: [buyOnPln, buyOnUsd("B2", "2025-01-20"), out, inbound],
-        }),
-      );
-      // Today: a bare currency_mismatch from sumMoney breaks the whole ledger (every account).
-      if (outcome.error) expect(outcome.error.details.transactionId).toBe("IN");
-    },
-  );
+  test("C-01 lots in two currencies in one position name the operation instead of crashing", () => {
+    const outcome = attempt(() =>
+      buildLedger({
+        accounts,
+        transactions: [buyOnPln, buyOnUsd("B2", "2025-01-20"), out, inbound],
+      }),
+    );
+    // Today: a bare currency_mismatch from sumMoney breaks the whole ledger (every account).
+    if (outcome.error) expect(outcome.error.details.transactionId).toBe("IN");
+  });
 
-  failsToday("C-01 the average-cost pool never adds amounts in different currencies", () => {
+  test("C-01 the average-cost pool never adds amounts in different currencies", () => {
     const outcome = attempt(() =>
       buildAverageCostView({
         accounts,
@@ -192,6 +189,48 @@ describe("ledger, transfers and the tax view", () => {
     }
     // Today: 8040 PLN + 205 USD reported as a pool cost of "8245 PLN".
     expect(outcome.value.positions[0].cost?.amount.toFixed()).not.toBe("8245");
+  });
+
+  test("C-01 (decision) the cost moves to the target currency at the NBP rate of the transfer day", () => {
+    const taxRates = createFxRateTable([
+      fxRate({ base: "USD", quote: "PLN", rate: "4.00", date: "2025-02-03", source: "nbp" }),
+      fxRate({ base: "USD", quote: "PLN", rate: "3.95", date: "2025-01-10", source: "nbp" }),
+    ]);
+    const sell = {
+      ...buyOnUsd("S1", "2025-03-03"),
+      type: "SELL",
+      quantity: quantity("11"),
+      price: price("210", "USD"),
+      amount: usd("2310"),
+    };
+    const ledger = buildLedger({
+      accounts,
+      transactions: [buyOnPln, out, inbound, buyOnUsd("B2", "2025-02-10"), sell],
+      taxRates,
+    });
+    const moved = ledger.lots.find((lot) => lot.key === "IN/B1");
+    expect(moved.cost.currency).toBe("USD");
+    expect(moved.cost.amount.toFixed()).toBe("2010");
+    expect(moved.transferRate.rate.toFixed()).toBe(toDecimal("1").div("4").toFixed());
+    // The tax-view cost in PLN is unchanged (NBP D-1 of the original settlement).
+    expect(moved.taxCost.amount.toFixed()).toBe("7900");
+    const [sale] = ledger.sales;
+    expect(sale.costEconomic.amount.toFixed()).toBe("2215");
+    expect(sale.realizedPlEconomic.amount.toFixed()).toBe("95");
+    const view = buildAverageCostView({
+      accounts,
+      transactions: [buyOnPln, out, inbound, buyOnUsd("B3", "2025-02-10")],
+      taxRates,
+    });
+    expect(view.positions[0].cost.amount.toFixed()).toBe("2215");
+    const noRate = buildLedger({ accounts, transactions: [buyOnPln, out, inbound] });
+    expect(noRate.issues).toContainEqual({
+      code: "missing_transfer_rate",
+      transactionId: "IN",
+      currency: "PLN",
+      date: "2025-02-03",
+    });
+    expect(noRate.positions[0]).toMatchObject({ costKnown: false, cost: null });
   });
 
   failsToday("C-03 a 1:3 reverse split leaves exactly 10 of 30 units, which can be sold", () => {

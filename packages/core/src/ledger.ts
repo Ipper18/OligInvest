@@ -3,7 +3,7 @@ import type { IsoDate } from "./dates.js";
 import { Decimal } from "./decimal.js";
 import { type DividendTaxView, dividendTaxView } from "./dividends.js";
 import { CoreError } from "./errors.js";
-import type { FxRateTable } from "./fx.js";
+import type { FxRate, FxRateTable } from "./fx.js";
 import { type Money, money, type Quantity, sumMoney, zeroMoney } from "./money.js";
 import {
   type Account,
@@ -39,6 +39,7 @@ export const LEDGER_ISSUE_CODES = [
   "missing_settle_date",
   "missing_tax_rate",
   "missing_acquisition_cost",
+  "missing_transfer_rate",
 ] as const;
 export type LedgerIssueCode = (typeof LEDGER_ISSUE_CODES)[number];
 
@@ -81,6 +82,8 @@ export interface Lot {
   /** Tax-view cost in PLN without FX margin (NBP D-1); null if not applicable or data missing. */
   readonly taxCost: Money | null;
   readonly taxCostRemaining: Money | null;
+  /** NBP rate of the transfer day used to convert the economic cost to this account's currency. */
+  readonly transferRate: FxRate | null;
   readonly closedOn: IsoDate | null;
 }
 
@@ -210,6 +213,7 @@ interface WorkingLot {
   taxCostRemaining: Decimal | null;
   fxFeePln: Decimal | null;
   fxFeePlnRemaining: Decimal | null;
+  transferRate: FxRate | null;
   closedOn: IsoDate | null;
 }
 
@@ -298,6 +302,7 @@ function freezeLot(lot: WorkingLot): Lot {
     fxFeeRemaining: m(lot.fxFeeRemaining, lot.costCurrency),
     taxCost: tax(lot.taxCost),
     taxCostRemaining: tax(lot.taxCostRemaining),
+    transferRate: lot.transferRate,
     closedOn: lot.closedOn,
   });
 }
@@ -450,6 +455,7 @@ export function buildLedger(input: LedgerInput): Ledger {
       taxCostRemaining: taxCost,
       fxFeePln,
       fxFeePlnRemaining: fxFeePln,
+      transferRate: null,
       closedOn: null,
     });
   }
@@ -491,6 +497,13 @@ export function buildLedger(input: LedgerInput): Ledger {
     let taxCostTotal: Decimal | null = applies && taxDate !== null ? ZERO : null;
     let fxCostTotal: Decimal | null = taxCostTotal;
     const consumptions = taken.map(({ lot, share }, index): LotConsumption => {
+      if (lot.costCurrency !== currency) {
+        throw new CoreError("currency_mismatch", "Lot cost is not in the currency of the sale", {
+          transactionId: tx.id,
+          expected: currency,
+          actual: lot.costCurrency,
+        });
+      }
       const proceeds = proceedsParts[index] as Decimal;
       costTotal = lot.costKnown && costTotal !== null ? costTotal.plus(share.cost) : null;
       const fxCostPln = plus(share.fxFeePln, sellFxPlnParts?.[index] ?? null);
@@ -618,13 +631,16 @@ export function buildLedger(input: LedgerInput): Ledger {
       }
       transferred.delete(match.tx.id);
       transferred.delete(`in:${tx.id}`);
+      const target = (accounts.get(tx.accountId) as Account).currency;
       for (const source of match.lots) {
-        insertLot({
+        const moved: WorkingLot = {
           ...source,
           key: `${tx.id}/${source.key}`,
           accountId: tx.accountId,
           openTransactionId: tx.id,
-        });
+        };
+        if (source.costCurrency !== target) convertLot(moved, target, tx);
+        insertLot(moved);
       }
       return;
     }
@@ -636,6 +652,31 @@ export function buildLedger(input: LedgerInput): Ledger {
       );
     }
     externalIn(tx, order);
+  }
+
+  /**
+   * Transfer between accounts in different currencies (owner decision 2026-09-24, § 3.5): the
+   * economic cost moves to the target currency at the NBP rate of the transfer day, kept in the
+   * lot; the tax-view cost in PLN is unchanged. Without a rate the economic cost becomes unknown.
+   */
+  function convertLot(lot: WorkingLot, target: CurrencyCode, tx: SecurityTransferTransaction) {
+    const rate = input.taxRates?.onOrBefore(lot.costCurrency, target, tx.tradeDate);
+    if (!rate) {
+      report({
+        code: "missing_transfer_rate",
+        transactionId: tx.id,
+        currency: lot.costCurrency,
+        date: tx.tradeDate,
+      });
+      lot.costKnown = false;
+    }
+    const factor = rate?.rate ?? ZERO;
+    lot.cost = lot.cost.times(factor);
+    lot.costRemaining = lot.costRemaining.times(factor);
+    lot.fxFee = lot.fxFee.times(factor);
+    lot.fxFeeRemaining = lot.fxFeeRemaining.times(factor);
+    lot.costCurrency = target;
+    lot.transferRate = rate ?? null;
   }
 
   /** Transfer from outside the tracked accounts: declared cost and date, or an unknown cost (§ 3.5). */
@@ -675,6 +716,7 @@ export function buildLedger(input: LedgerInput): Ledger {
       taxCostRemaining: taxCost,
       fxFeePln: declared === undefined ? null : ZERO,
       fxFeePlnRemaining: declared === undefined ? null : ZERO,
+      transferRate: null,
       closedOn: null,
     });
   }
@@ -766,6 +808,12 @@ export function buildLedger(input: LedgerInput): Ledger {
     if (list.length === 0) continue;
     const lots = list.map((lot) => frozen.get(lot) as Lot);
     const first = lots[0] as Lot;
+    const odd = list.find((lot) => lot.costCurrency !== (list[0] as WorkingLot).costCurrency);
+    if (odd) {
+      throw new CoreError("currency_mismatch", "Lots of one position in different currencies", {
+        transactionId: odd.openTransactionId,
+      });
+    }
     const taxCosts = lots.map((lot) => lot.taxCostRemaining);
     const costs = lots.map((lot) => lot.costRemaining);
     const instrumentCosts = lots.map((lot) => lot.costInstrumentRemaining);

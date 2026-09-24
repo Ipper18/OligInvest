@@ -150,6 +150,8 @@ Współczynnik `k` (split 4:1 → `k = 4`; scalenie 1:10 → `k = 0.1`): dla ka�
 
 `SECURITY_TRANSFER_OUT` z rachunku A i `SECURITY_TRANSFER_IN` na rachunek B (powiązane `related_transaction_id`) przenoszą **partie z pierwotną datą i kosztem** (FIFO liczone per rachunek — po przeniesieniu partie należą do B).
 
+Przeniesienie między rachunkami w różnych walutach (decyzja właściciela 2026-09-24, przegląd C-01): koszt ekonomiczny partii (z marżą przewalutowania) przeliczamy na walutę rachunku docelowego **kursem NBP z dnia przeniesienia** (ostatnia tabela do tego dnia); kurs zapisujemy w partii (`transferRate`). Koszt podatkowy w PLN pozostaje bez zmian. Brak kursu → partia z nieznanym kosztem ekonomicznym i ostrzeżenie `missing_transfer_rate`. Kwoty w różnych walutach nigdy nie są sumowane bez przeliczenia.
+
 `SECURITY_TRANSFER_IN` bez odpowiadającego `_OUT` (przeniesienie spoza śledzonych rachunków; decyzja właściciela 2026-09-24): użytkownik podaje **koszt nabycia** (w walucie rachunku) i **datę nabycia** — partia dostaje ten koszt i datę (kolejność FIFO, widok podatkowy: koszt w PLN wprost albo po NBP D-1 od daty nabycia). Bez tych danych pozycja jest **wyceniana**, ale **wyłączona z P/L i z widoku podatkowego** (partia z nieznanym kosztem, data nabycia = dzień przeniesienia), z ostrzeżeniem „brak kosztu nabycia” — kod `missing_acquisition_cost` w API `packages/core`.
 
 ### 3.6 Edycja operacji
