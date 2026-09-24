@@ -6,7 +6,7 @@
   "scripts": {
     "lint": "biome check .",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "vitest run",
+    "test": "vitest run --coverage",
     "build": "tsc -p tsconfig.json"
   },
   "exports": {
@@ -17,5 +17,8 @@
   },
   "dependencies": {
     "decimal.js": "10.6.0"
+  },
+  "devDependencies": {
+    "@oliginvest/test-vectors": "workspace:*"
   }
 }
