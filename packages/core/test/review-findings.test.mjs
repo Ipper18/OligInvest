@@ -739,7 +739,7 @@ describe("rebalancing", () => {
     { instrumentId: "B", weight: "0.5" },
   ];
 
-  failsToday("C-09 buy_only invests only the new cash, not the cash already on the account", () => {
+  test("C-09 buy_only invests only the new cash, not the cash already on the account", () => {
     const result = rebalance({
       holdings: [whole("A", "1000", "100"), whole("B", "1000", "100")],
       targets: halves,
