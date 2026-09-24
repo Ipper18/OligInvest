@@ -1,36 +1,46 @@
 # M1 core — stan bieżący
 
-**Cel:** przekazać stan rdzenia obliczeń `packages/core` i następny krok. Nadpisywany po sesji; historia na końcu (≤ 10 linii na zamknięte zadanie).
+**Cel:** przekazać stan rdzenia obliczeń `packages/core` i następny krok. Nadpisywany po sesji; na końcu sekcja „Dla Codexa” i historia (≤ 10 linii na zamknięte zadanie).
 
-**2026-09-24**, gałąź `feat/m1-core-engine` (z `feat/m0-1-skeleton`), wykonawca: Claude Code (decyzja właściciela z 2026-09-24, `CLAUDE.md`). Node 24.21.0, pnpm 12.4.2. Zadania wykonane lokalnie: status `w toku` do CI i wspólnego DoD.
+**2026-09-24**, gałąź `feat/m1-core-engine` (z `feat/m0-1-skeleton`), [roboczy PR #3](https://github.com/Ipper18/OligInvest/pull/3), wykonawca: Claude Code (decyzja właściciela z 2026-09-24, `CLAUDE.md`). Node 24.21.0, pnpm 12.4.2. Zadania wykonane lokalnie mają status `w toku` do CI i wspólnego DoD.
 
 | Zakres | Stan |
 |---|---|
-| BL-141 | wykonane lokalnie: `Decimal` (34 cyfry, HALF_EVEN), `Money`, `Quantity`, `Price`, `FxRate`, tabela kursów, daty i cykle rozliczeń, formatowanie pl-PL |
-| BL-142 | wykonane lokalnie: `Transaction` (unia po `type`, walidacja jak w `schema.sql`), `buildLedger` — FIFO per rachunek, split, przeniesienia, P/L ekonomiczny i podatkowy (`settle_date`, NBP D-1, `fxCosts`, `tax_include_fx_fee`), pełny wektor A |
-| BL-143 | wykonane lokalnie: pozycje i gotówka per waluta z księgi, dywidendy (G), `valuePortfolio`, P/L niezrealizowany, `dayChange` (F), `externalFlows`; `seed-dev.json` zgodny z blokiem `expected` co do grosza |
-| Etap 2 | BL-301, 305–308 — po zamknięciu etapu 1 |
+| BL-141, BL-142, BL-143 | wykonane lokalnie, `w toku` |
+| BL-301, BL-305, BL-306 (§ 4.2), BL-307, BL-308 | rdzeń w `packages/core`; integracja (API, baza, UI) i ekspozycja walutowa BL-306 — Codex |
 
-## Plan publicznego API
+Dowody: `pnpm turbo run lint typecheck test build --filter=@oliginvest/core` PASS; 113 testów, pokrycie linii 99,9 % (bramka 90 % w `vitest.config.ts`); wektory A, B, C, F, G w całości; `check:deps`, `check:docs`, `check:repository` PASS. Na PR brak uruchomień CI (są tylko workflow `db` i `modules`; pełne CI — BL-017). Dosłowne `pnpm --filter @oliginvest/core lint typecheck test build` uruchamia tylko `lint` (reszta trafia jako argumenty do Biome), dlatego filtr Turbo.
 
-- **Liczby i błędy:** `Decimal` (izolowany klon decimal.js), `toDecimal` (tylko `Decimal` lub ścisły tekst dziesiętny; `number` odrzucany w czasie wykonania), `roundHalfUp`; `CoreError` z `code` (`invalid_decimal`, `currency_mismatch`, `short_position`, …) i `isCoreError`.
-- **Typy wartości:** `CurrencyCode` (`currencyCode`, `minorUnits` z Intl), `Money` (`money`, `add/subtract/negate/multiply/divide/sumMoney`, `roundMoney` HALF_UP, `moneyToJson`/`moneyFromJson`), `Quantity`, `Price`, `grossValue`.
-- **Waluty:** `FxRate` (`fxRate`, `convertMoney`, `invertFxRate`, `brokerFxRate` — § 2.1, `fxConversionCost`), `createFxRateTable` z `onOrBefore` (wycena) i `before` (NBP D-1).
-- **Czas:** `IsoDate`, `addDays`, `daysBetween`, `isWeekday`, `settlementCycleDays`, `settlementRegionForMic`, `settlementDate` (kalendarz od wywołującego).
-- **Prezentacja:** `formatMoney`, `formatPrice`, `formatQuantity`, `formatFxRate`, `formatRatio`.
-- **Księga (BL-142):** `Transaction` (unia po `type`, pola jak `portfolio.transactions`), `sortTransactions`, `validateTransaction`, `buildLedger({ accounts, transactions, taxSettings, taxRates })` → `lots`, `sales` (z `consumptions` i `tax`), `issues` (`missing_settle_date`, `missing_tax_rate`); błędy danych jako `CoreError` (`short_position`, `unmatched_security_transfer`, `invalid_transaction`).
-- **Portfel (BL-143):** `ledger.positions`, `ledger.cash`, `ledger.dividends` (`dividendTaxView`: 19 % brutto, zaliczenie podatku u źródła do wysokości 19 %, dopłata ≥ 0), `valuePortfolio` (luki `gaps`, `asOf`, `fxAsOf`), `dayChange`, `externalFlows`.
+Seed `seed-dev.json` (widok ekonomiczny): gotówka, 5 pozycji, wartość 47 064,47 i wpłaty netto 41 500,00 — bez różnic. Suma pozycji zaokrąglonych osobno dałaby 47 064,48; rdzeń i seed sumują bez zaokrągleń pośrednich (§ 0.2), seed bez zmian.
 
-Dowody: `pnpm turbo run lint typecheck test build --filter=@oliginvest/core` PASS; 94 testy, pokrycie linii 99,8 %; `pnpm check:deps` PASS. Dosłowne `pnpm --filter @oliginvest/core lint typecheck test build` uruchamia tylko `lint` (reszta trafia jako argumenty do Biome) — dlatego filtr Turbo.
+**Propozycje zmian dokumentów** (nie wprowadzone; wzory i wektory bez zmian):
 
-Odwzorowanie § 1 (do potwierdzenia): kolejność w dniu = SPLIT, potem `executedAt` (operacje bez czasu po operacjach z czasem), `sequence`, `id` — porównanie `executedAt` tylko przy obu wartościach nie jest przechodnie. `SECURITY_TRANSFER_IN` musi następować po swoim `_OUT` (niższe `sequence`); przeniesienie spoza śledzonych rachunków (IN bez OUT) jest błędem — potrzebna decyzja, skąd brać koszt i datę.
+1. OBL § 1: porównywanie `executed_at` tylko przy obu wartościach nie jest przechodnie; przyjęto porządek: data → SPLIT → `executedAt` (bez czasu na końcu dnia) → `sequence` → `id`.
+2. OBL § 0.5: wektory są zaokrąglone (B: 6 miejsc w %); testy porównują z dokładnością do połowy ostatniej cyfry i dodatkowo z dokładnym łańcuchem (1e-9 względnie). Warto to dopisać.
+3. OBL § 6.2: „dni” annualizacji = dni od pierwszej daty z przepływem do końca okresu (wektor B: 364).
+4. OBL § 3.3: wzór z „partiami otwartymi” czytany jako pula średniej (zgodnie ze zdaniem „sprzedaż nie zmienia c̄”); proponowane doprecyzowanie.
+5. OBL § 4.3: zaliczenie podatku u źródła ograniczone do 19 % (dopłata ≥ 0); dzień przychodu dywidendy = `settle_date`, a gdy brak — `trade_date` (NBP D-1). Podstawa (art. 30a ust. 9 PIT) **NIEZWERYFIKOWANE**.
+6. OBL § 0.2 „0,84 %” a `system-projektowy.md` § 5 „0,54%” (Intl bez spacji) — rdzeń stosuje Intl.
+7. API `ReturnFigures.xirrStatus`: brak wartości dla okresu < 30 dni (§ 6.3); rdzeń zwraca `period_too_short` — dodać do OpenAPI w BL-303.
 
-Seed (`seed-dev.json`, widok ekonomiczny): gotówka, 5 pozycji (ilość, koszt, wartość, wynik), wartość portfela 47 064,47 i wpłaty netto 41 500,00 — bez różnic. Jedyny efekt zaokrągleń: suma wartości pozycji zaokrąglonych osobno dałaby 47 064,48; rdzeń (jak seed) sumuje bez zaokrągleń pośrednich (§ 0.2), więc seed pozostaje bez zmian.
+Nowe ryzyka: brak. Decyzje do ADR: brak (otwarte kwestie danych — niżej).
 
-Dalej: etap 2 (BL-301, rdzeń BL-305–BL-308).
+## Dla Codexa
+
+Wszystko z `@oliginvest/core`; kwoty wyłącznie `Money`/`Decimal`, daty `IsoDate`, stopy `number` (ułamki). Błędy danych: `CoreError { code, details }`.
+
+- **Wartości:** `toDecimal(Decimal | string)`, `money(amount, currency)`, `quantity(x)`, `price(amount, currency)`, `isoDate(text)`, `fxRate({ base, quote, rate, date, source })`, `createFxRateTable(rates)` → `.onOrBefore(base, quote, date)` / `.before(base, quote, date)`, `brokerFxRate(mid, margin, "buy" | "sell")`, `fxConversionCost(gross, mid, margin)`, `roundMoney`, `moneyToJson(m, { fractionDigits })`, `format{Money,Price,Quantity,FxRate,Ratio}`.
+- **Rozliczenia:** `settlementRegionForMic(mic)`, `settlementCycleDays(region, tradeDate)`, `settlementDate(tradeDate, cycleDays, isSettlementDay)` — przy imporcie uzupełnij `settle_date`.
+- **Księga:** `buildLedger({ accounts: Account[], transactions: Transaction[], taxSettings?: { dateBasis, includeFxFee }, taxRates?: FxRateTable }): Ledger` → `lots`, `sales` (`consumptions`, `tax`, `taxStatus`), `positions`, `cash`, `dividends`, `issues`; `buildAverageCostView(input)` → `positions`, `sales` (średnia, widok ekonomiczny).
+- **Wycena i wyniki:** `valuePortfolio({ accounts, positions, cash, quotes, fxRates, date, currency? })`, `dayChange({ valueNow, valuePrevClose, externalFlows })`, `externalFlows(transactions, { level, securityTransferValue? })`, `twrIndex(points)`, `timeWeightedReturn(points, { from?, to? })`, `periodStart(key, end, inception)`, `periodReturn(index, from, to)`, `xirr(cashflows)`, `investorCashflows({ start, flows, end })`, `drawdowns(index)`, `priceFxEffect({ cost, costInstrument, value, valueInstrument })`, `dividendTaxView(...)`, `trailingDividends(...)`, `yieldOnCost(gross, cost)`.
+
+**BL-144–BL-146:** wiersz `portfolio.transactions` → `Transaction`: `amount` = wpływ na gotówkę z wyciągu (BUY < 0); `fee`/`tax` informacyjnie (zawarte w `amount`); `fxFee` = `fxConversionCost(q·p, mid, marża brokera)` (XTB 0,5 %, mBank 0,1 % — do konfiguracji brokera); DIVIDEND: `gross = quantity × price`, `withholdingTax = tax`. Walidacja per typ: `validateTransaction` (albo `CoreError` z `buildLedger`, np. `short_position` → wiersz importu `error`). `recompute` (BL-146): operacje rachunków użytkownika i kursy NBP → `buildLedger` → `lots` (`quantity_open = quantityAcquired × splitFactor`), `lot_consumptions` z `sales[].consumptions` (`fx_cost_pln = tax.fxCostPln`), pozycje i salda z `positions`/`cash`, `issues` jako braki danych w UI; `valuePortfolio` dla `valuations_daily`; `twrIndex` i `drawdowns` na seriach dziennych (BL-302/305). Zaokrąglaj dopiero przy zapisie (`NUMERIC(20,8)`) i prezentacji.
+
+**Ograniczenia i kwestie otwarte:** `SECURITY_TRANSFER_IN` wymaga wcześniejszego `_OUT` (niższe `sequence`); przeniesienie spoza śledzonych rachunków → błąd, potrzebna decyzja o źródle kosztu i daty. Partie przeniesione z IKE/IKZE nie mają kosztu podatkowego. `fees_total` partii nie jest liczone. Stopa od kosztu wymaga jednej waluty — waluta przeliczenia dywidend do ustalenia. Kalendarz rozliczeń USA (dni bez rozrachunku) dostarcza wywołujący.
 
 ## Historia
 
 - 2026-09-24 BL-141: typy wartości, kursy i formatowanie; testy na wektorze A (kursy brokera, koszty FX).
-- 2026-09-24 BL-143: pozycje, gotówka, wycena z lukami i znacznikami czasu, wynik dnia (F), dywidendy (G), przepływy zewnętrzne; test integracyjny seed bez różnic > 0,01 zł.
-- 2026-09-24 BL-142: księga FIFO z widokiem ekonomicznym i podatkowym; wektor A zgodny co do grosza (także `fxCosts` 105,63 i wariant z marżą −1055,83); testy sprzedaży częściowych, splitów, przeniesień, braków danych, IKE i walidacji.
+- 2026-09-24 BL-142: księga FIFO z widokiem ekonomicznym i podatkowym; wektor A co do grosza (`fxCosts` 105,63, wariant z marżą −1055,83); sprzedaże częściowe, splity, przeniesienia, braki danych, IKE, walidacja.
+- 2026-09-24 BL-143: pozycje, gotówka, wycena z lukami i znacznikami czasu, wynik dnia (F), dywidendy (G), przepływy; seed bez różnic > 0,01 zł.
+- 2026-09-24 Etap 2: TWR, XIRR i okresy (B), obsunięcia (C), efekt ceny i kursu (A), stopa od kosztu, średnia ważona (A) — tylko rdzeń.
