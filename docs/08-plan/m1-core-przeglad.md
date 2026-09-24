@@ -89,3 +89,21 @@ Rdzeń jest czysty i deterministyczny: bez I/O i zegara, obiekty zamrożone, bł
 5. **Przed interfejsem BL-315 i przeglądem BL-318:** C-09–C-12, C-14, C-27.
 
 Decyzje właściciela potrzebne w: C-01 (koszt przy przeniesieniu między walutami), C-02 (przepływy przy przeniesieniach w OBL § 1), C-03 (zapis współczynnika splitu), C-11 i C-12 (podatek i pasmo w rebalancingu), C-13 (mianownik wyniku dnia), C-23 (definicja CVaR).
+
+## 7. Stan poprawek (2026-09-24)
+
+Wszystkie 28 znalezisk naprawiono w [PR #3](https://github.com/Ipper18/OligInvest/pull/3), w kolejności z § 6 (C-16, pominięte w § 6, na końcu), jednym commitem na znalezisko z jego ID w treści. Wszystkie 33 testy z przeglądu działają jako zwykłe `test(...)` i przechodzą; dopisano 5 testów decyzji (C-01, C-03, C-04, C-06, C-08) — razem 38 w `review-findings.test.mjs`, 191 w pakiecie, pokrycie linii 99,5 %. Brak znalezisk odrzuconych.
+
+- **Decyzje właściciela (2026-09-24), zapisane w OBL:**
+  - C-01 — koszt przeliczany kursem NBP z dnia przeniesienia, zapisanym w partii (`transferRate`); § 3.5.
+  - C-02 — przeniesienie bez drugiej strony wśród śledzonych rachunków jest przepływem portfela; § 1.
+  - C-03 — split jako para liczb całkowitych `ratioFrom`/`ratioTo` z `cashInLieu`; § 3.4.
+  - C-11 — 19 % × max(0, Σ wyników sprzedaży), z uwzględnieniem `tax_include_fx_fee`; § 12.5.
+  - C-12 — zakup w `buy_only` najwyżej do wielkości luki; § 12.5.
+  - C-13 — wynik dnia względem `V(D−1) + F`; wektor F 0,54 % → 0,53 %; § 5.1.
+  - C-23 — CVaR według definicji empyrical, nowy wektor `D_risk.tied_*`; § 8.
+- **Odstępstwa od litery testów:**
+  - Test C-03 dostał wejście w nowej postaci splitu (3 → 1) zamiast `splitRatio`.
+  - W C-11 szacunek na linii zastąpiło pole `taxableResult` (wynik ze znakiem), a podatek liczony jest dla całego planu.
+- **Zmiany `schema.sql`** (split, kolumny `NOT NULL` dla partii bez kosztu) i uwagi z § 2 przeniesiono do sekcji „Dla Codexa” w [raporcie sesji](m1-core-session-report.md) jako zadania BL-144 i kontrakt integracji.
+

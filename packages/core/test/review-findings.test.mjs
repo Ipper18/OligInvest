@@ -36,10 +36,8 @@ import { describe, expect, test } from "vitest";
 
 /**
  * Defects found in the independent review of packages/core (docs/08-plan/m1-core-przeglad.md).
- * Every test fails on the reviewed code and is skipped so that the build stays green. Run them all
- * from the repository root with
- * `CORE_REVIEW=1 pnpm --filter @oliginvest/core exec vitest run test/review-findings.test.mjs`;
- * when a finding is fixed, turn its `failsToday(...)` into `test(...)`.
+ * All 28 findings are fixed (§ 7 of the review); every test runs in the normal suite. A new finding
+ * can be recorded as `failsToday(...)` (skipped unless CORE_REVIEW=1) until it is fixed.
  */
 const failsToday = test.skipIf(process.env.CORE_REVIEW !== "1");
 
