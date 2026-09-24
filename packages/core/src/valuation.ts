@@ -41,7 +41,8 @@ export interface PositionValuation {
   readonly accountId: string;
   readonly instrumentId: string;
   readonly quantity: Quantity;
-  readonly cost: Money;
+  /** Null for a position without an acquisition cost (valued, no P/L). */
+  readonly cost: Money | null;
   readonly price: Price | null;
   readonly priceAsOf: string | null;
   /** Quote currency → account currency. */
@@ -125,7 +126,7 @@ export function valuePortfolio(input: ValuationInput): PortfolioValuation {
     const positions = input.positions
       .filter((position) => position.accountId === account.id)
       .map((position): PositionValuation => {
-        assertSameCurrency(currency, position.cost.currency);
+        if (position.cost) assertSameCurrency(currency, position.cost.currency);
         const quote = quotes.get(position.instrumentId);
         if (!quote)
           gaps.push({ kind: "price", accountId: account.id, instrumentId: position.instrumentId });
@@ -135,7 +136,8 @@ export function valuePortfolio(input: ValuationInput): PortfolioValuation {
           marketValue = money(position.quantity.times(quote.price.amount).times(fx.rate), currency);
           if (asOf === null || Date.parse(quote.asOf) < Date.parse(asOf)) asOf = quote.asOf;
         }
-        const unrealizedPl = marketValue ? subtractMoney(marketValue, position.cost) : null;
+        const cost = position.cost;
+        const unrealizedPl = marketValue && cost ? subtractMoney(marketValue, cost) : null;
         return Object.freeze({
           accountId: account.id,
           instrumentId: position.instrumentId,
@@ -147,8 +149,8 @@ export function valuePortfolio(input: ValuationInput): PortfolioValuation {
           marketValue,
           unrealizedPl,
           unrealizedRatio:
-            unrealizedPl && !position.cost.amount.isZero()
-              ? unrealizedPl.amount.div(position.cost.amount).toNumber()
+            unrealizedPl && cost && !cost.amount.isZero()
+              ? unrealizedPl.amount.div(cost.amount).toNumber()
               : null,
         });
       });

@@ -135,13 +135,53 @@ describe("weighted average cost as a view (§ 3.3) — vector A", () => {
     };
     const again = buildAverageCostView({ accounts, transactions: [deposit, ...linkedFromOut] });
     expect(again.positions[1].cost.amount.toFixed()).toBe(moved.cost.amount.toFixed());
-    const unmatched = txs.filter((t) => t.id !== "OUT");
-    expect(codeOf(() => buildAverageCostView({ accounts, transactions: unmatched }))).toBe(
+    const reordered = txs.map((t) => (t.id === "OUT" ? { ...t, sequence: 5 } : t));
+    expect(codeOf(() => buildAverageCostView({ accounts, transactions: reordered }))).toBe(
       "unmatched_security_transfer",
     );
     const short = [...vectorA, usdTrade("T9", "SELL", "2025-10-01", "4", "1", "3.6")];
     expect(codeOf(() => buildAverageCostView({ accounts, transactions: short }))).toBe(
       "short_position",
     );
+  });
+});
+
+describe("average cost with transfers from outside (owner decision 2026-09-24)", () => {
+  const inbound = (extra = {}) => ({
+    id: "IN",
+    accountId: "xtb",
+    type: "SECURITY_TRANSFER_IN",
+    tradeDate: d("2025-01-02"),
+    instrumentId: "AAPL",
+    quantity: quantity("10"),
+    ...extra,
+  });
+
+  test("a declared cost enters the average", () => {
+    const view = buildAverageCostView({
+      accounts,
+      transactions: [
+        inbound({ acquisitionCost: money("1000", "PLN"), acquiredOn: d("2020-01-02") }),
+      ],
+    });
+    expect(view.positions[0].unitCost.amount.toFixed()).toBe("100");
+  });
+
+  test("without a cost the average and the realized P/L are unknown until the pool empties", () => {
+    const sell = (id, date, qty) => ({ ...usdTrade(id, "SELL", date, qty, "240.00", "3.9800") });
+    const view = buildAverageCostView({
+      accounts,
+      transactions: [
+        inbound(),
+        sell("S1", "2025-02-03", "10"),
+        usdTrade("B1", "BUY", "2025-03-03", "2", "240.00", "3.9800"),
+        sell("S2", "2025-04-01", "1"),
+      ],
+    });
+    expect(view.sales[0]).toMatchObject({ unitCost: null, cost: null, realizedPl: null });
+    expect(view.sales[1].realizedPl).not.toBeNull();
+    expect(view.positions[0].unitCost).not.toBeNull();
+    const held = buildAverageCostView({ accounts, transactions: [inbound()] });
+    expect(held.positions[0]).toMatchObject({ cost: null, unitCost: null });
   });
 });
