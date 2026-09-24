@@ -465,7 +465,7 @@ describe("ledger, transfers and the tax view", () => {
     expect(ledger.sales[0].realizedPlEconomic.amount.toFixed(2)).toBe("-10.10");
   });
 
-  failsToday("C-20 the dividend payment date is settle_date when given (§ 4.3)", () => {
+  test("C-20 the dividend payment date is settle_date when given (§ 4.3)", () => {
     const dividend = {
       id: "D",
       accountId: "a",

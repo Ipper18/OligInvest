@@ -177,6 +177,7 @@ export interface DividendRecord {
   readonly transactionId: string;
   readonly accountId: string;
   readonly instrumentId: string;
+  /** Day of income: `settleDate` when given, else `tradeDate` (§ 4.3); drives the 12-month window. */
   readonly paymentDate: IsoDate;
   readonly gross: Money;
   readonly withholdingTax: Money;
@@ -835,7 +836,7 @@ export function buildLedger(input: LedgerInput): Ledger {
         transactionId: tx.id,
         accountId: tx.accountId,
         instrumentId: tx.instrumentId,
-        paymentDate: tx.tradeDate,
+        paymentDate: taxDate,
         gross: tx.gross,
         withholdingTax,
         net: money(tx.gross.amount.minus(withholdingTax.amount), tx.gross.currency),
