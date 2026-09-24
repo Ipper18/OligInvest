@@ -404,29 +404,26 @@ describe("ledger, transfers and the tax view", () => {
     ]);
   });
 
-  failsToday(
-    "C-15 the tax view of a lot does not depend on where an unknown-cost lot sits in FIFO",
-    () => {
-      const known = trade("B9", "BUY", "2024-06-10", "5", "50", "-250");
-      const unknown = (date) => ({
-        id: "IN",
-        accountId: "a",
-        type: "SECURITY_TRANSFER_IN",
-        tradeDate: d(date),
-        instrumentId: "X",
-        quantity: quantity("10"),
-      });
-      const sell = trade("S", "SELL", "2024-08-01", "15", "60", "900");
-      const taxOfKnownLot = (transactions) =>
-        buildLedger({ accounts: regular, transactions })
-          .sales[0].consumptions.find((c) => c.lotKey === "B9")
-          .tax?.realizedPlPln.amount.toFixed() ?? null;
-      // B9 is consumed in full in both orders (P/L 50); today: "50" after it, null before it.
-      expect(taxOfKnownLot([unknown("2024-01-02"), known, sell])).toBe(
-        taxOfKnownLot([known, unknown("2024-07-01"), sell]),
-      );
-    },
-  );
+  test("C-15 the tax view of a lot does not depend on where an unknown-cost lot sits in FIFO", () => {
+    const known = trade("B9", "BUY", "2024-06-10", "5", "50", "-250");
+    const unknown = (date) => ({
+      id: "IN",
+      accountId: "a",
+      type: "SECURITY_TRANSFER_IN",
+      tradeDate: d(date),
+      instrumentId: "X",
+      quantity: quantity("10"),
+    });
+    const sell = trade("S", "SELL", "2024-08-01", "15", "60", "900");
+    const taxOfKnownLot = (transactions) =>
+      buildLedger({ accounts: regular, transactions })
+        .sales[0].consumptions.find((c) => c.lotKey === "B9")
+        .tax?.realizedPlPln.amount.toFixed() ?? null;
+    // B9 is consumed in full in both orders (P/L 50); today: "50" after it, null before it.
+    expect(taxOfKnownLot([unknown("2024-01-02"), known, sell])).toBe(
+      taxOfKnownLot([known, unknown("2024-07-01"), sell]),
+    );
+  });
 
   test("C-17 executedAt must carry an explicit offset", () => {
     const deposit = {
