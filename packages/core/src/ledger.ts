@@ -52,7 +52,9 @@ export type LedgerIssueCode = (typeof LEDGER_ISSUE_CODES)[number];
 
 /**
  * Data gap. `missing_settle_date` and `missing_tax_rate` disable the tax view only;
- * `missing_acquisition_cost` (warning „brak kosztu nabycia”, § 3.5) also removes the position from P/L.
+ * `missing_acquisition_cost` (warning „brak kosztu nabycia”, § 3.5) also removes the position from P/L;
+ * `missing_transfer_rate` (§ 3.5), `stale_tax_rate` (§ 2.2) and `tax_cost_unavailable` (lot moved
+ * from IKE/IKZE to a taxable account) explain a missing or doubtful value.
  */
 export interface LedgerIssue {
   readonly code: LedgerIssueCode;
@@ -709,6 +711,10 @@ export function buildLedger(input: LedgerInput): Ledger {
           openTransactionId: tx.id,
         };
         if (source.costCurrency !== target) convertLot(moved, target, tx);
+        // A lot from IKE/IKZE has no tax-view cost; explain the empty tax view (C-26).
+        if (taxApplies(tx) && source.taxCost === null && !taxApplies(match.tx)) {
+          report({ code: "tax_cost_unavailable", transactionId: tx.id });
+        }
         insertLot(moved);
       }
       return;
