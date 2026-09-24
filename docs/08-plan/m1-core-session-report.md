@@ -2,45 +2,43 @@
 
 **Cel:** przekazać stan rdzenia obliczeń `packages/core` i następny krok. Nadpisywany po sesji; na końcu sekcja „Dla Codexa” i historia (≤ 10 linii na zamknięte zadanie).
 
-**2026-09-24**, gałąź `feat/m1-core-engine` (z `feat/m0-1-skeleton`), [roboczy PR #3](https://github.com/Ipper18/OligInvest/pull/3), wykonawca: Claude Code (decyzja właściciela z 2026-09-24, `CLAUDE.md`). Node 24.21.0, pnpm 12.4.2. Zadania wykonane lokalnie mają status `w toku` do CI i wspólnego DoD.
+**2026-09-24**, gałąź `feat/m1-core-engine` (z `feat/m0-1-skeleton`), [roboczy PR #3](https://github.com/Ipper18/OligInvest/pull/3), wykonawca: Claude Code (decyzja właściciela z 2026-09-24, `CLAUDE.md`). Node 24.21.0, pnpm 12.4.2. Zadania wykonane lokalnie mają status `w toku` do CI i wspólnego DoD; CI ruszy po scaleniu #2.
 
 | Zakres | Stan |
 |---|---|
-| BL-141, BL-142, BL-143 | wykonane lokalnie, `w toku` |
-| BL-301, BL-305, BL-306 (§ 4.2), BL-307, BL-308 | rdzeń w `packages/core`; integracja (API, baza, UI) i ekspozycja walutowa BL-306 — Codex |
+| BL-141, BL-142, BL-143, BL-201 | wykonane lokalnie, `w toku` |
+| BL-301, BL-305, BL-306 (§ 4.2), BL-307, BL-308, BL-315 (§ 12.5), BL-551 (§ 8) | rdzeń w `packages/core`; integracja (API, baza, UI, kolejki) i ekspozycja walutowa BL-306 — Codex |
 
-Dowody: `pnpm turbo run lint typecheck test build --filter=@oliginvest/core` PASS; 113 testów, pokrycie linii 99,9 % (bramka 90 % w `vitest.config.ts`); wektory A, B, C, F, G w całości; `check:deps`, `check:docs`, `check:repository` PASS. Na PR brak uruchomień CI (są tylko workflow `db` i `modules`; pełne CI — BL-017). Dosłowne `pnpm --filter @oliginvest/core lint typecheck test build` uruchamia tylko `lint` (reszta trafia jako argumenty do Biome), dlatego filtr Turbo.
+Dowody: `pnpm turbo run lint typecheck test build --filter=@oliginvest/core` PASS; 149 testów, pokrycie linii 99,8 % (bramka 90 %); wektory A–H w całości (D, E z tolerancjami 1e-6 i 1e-8); seed `seed-dev.json` bez różnic; `check:deps`, `check:docs` PASS.
 
-Seed `seed-dev.json` (widok ekonomiczny): gotówka, 5 pozycji, wartość 47 064,47 i wpłaty netto 41 500,00 — bez różnic. Suma pozycji zaokrąglonych osobno dałaby 47 064,48; rdzeń i seed sumują bez zaokrągleń pośrednich (§ 0.2), seed bez zmian.
+**Decyzje właściciela z 2026-09-24 — wprowadzone:** kolejność operacji (OBL § 1); zaliczenie podatku u źródła do 19 % (OBL § 4.3, podstawa **NIEZWERYFIKOWANE**); `xirrStatus = period_too_short` (backlog BL-303, zmiana OpenAPI); `SECURITY_TRANSFER_IN` bez `_OUT` — koszt i data od użytkownika, bez nich pozycja wyceniana bez P/L i widoku podatkowego, ostrzeżenie `missing_acquisition_cost` (OBL § 3.5); stopa od kosztu w PLN po NBP D-1 (OBL § 4.3). Doprecyzowania bez zmiany wzorów: OBL § 0.2 (format procentu Intl), § 0.5 (zaokrąglone wektory), § 6.2 (dni annualizacji).
 
-**Propozycje zmian dokumentów** (nie wprowadzone; wzory i wektory bez zmian):
+**Czeka na decyzję (zmienia zapis wzoru):** OBL § 3.3 — wzór sumuje „partie otwarte” (czytany dosłownie: pozostałe partie FIFO, średnia zmienia się po sprzedaży), a zdanie obok mówi, że sprzedaż nie zmienia c̄. Rdzeń liczy pulę średniej (c̄ po sprzedaży bez zmian; wektor A zgodny w obu czytaniach). Proponowany zapis: „c̄ = koszt puli / ilość puli; zakup dodaje koszt i ilość, sprzedaż zdejmuje q·c̄”.
 
-1. OBL § 1: porównywanie `executed_at` tylko przy obu wartościach nie jest przechodnie; przyjęto porządek: data → SPLIT → `executedAt` (bez czasu na końcu dnia) → `sequence` → `id`.
-2. OBL § 0.5: wektory są zaokrąglone (B: 6 miejsc w %); testy porównują z dokładnością do połowy ostatniej cyfry i dodatkowo z dokładnym łańcuchem (1e-9 względnie). Warto to dopisać.
-3. OBL § 6.2: „dni” annualizacji = dni od pierwszej daty z przepływem do końca okresu (wektor B: 364).
-4. OBL § 3.3: wzór z „partiami otwartymi” czytany jako pula średniej (zgodnie ze zdaniem „sprzedaż nie zmienia c̄”); proponowane doprecyzowanie.
-5. OBL § 4.3: zaliczenie podatku u źródła ograniczone do 19 % (dopłata ≥ 0); dzień przychodu dywidendy = `settle_date`, a gdy brak — `trade_date` (NBP D-1). Podstawa (art. 30a ust. 9 PIT) **NIEZWERYFIKOWANE**.
-6. OBL § 0.2 „0,84 %” a `system-projektowy.md` § 5 „0,54%” (Intl bez spacji) — rdzeń stosuje Intl.
-7. API `ReturnFigures.xirrStatus`: brak wartości dla okresu < 30 dni (§ 6.3); rdzeń zwraca `period_too_short` — dodać do OpenAPI w BL-303.
+**Interpretacje § 12.5 (do potwierdzenia przy BL-318):** pasmo liczone na wagach sprzed nowej gotówki (inaczej wektor H nie wychodzi); `buy_only` rozdziela tylko nową gotówkę; sprzedaż zaokrąglana do najbliższej jednostki, najwyżej do posiadanej ilości; szacowany podatek = 19 % zysku FIFO po kosztach ekonomicznych partii.
 
-Nowe ryzyka: brak. Decyzje do ADR: brak (otwarte kwestie danych — niżej).
+Nowe ryzyka: brak. Decyzje do ADR: brak.
 
 ## Dla Codexa
 
-Wszystko z `@oliginvest/core`; kwoty wyłącznie `Money`/`Decimal`, daty `IsoDate`, stopy `number` (ułamki). Błędy danych: `CoreError { code, details }`.
+Wszystko z `@oliginvest/core`; kwoty wyłącznie `Money`/`Decimal`, daty `IsoDate`, stopy i statystyki `number` (§ 0.1). Błędy danych: `CoreError { code, details }`.
 
-- **Wartości:** `toDecimal(Decimal | string)`, `money(amount, currency)`, `quantity(x)`, `price(amount, currency)`, `isoDate(text)`, `fxRate({ base, quote, rate, date, source })`, `createFxRateTable(rates)` → `.onOrBefore(base, quote, date)` / `.before(base, quote, date)`, `brokerFxRate(mid, margin, "buy" | "sell")`, `fxConversionCost(gross, mid, margin)`, `roundMoney`, `moneyToJson(m, { fractionDigits })`, `format{Money,Price,Quantity,FxRate,Ratio}`.
-- **Rozliczenia:** `settlementRegionForMic(mic)`, `settlementCycleDays(region, tradeDate)`, `settlementDate(tradeDate, cycleDays, isSettlementDay)` — przy imporcie uzupełnij `settle_date`.
-- **Księga:** `buildLedger({ accounts: Account[], transactions: Transaction[], taxSettings?: { dateBasis, includeFxFee }, taxRates?: FxRateTable }): Ledger` → `lots`, `sales` (`consumptions`, `tax`, `taxStatus`), `positions`, `cash`, `dividends`, `issues`; `buildAverageCostView(input)` → `positions`, `sales` (średnia, widok ekonomiczny).
-- **Wycena i wyniki:** `valuePortfolio({ accounts, positions, cash, quotes, fxRates, date, currency? })`, `dayChange({ valueNow, valuePrevClose, externalFlows })`, `externalFlows(transactions, { level, securityTransferValue? })`, `twrIndex(points)`, `timeWeightedReturn(points, { from?, to? })`, `periodStart(key, end, inception)`, `periodReturn(index, from, to)`, `xirr(cashflows)`, `investorCashflows({ start, flows, end })`, `drawdowns(index)`, `priceFxEffect({ cost, costInstrument, value, valueInstrument })`, `dividendTaxView(...)`, `trailingDividends(...)`, `yieldOnCost(gross, cost)`.
+- **Wartości i kursy:** `toDecimal`, `money`, `quantity`, `price`, `isoDate`, `fxRate`, `createFxRateTable(rates)` → `.onOrBefore` / `.before`, `brokerFxRate`, `fxConversionCost`, `roundMoney`, `moneyToJson`, `format{Money,Price,Quantity,FxRate,Ratio}`, `settlementRegionForMic`, `settlementCycleDays`, `settlementDate`.
+- **Księga:** `buildLedger({ accounts, transactions, taxSettings?, taxRates? })` → `lots`, `sales`, `positions`, `cash`, `dividends`, `issues` (`LEDGER_ISSUE_CODES`: `missing_settle_date`, `missing_tax_rate`, `missing_acquisition_cost`). Pola kosztu partii, sprzedaży i pozycji są `null`, gdy `costKnown = false`. `buildAverageCostView(input)`.
+- **Wycena i wyniki:** `valuePortfolio`, `dayChange`, `externalFlows`, `twrIndex`, `timeWeightedReturn`, `periodStart`, `periodReturn`, `xirr`, `investorCashflows`, `drawdowns`, `priceFxEffect`, `dividendTaxView`, `trailingDividends`, `yieldOnCost`, `yieldOnCostPln(records, costPln)`.
+- **Wskaźniki (BL-201):** `sma(values, n)`, `ema`, `rsi`, `macd(values, fast, slow, signal)` → `{ macd, signal, histogram }`, `bollingerBands(values, n, k)` → `{ upper, middle, lower }`, `atr(high, low, close, n)`; wejście `Decimal[]` (pełne serie skorygowane o splity), wynik `(number | null)[]`.
+- **Ryzyko (BL-551):** `riskMetrics(returns, { benchmark?, riskFreeAnnual?, periodsPerYear?, mar?, confidence? })` → wartości + `assumptions` + `insufficientData` (< 60 obserwacji); osobno `annualVolatility`, `sharpeRatio`, `sortinoRatio`, `beta`, `correlation`, `historicalVar`, `historicalCvar`, `parametricVar`, `calmarRatio`, `dailyRiskFreeRate`. Wejście: dzienne stopy z `twrIndex`.
+- **Rebalancing (BL-315):** `rebalance({ holdings, targets, mode, cash?, newCash?, band?, minOrder?, costRate?, minCost?, taxable, reconciled })` → `status` (`blocked` bez uzgodnionego importu), `trades` (kwota ze znakiem, ilość, koszt, `estimatedTax`), `skipped`, `weightsBefore/After`, `costs`, `cashAfter`. `holdings[].lots` = `ledger.positions[].lots`; `costRate` z modelu kosztów § 12.7 (konfiguracja brokera).
 
-**BL-144–BL-146:** wiersz `portfolio.transactions` → `Transaction`: `amount` = wpływ na gotówkę z wyciągu (BUY < 0); `fee`/`tax` informacyjnie (zawarte w `amount`); `fxFee` = `fxConversionCost(q·p, mid, marża brokera)` (XTB 0,5 %, mBank 0,1 % — do konfiguracji brokera); DIVIDEND: `gross = quantity × price`, `withholdingTax = tax`. Walidacja per typ: `validateTransaction` (albo `CoreError` z `buildLedger`, np. `short_position` → wiersz importu `error`). `recompute` (BL-146): operacje rachunków użytkownika i kursy NBP → `buildLedger` → `lots` (`quantity_open = quantityAcquired × splitFactor`), `lot_consumptions` z `sales[].consumptions` (`fx_cost_pln = tax.fxCostPln`), pozycje i salda z `positions`/`cash`, `issues` jako braki danych w UI; `valuePortfolio` dla `valuations_daily`; `twrIndex` i `drawdowns` na seriach dziennych (BL-302/305). Zaokrąglaj dopiero przy zapisie (`NUMERIC(20,8)`) i prezentacji.
+**BL-144–BL-146:** wiersz `portfolio.transactions` → `Transaction` (`amount` z wyciągu; `fxFee` = `fxConversionCost(q·p, mid, marża)`; DIVIDEND: `gross = quantity × price`, `withholdingTax = tax`; IN spoza rachunków: `acquisitionCost` + `acquiredOn` z formularza). `recompute`: `buildLedger` → `lots` (`quantity_open = quantityAcquired × splitFactor`), `lot_consumptions` (`fx_cost_pln = tax.fxCostPln`), pozycje, salda, `issues` jako ostrzeżenia w UI; `valuePortfolio` dla `valuations_daily`. Zaokrąglaj tylko przy zapisie i prezentacji. Kolumny na zadeklarowany koszt IN wymagają zmiany `schema.sql` (BL-144).
 
-**Ograniczenia i kwestie otwarte:** `SECURITY_TRANSFER_IN` wymaga wcześniejszego `_OUT` (niższe `sequence`); przeniesienie spoza śledzonych rachunków → błąd, potrzebna decyzja o źródle kosztu i daty. Partie przeniesione z IKE/IKZE nie mają kosztu podatkowego. `fees_total` partii nie jest liczone. Stopa od kosztu wymaga jednej waluty — waluta przeliczenia dywidend do ustalenia. Kalendarz rozliczeń USA (dni bez rozrachunku) dostarcza wywołujący.
+**Ograniczenia:** partie przeniesione z IKE/IKZE nie mają kosztu podatkowego; `fees_total` nie jest liczone; kalendarz rozliczeń USA dostarcza wywołujący; ekspozycja walutowa (BL-306) i agregacje roczne dywidend — do zrobienia.
 
 ## Historia
 
-- 2026-09-24 BL-141: typy wartości, kursy i formatowanie; testy na wektorze A (kursy brokera, koszty FX).
-- 2026-09-24 BL-142: księga FIFO z widokiem ekonomicznym i podatkowym; wektor A co do grosza (`fxCosts` 105,63, wariant z marżą −1055,83); sprzedaże częściowe, splity, przeniesienia, braki danych, IKE, walidacja.
-- 2026-09-24 BL-143: pozycje, gotówka, wycena z lukami i znacznikami czasu, wynik dnia (F), dywidendy (G), przepływy; seed bez różnic > 0,01 zł.
-- 2026-09-24 Etap 2: TWR, XIRR i okresy (B), obsunięcia (C), efekt ceny i kursu (A), stopa od kosztu, średnia ważona (A) — tylko rdzeń.
+- 2026-09-24 BL-141–BL-143: typy, księga FIFO (wektor A), portfel, wycena, F, G; seed bez różnic > 0,01 zł.
+- 2026-09-24 Etap 2 (rdzeń): TWR, XIRR, okresy (B), obsunięcia (C), efekt ceny i kursu, stopa od kosztu, średnia ważona.
+- 2026-09-24 Decyzje właściciela: dokumenty OBL § 0.2, § 0.5, § 1, § 3.5, § 4.3, § 6.2, backlog BL-303; rdzeń: przeniesienia spoza rachunków, `missing_acquisition_cost`, stopa od kosztu w PLN.
+- 2026-09-24 BL-201: SMA, EMA, RSI, MACD, Bollinger, ATR — wektor E (1e-8).
+- 2026-09-24 BL-551 (rdzeń): metryki ryzyka — wektor D (1e-6).
+- 2026-09-24 BL-315 (rdzeń): rebalancing z kosztami, podatkiem i blokadą — wektor H.
