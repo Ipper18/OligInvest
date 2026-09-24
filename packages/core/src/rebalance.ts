@@ -174,9 +174,11 @@ export function rebalance(input: RebalanceInput): RebalanceResult {
   } else {
     const gaps = lines.map((l) => (l.skipped ? ZERO : Decimal.max(gapOf(l), ZERO)));
     const total = gaps.reduce((s, g) => s.plus(g), ZERO);
+    // At most the gap itself: new cash beyond the sum of the gaps stays cash (C-12).
     if (!total.isZero()) {
       lines.forEach((l, i) => {
-        l.amount = fresh.times(gaps[i] as Decimal).div(total);
+        const gap = gaps[i] as Decimal;
+        l.amount = total.lessThanOrEqualTo(fresh) ? gap : fresh.times(gap).div(total);
       });
     }
   }
