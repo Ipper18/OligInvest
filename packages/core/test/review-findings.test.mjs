@@ -690,7 +690,7 @@ describe("risk metrics and drawdowns", () => {
     expect(summary.varParametric).toBeCloseTo(parametricVar(returns, 2.3263), 4);
   });
 
-  failsToday("C-22 with equal highs the drawdown starts at the last one, as in empyrical", () => {
+  test("C-22 with equal highs the drawdown starts at the last one, as in empyrical", () => {
     const result = drawdowns(["100", "110", "110", "90"].map((v) => toDecimal(v)));
     // Today: peak index 1, so the duration includes the flat day.
     expect(result.peakIndex).toBe(2);

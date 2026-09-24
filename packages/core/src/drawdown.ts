@@ -27,7 +27,8 @@ export function drawdowns(values: readonly Decimal[]): DrawdownResult {
     if (!Decimal.isDecimal(value) || !value.isFinite() || !value.isPositive() || value.isZero()) {
       throw new CoreError("invalid_series", "Index values must be positive Decimals", { index: i });
     }
-    if (value.greaterThan(peak)) {
+    // Equal highs move the peak to the latest one, as in empyrical (C-22).
+    if (value.greaterThanOrEqualTo(peak)) {
       peak = value;
       peakAt = i;
     }
