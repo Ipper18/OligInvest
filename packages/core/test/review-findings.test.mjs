@@ -754,7 +754,7 @@ describe("rebalancing", () => {
     expect(bought.lessThanOrEqualTo("100")).toBe(true);
   });
 
-  failsToday("C-10 leftover cash does not recreate orders below the minimum value", () => {
+  test("C-10 leftover cash does not recreate orders below the minimum value", () => {
     const result = rebalance({
       holdings: [whole("A", "0", "100"), whole("B", "0", "100")],
       targets: halves,

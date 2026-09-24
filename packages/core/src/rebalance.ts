@@ -235,6 +235,8 @@ export function rebalance(input: RebalanceInput): RebalanceResult {
       const p = l.holding.unitPrice?.amount;
       if (!p || !wholeUnits(l) || l.skipped || l.amount.isNegative()) return false;
       const extraCost = costOf(l.amount.plus(p)).minus(costOf(l.amount));
+      // Never recreate an order below the minimum value (C-10).
+      if (minOrder && l.amount.plus(p).lessThan(minOrder)) return false;
       return gapOf(l).greaterThanOrEqualTo(p) && cashLeft.greaterThanOrEqualTo(p.plus(extraCost));
     });
     const best = candidates.sort((a, b) => gapOf(b).comparedTo(gapOf(a)))[0];
@@ -242,6 +244,14 @@ export function rebalance(input: RebalanceInput): RebalanceResult {
     const p = best.holding.unitPrice?.amount as Decimal;
     best.quantity = (best.quantity ?? ZERO).plus(1);
     best.amount = best.amount.plus(p);
+  }
+
+  // Trimming may push an order below the minimum: drop it (the cash stays).
+  for (const l of lines) {
+    if (minOrder && !l.amount.isZero() && l.amount.abs().lessThan(minOrder)) {
+      l.amount = ZERO;
+      l.quantity = null;
+    }
   }
 
   const estimate = (l: Line, cost: Decimal): Decimal | null => {
