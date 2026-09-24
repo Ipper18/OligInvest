@@ -29,6 +29,7 @@ import {
   validateTransaction,
   valuePortfolio,
   xirr,
+  zForConfidence,
 } from "@oliginvest/core";
 import { loadTestVectors, readStatistic } from "@oliginvest/test-vectors";
 import { describe, expect, test } from "vitest";
@@ -683,11 +684,20 @@ describe("risk metrics and drawdowns", () => {
     expect(correlation(moving, flat)).toBeNull();
   });
 
-  failsToday("C-08 the parametric VaR follows the confidence reported in the assumptions", () => {
+  test("C-08 the parametric VaR follows the confidence reported in the assumptions", () => {
     const summary = riskMetrics(returns, { confidence: 0.99 });
     expect(summary.assumptions.confidence).toBe(0.99);
     // z(0.99) = 2.3263; today the 95 % quantile 1.6449 is used whatever the confidence.
     expect(summary.varParametric).toBeCloseTo(parametricVar(returns, 2.3263), 4);
+  });
+
+  test("C-08 z(c) matches the normal quantile; 95 % keeps the constant of § 8", () => {
+    expect(zForConfidence(0.95)).toBe(1.6449);
+    expect(zForConfidence(0.99)).toBeCloseTo(2.326348, 6);
+    expect(zForConfidence(0.9)).toBeCloseTo(1.281552, 6);
+    expect(zForConfidence(0.999)).toBeCloseTo(3.090232, 6);
+    expect(zForConfidence(0.01)).toBeCloseTo(-2.326348, 6);
+    expect(codeOf(() => zForConfidence(1))).toBe("invalid_series");
   });
 
   test("C-22 with equal highs the drawdown starts at the last one, as in empyrical", () => {
