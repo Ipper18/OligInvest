@@ -489,41 +489,38 @@ describe("ledger, transfers and the tax view", () => {
       expect(settlementRegionForMic(mic)).toBe("EU");
   });
 
-  failsToday(
-    "C-26 a lot moved from IKE and sold on a regular account explains the missing tax view",
-    () => {
-      const accounts = [
-        { id: "ike", currency: "PLN", accountType: "ike" },
-        { id: "a", currency: "PLN", accountType: "regular" },
-      ];
-      const buy = { ...trade("B", "BUY", "2024-01-02", "10", "10", "-100"), accountId: "ike" };
-      const move = [
-        {
-          id: "OUT",
-          accountId: "ike",
-          type: "SECURITY_TRANSFER_OUT",
-          tradeDate: d("2024-02-01"),
-          instrumentId: "X",
-          quantity: quantity("10"),
-        },
-        {
-          id: "IN",
-          accountId: "a",
-          type: "SECURITY_TRANSFER_IN",
-          tradeDate: d("2024-02-01"),
-          sequence: 1,
-          instrumentId: "X",
-          quantity: quantity("10"),
-          relatedTransactionId: "OUT",
-        },
-      ];
-      const sell = trade("S", "SELL", "2024-03-01", "10", "12", "120");
-      const ledger = buildLedger({ accounts, transactions: [buy, ...move, sell] });
-      expect(ledger.sales[0].taxStatus).toBe("missing_data");
-      // Today: no issue at all, so the UI cannot say why the tax view is empty.
-      expect(ledger.issues.length).toBeGreaterThan(0);
-    },
-  );
+  test("C-26 a lot moved from IKE and sold on a regular account explains the missing tax view", () => {
+    const accounts = [
+      { id: "ike", currency: "PLN", accountType: "ike" },
+      { id: "a", currency: "PLN", accountType: "regular" },
+    ];
+    const buy = { ...trade("B", "BUY", "2024-01-02", "10", "10", "-100"), accountId: "ike" };
+    const move = [
+      {
+        id: "OUT",
+        accountId: "ike",
+        type: "SECURITY_TRANSFER_OUT",
+        tradeDate: d("2024-02-01"),
+        instrumentId: "X",
+        quantity: quantity("10"),
+      },
+      {
+        id: "IN",
+        accountId: "a",
+        type: "SECURITY_TRANSFER_IN",
+        tradeDate: d("2024-02-01"),
+        sequence: 1,
+        instrumentId: "X",
+        quantity: quantity("10"),
+        relatedTransactionId: "OUT",
+      },
+    ];
+    const sell = trade("S", "SELL", "2024-03-01", "10", "12", "120");
+    const ledger = buildLedger({ accounts, transactions: [buy, ...move, sell] });
+    expect(ledger.sales[0].taxStatus).toBe("missing_data");
+    // Today: no issue at all, so the UI cannot say why the tax view is empty.
+    expect(ledger.issues.length).toBeGreaterThan(0);
+  });
 });
 
 describe("valuation, flows and returns", () => {
