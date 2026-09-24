@@ -622,7 +622,7 @@ describe("valuation, flows and returns", () => {
     },
   );
 
-  failsToday("C-25 investor cash flows reject flows outside the period", () => {
+  test("C-25 investor cash flows reject flows outside the period", () => {
     // Today the 2024 flow becomes t0, so the start value is no longer at the start.
     expect(
       codeOf(() =>
