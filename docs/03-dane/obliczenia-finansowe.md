@@ -136,7 +136,9 @@ Sprzedaż większa niż dostępna ilość = błąd danych (import oznacza wiersz
 
 ### 3.3 Średnia ważona (widok informacyjny)
 
-$$\bar c = \frac{\sum_{L \in \text{otwarte}} \text{koszt}_L^{\text{pozostały}}}{\sum_{L} q_L^{\text{pozostałe}}} \qquad \text{P/L}_{\text{zreal}}^{\text{śr}} = \text{przychód netto} - q_s\cdot \bar c$$
+$$\bar c = \frac{\text{koszt puli}}{\text{ilość puli}} \qquad \text{P/L}_{\text{zreal}}^{\text{śr}} = \text{przychód netto} - q_s\cdot \bar c$$
+
+Pula średniej (per rachunek i instrument; decyzja właściciela 2026-09-24): zakup dodaje do puli swój koszt i ilość; sprzedaż zdejmuje z puli `q_s·c̄` kosztu i `q_s` ilości; split zmienia tylko ilość. Pula nie jest sumą pozostałych partii FIFO.
 
 Średnia jest przeliczana po każdym zakupie; sprzedaż nie zmienia `c̄` pozostałych sztuk.
 
@@ -400,7 +402,7 @@ Porównanie „przed/po” na tym samym oknie (domyślnie 3 lata tygodniowo): zm
 
 Wejście: wagi docelowe `t_i` (suma 1), pasmo tolerancji (domyślnie ±5 p.p.), tryb (`full` / `buy_only`), nowa gotówka, minimalna wartość zlecenia, podzielność (całe akcje GPW; ułamki tylko gdy broker obsługuje), model kosztów (§ 12.7), rachunek (skutek podatkowy FIFO dla sprzedaży na rachunku zwykłym).
 
-Algorytm: (1) `W = Σ V_i + gotówka`; (2) instrumenty z `|w_i − t_i| ≤ pasmo` pomijamy; (3) `full`: transakcja `t_i·W − V_i`; `buy_only`: nowa gotówka rozdzielana proporcjonalnie do dodatnich luk `max(0, t_i·W − V_i)`; (4) zaokrąglenie do podzielności (kupno w dół, sprzedaż do najbliższej), resztę gotówki ponownie przydzielamy; (5) koszty i szacowany podatek; (6) wagi po transakcjach. **Blokada:** brak uzgodnionego importu w ostatnich 7 dniach lub otwarte różnice uzgodnienia → kalkulator pokazuje ostrzeżenie i nie generuje listy (wynik przeglądu `strategy-critique`, § 13.2).
+Algorytm: (1) `W = Σ V_i + gotówka`; (2) instrumenty z `|w_i − t_i| ≤ pasmo` pomijamy; (3) `full`: transakcja `t_i·W − V_i`; `buy_only`: nowa gotówka rozdzielana proporcjonalnie do dodatnich luk `max(0, t_i·W − V_i)`; (4) zaokrąglenie do podzielności (kupno w dół, sprzedaż do najbliższej), resztę gotówki ponownie przydzielamy; (5) koszty i szacowany podatek; (6) wagi po transakcjach. Doprecyzowania (decyzja właściciela 2026-09-24): w kroku (2) `w_i = V_i / (Σ V + gotówka)` — wagi **sprzed** nowej gotówki (tak wychodzi przykład H); `buy_only` rozdziela **tylko nową gotówkę** (wolna gotówka już na rachunku — przyszła opcja, backlog BL-315); sprzedaż zaokrąglana do **pełnych sztuk** (najbliższa, najwyżej posiadana ilość), chyba że broker obsługuje ułamki. Szacowany podatek (tylko rachunek zwykły, etykieta „szacunek”): 19 % × (wartość sprzedaży − koszt zlecenia − koszt partii FIFO z **widoku podatkowego**: data rozliczenia, kurs NBP D-1, marża przewalutowania osobno, § 2.2); brak kosztu podatkowego partii → szacunek niedostępny. **Blokada:** brak uzgodnionego importu w ostatnich 7 dniach lub otwarte różnice uzgodnienia → kalkulator pokazuje ostrzeżenie i nie generuje listy (wynik przeglądu `strategy-critique`, § 13.2).
 
 Przykład: A 7 000 / B 3 000, cel 60/40 → `full`: A −1 000, B +1 000; `buy_only` z nową gotówką 2 000 → A +200, B +1 800 → 60,00 % / 40,00 %.
 
