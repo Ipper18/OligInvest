@@ -63,14 +63,31 @@ export function isWeekday(date: string): boolean {
 
 export type SettlementRegion = "US" | "EU";
 
-const REGION_BY_MIC: Readonly<Record<string, SettlementRegion>> = {
-  XNYS: "US",
-  XNAS: "US",
-  XWAR: "EU",
-  XETR: "EU",
-};
+const US_MICS = ["XNYS", "XNAS", "ARCX", "BATS", "XASE"] as const;
+/** Main EU venues (ISO 10383); XLON and SIX are outside the EU — cycle to be set in § 2.2. */
+const EU_MICS = [
+  "XWAR",
+  "XETR",
+  "XFRA",
+  "XAMS",
+  "XPAR",
+  "XBRU",
+  "XLIS",
+  "XDUB",
+  "XMIL",
+  "XMAD",
+  "XWBO",
+  "XHEL",
+  "XSTO",
+  "XCSE",
+] as const;
 
-/** Only the markets named in obliczenia-finansowe.md § 2.2; other MICs need an explicit settle date. */
+const REGION_BY_MIC: Readonly<Record<string, SettlementRegion>> = Object.fromEntries([
+  ...US_MICS.map((mic) => [mic, "US"] as const),
+  ...EU_MICS.map((mic) => [mic, "EU"] as const),
+]);
+
+/** US and EU venues of obliczenia-finansowe.md § 2.2 (C-21); other MICs need an explicit settle date. */
 export function settlementRegionForMic(mic: string): SettlementRegion | undefined {
   return Object.hasOwn(REGION_BY_MIC, mic) ? REGION_BY_MIC[mic] : undefined;
 }

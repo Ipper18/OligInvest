@@ -482,7 +482,7 @@ describe("ledger, transfers and the tax view", () => {
     expect(trailingDividends(ledger.dividends, { asOf: d("2025-09-30") })).toHaveLength(1);
   });
 
-  failsToday("C-21 settlement regions cover the US and EU venues of § 2.2", () => {
+  test("C-21 settlement regions cover the US and EU venues of § 2.2", () => {
     // Today only XNYS, XNAS, XWAR and XETR are mapped; most US ETFs list on NYSE Arca (ARCX).
     for (const mic of ["ARCX", "BATS", "XASE"]) expect(settlementRegionForMic(mic)).toBe("US");
     for (const mic of ["XAMS", "XPAR", "XMIL", "XFRA"])
