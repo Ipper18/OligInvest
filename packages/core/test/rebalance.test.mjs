@@ -359,4 +359,37 @@ describe("rules of § 12.5", () => {
     });
     expect(noTaxCost.trades[0].estimatedTax).toBeNull();
   });
+
+  test("leftover cash really buys more units, but never below the minimum order", () => {
+    const holdings = [
+      { instrumentId: "A", value: pln("0"), unitPrice: pln("30") },
+      { instrumentId: "B", value: pln("0"), unitPrice: pln("90") },
+      { instrumentId: "C", value: pln("1000"), unitPrice: pln("10") },
+    ];
+    const targets = [
+      { instrumentId: "A", weight: "0.4" },
+      { instrumentId: "B", weight: "0.4" },
+      { instrumentId: "C", weight: "0.2" },
+    ];
+    const common = {
+      holdings,
+      targets,
+      newCash: pln("300"),
+      mode: "buy_only",
+      taxable: false,
+      reconciled: true,
+    };
+    // 150 each: A 5 units, B 1 unit (90); the 60 left buys two more units of A.
+    const result = rebalance(common);
+    expect(result.trades.map((t) => [t.instrumentId, t.quantity.toFixed()])).toEqual([
+      ["A", "7"],
+      ["B", "1"],
+    ]);
+    expect(result.cashAfter.amount.isZero()).toBe(true);
+    // B (90) is below the 100 minimum: dropped, and its cash buys A instead.
+    const minimum = rebalance({ ...common, minOrder: pln("100") });
+    expect(minimum.trades.map((t) => [t.instrumentId, t.quantity.toFixed()])).toEqual([
+      ["A", "10"],
+    ]);
+  });
 });
