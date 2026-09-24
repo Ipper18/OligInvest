@@ -554,12 +554,8 @@ export function buildLedger(input: LedgerInput): Ledger {
       const baseCostPln = share.taxCost;
       const proceedsPln = proceedsTaxParts?.[index] ?? null;
       let tax: ConsumptionTaxView | null = null;
-      if (
-        taxCostTotal !== null &&
-        fxCostPln !== null &&
-        baseCostPln !== null &&
-        proceedsPln !== null
-      ) {
+      // Each part stands alone (C-15): an unknown part nulls the sale total, not its neighbours.
+      if (taxDate !== null && fxCostPln !== null && baseCostPln !== null && proceedsPln !== null) {
         const costPln = settings.includeFxFee ? baseCostPln.plus(fxCostPln) : baseCostPln;
         tax = Object.freeze({
           costPln: money(costPln, PLN),
@@ -567,8 +563,8 @@ export function buildLedger(input: LedgerInput): Ledger {
           fxCostPln: money(fxCostPln, PLN),
           realizedPlPln: money(proceedsPln.minus(costPln), PLN),
         });
-        taxCostTotal = taxCostTotal.plus(costPln);
-        fxCostTotal = (fxCostTotal as Decimal).plus(fxCostPln);
+        taxCostTotal = taxCostTotal === null ? null : taxCostTotal.plus(costPln);
+        fxCostTotal = fxCostTotal === null ? null : fxCostTotal.plus(fxCostPln);
       } else {
         taxCostTotal = null;
         fxCostTotal = null;
