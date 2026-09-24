@@ -10,9 +10,9 @@ eMakler, TWR/XIRR, cost basis), analiza przyszłych (scenariusze i rozkłady —
 warstwa edukacyjna. Rynki: GPW + USA + ETF. Budżet operacyjny: **0 zł** — wszystko self-hostowane w VM na Proxmoxie
 (Dell 7020, i5-4590, 16 GB) za WireGuardem i małym VPS OVH jako edge; domena `oligi.pl`.
 
-**Faza obecna: wyłącznie dokumentacja i plan.** Kod aplikacji powstanie w Codex (GPT-6) na podstawie `docs/` i `AGENTS.md`.
-W tym repozytorium wolno tworzyć tylko: pliki konfiguracyjne, schematy (OpenAPI, SQL DDL, Drizzle), diagramy Mermaid
-i fragmenty ilustracyjne ≤ 30 linii. Zero implementacji komponentów, endpointów, logiki biznesowej.
+**Faza obecna: budowa według planu.** Kod aplikacji buduje Codex według `docs/` i `AGENTS.md`. Wybrane, rozłączne
+paczki (np. rdzeń obliczeń w `packages/core`) może realizować Claude Code — na osobnej gałęzi, w osobnym PR, na tych
+samych zasadach co Codex (`AGENTS.md`, Definition of Done z `CONTRIBUTING.md` § 3). Decyzja właściciela z 2026-09-24.
 
 Źródło prawdy dla wymagań: `docs/00-przeglad/wymagania.md`. Decyzje: `docs/09-decyzje/ADR-*.md`. Plan: `docs/08-plan/`.
 
