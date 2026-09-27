@@ -31,6 +31,35 @@ export function createApp(
   }>,
 ) {
   const app = new OpenAPIHono<AppEnv>();
+  type HealthResult = z.infer<typeof healthSchema>;
+  let cached: { result: HealthResult; expiresAt: number } | undefined;
+  let inFlight: Promise<HealthResult> | undefined;
+  function readiness(): Promise<HealthResult> {
+    if (cached && performance.now() < cached.expiresAt) return Promise.resolve(cached.result);
+    if (inFlight) return inFlight;
+    inFlight = Promise.all(
+      Object.entries(options.checks).map(async ([name, check]) => {
+        try {
+          await check();
+          return [name, "ok"] as const;
+        } catch {
+          return [name, "fail"] as const;
+        }
+      }),
+    )
+      .then((entries) => {
+        const result = healthSchema.parse({
+          status: entries.every(([, value]) => value === "ok") ? "ok" : "fail",
+          checks: Object.fromEntries(entries),
+        });
+        cached = { result, expiresAt: performance.now() + 3000 };
+        return result;
+      })
+      .finally(() => {
+        inFlight = undefined;
+      });
+    return inFlight;
+  }
   app.use("*", async (context, next) => {
     const response = await withRequestContext(
       context.req.raw,
@@ -87,20 +116,9 @@ export function createApp(
       },
     }),
     async (context) => {
-      const entries = await Promise.all(
-        Object.entries(options.checks).map(async ([name, check]) => {
-          try {
-            await check();
-            return [name, "ok"] as const;
-          } catch {
-            return [name, "fail"] as const;
-          }
-        }),
-      );
-      const checks = Object.fromEntries(entries);
-      const status = entries.every(([, result]) => result === "ok") ? "ok" : "fail";
-      if (status === "fail") context.header("Retry-After", "1");
-      return context.json(healthSchema.parse({ status, checks }), status === "ok" ? 200 : 503);
+      const result = await readiness();
+      if (result.status === "fail") context.header("Retry-After", "1");
+      return context.json(result, result.status === "ok" ? 200 : 503);
     },
   );
   api.openapi(

@@ -29,6 +29,45 @@ test("live stays 200 without touching failed dependencies", async () => {
   for (const check of Object.values(checks)) expect(check).not.toHaveBeenCalled();
 });
 
+test.each([false, true])(
+  "ready shares in-flight probes and caches failures=%s for 3s",
+  async (failed) => {
+    vi.useFakeTimers({ toFake: ["performance"] });
+    try {
+      const { app, checks } = fixture();
+      let finish;
+      const pending = new Promise((resolve) => {
+        finish = resolve;
+      });
+      checks.postgres.mockImplementationOnce(async () => {
+        await pending;
+        if (failed) throw new Error("private failure");
+      });
+      const batch = () =>
+        Promise.all(Array.from({ length: 20 }, () => app.request("/api/v1/health/ready")));
+      const responses = batch();
+      await vi.waitFor(() => expect(checks.postgres).toHaveBeenCalledOnce());
+      vi.advanceTimersByTime(4000);
+      const later = batch();
+      finish();
+      for (const response of [...(await responses), ...(await later)]) {
+        expect(response.status).toBe(failed ? 503 : 200);
+        expect(response.headers.get("Cache-Control")).toBe("no-store");
+      }
+      vi.advanceTimersByTime(2999);
+      const cached = await batch();
+      expect(new Set(cached.map((response) => response.headers.get("X-Request-Id"))).size).toBe(20);
+      for (const response of cached) expect(response.status).toBe(failed ? 503 : 200);
+      for (const check of Object.values(checks)) expect(check).toHaveBeenCalledOnce();
+      vi.advanceTimersByTime(1);
+      for (const response of await batch()) expect(response.status).toBe(200);
+      for (const check of Object.values(checks)) expect(check).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  },
+);
+
 test.each([[], ...names.map((name) => [name]), names])(
   "ready reports only dependency states: %j",
   async (...args) => {

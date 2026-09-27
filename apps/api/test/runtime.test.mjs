@@ -30,7 +30,10 @@ function environment() {
     VALKEY_CACHE_USER: "api",
   };
 }
-afterEach(() => vi.resetAllMocks());
+afterEach(() => {
+  vi.resetAllMocks();
+  vi.useRealTimers();
+});
 
 test("runtime wires distinct authenticated probes and keeps startup/liveness independent", async () => {
   const env = environment();
@@ -61,7 +64,8 @@ test("runtime wires distinct authenticated probes and keeps startup/liveness ind
   });
 });
 
-test("readiness recovers on the next request after a dependency failure", async () => {
+test("readiness recovers after the cached dependency failure expires", async () => {
+  vi.useFakeTimers({ toFake: ["performance"] });
   probes.checkValkey.mockRejectedValueOnce(new Error("private details"));
   const { app } = createRuntime(environment(), logger);
   const failed = await app.request("/api/v1/health/ready");
@@ -70,6 +74,7 @@ test("readiness recovers on the next request after a dependency failure", async 
     status: "fail",
     checks: { postgres: "ok", valkeyQueue: "fail", valkeyCache: "ok" },
   });
+  vi.advanceTimersByTime(3000);
   expect((await app.request("/api/v1/health/ready")).status).toBe(200);
 });
 
