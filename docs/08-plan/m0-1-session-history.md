@@ -246,3 +246,8 @@ BL-007 lokalnie 4/4, status w toku do CI/DoD; następny BL-008. Brak nowego ADR/
 - Pierwsze żądanie po zatrzymaniu PostgreSQL (ok. 10 s bez ruchu) dostało `ECONNRESET` przy działającym API, kolejne zwróciło 503 — zgodne z zamknięciem bezczynnego połączenia keep-alive po domyślnych 5 s serwera Node. Do sprawdzenia przy konfiguracji Caddy (M0-2): czas bezczynności połączeń do upstreamu krótszy niż `keepAliveTimeout` serwera API albo odwrotnie.
 - Do rozważenia w BL-017/BL-018: stały test gotowości na prawdziwych usługach w CI (obecne testy API używają atrap).
 
+## 2026-09-27 — poprawki przeglądu PR #2
+- P-01 `e736f0e`, P-02 `877bb9a`, P-03 `cb730c6`, P-06 `51e13d4`, P-04 `733d87c`, P-05 `7a4f24c`; osobne commity i push, bez zmian packages/core.
+- API 42, skrypty 74 (granice 33), integracja bazy 12 testów PASS; PostgreSQL 18.6, RLS PASS, schemat ZERO DIFFERENCES; monorepo 88/88 z cache.
+- P-03: zatwierdzone schema.sql/model-danych, migracja administracyjna limitów; P-06: RESET ALL; P-04: db/modules i instrukcja BL-017; bez nowych ADR/ryzyk.
+- M0 otwarty, dalej BL-010; szczegóły i CI w bieżącym raporcie, estymacje bez zmian (odchylenie niezmierzone).

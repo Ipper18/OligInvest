@@ -33,3 +33,7 @@ Helper transakcji weryfikuje, że połączenie działa jako oczekiwana, nieuprzy
 ## 4. Kolejność poprawek
 
 P-01, P-02, P-03 i P-06 — w pierwszej sesji po resecie limitu, przed BL-010 (dotykają fundamentów, na których powstaną kolejne endpointy). P-04 i P-05 — w tej samej sesji albo razem z BL-017. P-07 — przy okazji. P-08 i P-09 — dopisać do zadań M0-2 (konfiguracja Caddy).
+
+## 5. Realizacja poprawek (2026-09-27)
+
+P-01, P-02, P-03, P-06, P-04 i P-05 poprawione, przetestowane i wypchnięte osobnymi commitami; identyfikatory i dowody w [raporcie stanu](m0-1-session-report.md). P-03 obejmuje zatwierdzoną zmianę dokumentów źródłowych i oddzielną migrację administracyjną ról (bez rozszerzania uprawnień właściciela schematu). Pozostałe P-07–P-09 pozostają poza zakresem tej sesji; P-10 było naprawione podczas przeglądu.

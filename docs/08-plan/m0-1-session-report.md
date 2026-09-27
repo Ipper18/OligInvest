@@ -2,28 +2,23 @@
 
 **Cel:** przekazać stan i następny krok. Nadpisywany po sesji; [historia](m0-1-session-history.md) najwyżej 5 linii na sesję.
 
-**2026-09-22**, gałąź `feat/m0-1-skeleton`, [roboczy PR #2](https://github.com/Ipper18/OligInvest/pull/2), bez scalania. Node 24.21.0, pnpm 12.4.2, Python 3.13.13, uv 0.12.16. Zadania wykonane lokalnie: status `w toku` do wspólnego DoD/CI.
+**2026-09-27**, gałąź `feat/m0-1-skeleton`, [roboczy PR #2](https://github.com/Ipper18/OligInvest/pull/2), bez scalania. Node 24.21.0, pnpm 12.4.2; lokalny uv: `.git/tools/uv-0.12.16/uv.exe` (katalog w PATH). `packages/core` bez zmian; rozwijany osobno w PR #3.
 
-| Zakres | Stan |
-|---|---|
-| BL-001/002, BL-005/006 | wykonane lokalnie |
-| BL-003 | `6d733ca`: granice modułów, 28 testów; [CI PASS](https://github.com/Ipper18/OligInvest/actions/runs/35688610340) |
-| BL-004 | `6003611` + `042540c`: generator, 21 testów; [CI PASS](https://github.com/Ipper18/OligInvest/actions/runs/35689454452) |
-| BL-007/008 | 64 tabele, migracje, RLS i pule; [CI PASS](https://github.com/Ipper18/OligInvest/actions/runs/35687884119) |
-| BL-009 | wykonane lokalnie; `74b4dd8`, `4b23266`, `cbce8b8`, `929dae5`, wszystkie wypchnięte; 37 testów API PASS |
-| BL-015 | wykonane lokalnie: loadery TS i Python, test zgodności A–H, 7 Vitest + 6 pytest PASS |
-| BL-010–014, BL-016, BL-033 | todo; BL-014 nie realizowano, Lighthouse dopiero BL-016 |
-| BL-017/019 | szkice pozostałego CI i ustawień; aktywne db i modules |
-| BL-018 | lokalne E2E i obrazy M0-2: todo |
-| BL-032 | zamknięty technicznie [spike](bl-032-typescript-7-spike.md) |
-| BL-034/035 | Compose i dokumentacja PASS; brak seedów/integracji/pełnego CI |
+| Poprawka przeglądu | Commit (wypchnięty) | Wynik |
+|---|---|---|
+| P-01 / BL-009 | `e736f0e` | Jedno wykonanie sond ready naraz; cache sukcesu i awarii 3 s od zakończenia, osobny kontekst każdego żądania |
+| P-02 / BL-005/009 | `877bb9a` | NODE_ENV wymagane; `.env.example` i instrukcja przyszłego Compose/jobs/analytics; test produkcji: pliki sekretów i HTTPS |
+| P-03 / BL-007/008 | `cb730c6` | schema.sql i model danych; app/auth 5/10/2 s, analytics 60/60/2 s; migracja administracyjna, test realnych timeoutów |
+| P-06 / BL-007 | `51e13d4` | RESET ALL przed zwrotem do puli; izolacja ustawień kolejnego użytkownika na tym samym połączeniu |
+| P-04 / BL-017/019 | `733d87c` | Nieaktywny ruleset wymaga db i modules; dokumentacja dodawania przyszłych kontekstów w BL-017 |
+| P-05 / BL-003 | `7a4f24c` | Skanowanie źródeł całego pakietu, także components/lib i nowych katalogów; jawne wyłączenia narzędzi/testów/generatów |
 
-BL-009: Hono i `@hono/zod-openapi`, kontekst BL-006, `X-Request-Id`, bezpieczne RFC 9457 dla wyjątków i 404. Live zawsze 200 bez zależności. Ready równolegle wykonuje `SELECT 1` jako `oliginvest_app` i uwierzytelniony PING obu Valkey; limit każdej sondy 1500 ms, zamykanie połączeń, 200/503 i wyłącznie ok/fail. OpenAPI 3.1 generowany z Zod dla trzech wdrożonych tras. Start i zmienne środowiskowe opisane w [konwencjach API § 4.2](../02-api/konwencje-api.md#42-szkielet-http-i-sondy-bl-009). `pg` i `@types/pg` wykorzystują istniejące wersje lockfile; Valkey przez `node:net`.
+Dowody lokalne: API **42 testy PASS** i lint/typecheck/test/build; db lint/typecheck/test/build PASS; PostgreSQL **18.6**, **12 testów integracyjnych PASS**, niezmienione testy RLS i audyt katalogu PASS, **porównanie schematu ZERO DIFFERENCES**. Ustawienia ról porównywane osobno przed/po wzorcu (role są globalne). Testy regresji najpierw odtwarzały błędy. Wszystkie **74 testy skryptów PASS**, w tym 33 granic; check:deps/docs/repository PASS. Pełne monorepo **88/88 PASS z cache**. Logi wyłącznie w `.git/`.
 
-Dowody tej sesji: **37 testów API PASS**, lint/typecheck/test/build API PASS; pełne **lint/typecheck/test/build 88/88 PASS z cache**, instalacja frozen offline i kontrole deps/docs/repository PASS. Test procesu Node potwierdza rzeczywiste HTTP, 503 przy milczących połączeniach TCP i zamknięcie gniazd po limicie czasu. Docker jest niedostępny; nie wykonano integracji z prawdziwym PostgreSQL/Valkey. BL-010 (porównanie całego OpenAPI, pending, Redocly) nie było realizowane. Brak dodatkowych plików raportów.
+CI commita kodu `7a4f24c`: **PASS** — [Database](https://github.com/Ipper18/OligInvest/actions/runs/36347592954), [Module boundaries](https://github.com/Ipper18/OligInvest/actions/runs/36347592947).
 
-Pominięte zgodnie z zakresem: pozostałe zadania M0 i pełne CI. **Integracja z prawdziwymi usługami potwierdzona 2026-09-22 poza sesją Codexa: 13/13** (szczegóły w historii); stałego testu na prawdziwych usługach w CI jeszcze nie ma. Estymacja BL-009 1 d bez zmian; odchylenie nakładu niezmierzone. Brak nowych ryzyk i decyzji do ADR. BL-015 nadal korzysta wyłącznie z `docs/03-dane/wektory-testowe.json`; tekst kwot i zera końcowe zachowane, jawne konwersje poza API loaderów zabronione.
+Stan paczki: BL-001–009 i BL-015 wykonane lokalnie; BL-032 spike zamknięty technicznie. BL-017/019 częściowe (aktywne db/modules, pozostałe CI i ustawienia do realizacji). BL-034/035: Compose i dokumentacja, brak seedów/integracji/pełnego CI. BL-010–014, BL-016/018/033 pozostają otwarte. Statusy `w toku` do wspólnego DoD; nie oznaczają braku lokalnej implementacji zależności. Integracja API z rzeczywistymi usługami 13/13 z 2026-09-22 w historii, stałego testu w CI nadal brak.
 
-Decyzje bez zmian: Turbo 2.10.13 (ADR-015), TypeScript 7 strict + skipLibCheck, karencja bez wyjątków, sieć dev internal:false/loopback, wyjątek OSV esbuild do 2026-12-20 (R-24), ruleset 0 zatwierdzeń i przegląd właściciela.
+Dalej: **BL-010**, pozostałe zadania M0-1 i pełne CI w BL-017. P-07 poza zakresem; P-08/P-09 przy Caddy w M0-2. M0 otwarty: kryterium 1 lokalnie PASS, 2 PASS, 3 otwarte, 4–7 dalsze prace/właściciel, 8 częściowo. Estymacje bez zmian; odchylenie nakładu niezmierzone. Brak nowych ryzyk i ADR. Bootstrap ról → `packages/db/admin-migrations/0001-role-timeouts.sql` jako administrator → migracje właściciela → odnowienie pul (instrukcja w model-danych § 5.3).
 
-Dalej: najpierw poprawki z [przeglądu kodu](m0-1-przeglad-kodu.md) § 4 (P-01, P-02, P-03, P-06; jeśli wystarczy limitu także P-04, P-05), potem BL-010, pozostałe zadania paczki i pełne CI w BL-017. M0 nadal otwarty: 1 lokalnie PASS, 2 CI PASS, 3 otwarte, 4–7 dalsze prace/działania właściciela, 8 częściowo. Lokalny uv: `.git/tools/uv-0.12.16/uv.exe` (dopisz katalog do PATH).
+Decyzje bez zmian: Turbo 2.10.13 (ADR-015), TypeScript 7 strict + skipLibCheck, karencja bez wyjątków, sieć dev internal:false/loopback, OSV esbuild do 2026-12-20 (R-24), 0 zatwierdzeń i przegląd właściciela. Repozytorium i serwery nie były konfigurowane; ruleset pozostaje disabled.
