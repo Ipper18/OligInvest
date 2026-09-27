@@ -1,5 +1,5 @@
 # Cel: konfiguracja lintera Redocly dla kontraktu API (docs/02-api/openapi.yaml) — lokalnie i w CI.
-# Uruchomienie: npx @redocly/cli lint   (wersję CLI pinuje package.json po M0)
+# Uruchomienie: pnpm lint:openapi (wersję CLI przypina package.json i pnpm-lock.yaml).
 extends:
   - recommended
 

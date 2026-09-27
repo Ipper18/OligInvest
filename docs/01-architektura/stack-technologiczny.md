@@ -28,6 +28,8 @@ Nowa zależność runtime trafia do projektu tylko, jeśli spełnia **wszystkie*
 
 ## 3. Monorepo i narzędzia deweloperskie
 
+BL-010 (2026-09-27): `@redocly/cli` **2.54.2** (MIT) jako devDependency realizuje wymagany lint OpenAPI; `yaml` **2.9.1** (ISC, już obecny w lockfile) jest jawną devDependency do odczytu kontraktu w testach i generatorze pending. Node nie ma parsera YAML ani walidatora OpenAPI. Narzędzia nie trafiają do przeglądarki ani runtime API. Wersje/licencje sprawdzone w rejestrze npm; Redocly wydane 2026-09-22, wersja 2.54.3 pominięta z powodu karencji. Instalacja frozen przy niezmienionych politykach pnpm; bez nowych skryptów instalacyjnych. Dokumentacja: [lint Redocly](https://redocly.com/docs/cli/commands/lint), [parser YAML](https://eemeli.org/yaml/).
+
 | Element | Wybór | Wersja | Licencja | Uzasadnienie | Odrzucone |
 |---|---|---|---|---|---|
 | Menedżer pakietów JS | **pnpm** | 12.4 | MIT | Ścisła izolacja zależności (brak „fantomowych” importów — pomaga egzekwować granice modułów), szybki, workspaces. | npm (hoisting ukrywa brakujące zależności), Yarn (brak przewagi). |

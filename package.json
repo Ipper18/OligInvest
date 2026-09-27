@@ -17,6 +17,9 @@
     "check:repository": "node scripts/check-repository.mjs",
     "check:docs": "node scripts/check-docs.mjs",
     "check:deps": "node scripts/check-deps.mjs",
+    "lint:openapi": "redocly lint --format=summary",
+    "check:contracts": "pnpm lint:openapi && pnpm turbo run build --filter=@oliginvest/api --output-logs=new-only && pnpm --filter @oliginvest/api exec vitest run test/openapi.test.mjs --reporter=dot && node apps/api/scripts/openapi.mjs check",
+    "gen:openapi-pending": "pnpm turbo run build --filter=@oliginvest/api --output-logs=new-only && node apps/api/scripts/openapi.mjs pending",
     "gen:module": "node scripts/gen-module.mjs",
     "test:module-generator": "node scripts/test-module-generator.mjs",
     "test:scripts": "node --test scripts/*.test.mjs",
@@ -25,9 +28,11 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.14",
+    "@redocly/cli": "2.54.2",
     "@vitest/coverage-v8": "5.0.1",
     "turbo": "2.10.13",
     "typescript": "7.0.2",
-    "vitest": "5.0.1"
+    "vitest": "5.0.1",
+    "yaml": "2.9.1"
   }
 }

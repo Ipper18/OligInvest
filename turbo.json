@@ -32,6 +32,16 @@
       "dependsOn": ["build"],
       "outputs": []
     },
+    "@oliginvest/api#test": {
+      "dependsOn": ["build"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/docs/02-api/openapi.yaml",
+        "$TURBO_ROOT$/redocly.yaml",
+        "$TURBO_ROOT$/.redocly.lint-ignore.yaml"
+      ],
+      "outputs": []
+    },
     "@oliginvest/analytics#test": {
       "dependsOn": ["build"],
       "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/packages/test-vectors/src/**"],
