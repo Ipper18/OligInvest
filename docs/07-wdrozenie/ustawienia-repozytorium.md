@@ -8,7 +8,7 @@ Powiązane: [CI/CD](ci-cd.md), [CONTRIBUTING](../../CONTRIBUTING.md), [ADR-013](
 
 Odczyt GitHub API z 2026-09-20: `main`, włączone secret scanning i push protection, konfiguracja domyślna CodeQL z językiem `python`; brak rulesetu. Jedyny współpracownik z uprawnieniami zapisu to `Ipper18`; GitHub CLI działa jako to samo konto. Ten odczyt nie potwierdza aktualnego stanu pozostałych przełączników.
 
-**Konfiguracja przygotowana; nie uruchomiono jeszcze w CI.** Szkice workflow pozostają poza aktywnym katalogiem Actions do podłączenia poleceń i weryfikacji szkieletu. Nie aktywuj rulesetu na podstawie samych planowanych nazw zadań.
+**Stan po P-04 (2026-09-27):** aktywne są workflow Database (`db`) i Module boundaries (`modules`); plik rulesetu wymaga tylko tych istniejących kontekstów. Pozostałe workflow są szkicami poza aktywnym katalogiem Actions do BL-017. Nie aktywuj rulesetu na podstawie samych planowanych nazw zadań.
 
 Plik rulesetu ma `enforcement: disabled` i pustą listę obejść. Import jest wyłącznie przygotowaniem; aktywacja następuje dopiero po wykonaniu punktów poniżej. Nie dodawaj właściciela do bypass i nie włączaj automatycznego scalania.
 
@@ -44,7 +44,7 @@ Decyzja właściciela z 2026-09-20 (R-23): `required_approving_review_count: 0` 
 
 1. Potwierdź scalony M0-1 i zielone rzeczywiste przebiegi CI/CodeQL; zachowaj 0 wymaganych zatwierdzeń i wyłączony wymóg zatwierdzenia code ownera zgodnie z § 1.
 2. W Settings → Rules → Rulesets zaimportuj definicję JSON w stanie Disabled albo odwzoruj ją w panelu. Nie wykonuj tego za pomocą agenta. Zachowaj zakres `refs/heads/main`, brak bypass, blokadę usuwania/force-push, historię liniową, wymagany PR i rozwiązanie wątków.
-3. Dla wymaganych status checks zastąp planowane nazwy dokładnymi nazwami z udanego przebiegu i wybierz GitHub Actions jako źródło tam, gdzie panel to umożliwia. Potwierdź wszystkie warianty build, także bez `education`. Włącz wymóg aktualności gałęzi.
+3. Dla wymaganych status checks potwierdź istniejące `db` i `modules` z udanego przebiegu; wybierz GitHub Actions jako źródło tam, gdzie panel to umożliwia. W BL-017 dodawaj do pliku i panelu nowe konteksty dopiero wraz z aktywacją i zielonym przebiegiem odpowiedniego zadania: `repository`, `lint`, `typecheck`, `unit`, `contracts`, wszystkie warianty `build` (także bez `education`), `budgets`, `e2e`, `deps-audit` — dokładne nazwy według CI/CD § 3 i rzeczywistego przebiegu. Nie usuwaj wymaganego `modules` przy dodawaniu `contracts`. Włącz wymóg aktualności gałęzi.
 4. Dodaj wymóg wyników skanowania CodeQL z progiem błędów i bezpieczeństwa `high_or_higher`. Plik używa natywnej reguły `code_scanning`, nie wymyślonego zadania `codeql` we własnym workflow. W razie różnic z panelem zapisz je i pozostaw ruleset nieaktywny do rozstrzygnięcia. [Kontrakt GitHub REST](https://docs.github.com/en/rest/repos/rules), sprawdzono 2026-09-20.
 5. Lighthouse w M0 raportuje; nie jest jeszcze wymaganą bramką. Od M1 dodać ją do wymaganych kontroli zgodnie z dokumentacją wydajności.
 6. Po sprawdzeniu wszystkich warunków ustaw Active. W kontrolnym PR potwierdź blokadę czerwonego CI oraz brak możliwości force-push/obejścia przez właściciela; nie testuj destrukcyjnego push na `main`.

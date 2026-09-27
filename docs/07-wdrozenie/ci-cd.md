@@ -23,12 +23,15 @@ Fakty sprawdzone 2026-09-19 w dokumentacji GitHub: runnery hostowane przez GitHu
 
 ## 3. Zadania CI (pull request i `main`)
 
+**Stan M0-1 po P-04 (2026-09-27):** aktywne zadania własnych workflow to `db` (Database) i `modules` (Module boundaries). Tylko te dwa konteksty są obecnie w `required_status_checks` pliku rulesetu, który pozostaje wyłączony. Poniższa tabela opisuje stan docelowy. W BL-017, wraz z aktywacją i zielonym przebiegiem nowych zadań, rozszerzamy ruleset o `repository`, `lint`, `typecheck`, `unit`, `contracts`, warianty `build (all)` i `build (without <moduł>)`, `budgets`, `e2e`, `deps-audit`. Nazwy wariantów należy potwierdzić w rzeczywistym przebiegu. Natywna reguła CodeQL ma osobny warunek aktywacji w BL-019; Lighthouse staje się wymagany od M1.
+
 | Zadanie | Co sprawdza | Blokuje scalenie |
 |---|---|---|
 | `lint` | Biome (TS/JS, w tym reguły bezpieczeństwa: zakaz `eval`, `dangerouslySetInnerHTML`, `sql.raw`, importu `{ z }` z `zod` w kodzie klienckim), Ruff (Python), tytuł PR, format commitów | tak |
 | `typecheck` | TypeScript (`strict`) w całym monorepo, mypy/pyright w `apps/analytics` | tak |
 | `unit` | Vitest (w tym wektory `packages/test-vectors`), pytest (te same wektory dla Pythona) | tak |
-| `contracts` | lint Redocly `docs/02-api/openapi.yaml`; zgodność OpenAPI generowanego z Zod z plikiem w `docs/`; aktualność typów klienta (`openapi-typescript`); zgodność JSON Schema dla zadań; `pnpm check:deps` (reguły warstw modułów) | tak |
+| `modules` | Osobny workflow Module boundaries: `pnpm check:deps` (reguły warstw modułów) i testy negatywne skryptu | tak — aktywne |
+| `contracts` | lint Redocly `docs/02-api/openapi.yaml`; zgodność OpenAPI generowanego z Zod z plikiem w `docs/`; aktualność typów klienta (`openapi-typescript`); zgodność JSON Schema dla zadań | tak |
 | `db` | PostgreSQL 18 jako usługa: migracje Drizzle od zera, porównanie schematu z `docs/03-dane/schema.sql`, `testy-rls.sql`, testy integracyjne API z prawdziwą bazą | tak |
 | `build` | Turborepo: wszystkie aplikacje; wariant „bez modułu funkcjonalnego” (macierz: po kolei bez `analytics`, `alerts`, `education`, `quick-actions`); obrazy Docker (bez publikacji) od M0-2 / BL-020 | tak |
 | `budgets` | `size-limit`, raport JS per trasa, obecność zakazanych bibliotek w chunkach początkowych ([`../04-frontend/wydajnosc.md`](../04-frontend/wydajnosc.md) § 6) | tak |
@@ -45,7 +48,7 @@ Szkic `ci:deps-audit` otrzymuje próg 7,0, ścieżkę konfiguracji OSV, maksymal
 
 Przygotowanie przed upływem karencji: szkice znajdują się w `.github/workflow-drafts/`, więc GitHub ich nie uruchamia. Do `.github/workflows/` trafiają po podłączeniu i lokalnej weryfikacji rzeczywistych poleceń. Status w raporcie: **Konfiguracja przygotowana; nie uruchomiono jeszcze w CI**.
 
-BL-008: osobny [workflow Database](../../.github/workflows/db.yml) uruchamia zadanie `db` na pull requestach i push do main. Sprawdza moduły i pakiet db, następnie `pnpm db:test` tworzy usługę PostgreSQL 18 z przypiętego `compose.dev.yaml`, wykonuje migracje, niezmienione testy RLS, audyt uprawnień, testy pul i pełne porównanie schematu. Hasła są losowe i syntetyczne, bez sekretów GitHub; sprzątanie dotyczy tylko projektu testu. Artefakt zawiera wyłącznie pięć wskazanych plików diagnostycznych z `.git/bl007-db/`, nigdy całego `.git`. Pozostałe własne workflow pozostają szkicami do BL-017; testy API będą dodawane wraz z implementacją endpointów. Rzeczywisty wynik przebiegu zapisujemy w bieżącym raporcie sesji.
+BL-008: osobny [workflow Database](../../.github/workflows/db.yml) uruchamia zadanie `db` na pull requestach i push do main. Sprawdza moduły i pakiet db, następnie `pnpm db:test` tworzy usługę PostgreSQL 18 z przypiętego `compose.dev.yaml`, wykonuje migracje, niezmienione testy RLS, audyt uprawnień, testy pul i pełne porównanie schematu. Hasła są losowe i syntetyczne, bez sekretów GitHub; sprzątanie dotyczy tylko projektu testu. Artefakt zawiera wyłącznie pięć wskazanych plików diagnostycznych z `.git/bl007-db/`, nigdy całego `.git`. Workflow Module boundaries realizuje już BL-003 przez zadanie `modules`. Pozostałe własne workflow pozostają szkicami do BL-017; testy API będą dodawane wraz z implementacją endpointów. Rzeczywisty wynik przebiegu zapisujemy w bieżącym raporcie sesji.
 
 ```yaml
 # .github/workflows/ci.yml — fragment ilustracyjny
