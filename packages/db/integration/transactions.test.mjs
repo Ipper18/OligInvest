@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { setTimeout as delay } from "node:timers/promises";
 import { sql } from "drizzle-orm";
 import pg from "pg";
 import { afterAll, beforeAll, expect, test } from "vitest";
@@ -225,3 +226,47 @@ test("context rejects malformed identities, unknown fields and roles", async () 
     );
   }
 });
+
+test("role defaults bound queries, idle transactions and lock waits", async () => {
+  const { passwords, ...base } = JSON.parse(process.env.OLIGINVEST_TEST_DATABASE);
+  for (const [role, password, statement, idle] of [
+    ["oliginvest_app", passwords.app, "5s", "10s"],
+    ["oliginvest_auth", passwords.auth, "5s", "10s"],
+    ["oliginvest_analytics_ro", passwords.analytics, "1min", "1min"],
+  ]) {
+    const client = new pg.Client({ ...base, user: role, password });
+    await client.connect();
+    try {
+      const { rows } = await client.query(`SELECT current_setting('statement_timeout') AS statement,
+        current_setting('idle_in_transaction_session_timeout') AS idle,
+        current_setting('lock_timeout') AS lock`);
+      expect(rows[0]).toEqual({ statement, idle, lock: "2s" });
+    } finally {
+      await client.end();
+    }
+  }
+  await expect(rawPool.query("SELECT pg_sleep(30)")).rejects.toMatchObject({ code: "57014" });
+  // A transaction-scoped advisory lock avoids touching domain fixtures.
+  const blocker = new pg.Client({ ...base, user: "oliginvest_app", password: passwords.app });
+  await blocker.connect();
+  try {
+    await blocker.query("BEGIN");
+    await blocker.query("SELECT pg_advisory_xact_lock(30103)");
+    await expect(rawPool.query("SELECT pg_advisory_xact_lock(30103)")).rejects.toMatchObject({
+      code: "55P03",
+    });
+  } finally {
+    await blocker.end();
+  }
+  const before = (await rawPool.query("SELECT pg_backend_pid() AS pid")).rows[0].pid;
+  await expect(
+    runTransaction(rawPool, "oliginvest_app", contextA, async () => {
+      await delay(11_000);
+    }),
+  ).rejects.toThrow();
+  await runTransaction(rawPool, "oliginvest_app", contextB, async (tx) => {
+    const row = (await tx.execute(inspect)).rows[0];
+    expect(row.pid).not.toBe(before);
+    expect(row.user_id).toBe(b);
+  });
+}, 30_000);

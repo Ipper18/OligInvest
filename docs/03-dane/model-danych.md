@@ -291,3 +291,25 @@ Test bazy uruchamia niezmieniony `testy-rls.sql` i audyt katalogu uprawnień prz
 `app.transaction({userId, role}, callback)` przyjmuje zweryfikowaną tożsamość z API/jobs: role user/pro/admin wymagają UUID, system może mieć UUID lub null, anonymous wymaga null. Walidacja kształtu nie zastępuje uwierzytelnienia/RBAC — kontekst nigdy nie pochodzi bezpośrednio z payloadu klienta. `auth.transaction(callback)` i `analytics.transaction(callback)` mają pusty kontekst użytkownika; analityka dodatkowo otwiera transakcję tylko do odczytu.
 
 Helper rezerwuje jedno połączenie na całą transakcję i ustawia obie zmienne przez parametryzowane `set_config(..., true)` (odpowiednik SET LOCAL). Sprawdza rzeczywistą rolę sesji i brak uprzywilejowanych członkostw. Callback otrzymuje transakcję Drizzle (zagnieżdżenia używają savepointów), nie pulę. Po COMMIT/ROLLBACK helper czyści obie zmienne; niesprawne połączenie usuwa z puli. Błąd SQL przechwycony przez callback nadal nie pozwala zgłosić sukcesu przerwanej transakcji. `close()` zamyka wyłącznie daną pulę.
+
+
+### 5.3 Limity czasu ról (P-03)
+
+Decyzja projektu 2026-09-27, w ramach zatwierdzonej poprawki P-03:
+
+| Rola | `statement_timeout` | `idle_in_transaction_session_timeout` | `lock_timeout` |
+|---|---|---|---|
+| `oliginvest_app`, `oliginvest_auth` | 5 s | 10 s | 2 s |
+| `oliginvest_analytics_ro` | 60 s | 60 s | 2 s |
+
+Analityka pobiera większe serie rynkowe; limit pojedynczego odczytu 60 s nie przekracza limitu najkrótszej ciężkiej analizy (MC ≤ 60 s, obliczenia-finansowe § 12). Worker musi zamknąć transakcję po pobraniu danych, przed obliczeniami; limit całego zadania nadal obejmuje odczyt i obliczenia. Limit oczekiwania na blokadę pozostaje krótki dla wszystkich ról. Nie narzucamy tych limitów rolom migracji i backupu.
+
+[PostgreSQL 18: ALTER ROLE](https://www.postgresql.org/docs/18/sql-alterrole.html) i [limity sesji](https://www.postgresql.org/docs/18/runtime-config-client.html) (sprawdzone 2026-09-27): ustawienia ról działają przy nowym logowaniu, nie przy `SET ROLE`. Przekroczenie czasu zapytania/blokady przerywa polecenie, bezczynność w transakcji zamyka połączenie.
+
+Migracja administracyjna [0001-role-timeouts.sql](../../packages/db/admin-migrations/0001-role-timeouts.sql) jest oddzielona od migracji Drizzle wykonywanych przez `oliginvest_owner` (NOCREATEROLE). Właściciel wdrożenia wykonuje ją jako administrator PostgreSQL po bootstrapie ról, także na istniejącej instancji:
+
+1. Wykonaj plik przez lokalne `psql -X -v ON_ERROR_STOP=1 -f packages/db/admin-migrations/0001-role-timeouts.sql` z połączeniem administratora skonfigurowanym poza repozytorium.
+2. Uruchom zwykłe migracje schematu jako `oliginvest_owner`.
+3. Uruchom ponownie procesy korzystające z pul, aby wszystkie połączenia odziedziczyły nowe limity. Sprawdź `SHOW statement_timeout`, `SHOW idle_in_transaction_session_timeout`, `SHOW lock_timeout` po zalogowaniu każdą rolą aplikacyjną.
+
+Migracja jest idempotentna i nie zmienia uprawnień. `pnpm db:test` wykonuje ją dwukrotnie, bada domyślne limity na rzeczywistych połączeniach ról i przekroczenie limitów przed załadowaniem wzorca. Ustawienia ról są globalne dla klastra i nie trafiają do `pg_dump --schema-only`: test osobno porównuje ich stan przed i po wzorcu, oprócz wymaganego porównania schematu z zerem różnic.

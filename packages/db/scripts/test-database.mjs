@@ -118,6 +118,12 @@ try {
   });
   const ddl = await readFile(resolve(repository, "docs/03-dane/schema.sql"), "utf8");
   psql(migrated, await readFile(resolve(repository, "packages/db/sql/bootstrap.sql"), "utf8"));
+  const roleMigration = await readFile(
+    resolve(repository, "packages/db/admin-migrations/0001-role-timeouts.sql"),
+    "utf8",
+  );
+  psql(migrated, roleMigration);
+  psql(migrated, roleMigration);
   await withClient(migrated, async (client) => {
     await client.query("SET ROLE oliginvest_owner");
     assert.equal(
@@ -199,7 +205,23 @@ try {
     throw new Error("Transaction integration tests failed; inspect .git/bl007-db/transactions.log");
   }
   console.log("Role pools and transaction context integration tests: PASS");
+  const roleSettings = () =>
+    withClient(
+      migrated,
+      async (client) =>
+        (
+          await client.query(`SELECT rolname, rolconfig FROM pg_roles
+      WHERE rolname IN ('oliginvest_app', 'oliginvest_auth', 'oliginvest_analytics_ro')
+      ORDER BY rolname`)
+        ).rows,
+    );
+  const migratedRoleSettings = await roleSettings();
   psql(reference, ddl);
+  assert.deepEqual(
+    await roleSettings(),
+    migratedRoleSettings,
+    "Role settings differ from schema.sql",
+  );
   const expected = dump(reference);
   const actual = dump(migrated);
   await writeFile(resolve(output, "reference.sql"), expected);

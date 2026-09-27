@@ -31,6 +31,17 @@ BEGIN
 END
 $$;
 
+-- Limity sesji ról aplikacyjnych (P-03); obowiązują nowe połączenia.
+ALTER ROLE oliginvest_app SET statement_timeout = '5s';
+ALTER ROLE oliginvest_app SET idle_in_transaction_session_timeout = '10s';
+ALTER ROLE oliginvest_app SET lock_timeout = '2s';
+ALTER ROLE oliginvest_auth SET statement_timeout = '5s';
+ALTER ROLE oliginvest_auth SET idle_in_transaction_session_timeout = '10s';
+ALTER ROLE oliginvest_auth SET lock_timeout = '2s';
+ALTER ROLE oliginvest_analytics_ro SET statement_timeout = '60s';
+ALTER ROLE oliginvest_analytics_ro SET idle_in_transaction_session_timeout = '60s';
+ALTER ROLE oliginvest_analytics_ro SET lock_timeout = '2s';
+
 GRANT pg_read_all_data TO oliginvest_backup;                -- kopie zapasowe (pg_dump); poświadczenia poza kontenerami aplikacji
 DO $$ BEGIN EXECUTE format('GRANT CREATE, CONNECT ON DATABASE %I TO oliginvest_owner', current_database()); END $$;
 DO $$ BEGIN EXECUTE format('GRANT CONNECT ON DATABASE %I TO oliginvest_auth, oliginvest_app, oliginvest_analytics_ro, oliginvest_backup', current_database()); END $$;
