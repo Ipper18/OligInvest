@@ -90,8 +90,13 @@ Reguły (egzekwowane skryptem `pnpm check:deps` w CI na podstawie `package.json`
 5. `apps/web` nie importuje `modules/*/server` ani `packages/db` (brak dostępu do bazy z warstwy UI — [ADR-012](../09-decyzje/ADR-012-api-jako-granica-domenowa.md)).
 
 `check:deps` kontroluje wszystkie sekcje zależności manifestów, cykle workspace oraz importy
-w kodzie produkcyjnym (`src/`, `db/`, `app/`, `pages/`, `proxy.ts`, `middleware.ts`). Testy,
-fixtures, spiki i narzędzia migracyjne nie są kodem produkcyjnym. Parser przypiętego TypeScript
+we wszystkich plikach źródłowych TS/JS pakietu, również w katalogu głównym, `components/`,
+`lib/` i dowolnych nowych katalogach. Wyłączone są katalogi testów (`test`, `tests`, `__tests__`,
+`integration`), fixtures, spiki, narzędzia (`scripts`, `migrations`, `admin-migrations`), zależności
+(`node_modules`, `.venv`), wyniki/cache (`dist`, `.next`, `.turbo`, `.git`, `coverage`) oraz kod
+wygenerowany (`generated`, `__generated__`, pliki `*.generated.*`, `next-env.d.ts`). Pomijane są
+również pliki `*.test.*`, `*.spec.*` i `*.config.*`. Kod runtime nie może być umieszczany w tych
+wyłączeniach; nazwa nowego katalogu produkcyjnego nie zwalnia go z kontroli. Parser przypiętego TypeScript
 sprawdza także re-eksporty, importy typów, `require` i dynamiczne importy. Specyfikator musi być
 literałem; importy workspace wymagają deklaracji i publicznego eksportu. Ścieżki względne nie
 mogą przekraczać granicy pakietu; aliasy spoza zadeklarowanych zależności są odrzucane.

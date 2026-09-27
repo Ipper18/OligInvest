@@ -120,6 +120,38 @@ test("rejects inverted layers, apps as dependencies, web DB and workspace cycles
   for (const pattern of [/layer/, /core/, /web/, /cycle/]) assert.match(errors, pattern);
 });
 
+for (const path of [
+  "components/card.tsx",
+  "lib/query.ts",
+  "index.ts",
+  "new-folder/nested/query.mjs",
+]) {
+  test(`scans web sources outside conventional roots: ${path}`, (t) => {
+    const f = fixture(t);
+    f.write(`apps/web/${path}`, "import '@oliginvest/db';");
+    assert.match(checkDependencies(f.root).join("\n"), /web/);
+  });
+}
+
+test("scans custom module directories but excludes test, generated and build artifacts", (t) => {
+  const f = fixture(t);
+  for (const path of [
+    "integration/query.test.mjs",
+    "dist/index.js",
+    "node_modules/vendor/index.js",
+    "generated/client.ts",
+    "__generated__/client.ts",
+    "lib/client.generated.ts",
+    "next-env.d.ts",
+    ".next/types/routes.ts",
+  ]) {
+    f.write(`modules/analytics/${path}`, `import '${f.alerts}/contracts';`);
+  }
+  assert.deepEqual(checkDependencies(f.root), []);
+  f.write("modules/analytics/lib/engine.ts", `import '${f.alerts}/contracts';`);
+  assert.match(checkDependencies(f.root).join("\n"), /lib\/engine.ts.*layer/);
+});
+
 test("rejects expanded module exports and missing workspace packages", (t) => {
   const f = fixture(t);
   f.pkg(

@@ -13,13 +13,21 @@ const IGNORED = new Set([
   "test",
   "tests",
   "__tests__",
+  "integration",
   "fixtures",
   "spike",
   "scripts",
   "migrations",
+  "admin-migrations",
   "node_modules",
+  ".venv",
   "dist",
   ".next",
+  ".turbo",
+  ".git",
+  "coverage",
+  "generated",
+  "__generated__",
 ]);
 const slash = (path) => path.replaceAll("\\", "/");
 const outside = (path) =>
@@ -30,7 +38,11 @@ const outside = (path) =>
 function sourceFiles(directory) {
   if (!existsSync(directory)) return [];
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
-    if (IGNORED.has(entry.name) || /\.(test|spec|config)\.[cm]?[jt]sx?$/u.test(entry.name))
+    if (
+      IGNORED.has(entry.name) ||
+      entry.name === "next-env.d.ts" ||
+      /\.(test|spec|config|generated)\.[cm]?[jt]sx?$/u.test(entry.name)
+    )
       return [];
     const path = join(directory, entry.name);
     if (entry.isDirectory()) return sourceFiles(path);
@@ -144,14 +156,7 @@ export function checkDependencies(root) {
     }
   }
 
-  const files = packages.flatMap((pkg) =>
-    [
-      ...["src", "db", "app", "pages"].flatMap((directory) =>
-        sourceFiles(join(pkg.path, directory)),
-      ),
-      ...["proxy.ts", "middleware.ts"].map((file) => join(pkg.path, file)).filter(existsSync),
-    ].map((path) => ({ pkg, path })),
-  );
+  const files = packages.flatMap((pkg) => sourceFiles(pkg.path).map((path) => ({ pkg, path })));
   if (files.length) {
     const api = new API();
     try {
