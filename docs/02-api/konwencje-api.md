@@ -84,7 +84,7 @@ Status i polski tytuł błędu wynikają z kodu kontraktu; URI typu korzysta z o
 
 ### 4.2 Szkielet HTTP i sondy (BL-009)
 
-W obrębie instancji API żądania `ready` współdzielą jedno trwające wykonanie sond (*single-flight*). Wynik sukcesu lub awarii jest buforowany w pamięci przez 3 s od zakończenia sond (P-01, decyzja projektu 2026-09-27); po wygaśnięciu następne żądanie rozpoczyna nowe sprawdzenie. Bufor obejmuje tylko wynik sond, nie odpowiedź HTTP ani kontekst żądania. `Cache-Control: no-store` nadal obowiązuje klientów i proxy. Ograniczenie częstotliwości `ready` na brzegu należy do konfiguracji Caddy w M0-2.
+W obrębie instancji API żądania `ready` współdzielą jedno trwające wykonanie sond (*single-flight*). Wynik sukcesu lub awarii jest buforowany w pamięci przez 3 s od zakończenia sond (P-01, decyzja projektu 2026-09-27); po wygaśnięciu następne żądanie rozpoczyna nowe sprawdzenie. Bufor obejmuje tylko wynik sond, nie odpowiedź HTTP ani kontekst żądania. `Cache-Control: no-store` nadal obowiązuje klientów i proxy. Sondy zdrowia są odpytywane przez monitoring (`live`: 200, `ready`: 200/503) i nie mogą zwracać 429 — także na brzegu (Caddy).
 
 `apps/api` montuje adapter Hono do `withRequestContext`; wyjątki i nieznane trasy korzystają z platformowego RFC 9457. `GET /api/v1/health/live` zawsze zwraca `200 {"status":"ok"}` bez wywoływania zależności. `GET /api/v1/health/ready` równolegle wykonuje `SELECT 1` rolą `oliginvest_app` (bez odczytu danych użytkowników) oraz `AUTH` i `PING` osobno dla obu instancji Valkey. Każda sonda ma limit 1500 ms i zamyka połączenie, także po błędzie lub przekroczeniu czasu. Odpowiedź `HealthStatus` zawiera `checks.postgres`, `checks.valkeyQueue`, `checks.valkeyCache`, wyłącznie `ok`/`fail`; dowolna awaria daje 503 i `Retry-After: 1`. Sondy mają `Cache-Control: no-store`. Nie ujawniamy błędów sterowników w odpowiedzi ani logu.
 
@@ -104,6 +104,8 @@ Publiczny `/api/v1/openapi.json` generuje OpenAPI 3.1 z zarejestrowanych tras Zo
 Nagłówek `Idempotency-Key` z kluczem klienta — UUID (zalecany) lub ciąg 16–64 znaków `[A-Za-z0-9_-]`, bo Skróty iOS nie mają generatora UUID (wzorowany na [draft-ietf-httpapi-idempotency-key-header](https://datatracker.ietf.org/doc/draft-ietf-httpapi-idempotency-key-header/)) jest **wymagany** dla: `POST /portfolio/transactions`, `POST /portfolio/imports/{id}/commit`, `POST /analytics/runs`, `POST /quick/transactions`, `POST /me/tokens`, `POST /me/exports`; opcjonalny dla pozostałych `POST`. Klucz przechowujemy 24 h per użytkownik (`platform.idempotency_keys`): ten sam klucz i to samo ciało → ta sama odpowiedź z nagłówkiem `Idempotent-Replayed: true`; ten sam klucz i inne ciało → `409 IDEMPOTENCY_CONFLICT`; żądanie w trakcie → `409 CONFLICT` z `Retry-After: 1`.
 
 ## 7. Limity żądań
+
+Sondy zdrowia (`getHealthLive`, `getHealthReady`) i `/openapi.json` (`getOpenApiDocument`) są wyłączone z limitów żądań. Przyszły globalny limiter (zadania uwierzytelniania i PAT) musi je pomijać. Readiness korzysta z bufora i współdzielenia sond opisanych w § 4.2 (P-01). Wyjątek Redocly od wymagania odpowiedzi 4xx obejmuje tylko te trzy operacje — reguła pozostaje aktywna dla pozostałych. Decyzja właściciela w BL-010, 2026-09-27.
 
 | Grupa | Limit (domyślnie, konfigurowalny) | Klucz |
 |---|---|---|

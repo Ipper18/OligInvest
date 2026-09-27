@@ -1,0 +1,7 @@
+# Cel: wyjątki od wymagania 4xx wyłącznie dla trzech publicznych operacji bez limitowania.
+# Decyzja właściciela w BL-010; reguła pozostaje error dla reszty kontraktu.
+docs/02-api/openapi.yaml:
+  operation-4xx-response:
+    - '#/paths/~1health~1live/get/responses' # getHealthLive
+    - '#/paths/~1health~1ready/get/responses' # getHealthReady
+    - '#/paths/~1openapi.json/get/responses' # getOpenApiDocument
