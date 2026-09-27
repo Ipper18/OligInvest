@@ -136,6 +136,39 @@ test("session settings written by callback are scrubbed before release", async (
   expect(row).toEqual({ user_id: null, role: "anonymous" });
 });
 
+test.each([false, true])(
+  "session defaults are restored on the same connection after rollback=%s",
+  async (rollback) => {
+    const settings = sql`SELECT pg_backend_pid() AS pid,
+    current_setting('search_path') AS search_path,
+    current_setting('statement_timeout') AS statement_timeout,
+    current_setting('lock_timeout') AS lock_timeout`;
+    const before = await runTransaction(
+      rawPool,
+      "oliginvest_app",
+      contextA,
+      async (tx) => (await tx.execute(settings)).rows[0],
+    );
+    const operation = runTransaction(rawPool, "oliginvest_app", contextA, async (tx) => {
+      await tx.execute(sql`SET search_path = market, pg_catalog`);
+      await tx.execute(sql`SET statement_timeout = '1s'`);
+      await tx.execute(sql`SET lock_timeout = '100ms'`);
+      expect((await tx.execute(settings)).rows[0].search_path).toBe("market, pg_catalog");
+      if (rollback) throw new Error("rollback fixture");
+    });
+    if (rollback) await expect(operation).rejects.toThrow("rollback fixture");
+    else await operation;
+    await runTransaction(rawPool, "oliginvest_app", contextB, async (tx) => {
+      expect((await tx.execute(settings)).rows[0]).toEqual(before);
+      expect((await tx.execute(inspect)).rows[0]).toMatchObject({
+        user_id: b,
+        role: "user",
+        accounts: 1,
+      });
+    });
+  },
+);
+
 test("nested rollback uses a savepoint and retains the outer identity", async () => {
   await app.transaction(contextA, async (tx) => {
     await expect(tx.transaction((nested) => nested.execute(sql`SELECT 1/0`))).rejects.toThrow();

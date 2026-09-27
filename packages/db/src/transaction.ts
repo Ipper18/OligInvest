@@ -58,10 +58,8 @@ export async function runTransaction<T>(
   } finally {
     if (!discard) {
       try {
-        // Scrub even session-level changes made by a callback. Do not restore unsafe defaults.
-        await client.query(
-          "SELECT set_config('app.user_id', '', false), set_config('app.role', '', false)",
-        );
+        // Restore connection defaults, including role timeouts and custom context settings.
+        await client.query("RESET ALL");
       } catch {
         discard = true;
       }
