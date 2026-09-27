@@ -1,4 +1,7 @@
 import { randomBytes } from "node:crypto";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { afterEach, expect, test, vi } from "vitest";
 
 const probes = vi.hoisted(() => ({ checkPostgres: vi.fn(), checkValkey: vi.fn() }));
@@ -85,9 +88,41 @@ test.each([
   { DB_SSL: "invalid" },
   { VALKEY_QUEUE_USER: "" },
   { NODE_ENV: "invalid" },
+  { NODE_ENV: undefined },
+  { NODE_ENV: "" },
   { NODE_ENV: "production" },
 ])("invalid runtime configuration fails before any probe: %j", (override) => {
   expect(() => createRuntime({ ...environment(), ...override }, logger)).toThrow();
   expect(probes.checkPostgres).not.toHaveBeenCalled();
   expect(probes.checkValkey).not.toHaveBeenCalled();
+});
+
+test("production accepts secret files and HTTPS but rejects HTTP", () => {
+  const folder = mkdtempSync(join(tmpdir(), "oliginvest-api-runtime-"));
+  if (!folder.startsWith(join(tmpdir(), "oliginvest-api-runtime-")))
+    throw new Error("Unsafe cleanup");
+  try {
+    const env = { ...environment(), NODE_ENV: "production" };
+    for (const key of [
+      "BETTER_AUTH_SECRETS",
+      "AUDIT_PSEUDONYM_KEY",
+      "DB_AUTH_PASSWORD",
+      "DB_APP_PASSWORD",
+      "VALKEY_QUEUE_API_PASSWORD",
+      "VALKEY_CACHE_API_PASSWORD",
+    ]) {
+      const path = join(folder, key);
+      writeFileSync(path, env[key]);
+      env[`${key}_FILE`] = path;
+      delete env[key];
+    }
+    expect(() => createRuntime(env, logger)).not.toThrow();
+    expect(() =>
+      createRuntime({ ...env, PUBLIC_BASE_URL: "http://invest.example" }, logger),
+    ).toThrow();
+    expect(probes.checkPostgres).not.toHaveBeenCalled();
+    expect(probes.checkValkey).not.toHaveBeenCalled();
+  } finally {
+    rmSync(folder, { recursive: true });
+  }
 });
