@@ -6,6 +6,8 @@
 
 ## Warunki aktywacji
 
+BL-010 uruchamia osobny `../workflows/contracts.yml` (kontekst `contracts`) dla OpenAPI i pending. W BL-017 rozszerz ten kontekst o pozostałe kontrole kontraktów; przy przenoszeniu szkicu nie twórz dwóch zadań o nazwie `contracts`.
+
 - `pnpm-lock.yaml` i `apps/analytics/uv.lock` istnieją, instalacje frozen działają przy niezmienionej polityce; wszystkie wersje porównane z audytem BL-001.
 - Root package udostępnia rzeczywiste `ci:lint`, `ci:typecheck`, `ci:unit`, `ci:contracts`, `ci:db`, `ci:budgets`, `ci:e2e`, `ci:deps-audit`, `ci:lighthouse` oraz `ci:build -- <moduł|none>`. Nie tworzyć atrap zwracających sukces.
 - `ci:db`, `ci:e2e` i `ci:lighthouse` samodzielnie przygotowują i sprzątają lokalne usługi testowe; e2e/lighthouse startują build produkcyjny, nie `next dev`. Dane wyłącznie syntetyczne. E2E obejmuje Chromium, WebKit i Firefox z axe.

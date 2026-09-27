@@ -251,3 +251,9 @@ BL-007 lokalnie 4/4, status w toku do CI/DoD; następny BL-008. Brak nowego ADR/
 - API 42, skrypty 74 (granice 33), integracja bazy 12 testów PASS; PostgreSQL 18.6, RLS PASS, schemat ZERO DIFFERENCES; monorepo 88/88 z cache.
 - P-03: zatwierdzone schema.sql/model-danych, migracja administracyjna limitów; P-06: RESET ALL; P-04: db/modules i instrukcja BL-017; bez nowych ADR/ryzyk.
 - M0 otwarty, dalej BL-010; szczegóły i CI w bieżącym raporcie, estymacje bez zmian (odchylenie niezmierzone).
+
+## 2026-09-27 — BL-010: test zgodności OpenAPI
+- Korekta źródła zatwierdzona przez właściciela `1e98c21`: bez 429 dla sond i `/openapi.json`, HealthStatus zamknięty, wyjątki Redocly tylko dla trzech operacji.
+- `bcc5e39`: Zod → OpenAPI dla 3 operacji, 182 pending ze skryptu, lista może tylko maleć względem bazy Git; 25 testów kontraktowych (z negatywnymi), API 67, monorepo 88/88.
+- `a9bab03`: workflow `contracts` zielony w CI; ruleset (disabled) wymaga db/modules/contracts. Kryterium 3 M0 PASS.
+- Sesja przerwana limitem przed zapisem dokumentacji; wpisy dokończone poza Codexem. Bez nowych ADR/ryzyk, packages/core bez zmian.
