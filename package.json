@@ -9,7 +9,10 @@
     "pnpm": "12.4.2"
   },
   "scripts": {
-    "dev": "turbo run dev",
+    "dev": "node scripts/dev.mjs",
+    "dev:test": "node scripts/dev.mjs --check",
+    "queues:test": "node apps/jobs/scripts/test-queues.mjs",
+    "db:seed:test": "node packages/db/scripts/test-seed.mjs",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
