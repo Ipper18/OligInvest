@@ -1,0 +1,57 @@
+name: Development workers
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: workers-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  workers:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version-file: .nvmrc
+          package-manager-cache: false
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+        with:
+          version: '12.4.2'
+          run_install: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.13.13'
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6
+        with:
+          version: '0.12.16'
+          enable-cache: false
+      - name: Install locked dependencies
+        run: |
+          pnpm install --frozen-lockfile
+          uv sync --project apps/analytics --frozen --no-install-project --no-build --no-python-downloads
+          uv sync --project apps/analytics --frozen --no-build-isolation --no-python-downloads
+      - name: Check worker packages
+        run: pnpm turbo run lint typecheck test build --filter=@oliginvest/jobs --filter=@oliginvest/analytics --filter=@oliginvest/platform --output-logs=new-only
+      - name: Test Node and Python against real Valkey
+        run: pnpm queues:test
+      - name: Test synthetic seed against real PostgreSQL
+        run: pnpm db:seed:test
+      - name: Test four applications with Compose services
+        run: pnpm dev:test
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: failure()
+        with:
+          name: worker-diagnostics
+          path: .git/m0-workers/*.log
+          include-hidden-files: true
+          retention-days: 7
