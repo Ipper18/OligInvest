@@ -8,13 +8,16 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
     "build": "tsc -p tsconfig.json",
-    "dev": "node --watch dist/index.js",
-    "start": "node dist/index.js"
+    "dev": "node --watch dist/server.js",
+    "start": "node dist/server.js",
+    "health": "node dist/healthcheck.js"
   },
   "dependencies": {
     "@oliginvest/config": "workspace:*",
     "@oliginvest/platform": "workspace:*",
-    "bullmq": "6.3.6"
+    "bullmq": "6.3.6",
+    "ioredis": "6.0.0",
+    "zod": "4.6.5"
   },
   "devDependencies": {
     "@types/node": "24.13.5"

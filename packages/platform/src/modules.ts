@@ -186,6 +186,9 @@ const jobContextSchema = subjectSchema.extend({ requestId: z.uuid() }).strict();
 export class JobsModuleRegistry {
   readonly #definitions = new Map<string, JobsModuleDefinition>();
   constructor(private readonly catalog: ModuleCatalog) {}
+  entries(): readonly JobsModuleDefinition[] {
+    return Object.freeze([...this.#definitions.values()]);
+  }
   register(input: JobsModuleDefinition): void {
     const definition = jobsSchema.parse(input);
     if (this.#definitions.has(definition.id)) throw new Error("Duplicate jobs module");
