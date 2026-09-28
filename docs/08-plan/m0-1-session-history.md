@@ -263,3 +263,5 @@ BL-007 lokalnie 4/4, status w toku do CI/DoD; następny BL-008. Brak nowego ADR/
 - Seed z jedynego pliku źródłowego: expected, idempotencja, rollback PASS; pnpm dev uruchamia cztery procesy, SMTP/Mailpit PASS.
 - Valkey/PostgreSQL z izolowanych projektów Compose PASS; monorepo 88/88, RLS/audyt i 12 testów bazy PASS, schemat ZERO DIFFERENCES. Nowy workflow workers; wynik w raporcie bieżącym.
 - Uzgodniono etapowanie izolacji analytics: host i fixture w dev, systemowa izolacja od M3. Bez zmian core, źródłowego seeda, ADR i nowych ryzyk; estymacje bez zmian, odchylenie niezmierzone.
+- Osobne commity/push: BL-013 `b4499f8`, BL-014 `51b89fc`, BL-034 `3ee5523`, CI `3ee9ee9`, dokumentacja `0096fd4`.
+- CI `0096fd4`: [workers PASS](https://github.com/Ipper18/OligInvest/actions/runs/36474677562), db/modules/contracts i CodeQL PASS; test SMTP rzeczywiście dostarcza wiadomość i odczytuje ją z Mailpit.
