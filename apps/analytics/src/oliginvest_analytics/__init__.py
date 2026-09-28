@@ -1,1 +1,1 @@
-"""Szkielet pakietu; konsument kolejki powstaje w BL-014."""
+"""M0 analytics transport consumer; no analytical calculations."""
