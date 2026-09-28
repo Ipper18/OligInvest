@@ -199,6 +199,8 @@ Moduły z wyświetlaniem danych rynkowych i wyników analiz korzystają ze wspó
 | `analytics-results` | valkey-queue | `jobs` | 2 | zapis wyników w kontekście RLS właściciela |
 | `events` | valkey-queue | `jobs` | 4 | fan-out zdarzeń do kolejek subskrybentów |
 
+W M0 (BL-013) korzeń `apps/jobs` rejestruje definicje kolejek domenowych przez `JobsModuleRegistry` i tworzy ich uchwyty BullMQ; `events` jest kolejką transportową platformy, bez właściciela domenowego. Rejestr harmonogramów pozostaje pusty do implementacji handlerów. Nie uruchamiamy konsumentów domenowych ani pustych handlerów potwierdzających prawdziwe zadania. BL-014 używa osobnej kolejki `analytics-smoke` (tylko `development`/`test`): zadanie `ping`, payload `{ version: 1, requestId: UUID }`, wynik `{ version: 1, requestId: UUID, received: true }`. Nie jest to kontrakt analiz M3. Sondy workerów sprawdzają PING Valkey i świeżość heartbeat konkretnej instancji (maksymalnie 10 s); brak NODE_ENV lub wartość spoza development/test/production przerywa start przed połączeniem.
+
 ### 5.3 Zdarzenia przekazywane do przeglądarki (SSE)
 
 `portfolio.valuation.updated`, `portfolio.import.parsed`, `market.quotes.updated` (tylko instrumenty z pozycji/watchlist/otwartych ekranów użytkownika), `alerts.alert.triggered`, `analytics.run.progress`, `analytics.run.completed`, `analytics.run.failed`, `identity.export.ready`, `flags.changed`, `auth.session.revoked` oraz techniczne `ready`, `ping`, `resync`. Kontrakty strumienia: [`../02-api/realtime.md`](../02-api/realtime.md).

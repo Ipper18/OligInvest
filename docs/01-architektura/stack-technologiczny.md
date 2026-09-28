@@ -55,11 +55,12 @@ Przygotowane manifesty (BL-001, 2026-09-20) używają dokładnych wersji z [inwe
 | `@types/node` | 24.13.5 | MIT | Deklaracje API Node 24 dla aplikacji serwerowych i pakietów z I/O; bez kodu runtime |
 | `@types/react`, `@types/react-dom` | 19.3.0 | MIT | Deklaracje React 19.3 dla Next.js i wspólnego UI; bez kodu runtime |
 | `@types/pg` | 8.23.1 | MIT | Deklaracje sterownika `pg` dla typowanych pul i transakcji RLS |
+| `ioredis` | 6.0.0 | MIT | Sterownik Valkey dla BullMQ 6.3 (opcjonalny peer, wymagany przez wybrany backend Redis); tylko `apps/jobs`, bez zależności Pythona; publikacja 2026-07-31, sprawdzone 2026-09-28 w [rejestrze npm](https://registry.npmjs.org/ioredis/6.0.0) |
 | `@vitest/coverage-v8` | 5.0.1 | MIT | Provider pokrycia Vitest tej samej wersji, potrzebny do bramki pokrycia `core` |
 | `setuptools` | 84.0.0 | MIT | Backend budowania minimalnego pakietu Python (BL-002); przypięty w build-system i grupie dev, już uwzględniony w audycie; build bez izolowanego pobierania zależności |
 | `@tailwindcss/postcss` | 4.3.3 | MIT | Oficjalny adapter Tailwind 4 dla potoku CSS Next.js |
 
-Te pakiety uzupełniają wybrane narzędzia, bez zmiany architektury lub ADR. Inne biblioteki figurujące w audycie (np. Better Auth do spike BL-032, narzędzia e2e i biblioteki naukowe) nie są automatycznie dodawane do manifestów. `apps/analytics/package.json` zawiera wyłącznie polecenia dla Turbo; minimalne zależności Pythona są już zapisane w `pyproject.toml` i `uv.lock`; konsument kolejki pozostaje do BL-014.
+Te pakiety uzupełniają wybrane narzędzia, bez zmiany architektury lub ADR. Inne biblioteki figurujące w audycie (np. Better Auth do spike BL-032, narzędzia e2e i biblioteki naukowe) nie są automatycznie dodawane do manifestów. `apps/analytics/package.json` zawiera wyłącznie polecenia dla Turbo; minimalne zależności Pythona są już zapisane w `pyproject.toml` i `uv.lock`; konsument testowej kolejki BL-014 korzysta z tego samego lockfile, bez dodatkowych zależności Pythona.
 
 Ustawienia pnpm 12 poza rejestrem są w `pnpm-workspace.yaml`: `saveExact`, `engineStrict`, `pmOnFail: error` (odrzucenie niezgodnej wersji menedżera bez jej automatycznego pobrania). `.npmrc` wskazuje rejestr, bez poświadczeń. `allowBuilds` zawiera decyzje dla dokładnych wersji pnpm/esbuild/fsevents/msgpackr-extract po [przeglądzie skryptów](../08-plan/m0-1-install-scripts.md); nowe wersje wymagają ponownego przeglądu. Źródła konfiguracji, sprawdzone 2026-09-20: [ustawienia pnpm 12](https://pnpm.io/settings), [pmOnFail](https://pnpm.io/settings/cli#pmonfail).
 

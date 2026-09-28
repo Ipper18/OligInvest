@@ -1,6 +1,6 @@
 # Szkielet analityki
 
-**Cel:** opisać pusty pakiet Python BL-002 i jego lokalną weryfikację; konsument kolejki powstaje w BL-014.
+**Cel:** opisać konsumenta testowej kolejki BL-014, konfigurację i lokalną weryfikację bez logiki analitycznej.
 
 Wymagane Python 3.13 i uv 0.12.16. Pierwsza instalacja przypiętych wheels i lokalnego pakietu (z katalogu repozytorium):
 
@@ -13,7 +13,11 @@ pnpm --filter @oliginvest/analytics test
 pnpm --filter @oliginvest/analytics build
 ```
 
-Pierwszy krok instaluje także przypięty backend setuptools; drugi buduje wyłącznie lokalny pakiet z tym backendem. Karencja wynosi 3 dni, bez wyjątków. Build sdist i wheel działa offline, bez izolowanego rozwiązywania zależności. Pakiet nie uruchamia kolejki, nie łączy się z bazą ani z siecią.
+Pierwszy krok instaluje także przypięty backend setuptools; drugi buduje wyłącznie lokalny pakiet z tym backendem. Karencja wynosi 3 dni, bez wyjątków. Build sdist i wheel działa offline, bez izolowanego rozwiązywania zależności.
+
+`pnpm dev` uruchamia proces Python na hoście z przygotowaną konfiguracją. Samodzielnie: `python -m oliginvest_analytics`; sonda: to samo polecenie z `--health`. Wymagane jawne `NODE_ENV`, `VALKEY_QUEUE_HOST/PORT/USER`, `ANALYTICS_INSTANCE_ID`, `DB_ANALYTICS_RO_PASSWORD` i `VALKEY_QUEUE_ANALYTICS_PASSWORD` (w produkcji wyłącznie odpowiedniki `*_FILE`). M0 nie łączy się z bazą. Tryby development/test konsumują tylko `analytics-smoke`, nazwę `ping` i zamknięty payload `{ version: 1, requestId: UUID }`; wynik potwierdza odbiór. Production nie uruchamia konsumenta testowego. SIGINT/SIGTERM zamyka połączenia; sonda sprawdza Valkey oraz heartbeat instancji młodszy niż 10 s.
+
+`pnpm queues:test` uruchamia prawdziwy Valkey z `compose.dev.yaml`, wysyła zadanie z Node i sprawdza wynik z Pythona. Fixture pytest blokuje TCP, UDP i rozwiązywanie nazw poza skonfigurowanym endpointem Valkey (z wyjątkiem lokalnej pary gniazd wymaganej przez asyncio w Windows). Nie dodano klienta HTTP ani nowych zależności Pythona. To ochrona procesu testowego; izolacja systemowa analytics należy do M3 zgodnie z ADR-003 i [instrukcją dev](../../docs/07-wdrozenie/srodowisko-deweloperskie.md).
 
 ## Wektory referencyjne (BL-015)
 

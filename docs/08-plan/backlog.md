@@ -57,8 +57,8 @@ Bez logiki domenowej; wynik: działające CI, baza z RLS, wydanie podpisane i wd
 | BL-010 | Test spójności OpenAPI (generowany vs `docs/02-api/openapi.yaml`) z listą `apps/api/openapi-pending.json`, która może tylko maleć; lint Redocly | NFR-02.05 | CI, [ADR-012](../09-decyzje/ADR-012-api-jako-granica-domenowa.md), API | BL-009 | 2 | w toku |
 | BL-011 | `apps/web`: Next.js 16.3, `proxy.ts` z CSP nonce, klient API dla RSC (ciasteczko, `request-id`), tokeny Tailwind 4 z systemu projektowego, brak zewnętrznych skryptów | NFR-03.06, NFR-01.02, NFR-11.01 | UI, DS, SEC, [ADR-012](../09-decyzje/ADR-012-api-jako-granica-domenowa.md) | BL-006 | 3 | todo |
 | BL-012 | `packages/i18n` (formatery `Intl` pl-PL, słownik, lint literałów, test zakazanych zwrotów z LAW §4.1, teksty disclaimerów z LAW §4.3) i `packages/ui` (prymitywy, `<DataFreshness/>`, `<AssumptionsBlock/>`, `<Disclaimer/>`) | NFR-10.04, NFR-07.01, FR-04.01 | DS, TXT, LAW | BL-011 | 2 | todo |
-| BL-013 | `apps/jobs`: BullMQ 6.3, rejestr kolejek i harmonogramów, health | NFR-09.04 | MOD | BL-006 | 1 | todo |
-| BL-014 | `apps/analytics`: Python 3.13 + uv, Ruff, mypy, pytest, konsument `bullmq` bez logiki | NFR-10.02 | STACK, [ADR-003](../09-decyzje/ADR-003-hybryda-obliczen-i-kolejki.md) | BL-002 | 1 | todo |
+| BL-013 | `apps/jobs`: BullMQ 6.3, rejestr kolejek i harmonogramów, health | NFR-09.04 | MOD | BL-006 | 1 | w toku |
+| BL-014 | `apps/analytics`: Python 3.13 + uv, Ruff, mypy, pytest, konsument `bullmq` bez logiki | NFR-10.02 | STACK, [ADR-003](../09-decyzje/ADR-003-hybryda-obliczen-i-kolejki.md) | BL-002 | 1 | w toku |
 | BL-015 | `packages/test-vectors` z loaderami dla Vitest i pytest; jedyne źródło `docs/03-dane/wektory-testowe.json` | NFR-02.06, NFR-08.02 | OBL, VEC | BL-002, BL-014 | 0,5 | w toku |
 | BL-016 | Egzekwowanie budżetów: `size-limit`, `route-budgets.mjs`, wykrywanie zakazanych bibliotek w chunkach początkowych, skrypt Lighthouse 13.5 z asercjami (raport do M1); dodać Lighthouse 13.5.0 do manifestu dopiero w sesji realizującej BL-016 — obecnie odroczony, bez zmiany linii | NFR-01.02, NFR-01.03 | PERF | BL-011 | 2 | todo |
 | BL-017 | CI w GitHub Actions: `lint`, `typecheck`, `unit`, `contracts`, `build` (macierz bez modułów), `budgets`, `deps-audit`; akcje przypięte SHA, token tylko do odczytu; CodeQL przez konfigurację domyślną GitHub po scaleniu M0-1 (BL-019), poza własnymi workflow | NFR-03.09, NFR-10.02, NFR-10.03, NFR-02.02 | CI | BL-003, BL-008, BL-010, BL-016 | 2 | w toku |
@@ -83,6 +83,8 @@ Bez logiki domenowej; wynik: działające CI, baza z RLS, wydanie podpisane i wd
 | | **Suma etapu** | | | | **51** | |
 
 ### 1.1 Postęp i odchylenia
+
+- **2026-09-28, BL-013/014/034:** osiem kolejek BullMQ, sondy heartbeat/PING, Node → Python ACK na rzeczywistym Valkey; NODE_ENV wymagane także w workerach (P-02). Seed wyłącznie z seed-dev.json, wszystkie expected PASS na PostgreSQL, idempotencja i rollback; `pnpm dev` uruchamia cztery aplikacje na hoście, `dev:test` sprawdza gotowość i SMTP/Mailpit. Monorepo 88/88 PASS, db:test RLS PASS i ZERO DIFFERENCES. Nowy workflow workers; statusy `w toku` do wspólnego DoD. Estymacje 1/1/1 d bez zmian, odchylenie niezmierzone; bez nowego ADR i ryzyka. Uzgodnione etapowanie: blokada gniazd tylko w pytest, systemowa izolacja analytics od M3. [Raport](m0-1-session-report.md).
 
 - **2026-09-27, BL-010:** test Zod → OpenAPI dla 3 operacji, 182 pending wygenerowane skryptem, kontrola podzbioru względem bazy Git; 25 testów kontraktowych (w tym negatywne), 67 testów API, Redocly i pełne monorepo 88/88 PASS. [CI contracts PASS](https://github.com/Ipper18/OligInvest/actions/runs/36348963637) dowodzi kryterium 3 M0. Zatwierdzona korekta źródła: bez 429 dla sond i specyfikacji, HealthStatus zamknięty, trzy punktowe wyjątki Redocly. Status `w toku` do wspólnego DoD; estymacja 2 d bez zmiany, odchylenie nakładu niezmierzone. Bez nowych ADR/ryzyk; `packages/core` bez zmian. [Raport](m0-1-session-report.md).
 

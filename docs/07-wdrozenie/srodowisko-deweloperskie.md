@@ -2,11 +2,13 @@
 
 **Cel:** opisać samodzielny plik Compose dla lokalnych danych syntetycznych i sposób jego walidacji bez instalowania zależności aplikacji (BL-034, NFR-10.01).
 
-Stan 2026-09-21: kontenery uruchomiono lokalnie; test wykazał niedostępność opublikowanych portów przy `internal: true` (wyniki i zatwierdzona korekta w § 4). **Nie uruchomiono jeszcze w CI.** Brakuje migracji, ról RLS, seedów i integracji workerów; pełne BL-034 nadal zależy od BL-013 i BL-014. Źródła: [CI/CD](ci-cd.md), [stos](../01-architektura/stack-technologiczny.md), [raport sesji](../08-plan/m0-1-session-report.md).
+Stan 2026-09-28: `pnpm dev` uruchamia cztery aplikacje na hoście, przygotowuje role/migracje i ładuje seed; testy `queues:test`, `db:seed:test` i `dev:test` korzystają z izolowanych projektów tego samego Compose. Wyniki CI i pozostały DoD: [raport sesji](../08-plan/m0-1-session-report.md). Korekta sieci developerskiej pozostaje ograniczona do § 5.
 
 ## 1. Usługi i izolacja
 
 [compose.dev.yaml](../../compose.dev.yaml) jest samodzielny: nie rozszerza produkcyjnego Compose, nie wymaga obrazów aplikacji ani profilu. Aplikacje będą uruchamiane lokalnie poza kontenerami.
+
+Izolacja sieciowa analytics (sieć bez bramy wychodzącej) obowiązuje w `compose.yaml` od M3 zgodnie z ADR-003; w dev brak dostępu do sieci zapewniają brak dodatkowych bibliotek sieciowych w zależnościach analytics (poza klientami infrastruktury BullMQ/Redis i psycopg) oraz fixture pytest ze standardowej biblioteki, która w procesie testowym blokuje połączenia gniazd do hostów innych niż `valkey-queue` (nie jest to izolacja systemowa procesu uruchomionego poza testami).
 
 | Usługa | Wersja | Dane / polityka | Domyślny port na lokalnym hoście |
 |---|---|---|---|
@@ -19,7 +21,7 @@ Wersje obrazów są przypięte digestami indeksów wieloplatformowych odczytanym
 
 Sieć developerskiego Compose jest zwykłą siecią bridge (`internal: false`, decyzja właściciela 2026-09-21). Wszystkie opublikowane porty wymagają jawnego `DEV_BIND_ADDRESS` ustawionego na pętlę zwrotną hosta; nie wpisuj adresu interfejsu LAN ani wildcard. W repozytorium nie przechowujemy adresów IP. Są to porty wyłącznie developerskie, konfigurowalne zmiennymi `DEV_*_PORT`, bez związku z infrastrukturą domową. Hasła PostgreSQL i obu Valkey są wymagane, osobne i lokalne; nie kopiuj poświadczeń produkcji. Mailpit przechowuje tylko syntetyczne wiadomości.
 
-Konto `postgres` służy wyłącznie do lokalnego bootstrapu/migracji. Nie ustawiaj nim `DATABASE_URL_APP` ani połączenia analityki. Role bez `BYPASSRLS`, migracje i pule aplikacji powstaną w BL-007/008; ich brak nie jest zgodą na obejście RLS.
+Konto `postgres` służy wyłącznie do lokalnego bootstrapu/migracji i utworzenia konta syntetycznego. Seed zapisuje dane rynkowe i portfel przez `SET LOCAL ROLE oliginvest_app` z kontekstem `app.user_id`. API dostaje hasła ról app/auth, analytics wyłącznie hasło roli read-only (w M0 nie łączy się z bazą). Hasła ról syntetycznych są generowane przy starcie i przekazywane tylko właściwym procesom; nie uruchamiaj równolegle dwóch sesji dev na tej samej bazie.
 
 ## 2. Walidacja bez instalacji
 
@@ -37,11 +39,11 @@ Wynik tej kontroli potwierdza wyłącznie składnię, interpolację i model Comp
 
 ## 3. Uruchomienie po przygotowaniu aplikacji
 
-1. Uzupełnij tylko lokalne wartości `DEV_*` w ignorowanym `.env` na podstawie [.env.example](../../.env.example), z osobnymi hasłami do środowiska syntetycznego. Adres pętli zwrotnej wyznacz jak w § 2. Nie używaj znaczników walidacyjnych jako haseł.
-2. Po zakończeniu karencji i kontroli obrazów sprawdź `docker compose -f compose.dev.yaml config --quiet`, następnie `docker compose -f compose.dev.yaml up -d` i `docker compose -f compose.dev.yaml ps`.
-3. Po BL-007/008 utwórz role i wykonaj migracje oraz testy RLS. Dopiero wtedy ustaw połączenia aplikacji z właściwymi rolami.
-4. Po BL-013/014 podłącz aplikacje, wykonaj seed syntetyczny i zweryfikuj `pnpm dev`, kolejki, cache oraz dostarczenie wiadomości do Mailpit. Te polecenia aplikacji nie są jeszcze gotowe w obecnym szkielecie plików.
-5. Zatrzymanie: `docker compose -f compose.dev.yaml down` zachowuje trwałe wolumeny PostgreSQL i kolejki. Nie usuwaj wolumenów automatycznie; reset danych wymaga świadomej decyzji lokalnego operatora.
+1. Wykonaj `pnpm install --frozen-lockfile` oraz dwa kroki `uv sync` z [README analytics](../../apps/analytics/README.md). Wymagane Node 24, Python 3.13, uv 0.12.16 i działający Docker.
+2. Uzupełnij ignorowany `.env`: jawne `NODE_ENV=development`, `DEV_BIND_ADDRESS` (pętla zwrotna jak w § 2) i trzy różne hasła `DEV_POSTGRES_PASSWORD`, `DEV_VALKEY_QUEUE_PASSWORD`, `DEV_VALKEY_CACHE_PASSWORD`. Porty `DEV_*_PORT` są opcjonalne; API/web domyślnie 3001/3000. Nie używaj znaczników walidacyjnych jako haseł.
+3. `pnpm dev` buduje wymagane pakiety, uruchamia usługi Compose, tworzy role, wykonuje migracje i seed z asercjami, następnie startuje api/web/jobs/analytics. Pokaże adres web po gotowości API i web. Konto seeda nie ma hasła ani ominięcia MFA; uwierzytelnianie jest zakresem M1. Zmiany TypeScript wymagają ponownego uruchomienia polecenia; Next działa w trybie dev.
+4. `pnpm queues:test`, `pnpm db:seed:test` i `pnpm dev:test` tworzą własne projekty Compose, losowe porty i syntetyczne hasła, a w `finally` usuwają wyłącznie swoje kontenery/wolumeny. Pierwszy test sprawdza Node → Python i blokadę gniazd pytest; drugi wszystkie `expected`, idempotencję i rollback; trzeci start czterech aplikacji, gotowość bazy/cache/kolejki i Mailpit. Diagnostyka w `.git/m0-workers/`. Sondy: `node apps/jobs/dist/healthcheck.js` i `python -m oliginvest_analytics --health`, z tym samym środowiskiem co dany worker.
+5. Ctrl+C kończy procesy aplikacji. `docker compose -f compose.dev.yaml down` zatrzymuje usługi i zachowuje trwałe wolumeny. Zwykłe `pnpm dev` nigdy ich nie usuwa. Ponowny seed sprawdza istniejące dane; nie nadpisuje zmienionego portfela. Reset danych wymaga świadomej decyzji lokalnego operatora.
 
 ## 4. Dane przykładowe (seed)
 
@@ -68,7 +70,7 @@ Zasady, których trzyma się loader:
 
 Stan końcowy zestawu: wartość portfela **47 064,47 zł**, gotówka **1220,78 zł**, wpłaty netto **41 500,00 zł**, pięć pozycji (VWCE 36, PKO 200, CDR 25, AAPL 12, MSFT 3). Test ładowania porównuje własne wyliczenia z blokiem `expected` — to pierwszy pełny sprawdzian ścieżki „dane → wycena” jeszcze przed importem prawdziwych plików.
 
-Seed ładuje się wyłącznie do środowiska deweloperskiego i nigdy do produkcji; operacje mają `source: "demo"`.
+Seed ładuje się wyłącznie w jawnym trybie `development` lub w izolowanym teście `test`, nigdy w produkcji; operacje mają `source: "demo"`. Loader odczytuje surowy zapis liczb JSON jako tekst i zapisuje go parametrami do `NUMERIC`. Testowy oracle SQL liczy asercje wyłącznie dla tego zestawu zakupów, bez implementacji wzorów aplikacji poza `packages/core`; przy wartości portfela sumuje niezaokrąglone wyceny i zaokrągla dopiero wynik końcowy.
 
 ## 5. Wynik testu hosta i proponowana korekta
 
@@ -84,4 +86,4 @@ networks:
     internal: false
 ```
 
-Publikowanie portów nadal wymaga pętli zwrotnej przez `DEV_BIND_ADDRESS`. Zwykły bridge dopuszcza ruch wychodzący usług developerskich; jest to jawny kompromis dla aplikacji działających na hoście. Na sprawdzonym Docker Desktop publikacja portów dla aplikacji uruchamianych na hoście wymaga sieci nie-internal; podstawą jest wynik `audits/m0-1-compose-probe.json` podlinkowany powyżej. Zmiana dotyczy wyłącznie `compose.dev.yaml`. Sieci `internal` w produkcyjnym `compose.yaml` (BL-022) pozostają bez zmian. Pełne BL-034 nadal otwarte (migracje, seed i integracja workerów). Przed uruchomieniem wybierz wolne porty `DEV_*_PORT`, jeśli domyślne są zajęte.
+Publikowanie portów nadal wymaga pętli zwrotnej przez `DEV_BIND_ADDRESS`. Zwykły bridge dopuszcza ruch wychodzący usług developerskich; jest to jawny kompromis dla aplikacji działających na hoście. Na sprawdzonym Docker Desktop publikacja portów dla aplikacji uruchamianych na hoście wymaga sieci nie-internal; podstawą jest wynik `audits/m0-1-compose-probe.json` podlinkowany powyżej. Zmiana dotyczy wyłącznie `compose.dev.yaml`. Sieci `internal` w produkcyjnym `compose.yaml` (BL-022) pozostają bez zmian. Migracje, seed i integracja workerów zostały wykonane w BL-034 (2026-09-28); wspólny DoD paczki pozostaje otwarty. Przed uruchomieniem wybierz wolne porty `DEV_*_PORT`, jeśli domyślne są zajęte.

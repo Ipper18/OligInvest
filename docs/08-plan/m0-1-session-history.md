@@ -257,3 +257,9 @@ BL-007 lokalnie 4/4, status w toku do CI/DoD; następny BL-008. Brak nowego ADR/
 - `bcc5e39`: Zod → OpenAPI dla 3 operacji, 182 pending ze skryptu, lista może tylko maleć względem bazy Git; 25 testów kontraktowych (z negatywnymi), API 67, monorepo 88/88.
 - `a9bab03`: workflow `contracts` zielony w CI; ruleset (disabled) wymaga db/modules/contracts. Kryterium 3 M0 PASS.
 - Sesja przerwana limitem przed zapisem dokumentacji; wpisy dokończone poza Codexem. Bez nowych ADR/ryzyk, packages/core bez zmian.
+
+## 2026-09-28 — BL-013/014/034
+- Jobs: osiem kolejek, rejestry BL-006, health; Python: ACK na analytics-smoke, fixture blokady gniazd, jawne NODE_ENV i pliki sekretów w produkcji.
+- Seed z jedynego pliku źródłowego: expected, idempotencja, rollback PASS; pnpm dev uruchamia cztery procesy, SMTP/Mailpit PASS.
+- Valkey/PostgreSQL z izolowanych projektów Compose PASS; monorepo 88/88, RLS/audyt i 12 testów bazy PASS, schemat ZERO DIFFERENCES. Nowy workflow workers; wynik w raporcie bieżącym.
+- Uzgodniono etapowanie izolacji analytics: host i fixture w dev, systemowa izolacja od M3. Bez zmian core, źródłowego seeda, ADR i nowych ryzyk; estymacje bez zmian, odchylenie niezmierzone.
