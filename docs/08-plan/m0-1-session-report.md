@@ -12,9 +12,9 @@ Skaner całych słów Unicode obejmuje słowniki, MDX i komponenty; zawiera tabe
 
 Natywne Button/TextField/SelectField/Disclosure/ModalDialog/Popover oraz DataFreshness/AssumptionsBlock/Disclaimer, bez literałów. Dialog showModal, fokus i Escape; popover natywny, kotwice CSS z fallbackiem; domyślnie otwarte założenia, zawsze widoczne podsumowanie. Świeżość: rzeczywiste opóźnienie, EOD, NBP, wszystkie przyczyny stale i region status. Techniczna trasa `/ui-preview`, wyłącznie syntetyczne dane. Właściciel zatwierdził w TXT zmienne opóźnienie, flagę „nieaktualne” i pięć brakujących przyczyn. Bez zmiany ADR.
 
-Dowody: frozen PASS; monorepo **88/88** (78 cache); i18n **13**, ui **9**, web **9**, skaner **17** testów PASS. Chromium **11/11**, axe **0 naruszeń** (oba motywy, 320/1280 px, dialog i popover), klawiatura/fokus/reflow PASS; zrzuty obejrzane. check:deps, check:docs, check:repository i diff check PASS. WebKit/Firefox oraz pełne budżety pozostają BL-018/016. Logi `.git/bl012-*.log`. Uszkodzony cache Turbopacka zachowany w `.git/bl012-next-cache`; ponowny build PASS.
+Dowody: frozen PASS; monorepo **88/88** (78 cache); i18n **13**, ui **9**, web **9**, skaner **19** testów PASS. Chromium **11/11**, axe **0 naruszeń** (oba motywy, 320/1280 px, dialog i popover), klawiatura/fokus/reflow PASS; zrzuty obejrzane. check:deps, check:docs, check:repository i diff check PASS. WebKit/Firefox oraz pełne budżety pozostają BL-018/016. Logi `.git/bl012-*.log`. Uszkodzony cache Turbopacka zachowany w `.git/bl012-next-cache`; ponowny build PASS.
 
-Commity/push po etapach: słowniki `f8eacfd`, kontrole `10d590a`, UI w bieżącym etapie. CI dla dwóch pierwszych PASS; CI bieżącego commitu do potwierdzenia. Status `w toku` do wspólnego DoD; estymacja 2 d bez zmiany, odchylenie nakładu niezmierzone. Bez nowych ADR/ryzyk, serwery i ustawienia GitHub bez zmian.
+Commity/push po etapach: słowniki `f8eacfd`, kontrole `10d590a`, UI `136299b`; końcowa korekta usuwa znaczniki formatowania MDX przed skanowaniem (dwa nowe testy regresji PASS). CI `136299b`: [web](https://github.com/Ipper18/OligInvest/actions/runs/36620268371), contracts, db, modules, workers i CodeQL PASS. Status `w toku` do wspólnego DoD; estymacja 2 d bez zmiany, odchylenie nakładu niezmierzone. Bez nowych ADR/ryzyk, serwery i ustawienia GitHub bez zmian.
 
 ## Paczka i następny krok
 

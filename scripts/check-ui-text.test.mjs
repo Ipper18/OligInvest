@@ -78,6 +78,8 @@ test("allows technical attributes, dictionary keys, callbacks, whitespace and pu
 for (const [path, text] of [
   ["packages/i18n/src/pl/new.json", '{"message":"Kup"}'],
   ["modules/education/src/lesson.mdx", "# Optymalny portfel"],
+  ["modules/education/src/italic.mdx", "_Kup_"],
+  ["modules/education/src/bold.mdx", "**Optymalny** portfel"],
   [
     "packages/ui/src/bad.tsx",
     'const message = "Sprzedaj"; export const Page = () => <p>{message}</p>;',

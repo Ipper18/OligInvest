@@ -90,7 +90,13 @@ export function checkUiText(root = ROOT, { literals = true, compliance = true } 
           if (!exception) scan(path, text);
         }
       }
-      if (path.endsWith(".mdx")) scan(path, readFileSync(path, "utf8").replace(/<[^>]*>/gu, " "));
+      if (path.endsWith(".mdx"))
+        scan(
+          path,
+          readFileSync(path, "utf8")
+            .replace(/<[^>]*>/gu, " ")
+            .replace(/[*_`]/gu, ""),
+        );
     }
   }
   const components = paths.filter((path) => /\.[jt]sx$/u.test(path));
