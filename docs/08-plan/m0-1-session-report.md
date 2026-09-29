@@ -4,11 +4,11 @@
 
 **2026-09-29**, gałąź `feat/m0-1-skeleton`, [roboczy PR #2](https://github.com/Ipper18/OligInvest/pull/2), bez scalania. Node 24.21.0, pnpm 12.4.2, Python 3.13.13; uv `.git/tools/uv-0.12.16/uv.exe` (PATH lub `UV_BIN`). `packages/core` rozwijany osobno w PR #3 — bez zmian.
 
-## Następny krok: decyzja w BL-011
+## BL-011 — etap generatora wykonany
 
-Architektura UI § 3 wymaga `openapi-typescript@7.13.0`, który deklaruje peer `typescript: ^5.x`; projekt ma zatwierdzony w BL-032 TS 7.0.2. Próba dodania generatora do lockfile zwróciła `ERR_PNPM_PEER_DEP_ISSUES` przy obowiązującym `strictPeerDependencies: true`. Odtworzenie metadanych: `pnpm view openapi-typescript@7.13.0 peerDependencies --json`.
+Zatwierdzony prywatny workspace `tools/openapi-client`, wyłącznie devDependencies: openapi-typescript 7.13.0 i TypeScript 5.9.3. Aplikacja web nadal TS 7.0.2. Strict peers i karencja bez wyjątków. Typy `apps/web/src/api/schema.d.ts` commitowane; kontrola aktualności w contracts. Renovate osobno, TS generatora < 6. Wyjątek opisany w stosie, BL-032 i R-20, bez ADR.
 
-**Propozycja oczekująca na właściciela:** odizolowany pakiet narzędziowy generatora z własnym TS 5.x, przy zachowaniu TS 7 dla aplikacji i strict peers; opisać wyjątek w stosie i BL-032 przed wdrożeniem. Wstrzymanie według AGENTS § 2.5, aktualizacja istniejącego R-20. Cofnięto własne zmiany manifestu, lockfile i robocze wpisy o wdrożeniu. Ponowna instalacja frozen, docs/repository i diff check PASS. CSP, klient, tokeny i testy BL-011 jeszcze niewykonane. Status `w toku`; estymacja 3 d bez zmian, nakład niezmierzony. ADR nie zmieniono.
+Instalacja frozen, generowanie i kontrola aktualności PASS; negatywna kontrola nieaktualnego pliku PASS. check:deps oraz 36 testów granic PASS (w tym zakaz narzędzia z apps/modules/packages). Dalej: nonce/CSP, klient serwerowy, tokeny i motywy, testy produkcyjnego web. Estymacja 3 d bez zmiany; nakład niezmierzony.
 
 ## Dotychczasowy stan paczki
 

@@ -2,6 +2,8 @@
 
 **Cel:** sprawdzić wybraną linię TypeScript z Next.js, Hono, Drizzle i Better Auth oraz zapisać decyzję bez naprawiania deklaracji bibliotek.
 
+**Uzupełnienie BL-011 (zatwierdzone 2026-09-29):** `openapi-typescript@7.13.0` wymaga peer TS `^5.x`. Prywatny workspace `tools/openapi-client` zawiera wyłącznie devDependencies generatora 7.13.0 i TS 5.9.3. Aplikacje nadal używają TS 7.0.2, strict peers bez wyciszeń; `check:deps` blokuje import narzędzia. Typy klienta są commitowane i kontrolowane w CI contracts. Renovate ma osobną grupę i limit TS < 6. Wyjątek usuwamy po uzyskaniu obsługi TS 7 przez generator i przejściu testów. Nie zmienia to decyzji o kompilatorze aplikacji, więc nie wymaga nowego ADR.
+
 Decyzja z 2026-09-21: **pozostajemy na TypeScript 7.0.2**, `strict: true`, `skipLibCheck: true` zgodnie z jawną zgodą właściciela. Nie ma zmiany ADR ani powodu do przejścia na linię 6. Nie dodano shimów, deklaracji ambient dla Bun, nieużywanych sterowników baz ani łatek zależności.
 
 | Próba | Wynik |

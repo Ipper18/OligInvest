@@ -6,7 +6,14 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": ["**", "!docs/08-plan/audits", "!**/dist", "!**/.next", "!**/coverage"]
+    "includes": [
+      "**",
+      "!docs/08-plan/audits",
+      "!apps/web/src/api/schema.d.ts",
+      "!**/dist",
+      "!**/.next",
+      "!**/coverage"
+    ]
   },
   "formatter": {
     "enabled": true,

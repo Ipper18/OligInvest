@@ -28,6 +28,8 @@ Nowa zależność runtime trafia do projektu tylko, jeśli spełnia **wszystkie*
 
 ## 3. Monorepo i narzędzia deweloperskie
 
+BL-011 — wyjątek zatwierdzony 2026-09-29: prywatny workspace `tools/openapi-client` ma wyłącznie devDependencies `openapi-typescript` **7.13.0** i `typescript` **5.9.3** (MIT/Apache-2.0), w dokładnych wersjach. Generator wymaga peer TS `^5.x`; kod aplikacji, w tym web, nadal sprawdza TS **7.0.2**. `strictPeerDependencies: true` pozostaje bez wyciszeń. Narzędzie generuje commitowany `apps/web/src/api/schema.d.ts`; `pnpm check:api-client` w `contracts` sprawdza zgodność z OpenAPI. `check:deps` zabrania zależności i importów narzędzia z aplikacji, modułów i pakietów. Renovate grupuje ten workspace osobno, TS ogranicza do 5.x, bez automerge. **Warunek usunięcia wyjątku:** `openapi-typescript` obsługuje TS 7 i przechodzi generowanie oraz test zgodności; wtedy usuwamy prywatny TS 5. Bez nowego ADR, bo kompilator aplikacji się nie zmienia.
+
 BL-010 (2026-09-27): `@redocly/cli` **2.54.2** (MIT) jako devDependency realizuje wymagany lint OpenAPI; `yaml` **2.9.1** (ISC, już obecny w lockfile) jest jawną devDependency do odczytu kontraktu w testach i generatorze pending. Node nie ma parsera YAML ani walidatora OpenAPI. Narzędzia nie trafiają do przeglądarki ani runtime API. Wersje/licencje sprawdzone w rejestrze npm; Redocly wydane 2026-09-22, wersja 2.54.3 pominięta z powodu karencji. Instalacja frozen przy niezmienionych politykach pnpm; bez nowych skryptów instalacyjnych. Dokumentacja: [lint Redocly](https://redocly.com/docs/cli/commands/lint), [parser YAML](https://eemeli.org/yaml/).
 
 | Element | Wybór | Wersja | Licencja | Uzasadnienie | Odrzucone |

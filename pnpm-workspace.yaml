@@ -2,6 +2,7 @@ packages:
   - apps/*
   - modules/*
   - packages/*
+  - tools/*
 
 minimumReleaseAge: 4320
 trustPolicy: no-downgrade

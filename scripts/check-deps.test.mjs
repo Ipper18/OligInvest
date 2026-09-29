@@ -186,3 +186,24 @@ test("CLI exits nonzero for a forbidden import (M0 negative test)", (t) => {
   assert.equal(run.status, 1, run.stderr);
   assert.match(run.stderr, /forbidden.ts.*layer/);
 });
+
+for (const path of ["apps/web", "modules/analytics", "packages/ui"]) {
+  test(`rejects tooling imports and dependencies from ${path}`, (t) => {
+    const f = fixture(t);
+    const tool = f.pkg("tools/openapi-client", {}, { private: true });
+    f.pkg(path);
+    f.write(`${path}/src/index.ts`, `import '${tool}';`);
+    assert.match(checkDependencies(f.root).join("\n"), /tooling/);
+    for (const section of [
+      "dependencies",
+      "devDependencies",
+      "peerDependencies",
+      "optionalDependencies",
+    ]) {
+      f.pkg(path, {}, { [section]: { [tool]: "workspace:*" } });
+      assert.match(checkDependencies(f.root).join("\n"), /package.json.*tooling/);
+    }
+    f.write(`${path}/src/index.ts`, "import '../../../tools/openapi-client/generate.mjs';");
+    assert.match(checkDependencies(f.root).join("\n"), /relative boundary/);
+  });
+}

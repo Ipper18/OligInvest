@@ -43,6 +43,16 @@
       "schedule": ["at any time"],
       "minimumReleaseAge": "3 days",
       "automerge": false
+    },
+    {
+      "matchFileNames": ["tools/openapi-client/package.json"],
+      "groupName": "generator klienta OpenAPI",
+      "automerge": false
+    },
+    {
+      "matchFileNames": ["tools/openapi-client/package.json"],
+      "matchPackageNames": ["typescript"],
+      "allowedVersions": ">=5.9.3 <6.0.0"
     }
   ]
 }

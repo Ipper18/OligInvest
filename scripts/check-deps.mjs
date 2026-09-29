@@ -51,6 +51,8 @@ function sourceFiles(directory) {
 }
 
 function layerError(from, to) {
+  if (to.group === "tools" && from.group !== "tools")
+    return "tooling: tools cannot be imported by application workspaces";
   if (to.group === "apps") return "layer: apps cannot be dependencies";
   if (to.group !== "modules") return undefined;
   if (from.group === "packages") return "layer: packages cannot depend on modules";
@@ -109,7 +111,7 @@ export function checkDependencies(root) {
   const packages = [];
   const errors = [];
   const report = (path, message) => errors.push(`${slash(relative(root, path))}: ${message}`);
-  for (const group of ["apps", "modules", "packages"]) {
+  for (const group of ["apps", "modules", "packages", "tools"]) {
     const directory = join(root, group);
     if (!existsSync(directory)) continue;
     for (const entry of readdirSync(directory, { withFileTypes: true })) {
