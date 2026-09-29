@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "@oliginvest/ui/tokens.css";
+@import "@oliginvest/ui/components.css";
 
 @layer base {
   body {

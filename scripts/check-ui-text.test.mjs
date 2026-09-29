@@ -97,3 +97,13 @@ test("only the documented disclaimer keys have a reasoned exception", (t) => {
   );
   assert.deepEqual(checkUiText(root), []);
 });
+
+test("nested conditional JSX keeps technical attributes distinct from text", (t) => {
+  const root = fixture(
+    t,
+    "apps/web/src/page.tsx",
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: Source fixture for technical template attributes.
+    'export const Page = () => <p>{ok && <span className="hint" id={`${id}-help`}>{messages.hint}</span>}</p>;',
+  );
+  assert.deepEqual(checkUiText(root), []);
+});

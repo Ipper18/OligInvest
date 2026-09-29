@@ -270,3 +270,5 @@ BL-007 lokalnie 4/4, status w toku do CI/DoD; następny BL-008. Brak nowego ADR/
 - Blokada: `openapi-typescript@7.13.0` wymaga peer TS ^5; zatwierdzony wyjątek — prywatny `tools/openapi-client` z TS 5.9.3 (`663a648`), web nadal TS 7.0.2, strict peers bez wyciszeń.
 - `80b0a73`: CSP z nonce per żądanie w `proxy.ts`, klient API wyłącznie serwerowy; `28e9147`: tokeny Tailwind 4, motyw ciemny domyślny/jasny/systemowy, paleta dla daltonistów.
 - `e368c9a`: test bez przeładowania mierzy żądanie dokumentu (fałszywy błąd w CI). Monorepo 88/88, Chromium 7, initial JS 169,7 KiB gzip; CI wszystkich workflow PASS.
+
+- 2026-09-29, BL-012: słowniki i formatery `f8eacfd`; skaner/lint `10d590a`; UI, axe i raport w trzecim etapie. Monorepo 88/88, i18n 13, ui 9, web 9, skaner 17, Chromium 11/11 PASS. Zatwierdzone uzupełnienia TXT; bez zmian core i ADR.

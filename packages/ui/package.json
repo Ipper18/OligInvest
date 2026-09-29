@@ -14,13 +14,15 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
-    }
+    },
+    "./components.css": "./src/components.css"
   },
   "dependencies": {
     "@oliginvest/i18n": "workspace:*",
     "react": "19.3.0"
   },
   "devDependencies": {
-    "@types/react": "19.3.0"
+    "@types/react": "19.3.0",
+    "react-dom": "19.3.0"
   }
 }

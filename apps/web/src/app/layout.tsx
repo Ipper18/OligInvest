@@ -1,9 +1,14 @@
-import type { Viewport } from "next";
+import { messages } from "@oliginvest/i18n";
+import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { getTestPreferences } from "../appearance/preferences";
 import "./globals.css";
 
 export const dynamic = "force-dynamic";
+export const metadata: Metadata = {
+  title: messages.bootstrap.title,
+  description: messages.bootstrap.description,
+};
 
 export async function generateViewport(): Promise<Viewport> {
   const { theme } = await getTestPreferences();

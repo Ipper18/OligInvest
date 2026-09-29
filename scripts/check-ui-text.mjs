@@ -40,9 +40,10 @@ const meaningful = (text) => /[\p{L}\p{N}]/u.test(text);
 export function forbiddenMatches(text, policy) {
   const normalized = normalize(text);
   return policy.phrases.filter((phrase) =>
-    new RegExp(`(?<![\\p{L}\\p{N}_])${escapePattern(normalize(phrase))}(?![\\p{L}\\p{N}_])`, "u").test(
-      normalized,
-    ),
+    new RegExp(
+      `(?<![\\p{L}\\p{N}_])${escapePattern(normalize(phrase))}(?![\\p{L}\\p{N}_])`,
+      "u",
+    ).test(normalized),
   );
 }
 
@@ -108,6 +109,8 @@ export function checkUiText(root = ROOT, { literals = true, compliance = true } 
         const componentText = [];
         function literal(node) {
           if (!node) return;
+          // Nested JSX is checked separately by visit, with attribute context intact.
+          if ([K.JsxElement, K.JsxSelfClosingElement, K.JsxFragment].includes(node.kind)) return;
           if (
             [
               K.StringLiteral,

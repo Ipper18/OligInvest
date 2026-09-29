@@ -151,6 +151,8 @@ Wyłącznie `Intl` z `packages/i18n` (formatery tworzone raz i buforowane). Wyni
 
 Czas: znaczniki pokazywane w strefie użytkownika z etykietą źródła i opóźnienia („15:42 · opóźnione 15 min · Yahoo”); dane EOD jako data sesji („zamknięcie 18.09.2026”). Czas względny (`Intl.RelativeTimeFormat`, „5 min temu”) tylko jako uzupełnienie dokładnego czasu.
 
+BL-012: publiczne formatery `packages/i18n` przyjmują wartości dziesiętne jako `string | Decimal`, z odrzuceniem `number` także w runtime. `Intl.NumberFormat` otrzymuje ciąg bez konwersji, z `halfExpand` (ROUND_HALF_UP); waluty obce używają kodu ISO. `formatDate` przyjmuje datę sesyjną bez strefy, `formatDateTime` i `formatTime` wymagają znacznika ze strefą albo `Date`. Testy w Node 24.21.0 obejmują dużą kwotę przekraczającą bezpieczny zakres `number`, zaokrąglenia, precyzje i zmianę czasu. Lokalne uzupełnienie deklaracji `Intl.format` odzwierciedla obsługę ciągów przez ECMA-402; nie zmienia wartości w runtime.
+
 ## 6. Komponenty domenowe (`packages/ui`)
 
 | Komponent | Odpowiedzialność | Dostępność | Obowiązkowy na |
@@ -171,6 +173,8 @@ Czas: znaczniki pokazywane w strefie użytkownika z etykietą źródła i opóź
 | `<EmptyState/>`, `<Skeleton/>` | brak danych z następnym krokiem; szkielet o wymiarach docelowych | szkielet `aria-hidden`, `aria-busy` na kontenerze | wszystkie listy i sekcje |
 
 Ikony: `lucide-react` (ISC), import pojedynczych ikon; ikony obok tekstu są dekoracyjne (`aria-hidden`), ikony samodzielne mają nazwę dostępną.
+
+BL-012 udostępnia `DataFreshness`, `AssumptionsBlock` i `Disclaimer`. Świeżość rozróżnia notowanie opóźnione, datę sesji EOD i kurs NBP; opóźnienie pochodzi z `DataMeta`, przyczyny ze słownika TXT. Stały region `status` służy do ogłoszenia nieaktualności. `AssumptionsBlock` wymaga podsumowania i treści szczegółów, domyślnie jest otwarty; ekran analizy odpowiada za komplet założeń z LAW § 4.2. `Disclaimer` wymaga klucza i wersji, odrzuca niezgodną wersję. Pozostałe komponenty domenowe z tabeli powstają wraz z odpowiednimi ekranami, poza zakresem BL-012.
 
 ## 7. Motywy
 

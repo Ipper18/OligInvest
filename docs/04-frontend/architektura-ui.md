@@ -150,6 +150,8 @@ Najpierw HTML natywny, Radix tylko tam, gdzie natywne elementy nie zapewniają d
 
 `@radix-ui/react-tooltip` (18,9 KB) nie jest dozwolony — wyjaśnienia realizuje `popover`. Każdy inny pakiet UI wymaga uzasadnienia w PR i przejścia `size-limit`. Import wyłącznie per komponent (`@radix-ui/react-*`), nie pakietu zbiorczego `radix-ui`.
 
+BL-012: `packages/ui` eksportuje natywne `Button`, `TextField`, `SelectField`, `Disclosure`, `ModalDialog` i `Popover`; style z `@oliginvest/ui/components.css` korzystają z tokenów. Etykiety, opisy i błędy przekazuje słownik. Dialog używa `showModal()`, natywnej izolacji tła i powrotu fokusu do wyzwalacza. Popover korzysta z kotwic CSS, z wyśrodkowaniem w silnikach bez ich obsługi. Techniczna trasa `/ui-preview` pokazuje wyłącznie syntetyczne przykłady M0; Playwright sprawdza klawiaturę, axe, oba motywy i reflow. Nie jest ekranem produktu.
+
 ## 11. Formularze
 
 - **Źródłem prawdy walidacji jest `api`** (Zod w `packages/contracts`); odpowiedź `422` z `errors[].path` jest mapowana na pola.
