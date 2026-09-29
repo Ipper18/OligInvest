@@ -59,6 +59,8 @@ for (const jsx of [
   '<p>{ok ? "Tak" : "Nie"}</p>',
   '<p>{ok && "Tak"}</p>',
   '<Button title={formatMessage("Tytuł", {})}/>',
+  '<ModalDialog triggerLabel="Otwórz" closeLabel="Zamknij"/>',
+  '<TextField error="Podaj wartość"/>',
 ]) {
   test(`rejects JSX literal: ${jsx}`, (t) => {
     const root = fixture(t, "apps/web/src/page.tsx", `export const Page = () => (${jsx});`);
