@@ -7,18 +7,25 @@
     "lint": "biome check .",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
+    "test:security": "playwright test",
+    "test:boundary": "node scripts/test-server-boundary.mjs",
     "build": "next build",
     "dev": "next dev",
     "start": "next start"
   },
   "dependencies": {
+    "@oliginvest/config": "workspace:*",
     "@oliginvest/i18n": "workspace:*",
     "@oliginvest/ui": "workspace:*",
     "next": "16.3.5",
+    "openapi-fetch": "0.17.0",
     "react": "19.3.0",
-    "react-dom": "19.3.0"
+    "react-dom": "19.3.0",
+    "server-only": "0.0.1",
+    "zod": "4.6.5"
   },
   "devDependencies": {
+    "@playwright/test": "1.63.0",
     "@tailwindcss/postcss": "4.3.3",
     "@types/node": "24.13.5",
     "@types/react": "19.3.0",

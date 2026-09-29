@@ -1,11 +1,12 @@
 import { messages } from "@oliginvest/i18n";
-import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { expect, test } from "vitest";
+import { expect, test, vi } from "vitest";
 import TestPage from "../src/app/page.tsx";
 
-test("test page renders messages from the shared dictionary", () => {
-  const html = renderToStaticMarkup(createElement(TestPage));
+vi.mock("../src/api/server", () => ({ getHealthStatus: async () => "ok" }));
+
+test("test page renders messages from the shared dictionary", async () => {
+  const html = renderToStaticMarkup(await TestPage());
   expect(html).toContain(messages.bootstrap.title);
   expect(html).toContain(messages.bootstrap.description);
 });

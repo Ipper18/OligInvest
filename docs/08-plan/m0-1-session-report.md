@@ -8,7 +8,7 @@
 
 Zatwierdzony prywatny workspace `tools/openapi-client`, wyłącznie devDependencies: openapi-typescript 7.13.0 i TypeScript 5.9.3. Aplikacja web nadal TS 7.0.2. Strict peers i karencja bez wyjątków. Typy `apps/web/src/api/schema.d.ts` commitowane; kontrola aktualności w contracts. Renovate osobno, TS generatora < 6. Wyjątek opisany w stosie, BL-032 i R-20, bez ADR.
 
-Instalacja frozen, generowanie i kontrola aktualności PASS; negatywna kontrola nieaktualnego pliku PASS. check:deps oraz 36 testów granic PASS (w tym zakaz narzędzia z apps/modules/packages). Dalej: nonce/CSP, klient serwerowy, tokeny i motywy, testy produkcyjnego web. Estymacja 3 d bez zmiany; nakład niezmierzony.
+Instalacja frozen, generowanie i kontrola aktualności PASS; negatywna kontrola nieaktualnego pliku PASS. check:deps oraz 36 testów granic PASS (w tym zakaz narzędzia z apps/modules/packages). Etap CSP/klienta: dynamiczny build, nonce per żądanie, typowany klient server-only z cookie/request-id/accept-language, no-store i blokadą przekierowań. 8 testów Vitest, 3 testy Chromium produkcyjnego web i negatywny build server-only PASS. Brak klienta w chunkach przeglądarki; dodany workflow web. Dalej: tokeny i motywy, pełna weryfikacja oraz CI. Estymacja 3 d bez zmiany; nakład niezmierzony.
 
 ## Dotychczasowy stan paczki
 

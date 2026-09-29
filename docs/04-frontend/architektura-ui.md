@@ -69,6 +69,8 @@ flowchart LR
 
 **Typowany klient:** `openapi-typescript` 7.13 generuje `src/api/schema.d.ts` z `docs/02-api/openapi.yaml`; `openapi-fetch` 0.17 wykonuje żądania z typami ścieżek, parametrów i odpowiedzi. CI sprawdza, że wygenerowany plik jest aktualny.
 
+BL-011: `pnpm gen:api-client` uruchamia odizolowany generator w `tools/openapi-client`, `pnpm check:api-client` sprawdza wynik w CI contracts. Klient `server-only` wymusza origin z konfiguracji, prefiks `/api/v1/`, `no-store`, limit czasu i brak przekierowań; przekazuje tylko cookie, request-id i accept-language z kontekstu żądania. Strona testowa odpytuje sondę `health/live` (odpowiedź walidowana Zod), bez danych domenowych. `src/proxy.ts` jest obok `src/app/`: nadpisuje wejściowy nonce i CSP oraz ustawia UUID korelacji. Polityka trafia do renderera i odpowiedzi; cała strona jest dynamiczna.
+
 ## 4. Mutacje i błędy
 
 - **Idempotencja:** formularz generuje `Idempotency-Key` (`crypto.randomUUID()`) przy pierwszym wysłaniu i używa go przy ponowieniach (np. po utracie sieci na telefonie).
