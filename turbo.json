@@ -32,6 +32,11 @@
       "dependsOn": ["build"],
       "outputs": []
     },
+    "@oliginvest/ui#test": {
+      "dependsOn": ["build"],
+      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/docs/04-frontend/system-projektowy.md"],
+      "outputs": []
+    },
     "@oliginvest/api#test": {
       "dependsOn": ["build"],
       "inputs": [

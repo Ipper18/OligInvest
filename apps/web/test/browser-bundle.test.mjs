@@ -17,3 +17,15 @@ test("production browser chunks do not contain the server API client or configur
       /API_INTERNAL_URL|API boundary violation|DB_APP_PASSWORD|server-only|openapi-fetch/,
     );
 });
+
+test("web sources do not load custom font faces or next/font", () => {
+  function scan(dir) {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const path = join(dir, entry.name);
+      if (entry.isDirectory()) scan(path);
+      else if (/\.(tsx?|css)$/.test(path))
+        expect(readFileSync(path, "utf8")).not.toMatch(/@font-face|next\/font/);
+    }
+  }
+  scan(fileURLToPath(new URL("../src", import.meta.url)));
+});

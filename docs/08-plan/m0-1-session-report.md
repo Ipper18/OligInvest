@@ -2,22 +2,22 @@
 
 **Cel:** przekazać stan i następny krok; poprzednie dowody w [historii](m0-1-session-history.md).
 
-**2026-09-29**, gałąź `feat/m0-1-skeleton`, [roboczy PR #2](https://github.com/Ipper18/OligInvest/pull/2), bez scalania. Node 24.21.0, pnpm 12.4.2, Python 3.13.13; uv `.git/tools/uv-0.12.16/uv.exe` (PATH lub `UV_BIN`). `packages/core` rozwijany osobno w PR #3 — bez zmian.
+**2026-09-29**, gałąź `feat/m0-1-skeleton`, [roboczy PR #2](https://github.com/Ipper18/OligInvest/pull/2), bez scalania. Node 24.21.0, pnpm 12.4.2, Python 3.13.13; uv `.git/tools/uv-0.12.16/uv.exe` (PATH lub `UV_BIN`). `packages/core` bez zmian — rozwijany osobno w PR #3.
 
-## BL-011 — etap generatora wykonany
+## BL-011 — zakres wykonany lokalnie
 
-Zatwierdzony prywatny workspace `tools/openapi-client`, wyłącznie devDependencies: openapi-typescript 7.13.0 i TypeScript 5.9.3. Aplikacja web nadal TS 7.0.2. Strict peers i karencja bez wyjątków. Typy `apps/web/src/api/schema.d.ts` commitowane; kontrola aktualności w contracts. Renovate osobno, TS generatora < 6. Wyjątek opisany w stosie, BL-032 i R-20, bez ADR.
+Dynamiczna strona techniczna, `src/proxy.ts` generuje nonce per żądanie i przekazuje CSP do renderera/odpowiedzi. Produkcja bez unsafe-inline/eval i zewnętrznych źródeł; tylko dev dopuszcza eval. Typowany klient server-only przekazuje cookie, X-Request-Id i accept-language; no-store, timeout i brak przekierowań, stały origin API. Strona sprawdza wyłącznie health/live.
 
-Instalacja frozen, generowanie i kontrola aktualności PASS; negatywna kontrola nieaktualnego pliku PASS. check:deps oraz 36 testów granic PASS (w tym zakaz narzędzia z apps/modules/packages). Etap CSP/klienta: dynamiczny build, nonce per żądanie, typowany klient server-only z cookie/request-id/accept-language, no-store i blokadą przekierowań. 8 testów Vitest, 3 testy Chromium produkcyjnego web i negatywny build server-only PASS. Brak klienta w chunkach przeglądarki; dodany workflow web. Dalej: tokeny i motywy, pełna weryfikacja oraz CI. Estymacja 3 d bez zmiany; nakład niezmierzony.
+Tokeny Tailwind 4 z `packages/ui`: kolory, typografia, odstępy; fonty systemowe. Dark domyślny, light/system i paleta dla daltonistów. Wybór działa bez przeładowania, serwer odtwarza atrybuty z walidowanych ciasteczek strony testowej. Profil i synchronizacja konta FR-07.08 pozostają M1; bez ekranów produktowych.
 
-## Dotychczasowy stan paczki
+Zatwierdzony wyjątek: prywatny `tools/openapi-client`, tylko devDependencies openapi-typescript 7.13.0 i TS 5.9.3; web nadal TS 7.0.2. Strict peers bez wyciszeń, typy commitowane, aktualność w contracts. check:deps blokuje narzędzie w apps/modules/packages; Renovate osobno, TS < 6. Usunąć wyjątek po obsłudze TS 7 przez generator. Stos/BL-032/R-20 zaktualizowane, bez nowego ADR.
 
-BL-001–010/013–015/034 wykonane lokalnie; BL-032 technicznie zamknięty. Statusy `w toku` do wspólnego DoD. BL-013: osiem kolejek i sonda PING/heartbeat; BL-014: Node → Python ACK, bez analiz i DB. Oba workery wymagają jawnego NODE_ENV i plików sekretów w produkcji. W dev aplikacje na hoście; pytest blokuje gniazda poza Valkey, izolacja systemowa analytics od M3 (ADR-003).
+Dowody: frozen PASS, monorepo **88/88** (5 cache), web **9**, ui **3**, Chromium **7**, granice **36** testów PASS. Negatywny build client → server-only i kontrola nieaktualnych typów PASS. Nonce także na 404, brak API/config w chunkach, zero zewnętrznych zasobów/pobranych fontów. Kontrasty obu motywów/palet, układ 360/768/1280 i klawiatura PASS; zrzuty obejrzane. Initial JS **169,7 KiB gzip-9** (7 skryptów) < 200 KiB; pełne budżety BL-016. Logi `.git/bl011-*.log`.
 
-BL-034: `pnpm dev` przygotowuje Compose, migracje i seed oraz uruchamia cztery aplikacje. Seed zachowuje leksemy kwot, RLS i expected; idempotencja oraz rollback potwierdzone. Konto bez hasła/MFA bypass; auth w M1. Instrukcja: [środowisko dev](../07-wdrozenie/srodowisko-deweloperskie.md).
+Osobne commity/push: generator `663a648`, CSP/klient `80b0a73`, tokeny w bieżącym etapie. CI `80b0a73`: web/contracts/db/modules/workers i CodeQL PASS; końcowa rewizja czeka na CI. Status `w toku` do wspólnego DoD; estymacja 3 d bez zmiany, nakład niezmierzony.
 
-Ostatnie dowody kodu (2026-09-28): monorepo 88/88 PASS; jobs 5 testów; Python 9 PASS + 1 integracyjny przez runner; queues:test, db:seed:test, dev:test PASS. Baza: 12 testów pul, RLS/audyt, ZERO DIFFERENCES. Logi `.git/m0-workers/` i `.git/bl007-db/`.
+## Paczka i następny krok
 
-CI rewizji `0096fd4` PASS: [workers](https://github.com/Ipper18/OligInvest/actions/runs/36474677562), [db](https://github.com/Ipper18/OligInvest/actions/runs/36474677512), [modules](https://github.com/Ipper18/OligInvest/actions/runs/36474677505), [contracts](https://github.com/Ipper18/OligInvest/actions/runs/36474677553); CodeQL i Analyze (python) SUCCESS.
+BL-001–011/013–015/034 wykonane lokalnie; BL-032 technicznie zamknięty. Poprzednie dowody: queues:test, db:seed:test, dev:test PASS; RLS/audyt i 12 testów pul, ZERO DIFFERENCES (2026-09-28). Workery mają jawne NODE_ENV i pliki sekretów produkcyjnych; dev na hoście, pytest blokuje gniazda poza Valkey, izolacja systemowa analytics od M3 (ADR-003).
 
-Dalej BL-011/012/016/018/033, pełne CI BL-017, ustawienia BL-019 i pozostałe BL-035. Ruleset nadal disabled. P-01–P-06 w historii; P-07 poza zakresem, P-08/P-09 przy M0-2. M0 otwarty: kryteria 1–3 mają wcześniejsze dowody, 4–7 wymagają dalszych prac/właściciela, 8 częściowo. Serwery i ustawienia GitHub bez zmian.
+Dalej BL-012/016/018/033, pełne CI BL-017, ustawienia BL-019 i pozostałe BL-035. Ruleset disabled; nowy kontekst web uwzględnić przy BL-017/019. M0 otwarty: kryteria 1–3 mają dowody, 4–7 wymagają dalszych prac/właściciela, 8 częściowo. Serwery i ustawienia GitHub bez zmian.

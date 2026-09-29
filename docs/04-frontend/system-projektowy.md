@@ -174,6 +174,8 @@ Ikony: `lucide-react` (ISC), import pojedynczych ikon; ikony obok tekstu są dek
 
 ## 7. Motywy
 
+BL-011: strona techniczna używa lokalnych ciasteczek `oi-test-theme` i `oi-test-palette` wyłącznie do demonstracji tokenów. Serwer waliduje wybór i ustawia atrybuty HTML; przełącznik zmienia je bez przeładowania. Brak preferencji lub błędna wartość oznacza dark/standard. Nie jest to profil konta: synchronizacja między urządzeniami z FR-07.08 oraz wymuszenie ciemnego motywu na ekranach przed zalogowaniem należą do M1. Tokeny są eksportowane z `@oliginvest/ui/tokens.css` i konsumowane przez Tailwind 4; fonty wyłącznie systemowe.
+
 - **`dark` domyślnie** (decyzja właściciela 2026-09-22); do wyboru `light` i `system` (FR-07.08). Serwer renderuje `data-theme` i `data-palette` na `<html>` na podstawie preferencji — bez skryptu inline, więc bez migania motywu i bez wyjątku w CSP. Dla `system` rozstrzyga media query `prefers-color-scheme`.
 - Ekrany przed zalogowaniem i strony publiczne (regulamin, informacja o danych, źródła danych) renderują się w motywie ciemnym.
 - `color-scheme: dark light` (natywne kontrolki i paski przewijania w odpowiednim motywie); `<meta name="theme-color">` z tokenu `bg` dla obu schematów (pasek statusu PWA).

@@ -1,0 +1,157 @@
+@theme static {
+  --color-*: initial;
+  --color-bg: #0b0d0f;
+  --color-panel: #0f1215;
+  --color-ink: #e8eaed;
+  --color-muted: #98a1aa;
+  --color-hairline: #22272c;
+  --color-border: #7c848d;
+  --color-accent: #2aa198;
+  --color-focus: #5aa9ff;
+  --color-warning: #e3b341;
+  --color-danger: #ff6b61;
+  --color-gain: #3fb950;
+  --color-loss: #ff6b61;
+  --color-flat: var(--color-muted);
+  --color-gain-accessible: #5aa9ff;
+  --color-loss-accessible: #f0913f;
+  --color-category-1: #56b4e9;
+  --color-category-2: #e69f00;
+  --color-category-3: #2aa198;
+  --color-category-4: #cc79a7;
+  --color-category-5: #f0e442;
+  --color-category-6: #d55e00;
+  --color-category-7: #8fa3ff;
+  --color-category-8: #98a1aa;
+  --font-sans:
+    system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  --font-serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+  --text-2xs: 0.625rem;
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 2.375rem;
+  --spacing: 0.25rem;
+  --spacing-1: 0.25rem;
+  --spacing-2: 0.5rem;
+  --spacing-3: 0.75rem;
+  --spacing-4: 1rem;
+  --spacing-5: 1.25rem;
+  --spacing-6: 1.5rem;
+  --spacing-8: 2rem;
+  --spacing-12: 3rem;
+  --breakpoint-xs: 22.5rem;
+  --breakpoint-sm: 40rem;
+  --breakpoint-md: 48rem;
+  --breakpoint-lg: 64rem;
+  --breakpoint-xl: 80rem;
+  --breakpoint-2xl: 96rem;
+  --radius-*: initial;
+  --radius-field: 0.125rem;
+  --radius-button: 0.25rem;
+  --radius-dot: 9999px;
+  --container-prose: 70ch;
+}
+
+:root {
+  color-scheme: dark;
+  --motion-fast: 120ms;
+  --motion-panel: 200ms;
+  --motion-sheet: 300ms;
+  --layer-content: 0;
+  --layer-navigation: 10;
+  --layer-overlay: 20;
+  --layer-notification: 30;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --color-bg: #fafaf7;
+  --color-panel: #ffffff;
+  --color-ink: #14171a;
+  --color-muted: #5a6169;
+  --color-hairline: #e3e2db;
+  --color-border: #6f7883;
+  --color-accent: #0e6e6e;
+  --color-focus: #0a5fb4;
+  --color-warning: #8a5a00;
+  --color-danger: #c4302b;
+  --color-gain: #1a7f37;
+  --color-loss: #c4302b;
+  --color-gain-accessible: #0a5fb4;
+  --color-loss-accessible: #a84b00;
+  --color-category-1: #0072b2;
+  --color-category-2: #d55e00;
+  --color-category-3: #0e6e6e;
+  --color-category-4: #a34e86;
+  --color-category-5: #a66a00;
+  --color-category-6: #3a87b8;
+  --color-category-7: #8a7a00;
+  --color-category-8: #5a6169;
+}
+
+:root[data-theme="system"] {
+  color-scheme: dark light;
+}
+
+@media (prefers-color-scheme: light) {
+  :root[data-theme="system"] {
+    --color-bg: #fafaf7;
+    --color-panel: #ffffff;
+    --color-ink: #14171a;
+    --color-muted: #5a6169;
+    --color-hairline: #e3e2db;
+    --color-border: #6f7883;
+    --color-accent: #0e6e6e;
+    --color-focus: #0a5fb4;
+    --color-warning: #8a5a00;
+    --color-danger: #c4302b;
+    --color-gain: #1a7f37;
+    --color-loss: #c4302b;
+    --color-gain-accessible: #0a5fb4;
+    --color-loss-accessible: #a84b00;
+    --color-category-1: #0072b2;
+    --color-category-2: #d55e00;
+    --color-category-3: #0e6e6e;
+    --color-category-4: #a34e86;
+    --color-category-5: #a66a00;
+    --color-category-6: #3a87b8;
+    --color-category-7: #8a7a00;
+    --color-category-8: #5a6169;
+  }
+}
+
+:root[data-palette="colorblind"] {
+  --color-gain: var(--color-gain-accessible);
+  --color-loss: var(--color-loss-accessible);
+}
+
+.num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums lining-nums;
+  letter-spacing: -0.01em;
+}
+
+.label {
+  font-size: var(--text-2xs);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    /* biome-ignore lint/complexity/noImportantStyles: Accessibility preference must override component animations. */
+    animation: none !important;
+    /* biome-ignore lint/complexity/noImportantStyles: Accessibility preference must override component transitions. */
+    transition: none !important;
+    /* biome-ignore lint/complexity/noImportantStyles: Accessibility preference must override smooth scrolling. */
+    scroll-behavior: auto !important;
+  }
+}

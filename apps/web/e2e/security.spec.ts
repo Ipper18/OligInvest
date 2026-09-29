@@ -39,8 +39,12 @@ test("browser resources stay on origin and RSC forwards the request context", as
     ]);
     const page = await context.newPage();
     const urls: string[] = [];
+    const fonts: string[] = [];
     const errors: string[] = [];
-    page.on("request", (req) => urls.push(req.url()));
+    page.on("request", (req) => {
+      urls.push(req.url());
+      if (req.resourceType() === "font") fonts.push(req.url());
+    });
     page.on("pageerror", (error) => errors.push(error.message));
     page.on("console", (message) => {
       if (message.type() === "error") errors.push(message.text());
@@ -49,6 +53,7 @@ test("browser resources stay on origin and RSC forwards the request context", as
     await expect(page.getByText("API: proces działa.")).toBeVisible();
     await page.waitForLoadState("networkidle");
     expect(errors).toEqual([]);
+    expect(fonts).toEqual([]);
     expect(urls.some((url) => url.includes("/_next/static/"))).toBe(true);
     expect(urls.every((url) => new URL(url).origin === "http://127.0.0.1:3197")).toBe(true);
     // Next creates its accessibility announcer with CSSOM styles after hydration.
