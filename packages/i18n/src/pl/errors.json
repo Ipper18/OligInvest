@@ -1,0 +1,94 @@
+{
+  "BAD_REQUEST": {
+    "title": "Nieprawidłowe żądanie",
+    "description": "Odśwież stronę i spróbuj ponownie."
+  },
+  "UNAUTHENTICATED": {
+    "title": "Sesja wygasła",
+    "description": "Zaloguj się ponownie."
+  },
+  "FORBIDDEN": {
+    "title": "Brak dostępu",
+    "description": "Ta sekcja nie jest dostępna dla Twojego konta."
+  },
+  "MFA_REQUIRED": {
+    "title": "Potwierdź logowanie",
+    "description": "Wpisz kod z aplikacji uwierzytelniającej."
+  },
+  "MFA_ENROLLMENT_REQUIRED": {
+    "title": "Włącz drugi składnik",
+    "description": "Bez niego nie zobaczysz swoich danych."
+  },
+  "TERMS_ACCEPTANCE_REQUIRED": {
+    "title": "Zmienił się regulamin",
+    "description": "Przeczytaj zmiany i potwierdź, aby korzystać dalej."
+  },
+  "STEP_UP_REQUIRED": {
+    "title": "Potwierdź tę operację",
+    "description": "Wpisz kod z aplikacji uwierzytelniającej."
+  },
+  "PAT_SCOPE_MISSING": {
+    "title": "Token nie ma uprawnień",
+    "description": "Utwórz token z zakresem wymaganym przez tę operację."
+  },
+  "NOT_FOUND": {
+    "title": "Nie znaleziono",
+    "description": "Element nie istnieje albo nie masz do niego dostępu."
+  },
+  "CONFLICT": {
+    "title": "Dane się zmieniły",
+    "description": "Odśwież widok i powtórz zmianę."
+  },
+  "IDEMPOTENCY_CONFLICT": {
+    "title": "Powtórzone żądanie",
+    "description": "To żądanie zostało już wysłane z inną treścią."
+  },
+  "INSTRUMENT_AMBIGUOUS": {
+    "title": "Więcej niż jeden instrument",
+    "description": "Wybierz właściwy z listy."
+  },
+  "DUPLICATE_IMPORT": {
+    "title": "Ten plik już zaimportowano",
+    "description": "Otwórz poprzedni import albo wybierz inny plik."
+  },
+  "RECONCILIATION_REQUIRED": {
+    "title": "Najpierw uzgodnij dane",
+    "description": "Salda rachunku nie zgadzają się z operacjami."
+  },
+  "FILE_TOO_LARGE": {
+    "title": "Plik jest za duży",
+    "description": "Maksymalny rozmiar to 10 MB."
+  },
+  "UNSUPPORTED_MEDIA_TYPE": {
+    "title": "Nieobsługiwany typ pliku",
+    "description": "Wgraj plik XLSX lub CSV."
+  },
+  "IMPORT_FORMAT_UNKNOWN": {
+    "title": "Nie rozpoznaliśmy formatu",
+    "description": "Sprawdź, czy to pełny eksport z XTB lub mBanku."
+  },
+  "VALIDATION_FAILED": {
+    "title": "Popraw zaznaczone pola",
+    "description": "Szczegóły znajdziesz przy polach formularza."
+  },
+  "PARAMETERS_OUT_OF_BOUNDS": {
+    "title": "Parametry poza dopuszczalnym zakresem",
+    "description": "Zmniejsz zakres albo liczbę wariantów."
+  },
+  "RATE_LIMITED": {
+    "title": "Za dużo żądań",
+    "description": "Spróbuj ponownie za {seconds} s."
+  },
+  "QUOTA_EXCEEDED": {
+    "title": "Wyczerpany dzienny limit",
+    "description": "Kolejne analizy będą dostępne jutro."
+  },
+  "INTERNAL": {
+    "title": "Coś poszło nie tak",
+    "description": "Spróbuj ponownie. Jeśli błąd wróci, podaj identyfikator {requestId}."
+  },
+  "SERVICE_UNAVAILABLE": {
+    "title": "Usługa chwilowo niedostępna",
+    "description": "Spróbuj ponownie za {seconds} s."
+  }
+}

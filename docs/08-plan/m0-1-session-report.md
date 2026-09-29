@@ -16,6 +16,10 @@ Dowody: frozen PASS, monorepo **88/88** (5 cache), web **9**, ui **3**, Chromium
 
 Osobne commity/push: generator `663a648`, CSP/klient `80b0a73`, tokeny w bieżącym etapie. tokeny `28e9147`, poprawka testu przełączania bez przeładowania `e368c9a` (pomiar żądania nowego dokumentu zamiast licznika nawigacji). CI `e368c9a` PASS: [web](https://github.com/Ipper18/OligInvest/actions/runs/36524690014), [contracts](https://github.com/Ipper18/OligInvest/actions/runs/36524690089), [db](https://github.com/Ipper18/OligInvest/actions/runs/36524690046), [modules](https://github.com/Ipper18/OligInvest/actions/runs/36524690049), [workers](https://github.com/Ipper18/OligInvest/actions/runs/36524690025), CodeQL. Status `w toku` do wspólnego DoD; estymacja 3 d bez zmiany, nakład niezmierzony.
 
+## BL-012 — w toku
+
+Etap 1: słowniki (12 disclaimerów 2026-09, 23 kody błędów, teksty z TXT) i formatery Intl bez konwersji kwot na number. Zatwierdzone przez właściciela uzupełnienia TXT: zmienne opóźnienie, flaga nieaktualności, pięć przyczyn z kontraktu. i18n lint/typecheck/test/build 4/4, 10 testów PASS; instalacja frozen PASS. Dalej lint JSX, test zakazanych zwrotów, prymitywy i axe. `packages/core` bez zmian.
+
 ## Paczka i następny krok
 
 BL-001–011/013–015/034 wykonane lokalnie; BL-032 technicznie zamknięty. Poprzednie dowody: queues:test, db:seed:test, dev:test PASS; RLS/audyt i 12 testów pul, ZERO DIFFERENCES (2026-09-28). Workery mają jawne NODE_ENV i pliki sekretów produkcyjnych; dev na hoście, pytest blokuje gniazda poza Valkey, izolacja systemowa analytics od M3 (ADR-003).

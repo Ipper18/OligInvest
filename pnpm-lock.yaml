@@ -411,7 +411,15 @@ importers:
         specifier: 0.31.10
         version: 0.31.10
 
-  packages/i18n: {}
+  packages/i18n:
+    dependencies:
+      decimal.js:
+        specifier: 10.6.0
+        version: 10.6.0
+    devDependencies:
+      yaml:
+        specifier: 2.9.1
+        version: 2.9.1
 
   packages/platform:
     dependencies:
@@ -4088,6 +4096,7 @@ snapshots:
       - '@babel/core'
       - '@types/node'
       - babel-plugin-macros
+    optional: true
 
   node-abort-controller@3.1.1: {}
 

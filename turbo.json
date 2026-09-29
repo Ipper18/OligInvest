@@ -51,6 +51,16 @@
       "dependsOn": ["build"],
       "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/packages/test-vectors/src/**"],
       "outputs": []
+    },
+    "@oliginvest/i18n#test": {
+      "dependsOn": ["build"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/docs/11-zgodnosc-prawna.md",
+        "$TURBO_ROOT$/docs/04-frontend/teksty-ui.md",
+        "$TURBO_ROOT$/docs/02-api/openapi.yaml"
+      ],
+      "outputs": []
     }
   }
 }

@@ -1,0 +1,56 @@
+{
+  "nav": {
+    "start": "Start",
+    "portfolio": "Portfel",
+    "market": "Rynek",
+    "alerts": "Alerty",
+    "more": "Więcej",
+    "analytics": "Analizy",
+    "learn": "Nauka",
+    "settings": "Ustawienia",
+    "admin": "Administracja"
+  },
+  "shell": {
+    "skipLink": "Przejdź do treści",
+    "accounts": {
+      "all": "Wszystkie rachunki"
+    },
+    "search": {
+      "placeholder": "Szukaj instrumentu — nazwa, ticker, ISIN",
+      "hint": "Naciśnij ukośnik, aby wyszukać"
+    },
+    "offline": "Brak połączenia. Pokazujemy ostatnie zapisane dane.",
+    "stale": "Dane mogą być nieaktualne — ostatnia aktualizacja {time}."
+  },
+  "col": {
+    "instrument": "Instrument",
+    "quantity": "Ilość",
+    "price": "Kurs",
+    "value": "Wartość",
+    "share": "Udział",
+    "today": "Dziś",
+    "result": "Wynik",
+    "account": "Rachunek",
+    "date": "Data",
+    "type": "Typ",
+    "fee": "Prowizja",
+    "currency": "Waluta",
+    "note": "Notatka"
+  },
+  "action": {
+    "save": "Zapisz",
+    "cancel": "Anuluj",
+    "retry": "Spróbuj ponownie",
+    "addTransaction": "Dodaj operację",
+    "import": "Zaimportuj plik",
+    "commitImport": "Zatwierdź import",
+    "discardImport": "Odrzuć import",
+    "runAnalysis": "Uruchom analizę",
+    "cancelAnalysis": "Przerwij",
+    "showTable": "Pokaż tabelę",
+    "export": "Eksportuj",
+    "createAlert": "Utwórz alert",
+    "revokeSession": "Zakończ sesję",
+    "deleteAccount": "Usuń konto"
+  }
+}

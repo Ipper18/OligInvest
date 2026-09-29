@@ -177,12 +177,18 @@ Błędy pól formularza: „Podaj wartość”, „Wartość musi być większa 
 
 | Sytuacja | Tekst |
 |---|---|
-| Notowanie opóźnione | {time} · opóźnione ok. 15 min · {source} |
+| Notowanie opóźnione | {time} · opóźnione ok. {minutes} min · {source} |
 | Dane z zamknięcia sesji | zamknięcie {date} · {source} |
 | Kurs walutowy | kurs średni NBP z {date} (tabela A) |
 | Dane nieaktualne | ostatnia aktualizacja {time} — {reason} |
 | Powód: dostawca niedostępny | dostawca danych nie odpowiada |
 | Powód: poza sesją | giełda zamknięta |
+| Flaga nieaktualności | nieaktualne |
+| Powód: limit dostawcy (`provider_quota`) | wyczerpany limit dostawcy danych |
+| Powód: dostawca wyłączony (`provider_disabled`) | dostawca danych wyłączony |
+| Powód: brak danych (`no_data`) | brak danych |
+| Powód: tylko EOD (`eod_only`) | dostępne tylko dane z zamknięcia sesji |
+| Powód: blokada jakości (`data_quality_hold`) | dane wstrzymane z powodu problemów jakości |
 | Wycena portfela | wycena {time} · notowania opóźnione, kursy NBP |
 | Analiza: w kolejce | W kolejce — pozycja {position} |
 | Analiza: liczy się | Liczymy — {progress}% |

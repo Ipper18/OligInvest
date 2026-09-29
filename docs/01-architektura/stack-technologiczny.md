@@ -86,6 +86,8 @@ Ustawienia pnpm 12 poza rejestrem są w `pnpm-workspace.yaml`: `saveExact`, `eng
 | Internacjonalizacja | **`Intl`** (liczby, waluty, daty) + słowniki komunikatów w `packages/i18n` | — | — | Standard platformy; PL na start, klucze gotowe na EN (NFR-10.04). | next-intl/i18next (zbędne przy jednym języku). |
 | Stan globalny | **Brak biblioteki** (stan w URL, TanStack Query, lokalny stan React) | — | — | Mniej warstw. | Redux/Zustand. |
 
+BL-012: `packages/i18n` deklaruje bezpośrednio istniejące `decimal.js` 10.6.0 (MIT), aby przyjmować i rozpoznawać `Decimal`; formatery przekazują dokładny ciąg dziesiętny do `Intl`, bez obliczeń finansowych i bez zależności od `packages/core`. Test zgodności kodów błędów używa istniejącego `yaml` 2.9.1 (ISC, tylko dev). `@axe-core/playwright` 4.13.0 (MPL-2.0, tylko dev w web) realizuje audyt natywnych prymitywów i komponentów zgodności. Brak nowych bibliotek UI.
+
 BL-007: pakiet db deklaruje także istniejące `zod@4.6.5` do walidacji konfiguracji puli i kontekstu transakcji; siedem modułów posiadających tabele deklaruje istniejące `drizzle-orm@0.45.2` bezpośrednio, aby pnpm egzekwował zależności definicji `db/schema.ts`. Odwołania do tabel modułów fundamentowych przechodzą przez `/server`; warunek `default` eksportu wskazuje ten sam plik ESM co `import`, także dla narzędzia Drizzle Kit działającego w Node 24. Nie dodano nowej biblioteki ani wersji; pozostałe wiersze tej tabeli zachowują dotychczasowe decyzje.
 
 ## 5. Backend (`apps/api`, `apps/jobs`, moduły)
