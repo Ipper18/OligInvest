@@ -30,9 +30,11 @@ jobs:
           version: '12.4.2'
           run_install: false
       - run: pnpm install --frozen-lockfile
+      - run: pnpm check:ui-text
+      - run: node --test --test-reporter=dot scripts/check-ui-text.test.mjs
       - run: pnpm check:api-client
       - run: pnpm turbo run build --filter=@oliginvest/web^... --output-logs=new-only
       - run: pnpm --filter @oliginvest/web test:boundary
-      - run: pnpm turbo run lint typecheck test build --filter=@oliginvest/web --filter=@oliginvest/ui --output-logs=new-only
+      - run: pnpm turbo run lint typecheck test build --filter=@oliginvest/web --filter=@oliginvest/ui --filter=@oliginvest/i18n --output-logs=new-only
       - run: pnpm --filter @oliginvest/web exec playwright install --with-deps chromium
       - run: pnpm --filter @oliginvest/web test:security

@@ -60,6 +60,19 @@
         "$TURBO_ROOT$/docs/04-frontend/teksty-ui.md",
         "$TURBO_ROOT$/docs/02-api/openapi.yaml"
       ],
+      "outputs": [],
+      "cache": false
+    },
+    "@oliginvest/i18n#lint": {
+      "cache": false,
+      "outputs": []
+    },
+    "@oliginvest/web#lint": {
+      "cache": false,
+      "outputs": []
+    },
+    "@oliginvest/ui#lint": {
+      "cache": false,
       "outputs": []
     }
   }

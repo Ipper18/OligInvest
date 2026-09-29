@@ -1,0 +1,89 @@
+{
+  "phrases": [
+    "cena za 30 dni",
+    "portfel za rok",
+    "oczekiwany kurs",
+    "kup",
+    "sprzedaj",
+    "trzymaj",
+    "dokup",
+    "zredukuj",
+    "warto kupić",
+    "zalecamy",
+    "rekomendujemy",
+    "powinieneś",
+    "sygnał kupna",
+    "sygnał sprzedaży",
+    "okazja",
+    "niedowartościowana",
+    "przewartościowana",
+    "cel cenowy",
+    "kupuj",
+    "sprzedawaj",
+    "najlepsze spółki",
+    "top 10",
+    "atrakcyjności",
+    "gwarantowany zysk",
+    "bez ryzyka",
+    "pewne",
+    "odpowiednie dla Ciebie",
+    "warto",
+    "polecamy",
+    "rekomendacja",
+    "pewny zysk",
+    "prognozowana wartość",
+    "okazja inwestycyjna",
+    "optymalny portfel",
+    "bezpieczna inwestycja"
+  ],
+  "replacements": [
+    {
+      "forbidden": "Sygnał kupna / sprzedaży",
+      "replacement": "Warunek, który ustawiłeś, został spełniony"
+    },
+    {
+      "forbidden": "Rekomendujemy zwiększenie udziału ETF",
+      "replacement": "Twoja alokacja docelowa różni się od obecnej o {value}"
+    },
+    {
+      "forbidden": "Prognozowana wartość za 10 lat: {value}",
+      "replacement": "W połowie scenariuszy wartość po 10 latach była wyższa niż {value}"
+    },
+    {
+      "forbidden": "Okazja inwestycyjna",
+      "replacement": "Instrument spełnia Twoje kryteria screenera"
+    },
+    {
+      "forbidden": "Optymalny portfel",
+      "replacement": "Wynik optymalizacji przy przyjętych założeniach"
+    },
+    {
+      "forbidden": "Bezpieczna inwestycja",
+      "replacement": "Zmienność historyczna: {value}"
+    },
+    {
+      "forbidden": "Powinieneś zrównoważyć portfel",
+      "replacement": "Lista transakcji potrzebnych do osiągnięcia Twojej alokacji docelowej"
+    }
+  ],
+  "exceptions": [
+    {
+      "file": "packages/i18n/src/pl/disclaimers.json",
+      "keys": [
+        "general.text",
+        "analysis.text",
+        "optimization.text",
+        "rebalance.text",
+        "backtest.text",
+        "screener.text",
+        "alerts.text",
+        "tax_view.text",
+        "data_delay.text",
+        "export.text",
+        "education.text",
+        "demo.text"
+      ],
+      "reason": "LAW § 4.1 i § 4.3: wersjonowane disclaimery objaśniają ograniczenia; ich dosłowne brzmienie kontroluje osobny test zgodności z dokumentacją."
+    }
+  ]
+}

@@ -69,3 +69,36 @@ test("Polish plural categories include teens, large counts and fractions", () =>
     "other",
   ]);
 });
+
+test("freshness messages are verbatim and cover all contract stale reasons", () => {
+  const doc = read("../../../docs/04-frontend/teksty-ui.md").split("## 8. ")[1].split("## 9.")[0];
+  const texts = doc
+    .split("\n")
+    .filter((line) => line.startsWith("| "))
+    .map((line) => line.split("|")[2].trim());
+  for (const value of Object.values(messages.data)) {
+    for (const text of typeof value === "string" ? [value] : Object.values(value))
+      expect(texts).toContain(text);
+  }
+  const api = parse(read("../../../docs/02-api/openapi.yaml"));
+  expect(Object.keys(messages.data.reasons).sort()).toEqual(
+    api.components.schemas.StaleReason.enum.sort(),
+  );
+});
+
+test("the forbidden catalog retains all seven approved alternatives from the UI source", () => {
+  const policy = JSON.parse(read("../src/compliance/forbidden-phrases.pl.json"));
+  const section = read("../../../docs/04-frontend/teksty-ui.md")
+    .split("## 9. ")[1]
+    .split("## 10.")[0];
+  const rows = section
+    .split("\n")
+    .filter((line) => line.startsWith("| ") && !line.startsWith("| Nie pisz"));
+  expect(rows).toHaveLength(7);
+  expect(policy.replacements).toEqual(
+    rows.map((line) => {
+      const [, forbidden, replacement] = line.split("|");
+      return { forbidden: forbidden.trim(), replacement: replacement.trim() };
+    }),
+  );
+});

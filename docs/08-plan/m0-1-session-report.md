@@ -18,7 +18,7 @@ Osobne commity/push: generator `663a648`, CSP/klient `80b0a73`, tokeny w bieżą
 
 ## BL-012 — w toku
 
-Etap 1: słowniki (12 disclaimerów 2026-09, 23 kody błędów, teksty z TXT) i formatery Intl bez konwersji kwot na number. Zatwierdzone przez właściciela uzupełnienia TXT: zmienne opóźnienie, flaga nieaktualności, pięć przyczyn z kontraktu. i18n lint/typecheck/test/build 4/4, 10 testów PASS; instalacja frozen PASS. Dalej lint JSX, test zakazanych zwrotów, prymitywy i axe. `packages/core` bez zmian.
+Etap 1: słowniki (12 disclaimerów 2026-09, 23 kody błędów, teksty z TXT) i formatery Intl bez konwersji kwot na number. Zatwierdzone przez właściciela uzupełnienia TXT: zmienne opóźnienie, flaga nieaktualności, pięć przyczyn z kontraktu. i18n lint/typecheck/test/build 4/4, 10 testów PASS; instalacja frozen PASS. Etap 2: skaner całych słów Unicode (słowniki/MDX/komponenty), lint AST dla tekstów JSX i atrybutów dostępności; 16 testów skanera, 13 testów i18n PASS, granice PASS. Kontrole w lint i CI web, bez cache dla skanowania całego repo. Dalej prymitywy i axe. `packages/core` bez zmian.
 
 ## Paczka i następny krok
 
