@@ -34,14 +34,19 @@ test("palette updates without navigation and remains server-rendered after reloa
   page,
 }) => {
   await page.goto("/");
-  let navigations = 0;
-  page.on("framenavigated", () => navigations++);
+  const timeOrigin = await page.evaluate(() => performance.timeOrigin);
+  let documentRequests = 0;
+  // History updates during Next hydration can emit framenavigated without a reload.
+  page.on("request", (request) => {
+    if (request.isNavigationRequest() && request.frame() === page.mainFrame()) documentRequests++;
+  });
   await page.getByLabel("Paleta", { exact: true }).selectOption("colorblind");
   await expect(page.getByText("+ wzrost — próbka koloru", { exact: true })).toHaveCSS(
     "color",
     "rgb(90, 169, 255)",
   );
-  expect(navigations).toBe(0);
+  expect(documentRequests).toBe(0);
+  expect(await page.evaluate(() => performance.timeOrigin)).toBe(timeOrigin);
   const response = await page.reload();
   expect(await response?.text()).toContain('data-palette="colorblind"');
 });
