@@ -14,7 +14,7 @@ Zatwierdzony wyjątek: prywatny `tools/openapi-client`, tylko devDependencies op
 
 Dowody: frozen PASS, monorepo **88/88** (5 cache), web **9**, ui **3**, Chromium **7**, granice **36** testów PASS. Negatywny build client → server-only i kontrola nieaktualnych typów PASS. Nonce także na 404, brak API/config w chunkach, zero zewnętrznych zasobów/pobranych fontów. Kontrasty obu motywów/palet, układ 360/768/1280 i klawiatura PASS; zrzuty obejrzane. Initial JS **169,7 KiB gzip-9** (7 skryptów) < 200 KiB; pełne budżety BL-016. Logi `.git/bl011-*.log`.
 
-Osobne commity/push: generator `663a648`, CSP/klient `80b0a73`, tokeny w bieżącym etapie. CI `80b0a73`: web/contracts/db/modules/workers i CodeQL PASS; końcowa rewizja czeka na CI. Status `w toku` do wspólnego DoD; estymacja 3 d bez zmiany, nakład niezmierzony.
+Osobne commity/push: generator `663a648`, CSP/klient `80b0a73`, tokeny w bieżącym etapie. tokeny `28e9147`, poprawka testu przełączania bez przeładowania `e368c9a` (pomiar żądania nowego dokumentu zamiast licznika nawigacji). CI `e368c9a` PASS: [web](https://github.com/Ipper18/OligInvest/actions/runs/36524690014), [contracts](https://github.com/Ipper18/OligInvest/actions/runs/36524690089), [db](https://github.com/Ipper18/OligInvest/actions/runs/36524690046), [modules](https://github.com/Ipper18/OligInvest/actions/runs/36524690049), [workers](https://github.com/Ipper18/OligInvest/actions/runs/36524690025), CodeQL. Status `w toku` do wspólnego DoD; estymacja 3 d bez zmiany, nakład niezmierzony.
 
 ## Paczka i następny krok
 

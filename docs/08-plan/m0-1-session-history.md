@@ -265,3 +265,8 @@ BL-007 lokalnie 4/4, status w toku do CI/DoD; następny BL-008. Brak nowego ADR/
 - Uzgodniono etapowanie izolacji analytics: host i fixture w dev, systemowa izolacja od M3. Bez zmian core, źródłowego seeda, ADR i nowych ryzyk; estymacje bez zmian, odchylenie niezmierzone.
 - Osobne commity/push: BL-013 `b4499f8`, BL-014 `51b89fc`, BL-034 `3ee5523`, CI `3ee9ee9`, dokumentacja `0096fd4`.
 - CI `0096fd4`: [workers PASS](https://github.com/Ipper18/OligInvest/actions/runs/36474677562), db/modules/contracts i CodeQL PASS; test SMTP rzeczywiście dostarcza wiadomość i odczytuje ją z Mailpit.
+
+## 2026-09-29 — BL-011: aplikacja web
+- Blokada: `openapi-typescript@7.13.0` wymaga peer TS ^5; zatwierdzony wyjątek — prywatny `tools/openapi-client` z TS 5.9.3 (`663a648`), web nadal TS 7.0.2, strict peers bez wyciszeń.
+- `80b0a73`: CSP z nonce per żądanie w `proxy.ts`, klient API wyłącznie serwerowy; `28e9147`: tokeny Tailwind 4, motyw ciemny domyślny/jasny/systemowy, paleta dla daltonistów.
+- `e368c9a`: test bez przeładowania mierzy żądanie dokumentu (fałszywy błąd w CI). Monorepo 88/88, Chromium 7, initial JS 169,7 KiB gzip; CI wszystkich workflow PASS.
