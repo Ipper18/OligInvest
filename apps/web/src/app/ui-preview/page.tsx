@@ -10,9 +10,10 @@ import {
   SelectField,
   TextField,
 } from "@oliginvest/ui";
+import type * as React from "react";
 
 /** Technical M0 fixture. No user/market data and no product workflow. */
-export default function UiPreviewPage() {
+export default function UiPreviewPage(): React.JSX.Element {
   return (
     <main className="mx-auto grid max-w-prose gap-5 px-4 py-8">
       <h1 className="font-serif text-2xl font-semibold">{messages.bootstrap.title}</h1>

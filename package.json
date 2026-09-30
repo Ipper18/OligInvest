@@ -34,7 +34,11 @@
     "size": "pnpm --filter @oliginvest/web size",
     "budgets": "pnpm --filter @oliginvest/web budgets",
     "lighthouse": "pnpm --filter @oliginvest/web lighthouse",
-    "lighthouse:assert": "pnpm --filter @oliginvest/web lighthouse:assert"
+    "lighthouse:assert": "pnpm --filter @oliginvest/web lighthouse:assert",
+    "ci:lint": "pnpm turbo run lint --output-logs=new-only",
+    "ci:typecheck": "pnpm turbo run typecheck --output-logs=new-only",
+    "ci:unit": "pnpm turbo run test --output-logs=new-only",
+    "ci:build": "node scripts/ci-build.mjs"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.14",

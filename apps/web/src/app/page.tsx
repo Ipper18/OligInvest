@@ -1,9 +1,10 @@
 import { messages } from "@oliginvest/i18n";
+import type * as React from "react";
 import { getHealthStatus } from "../api/server";
 import { getTestPreferences } from "../appearance/preferences";
 import { ThemeControls } from "../appearance/theme-controls";
 
-export default async function TestPage() {
+export default async function TestPage(): Promise<React.JSX.Element> {
   const status = await getHealthStatus();
   const { theme, palette } = await getTestPreferences();
   return (

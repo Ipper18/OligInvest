@@ -30,7 +30,7 @@ const runtimeSchema = z
 export function createRuntime(
   env: Readonly<Record<string, string | undefined>>,
   logger: PlatformLogger = createLogger(),
-) {
+): { app: ReturnType<typeof createApp>; hostname: string; port: number } {
   const mode = z.enum(["development", "test", "production"]).parse(env.NODE_ENV);
   const config = loadConfig("api", env, { mode });
   const runtime = runtimeSchema.parse(
