@@ -32,3 +32,5 @@ jobs:
       - run: node --test --test-reporter=dot scripts/check-deps.test.mjs
       - run: node --test --test-reporter=dot scripts/gen-module.test.mjs
       - run: pnpm test:module-generator
+      - run: node scripts/check-ci.mjs
+      - run: node --test --test-reporter=dot scripts/check-ci.test.mjs

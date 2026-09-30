@@ -1,4 +1,4 @@
-# Nieaktywne: warunki przeniesienia do workflows/ opisuje README.md.
+# ARCHIWALNY SZKIC: zakres jest aktywny w kilku workflows; nie kopiować. Mapowanie w README.md.
 name: ci
 on:
   pull_request:

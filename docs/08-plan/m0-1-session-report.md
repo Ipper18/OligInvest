@@ -1,23 +1,28 @@
 # M0-1 — stan bieżący
 
-**Cel:** przekazać stan i następny krok; wcześniejsze dowody w [historii](m0-1-session-history.md).
+**Cel:** przekazać stan paczki i następny krok; wcześniejsze dowody w [historii](m0-1-session-history.md).
 
-**2026-09-30**, gałąź `feat/m0-1-skeleton`, [roboczy PR #2](https://github.com/Ipper18/OligInvest/pull/2), bez scalania. Node 24.21.0, pnpm 12.4.2, Python 3.13.13; uv `.git/tools/uv-0.12.16/uv.exe` musi być w PATH. `packages/core` bez zmian — osobny PR #3.
+**2026-09-30**, gałąź feat/m0-1-skeleton, [PR #2](https://github.com/Ipper18/OligInvest/pull/2) nadal roboczy, bez scalania. Core bez zmian (osobny PR #3). Node 24.21.0, pnpm 12.4.2, Python 3.13.13; lokalne uv: .git/tools/uv-0.12.16/uv.exe.
 
-## BL-016 — wykonane lokalnie
+## Wykonane w tej sesji
 
-Lighthouse 13.5.0, size-limit/file/esbuild 14.0.0, esbuild 0.28.2 i chrome-launcher 1.2.1 w manifeście oraz lockfile; frozen PASS bez wyjątków karencji. Launcher 1.2.2 jeszcze niedojrzały. Budżety wszystkich wzorców PERF §3, pokrycie manifestu, gzip -9 bez noModule, markery sześciu rodzin bibliotek, podsumowanie CI. Brak trasy = OCZEKUJE; nowa trasa bez budżetu, brak fixture, redirect i błąd HTTP = błąd pomiaru. Testy negatywne i rzeczywisty zminifikowany Zod: 9 PASS. Leniwe/razem wymagają interakcji M1, wartości zapisane w konfiguracji.
+BL-017/035: repository (dokumentacja, fixtures, tytuł PR), lint/typecheck/unit oraz sześć buildów: all i bez każdego modułu funkcjonalnego. Kopie źródeł bez cache i plików pominiętego modułu, instalacje frozen. Jawne typy wyników API/dwóch stron naprawiają błąd czystego buildu. Budżety/Lighthouse pozostają w web, typy klienta w contracts. Ruleset: 17 rzeczywistych nazw, kontrola zgodności i duplikatów w modules; nadal disabled.
 
-size-limit sprawdza UI (15 KiB) i współdzielone UI+i18n (30 KiB, część przyszłej powłoki BL-121). Pomiar wykrył runtime import decimal.js do rozpoznawania Decimal: poprawiono i18n na import typu i zgodny znacznik biblioteki, bez zmiany pieniędzy/core. UI 4,35 kB i UI+i18n 5,75 kB (wyjście size-limit, jednostki dziesiętne). Initial JS: `/` 131,34 KiB, `/ui-preview` 130,52 KiB. Lighthouse: mediana 3 przebiegów mobilnych `/`: LCP 1897 ms, TBT 40 ms, CLS 0; raport M0, twarde asercje i wymóg 4 tras przez `lighthouse:assert` od M1. Cookies/surowe raporty nie są publikowane. Kroki podłączone do CI web, wynik po push do sprawdzenia.
+BL-018 M0-1: 36/36 E2E w Chromium/WebKit/Firefox z axe, klawiaturą, motywami i nagłówkami. Produkcyjny Next po HTTPS (tymczasowy certyfikat), API production z syntetycznymi *_FILE, PostgreSQL/Valkey ×2/Mailpit z izolowanego Compose i seed. CSP bez osłabienia; Firefox sprawdza zdarzenie naruszenia CSP zamiast angielskiej treści konsoli. Obrazy produkcyjne pozostają M0-2.
 
-Dowody lokalne: monorepo 88/88 (31 cache), i18n 14, ui 9, web 9 testów, Chromium 11/11 i axe bez naruszeń PASS. Granice, dokumentacja, repo, diff check PASS. Logi `.git/bl016-*.log`. Commit/push BL-016: `851c743`. Pierwszy przebieg web: Lighthouse przerwany błędem uruchomienia pobranego Chromium (nie przekroczeniem progu); `ad2720a` dodał diagnostykę, `56d081a` przełączył audyt na systemowy Chrome runnera z sandboxem. CI `56d081a` PASS: [web](https://github.com/Ipper18/OligInvest/actions/runs/36735121531) (size, budgets, Lighthouse: `/` LCP 1522 ms, TBT 79 ms, CLS 0), contracts, db, modules, workers, CodeQL. Status `w toku` do wspólnego DoD; estymacja 2 d bez zmiany, odchylenie nakładu niezmierzone. Bez nowego ADR/ryzyka.
+Deps-audit: OSV 2.6.0 + Syft 1.52.0, pobrania z przypiętym SHA-256, pokrycie 553 pakietów obu lockfile. High/critical blokują niezależnie od poprawki; wyjątki tylko OSV TOML (data decyzji, ryzyko, ≤90 dni). Błędy/nieznane licencje blokują; pełny raport i CycloneDX także po błędzie. 7 testów polityki PASS; parser uwzględnia wpisy plików w linuksowym SBOM. Next 16.3.6 po karencji usuwa critical; bez nowego wyjątku. Właściciel zatwierdził trzy licencje przechodnie, zakres i źródła w STACK §7. R-24 pozostaje pod kontrolą.
 
-## BL-033 — pomiary 2026-09-30
+## Kontrola końca etapu — prompty-codex §5
 
-`pnpm --filter @oliginvest/web measure:baselines`: Next.js bootstrap 126,44 KiB; strony 131,34 / 130,52 KiB; noModule osobno 38,59 KiB. Zod namespace / `{ z }` / mini: 24,19 / 90,48 / 4,35 KiB; sześć natywnych prymitywów 2,16 KiB. Radix nieużywany w BL-012, bez pomiaru hipotetycznego importu. PERF §2 ma datę, receptury, jednostki, bajty i odróżnia historyczne pomiary innych bibliotek. size-limit: UI 4353 B, UI+i18n 5747 B. Lint i kontrola dokumentacji PASS, log `.git/bl033-baselines.log`. Estymacja 0,5 d bez zmiany; nakład niezmierzony; status do wspólnego DoD `w toku`.
+| Kryterium M0 | Ocena i dowód |
+|---|---|
+| 1 | PASS techniczny: lokalnie 88/88 zadań monorepo; [CI i 6 buildów](https://github.com/Ipper18/OligInvest/actions/runs/36770589968), [granice/generator](https://github.com/Ipper18/OligInvest/actions/runs/36770589770) PASS |
+| 2 | PASS: [db](https://github.com/Ipper18/OligInvest/actions/runs/36770589833), migracje, zero różnic, RLS, audyt i pule |
+| 3 | PASS: [contracts](https://github.com/Ipper18/OligInvest/actions/runs/36770590162), OpenAPI/pending i typy klienta |
+| 7 | NIE: pliki gotowe, ustawienia po scaleniu wykonuje właściciel. Odczyt GitHub: brak rulesetu, CodeQL tylko Python, merge/rebase nadal dostępne; [protokół](../07-wdrozenie/ustawienia-repozytorium.md#7-odczyt-kontrolny-agenta--2026-09-30) |
 
-## Paczka i następny krok
+Na ff3f00f wszystkie kontrole PR zielone, w tym [E2E](https://github.com/Ipper18/OligInvest/actions/runs/36770589785), [audit](https://github.com/Ipper18/OligInvest/actions/runs/36770589787), [web](https://github.com/Ipper18/OligInvest/actions/runs/36770589830), [workers](https://github.com/Ipper18/OligInvest/actions/runs/36770589894) i natywny CodeQL (Python). Ostateczne kontrole po aktualizacji plików: zakładka Checks PR.
 
-Dalej BL-018, pełne CI BL-017, ustawienia BL-019, pozostałe BL-035. M0 otwarty: kryteria 1–3 mają dowody, 4–7 wymagają dalszych prac/właściciela, 8 częściowo.
+## Otwarte
 
-BL-001–015/034 wykonane lokalnie, BL-032 technicznie zamknięty. BL-012: słowniki, skaner tekstów i natywne UI, zatwierdzone uzupełnienia TXT; BL-011: CSP nonce, klient server-only, motywy. Prywatny generator `tools/openapi-client`: TS 5.9.3, aplikacje TS 7.0.2 (R-20). Baza: RLS/audyt, 12 testów pul, ZERO DIFFERENCES; queues:test/db:seed:test/dev:test PASS. Analytics: izolacja systemowa od M3, dziś pytest blokuje gniazda poza Valkey. Ruleset disabled. Serwery i ustawienia GitHub bez zmian.
+BL-001–017/032–035 wykonane technicznie, statusy w toku do wspólnego DoD/przeglądu właściciela. BL-018 tylko M0-1, BL-019 tylko pliki i odczyt ustawień. M0 pozostaje otwarty: brak zielonego main, wydania/wdrożenia i infrastruktury M0-2, części spike’ów, przeglądu zagrożeń oraz ręcznych testów dostępności. JSON Schema zadań domenowych z analizami M3. OpenAPI/SQL/wzory/disclaimery bez zmian. Estymacje BL-017/018/019/035: 2/1/1/0,5 d bez zmian; nakład niezmierzony. Bez nowego ADR i nowych otwartych ryzyk.

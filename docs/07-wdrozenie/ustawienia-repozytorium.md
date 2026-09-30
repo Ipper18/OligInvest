@@ -8,7 +8,7 @@ Powiązane: [CI/CD](ci-cd.md), [CONTRIBUTING](../../CONTRIBUTING.md), [ADR-013](
 
 Odczyt GitHub API z 2026-09-20: `main`, włączone secret scanning i push protection, konfiguracja domyślna CodeQL z językiem `python`; brak rulesetu. Jedyny współpracownik z uprawnieniami zapisu to `Ipper18`; GitHub CLI działa jako to samo konto. Ten odczyt nie potwierdza aktualnego stanu pozostałych przełączników.
 
-**Stan po BL-010 (2026-09-27):** aktywne są workflow Database (`db`), Module boundaries (`modules`) i API contracts (`contracts`, [zielony przebieg](https://github.com/Ipper18/OligInvest/actions/runs/36348963637)); plik rulesetu wymaga tych istniejących kontekstów. `contracts` obejmuje OpenAPI/pending; pozostałe kontrole kontraktów i workflow dojdą w BL-017. Nie aktywuj rulesetu na podstawie samych planowanych nazw zadań.
+**Stan BL-017 (2026-09-30):** plik rulesetu obejmuje 17 rzeczywistych kontekstów: `repository`, `lint`, `typecheck`, `unit`, `contracts`, `db`, `modules`, `workers`, `web`, `e2e`, `deps-audit`, `build (all)` oraz `build (without analytics/alerts/education/admin/quick-actions)` (każdy osobno). `node scripts/check-ci.mjs` i testy w `modules` blokują duplikaty oraz różnice między YAML a JSON. Dowody rzeczywistych przebiegów w [raporcie M0-1](../08-plan/m0-1-session-report.md). Budżety i Lighthouse pozostają krokami `web`, typy klienta w `contracts`.
 
 Plik rulesetu ma `enforcement: disabled` i pustą listę obejść. Import jest wyłącznie przygotowaniem; aktywacja następuje dopiero po wykonaniu punktów poniżej. Nie dodawaj właściciela do bypass i nie włączaj automatycznego scalania.
 
@@ -44,9 +44,9 @@ Decyzja właściciela z 2026-09-20 (R-23): `required_approving_review_count: 0` 
 
 1. Potwierdź scalony M0-1 i zielone rzeczywiste przebiegi CI/CodeQL; zachowaj 0 wymaganych zatwierdzeń i wyłączony wymóg zatwierdzenia code ownera zgodnie z § 1.
 2. W Settings → Rules → Rulesets zaimportuj definicję JSON w stanie Disabled albo odwzoruj ją w panelu. Nie wykonuj tego za pomocą agenta. Zachowaj zakres `refs/heads/main`, brak bypass, blokadę usuwania/force-push, historię liniową, wymagany PR i rozwiązanie wątków.
-3. Dla wymaganych status checks potwierdź istniejące `db`, `modules` i `contracts` z udanego przebiegu; wybierz GitHub Actions jako źródło tam, gdzie panel to umożliwia. W BL-017 dodawaj do pliku i panelu nowe konteksty dopiero wraz z aktywacją i zielonym przebiegiem odpowiedniego zadania: `repository`, `lint`, `typecheck`, `unit`, wszystkie warianty `build` (także bez `education`), `budgets`, `e2e`, `deps-audit` — dokładne nazwy według CI/CD § 3 i rzeczywistego przebiegu. Zachowaj wymagane `modules` i rozszerz zakres `contracts` o typy klienta i schematy zadań. Włącz wymóg aktualności gałęzi.
+3. Dla wymaganych status checks wybierz dokładnie 17 kontekstów z pliku rulesetu i zakończonego zielonego przebiegu PR #2 (lista w §1), z GitHub Actions jako źródłem tam, gdzie panel to umożliwia. Nie dodawaj osobnych `budgets` ani `lighthouse`: są krokami `web`. Zachowaj `db`, `modules`, `contracts`, `workers` i `web`; włącz wymóg aktualności gałęzi. Natywny CodeQL jest osobną regułą poniżej.
 4. Dodaj wymóg wyników skanowania CodeQL z progiem błędów i bezpieczeństwa `high_or_higher`. Plik używa natywnej reguły `code_scanning`, nie wymyślonego zadania `codeql` we własnym workflow. W razie różnic z panelem zapisz je i pozostaw ruleset nieaktywny do rozstrzygnięcia. [Kontrakt GitHub REST](https://docs.github.com/en/rest/repos/rules), sprawdzono 2026-09-20.
-5. Lighthouse w M0 raportuje; nie jest jeszcze wymaganą bramką. Od M1 dodać ją do wymaganych kontroli zgodnie z dokumentacją wydajności.
+5. Wymagany `web` wykonuje Lighthouse; w M0 progi są raportowe, ale błąd samego pomiaru blokuje zadanie. Od M1 włączyć `lighthouse:assert` w tym samym kontekście zgodnie z dokumentacją wydajności.
 6. Po sprawdzeniu wszystkich warunków ustaw Active. W kontrolnym PR potwierdź blokadę czerwonego CI oraz brak możliwości force-push/obejścia przez właściciela; nie testuj destrukcyjnego push na `main`.
 
 ## 6. Protokół właściciela
@@ -67,3 +67,7 @@ Wypełnić po scaleniu M0-1; brak potwierdzenia oznacza otwarty BL-019 i niespe�
 | Renovate: aplikacja i poprawna konfiguracja | do wykonania |
 | CODEOWNERS na `main` | do wykonania |
 | Ruleset aktywny, właściwe kontrole, brak bypass | do wykonania |
+
+## 7. Odczyt kontrolny agenta — 2026-09-30
+
+GitHub API, wyłącznie odczyt: token workflow ma domyślnie read, zatwierdzanie PR przez Actions wyłączone; secret scanning i push protection włączone, private vulnerability reporting włączone. Squash jest dostępny, ale merge i rebase nadal dozwolone — właściciel pozostawia tylko squash. Brak aktywnego rulesetu (`GET /rulesets`: pusta lista); plik JSON nadal disabled. CodeQL default setup obejmuje tylko python, więc po scaleniu trzeba sprawdzić JS/TS i dostępność actions. Dependabot security updates włączone; Dependency graph, alerty oraz instalacja i walidacja Renovate wymagają osobnego potwierdzenia właściciela. Ten odczyt nie zastępuje protokołu po scaleniu w §6 i nie zamyka BL-019 ani kryterium M0 nr 7.

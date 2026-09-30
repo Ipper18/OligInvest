@@ -1,21 +1,23 @@
-# Szkice workflow M0-1
+# Archiwalny szkic workflow M0-1
 
-**Cel:** przygotować konfigurację CI podczas karencji bez uruchamiania nieistniejących jeszcze poleceń i bez pozornego spełnienia kryteriów M0.
+**Cel:** zachować pochodzenie konfiguracji przygotowanej podczas karencji i wskazać aktywne kontrole BL-017/018/035.
 
-**Konfiguracja przygotowana; nie uruchomiono jeszcze w CI.** GitHub uruchamia workflow z `.github/workflows/`, więc pliki w tym katalogu są nieaktywne. Przenieść je dopiero w BL-017 po implementacji poleceń, utworzeniu lockfile i lokalnej weryfikacji. Wpisy `uses` są przypięte do commitów, także po rozwinięciu tagów adnotowanych.
+Szkic ci.yml jest archiwalny — **nie kopiować go do workflows/**. Jego zakres został rozdzielony bez zduplikowanych nazw zadań:
 
-## Warunki aktywacji
+| Aktywny plik | Konteksty / odpowiedzialność |
+|---|---|
+| ../workflows/ci.yml | repository (Cel, linki, FR/NFR ↔ BL, fixtures, Conventional Commits), lint, typecheck, unit, build (all) i pięć buildów bez modułów |
+| ../workflows/contracts.yml | contracts: OpenAPI, pending, wygenerowane typy klienta |
+| ../workflows/db.yml | db: migracje, pełne porównanie SQL, RLS i pule |
+| ../workflows/modules.yml | modules: granice, testy negatywne, generator, zgodność nazw workflow/rulesetu |
+| ../workflows/workers.yml | workers: kolejki Node/Python, seed, uruchomienie czterech aplikacji |
+| ../workflows/web.yml | web: UI/i18n, server-only, size-limit, budżety tras i Lighthouse (raport w M0) |
+| ../workflows/e2e.yml | e2e: Chromium/WebKit/Firefox, axe, production build, HTTPS i compose.dev.yaml |
+| ../workflows/deps-audit.yml | deps-audit: oba lockfile, próg CVSS ≥7, wyjątki OSV, licencje z CycloneDX |
 
-BL-010 uruchamia osobny `../workflows/contracts.yml` (kontekst `contracts`) dla OpenAPI i pending. W BL-017 rozszerz ten kontekst o pozostałe kontrole kontraktów; przy przenoszeniu szkicu nie twórz dwóch zadań o nazwie `contracts`.
+Polecenia i warunki sprzątania opisuje [CI/CD §10](../../docs/07-wdrozenie/ci-cd.md#10-kontrole-m0-1--uruchamianie-lokalne). Raport audytu trafia do artefaktów także po błędzie. Testy polityki nie używają sieci. JSON Schema domenowych zadań analytics dojdzie wraz z ich implementacją w M3; obecny ACK sprawdza workers.
 
-- `pnpm-lock.yaml` i `apps/analytics/uv.lock` istnieją, instalacje frozen działają przy niezmienionej polityce; wszystkie wersje porównane z audytem BL-001.
-- Root package udostępnia rzeczywiste `ci:lint`, `ci:typecheck`, `ci:unit`, `ci:contracts`, `ci:db`, `ci:budgets`, `ci:e2e`, `ci:deps-audit`, `ci:lighthouse` oraz `ci:build -- <moduł|none>`. Nie tworzyć atrap zwracających sukces.
-- `ci:db`, `ci:e2e` i `ci:lighthouse` samodzielnie przygotowują i sprzątają lokalne usługi testowe; e2e/lighthouse startują build produkcyjny, nie `next dev`. Dane wyłącznie syntetyczne. E2E obejmuje Chromium, WebKit i Firefox z axe.
-- `ci:build` dla wariantu bez modułu buduje odizolowaną kopię bez tego modułu; wyłączenie flagi runtime nie zastępuje testu granic kompilacji.
-- `ci:contracts` obejmuje OpenAPI/pending, generowane typy/JSON Schema, granice importów i spójność dokumentacji. `ci:deps-audit` obejmuje npm/PyPI, próg podatności oraz licencje; pobierane narzędzia przypięte i zweryfikowane.
-- Lighthouse w M0 używa trybu raportowego; brak wymaganego status check aż do M1. Raporty testów nie mogą zawierać sekretów ani rzeczywistych danych.
-- Zweryfikować składnię i semantykę YAML, ścieżki raportów, kontrakty wszystkich poleceń, SHA akcji i odpowiadające im wejścia. Potwierdzenie samych SHA nie jest walidacją uruchomienia workflow.
-- Po pierwszym rzeczywistym przebiegu zsynchronizować nazwy status checks w definicji rulesetu. CodeQL pozostaje poza własnymi workflow, zgodnie z [instrukcją właściciela](../../docs/07-wdrozenie/ustawienia-repozytorium.md).
+Ruleset pozostaje disabled. Jego konteksty odpowiadają rzeczywistym nazwom własnych zadań; CodeQL jest osobną regułą natywną, a nie fikcyjnym zadaniem. Właściciel aktywuje ustawienia po scaleniu według [instrukcji](../../docs/07-wdrozenie/ustawienia-repozytorium.md). Obrazy i wydanie należą do M0-2.
 
 ## Przypięcia akcji
 

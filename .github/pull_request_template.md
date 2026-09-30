@@ -18,7 +18,7 @@
 - [ ] 1. Zakres i kryteria wymagań z backlogu spełnione; dowody wskazane.
 - [ ] 2. Dokumentacja, statusy, odchylenia w backlogu i ryzyka zaktualizowane.
 - [ ] 3. Testy jednostkowe, integracyjne z PostgreSQL/RLS, kontraktowe i e2e z axe wykonane odpowiednio do zmiany; core ≥ 90% linii i 100% wzorów.
-- [ ] 4. Wymagane CI zielone: lint, typecheck, unit, contracts, db, build także bez modułów, budgets, e2e, lighthouse (bramka od M1), deps-audit; CodeQL przez konfigurację domyślną GitHub.
+- [ ] 4. Wymagane CI zielone: repository, lint, typecheck, unit, contracts, db, modules, workers, build także bez modułów, web (budżety i Lighthouse, progi od M1), e2e, deps-audit; CodeQL przez konfigurację domyślną GitHub.
 - [ ] 5. Zod strict, parametryzowane SQL, izolacja użytkowników, redakcja logów, allowlista połączeń i testy ASVS; brak sekretów, adresów IP oraz rzeczywistych danych.
 - [ ] 6. Pieniądze/czas zgodne z ADR-014: decimal.js/Decimal/NUMERIC, jawna waluta, kwoty JSON jako ciągi.
 - [ ] 7. Budżety tras dotrzymane; ciężkie biblioteki ładowane leniwie.
