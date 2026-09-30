@@ -2,6 +2,17 @@ import { execFileSync } from "node:child_process";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+const LEGACY_COMMIT_EXCEPTIONS = new Set([
+  // Commit predating the rule (2026-09-20); owner approved 2026-09-30.
+  // Remove this list and exception handling after PR #2 is merged (BL-019).
+  "8d91754b0adadfb5a2d7e9c2324d4e62f4125a64",
+]);
+
+export function checkCommit(sha, subject) {
+  return /^[a-f0-9]{40}$/.test(sha)
+    && (LEGACY_COMMIT_EXCEPTIONS.has(sha) || checkPullRequestTitle(subject));
+}
+
 export function checkFixturePaths(paths) {
   return paths.filter((path) => {
     const normalized = path.replaceAll("\\", "/");
@@ -12,10 +23,24 @@ export function checkFixturePaths(paths) {
 
 export function checkPullRequestTitle(title) {
   return !/[\r\n]/.test(title)
-    && /^(feat|fix|docs|refactor|perf|test|build|ci|chore)(\([a-z0-9-]+\))?!?: [^\s\r\n][^\r\n]*$/.test(title);
+    && /^(feat|fix|docs|refactor|perf|test|build|ci|chore)(\([a-z0-9,-]+\))?!?: [^\s\r\n][^\r\n]*$/.test(title);
 }
 
 function main() {
+  let invalidCommits = false;
+  const base = process.env.COMMIT_BASE_REF;
+  const head = process.env.COMMIT_HEAD_REF;
+  if (base || head) {
+    if (![base, head].every((value) => /^[a-f0-9]{40}$/.test(value ?? ""))) {
+      throw new Error("Commit range must use full Git SHAs");
+    }
+    const commits = execFileSync("git", ["log", "--format=%H%x00%s", `${base}..${head}`], { encoding: "utf8" }).trimEnd().split("\n").filter(Boolean);
+    invalidCommits = commits.some((entry) => {
+      const separator = entry.indexOf("\0");
+      return separator < 0 || !checkCommit(entry.slice(0, separator), entry.slice(separator + 1));
+    });
+    if (invalidCommits) console.error("Commity muszą być zgodne z Conventional Commits.");
+  }
   const paths = execFileSync("git", ["ls-files", "--cached", "-z"], {
     encoding: "utf8",
   }).split("\0").filter(Boolean);
@@ -31,10 +56,10 @@ function main() {
     // Do not echo untrusted PR text or interpolate it into shell commands.
     console.error("Tytuł PR musi być zgodny z Conventional Commits.");
   }
-  if (invalidPaths.length > 0 || invalidTitle) {
+  if (invalidPaths.length > 0 || invalidTitle || invalidCommits) {
     process.exitCode = 1;
   } else {
-    console.log("Kontrola ścieżek fixtures i przekazanego tytułu PR: OK.");
+    console.log("Kontrola fixtures, tytułu PR i przekazanego zakresu commitów: OK.");
   }
 }
 

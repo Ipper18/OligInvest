@@ -23,11 +23,13 @@ Fakty sprawdzone 2026-09-19 w dokumentacji GitHub: runnery hostowane przez GitHu
 
 ## 3. Zadania CI (pull request i `main`)
 
+Kontrola Conventional Commits działa w istniejącym zadaniu **repository**: sprawdza tytuł PR (także po edycji — przy squash merge trafia on na main) oraz każdy commit między SHA bazy i głowy PR; przy push na main między poprzednim i nowym SHA. Jedyny wyjątek, zatwierdzony przez właściciela 2026-09-30, to jawny pełny SHA **8d91754b0adadfb5a2d7e9c2324d4e62f4125a64**: commit sprzed reguły (2026-09-20). Lista nie zawiera wzorców ani zakresów dat; każdy inny niezgodny commit blokuje CI, a wyjątek nigdy nie zwalnia tytułu PR. Nie przepisujemy historii, ponieważ na tej gałęzi opiera się PR #3. **Po scaleniu PR #2 należy usunąć listę wyjątków i gałąź kodu ją obsługującą**, dostosować testy i potwierdzić kontrolę bez wyjątków (krok BL-019 w ustawienia-repozytorium.md §5).
+
 **BL-017/018/035 (2026-09-30):** aktywne workflow `contracts`, `db`, `modules`, `workers` i `web` uzupełniono o `repository` (dokumentacja i higiena repo), `lint`, `typecheck`, `unit`, sześć wariantów `build`, `deps-audit` i `e2e`. Budżety i Lighthouse pozostają krokami `web`, typy klienta w `contracts`; nie tworzymy zduplikowanych kontekstów. Ruleset pozostaje wyłączony; nazwy rozszerzamy po potwierdzeniu rzeczywistych zielonych przebiegów. Wyniki i otwarte kryteria w [raporcie M0-1](../08-plan/m0-1-session-report.md).
 
 | Zadanie | Co sprawdza | Blokuje scalenie |
 |---|---|---|
-| `lint` | Biome (TS/JS, w tym reguły bezpieczeństwa: zakaz `eval`, `dangerouslySetInnerHTML`, `sql.raw`, importu `{ z }` z `zod` w kodzie klienckim), Ruff (Python), tytuł PR, format commitów | tak |
+| `lint` | Biome (TS/JS, w tym reguły bezpieczeństwa: zakaz `eval`, `dangerouslySetInnerHTML`, `sql.raw`, importu `{ z }` z `zod` w kodzie klienckim), Ruff (Python); tytuł PR i format commitów sprawdza `repository` | tak |
 | `typecheck` | TypeScript (`strict`) w całym monorepo, mypy/pyright w `apps/analytics` | tak |
 | `unit` | Vitest (w tym wektory `packages/test-vectors`), pytest (te same wektory dla Pythona) | tak |
 | `modules` | Osobny workflow Module boundaries: `pnpm check:deps` (reguły warstw modułów) i testy negatywne skryptu | tak — aktywne |

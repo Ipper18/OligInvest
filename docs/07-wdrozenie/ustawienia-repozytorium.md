@@ -42,6 +42,9 @@ Decyzja właściciela z 2026-09-20 (R-23): `required_approving_review_count: 0` 
 
 ## 5. Ruleset main
 
+**BL-019 — po scaleniu PR #2:** w następnym małym PR usuń listę historycznych wyjątków z scripts/check-repository.mjs (jedyny SHA: 8d91754b0adadfb5a2d7e9c2324d4e62f4125a64, commit sprzed reguły z 2026-09-20) oraz obsługującą ją gałąź kodu. Dostosuj test wyjątku do bezwarunkowego odrzucania niezgodnych commitów; zachowaj kontrolę tytułu PR i testy negatywne. Sprawdź zielone repository bez wyjątków. Nie przepisuj historii PR #2 ani opartego na nim PR #3.
+
+
 1. Potwierdź scalony M0-1 i zielone rzeczywiste przebiegi CI/CodeQL; zachowaj 0 wymaganych zatwierdzeń i wyłączony wymóg zatwierdzenia code ownera zgodnie z § 1.
 2. W Settings → Rules → Rulesets zaimportuj definicję JSON w stanie Disabled albo odwzoruj ją w panelu. Nie wykonuj tego za pomocą agenta. Zachowaj zakres `refs/heads/main`, brak bypass, blokadę usuwania/force-push, historię liniową, wymagany PR i rozwiązanie wątków.
 3. Dla wymaganych status checks wybierz dokładnie 17 kontekstów z pliku rulesetu i zakończonego zielonego przebiegu PR #2 (lista w §1), z GitHub Actions jako źródłem tam, gdzie panel to umożliwia. Nie dodawaj osobnych `budgets` ani `lighthouse`: są krokami `web`. Zachowaj `db`, `modules`, `contracts`, `workers` i `web`; włącz wymóg aktualności gałęzi. Natywny CodeQL jest osobną regułą poniżej.

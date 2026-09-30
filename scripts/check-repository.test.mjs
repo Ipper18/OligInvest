@@ -1,8 +1,50 @@
 import assert from "node:assert/strict";
-import { spawnSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join, relative, isAbsolute } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
-import { checkFixturePaths, checkPullRequestTitle } from "./check-repository.mjs";
+import { checkCommit, checkFixturePaths, checkPullRequestTitle } from "./check-repository.mjs";
+
+test("only the approved full SHA may bypass the commit subject rule", () => {
+  const approved = "8d91754b0adadfb5a2d7e9c2324d4e62f4125a64";
+  const subject = "Document dependency readiness and split M0 CI responsibilities";
+  assert.equal(checkCommit(approved, subject), true);
+  for (const sha of [approved.slice(0, 7), `${approved}0`, `${approved.slice(0, -1)}5`, "a".repeat(40)]) {
+    assert.equal(checkCommit(sha, subject), false);
+  }
+  assert.equal(checkCommit("a".repeat(40), "ci: verify commits"), true);
+  assert.equal(checkPullRequestTitle(subject), false, "Commit exception must never waive the PR title");
+});
+
+test("CLI validates actual commit ranges and independently blocks invalid PR titles", () => {
+  const parent = tmpdir();
+  const directory = mkdtempSync(join(parent, "oliginvest-commit-test-"));
+  const git = (args) => execFileSync("git", ["-C", directory, "-c", "user.name=CI Test", "-c", "user.email=ci@example.test", "-c", "commit.gpgsign=false", ...args], { encoding: "utf8" }).trim();
+  const script = fileURLToPath(new URL("./check-repository.mjs", import.meta.url));
+  try {
+    git(["init", "--quiet"]);
+    git(["commit", "--allow-empty", "-m", "ci: start fixture"]);
+    const base = git(["rev-parse", "HEAD"]);
+    git(["commit", "--allow-empty", "-m", "test(repo): verify range"]);
+    const good = git(["rev-parse", "HEAD"]);
+    git(["commit", "--allow-empty", "-m", "Invalid subject"]);
+    const bad = git(["rev-parse", "HEAD"]);
+    for (const [head, title, status] of [[good, "ci: valid PR", 0], [bad, "ci: valid PR", 1], [good, "Invalid PR title", 1]]) {
+      const result = spawnSync(process.execPath, [script], {
+        cwd: directory,
+        env: { ...process.env, COMMIT_BASE_REF: base, COMMIT_HEAD_REF: head, GITHUB_EVENT_NAME: "pull_request", PR_TITLE: title },
+        encoding: "utf8",
+      });
+      assert.equal(result.status, status, result.stderr);
+    }
+  } finally {
+    const inside = relative(parent, directory);
+    assert.ok(inside.startsWith("oliginvest-commit-test-") && !isAbsolute(inside) && !inside.includes(".."));
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
 
 test("rejects broker files outside anonymized fixtures regardless of extension case", () => {
   assert.deepEqual(checkFixturePaths(["data/statement.csv", "EXPORT.XLSX"]), [
@@ -29,7 +71,7 @@ test("does not mistake a source filename containing csv for financial data", () 
 });
 
 test("accepts Conventional Commit titles, including scoped breaking changes", () => {
-  for (const title of ["docs(plan): record bootstrap readiness", "feat(api)!: change contract", "ci: add checks"]) {
+  for (const title of ["docs(plan): record bootstrap readiness", "docs(ui,data): document shared contracts", "feat(api)!: change contract", "ci: add checks"]) {
     assert.equal(checkPullRequestTitle(title), true);
   }
 });

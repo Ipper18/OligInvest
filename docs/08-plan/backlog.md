@@ -84,6 +84,8 @@ Bez logiki domenowej; wynik: działające CI, baza z RLS, wydanie podpisane i wd
 
 ### 1.1 Postęp i odchylenia
 
+- **2026-09-30, domknięcie BL-017:** właściciel zatwierdził jedyny historyczny wyjątek Conventional Commits (8d91754b0adadfb5a2d7e9c2324d4e62f4125a64, commit z 2026-09-20 sprzed reguły). Kontrola historii i tytułu PR w repository; 9 testów lokalnie PASS, nazwy 17 zadań bez zmian. Po scaleniu PR #2 usunąć listę wyjątków i jej obsługę (BL-019, ustawienia-repozytorium.md §5). Bez przepisywania historii, nowych ADR/ryzyk ani zmiany estymacji.
+
 - **2026-09-30, BL-017/018/019/035:** aktywowane repository/lint/typecheck/unit i 6 buildów, pierwszy CI PASS. E2E lokalnie 36/36 (3 przeglądarki, HTTPS, production API, Compose, axe), monorepo 88/88 PASS; deps-audit lokalnie PASS (OSV/Syft, 7 testów polityki). Next.js 16.3.6 usuwa critical bez wyjątku; trzy licencje przechodnie zatwierdzone przez właściciela. Dalsze CI, synchronizacja rulesetu i kontrola kryteriów w raporcie paczki. BL-018 pozostaje otwarty do M0-2, BL-019 do ustawień właściciela; pozostałe statusy do wspólnego DoD. Estymacje 2/1/1/0,5 d bez zmian, nakład niezmierzony.
 
 
