@@ -161,6 +161,8 @@ def licenses(sbom, expected):
         raise ValueError("Missing/malformed CycloneDX SBOM")
     seen, rejected, normalized = set(), [], []
     for component in sbom["components"]:
+        if component.get("type") == "file":
+            continue  # CycloneDX may also describe the lockfiles themselves, not dependencies.
         name, version = component["name"], component["version"]
         purl = component["purl"]
         ecosystem = (

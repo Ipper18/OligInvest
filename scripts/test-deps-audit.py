@@ -120,6 +120,8 @@ class PolicyTests(unittest.TestCase):
         }
         expected = {("npm", "sample", "1")}
         self.assertEqual(audit["licenses"](sbom, expected)[0], [])
+        sbom["components"].append({"type": "file", "name": "/source/pnpm-lock.yaml"})
+        self.assertEqual(audit["licenses"](sbom, expected)[0], [])
         with self.assertRaises(ValueError):
             audit["licenses"](sbom, expected | {("PyPI", "missing", "2")})
         unknown = copy.deepcopy(sbom)

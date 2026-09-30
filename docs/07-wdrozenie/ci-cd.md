@@ -23,7 +23,156 @@ Fakty sprawdzone 2026-09-19 w dokumentacji GitHub: runnery hostowane przez GitHu
 
 ## 3. Zadania CI (pull request i `main`)
 
-**BL-017/018/035 (2026-09-30):** uzupełniamy istniejące workflow `contracts`, `db`, `modules`, `workers` i `web` o `repository` (dokumentacja i higiena repo), `lint`, `typecheck`, `unit`, sześć wariantów `build`, `deps-audit` i `e2e`. Budżety i Lighthouse pozostają krokami `web`, typy klienta w `contracts`; nie tworzymy zduplikowanych kontekstów. Ruleset pozostaje wyłączony; nazwy rozszerzamy dopiero po potwierdzeniu rzeczywistych zielonych przebiegów. Wyniki i otwarte kryteria w [raporcie M0-1](../08-plan/m0-1-session-report.md).`pnpm ci:deps-audit` uruchamia przypięte OSV 2.6.0 i Syft 1.52.0 (SHA-256 sprawdzane przed wykonaniem). Skan z jawnym `--config=osv-scanner.toml` obejmuje oba lockfile; dodatkowy pełny skan bez filtracji służy raportowaniu i egzekwowaniu zatwierdzonych wyjątków. Próg wynosi zawsze 7,0. Wpis wymaga daty `approved=YYYY-MM-DD`, uzasadnienia, identyfikatora ryzyka i terminu do 90 dni; wygasły lub niepoprawny wpis blokuje. Błąd skanera/parsera, brak oceny, pakietu w SBOM lub nieznana licencja także blokuje. Raport Markdown, pełne JSON i CycloneDX trafiają do artefaktu także przy czerwonym wyniku. Moderate/low pozostają w podsumowaniu dla przeglądu Renovate. Testy polityki są offline.
+**BL-017/018/035 (2026-09-30):** aktywne workflow `contracts`, `db`, `modules`, `workers` i `web` uzupełniono o `repository` (dokumentacja i higiena repo), `lint`, `typecheck`, `unit`, sześć wariantów `build`, `deps-audit` i `e2e`. Budżety i Lighthouse pozostają krokami `web`, typy klienta w `contracts`; nie tworzymy zduplikowanych kontekstów. Ruleset pozostaje wyłączony; nazwy rozszerzamy po potwierdzeniu rzeczywistych zielonych przebiegów. Wyniki i otwarte kryteria w [raporcie M0-1](../08-plan/m0-1-session-report.md).
+
+| Zadanie | Co sprawdza | Blokuje scalenie |
+|---|---|---|
+| `lint` | Biome (TS/JS, w tym reguły bezpieczeństwa: zakaz `eval`, `dangerouslySetInnerHTML`, `sql.raw`, importu `{ z }` z `zod` w kodzie klienckim), Ruff (Python), tytuł PR, format commitów | tak |
+| `typecheck` | TypeScript (`strict`) w całym monorepo, mypy/pyright w `apps/analytics` | tak |
+| `unit` | Vitest (w tym wektory `packages/test-vectors`), pytest (te same wektory dla Pythona) | tak |
+| `modules` | Osobny workflow Module boundaries: `pnpm check:deps` (reguły warstw modułów) i testy negatywne skryptu | tak — aktywne |
+| `contracts` | BL-010: lint Redocly `docs/02-api/openapi.yaml`, zgodność zaimplementowanych operacji Zod i malejąca lista pending względem SHA bazy; aktualność typów klienta (`openapi-typescript`); JSON Schema zadań domenowych wraz z analizami M3 | tak |
+| `db` | PostgreSQL 18 jako usługa: migracje Drizzle od zera, porównanie schematu z `docs/03-dane/schema.sql`, `testy-rls.sql`, testy integracyjne API z prawdziwą bazą | tak |
+| `build` | Turborepo: wszystkie aplikacje; wariant „bez modułu funkcjonalnego” (macierz: po kolei bez `analytics`, `alerts`, `education`, `admin`, `quick-actions`); obrazy Docker (bez publikacji) od M0-2 / BL-020 | tak |
+| `budgets` (kroki `web`) | `size-limit`, raport JS per trasa, obecność zakazanych bibliotek w chunkach początkowych ([`../04-frontend/wydajnosc.md`](../04-frontend/wydajnosc.md) § 6) | tak |
+| `e2e` | Playwright (Chromium, WebKit, Firefox), `@axe-core/playwright` i nagłówki; M0-1: strona testowa z lokalnego buildu produkcyjnego i usługi `compose.dev.yaml`; M0-2: obrazy produkcyjne po BL-020–BL-023; bramki MFA/regulaminu i zgoda RUM wraz z ich implementacją w M1 | tak |
+| `lighthouse` (krok `web`) | Lighthouse 13 (profil mobilny, 3 przebiegi, mediana) dla tras z budżetami | tak (od M1) |
+| `deps-audit` | osv-scanner na lockfile'ach; licencje z SBOM (lista dozwolonych) | tak — high/critical (CVSS ≥ 7,0), niezależnie od dostępności poprawki |
+| `codeql` (kontrola GitHub) | Konfiguracja domyślna GitHub, poza własnymi workflow; **włączenie lub ponowna konfiguracja po scaleniu M0-1**. Właściciel sprawdza `javascript-typescript`, `python` oraz dostępność `actions` w panelu i zapisuje wynik według [instrukcji](ustawienia-repozytorium.md). Nazwę rzeczywistej kontroli pobiera z zakończonego przebiegu | alerty wysokie — tak; potwierdzenie ustawień jest częścią BL-019 |
+
+Wyjątek właściciela z 2026-09-21: [osv-scanner.toml](../../osv-scanner.toml) pomija wyłącznie GHSA-67mh-4wv8-2f99 (R-24), do 2026-12-20 (90 dni). esbuild 0.18.20 jest zależnością developerską Drizzle Kit; podatny serwer developerski nie jest uruchamiany. Wyjątek usuwa aktualizacja Drizzle Kit eliminująca `@esbuild-kit/*`. Jest to jawne odstępstwo od zwykłego terminu naprawy moderate (30 dni w SEC § 4.2), zaakceptowane przez właściciela; bez overrides i audit fix. Przyszłe polecenie `deps-audit` musi przekazać `--config=osv-scanner.toml`, także dla lockfile Pythona: konfiguracja lokalna OSV nie jest dziedziczona przez podkatalogi ([oficjalny format konfiguracji](https://google.github.io/osv-scanner/configuration/)). BL-017: lokalny skan OSV 2.6.0 i kontrola CycloneDX PASS; rzeczywisty przebieg CI zapisujemy w raporcie paczki. Decyzja właściciela 2026-09-21 doprecyzowuje próg: **high i critical (CVSS ≥ 7,0) blokują scalenie**, zgodnie z `security_alerts_threshold: high_or_higher` w rulesecie CodeQL. Moderate i low nie blokują; muszą trafić do podsumowania zadania CI i przeglądu przy aktualizacjach Renovate. Wpis esbuild (moderate) pozostaje udokumentowaną decyzją, choć sam poziom nie przekracza progu. Wyjątek od blokady jest możliwy wyłącznie przez `osv-scanner.toml`, z uzasadnieniem, datą wygaśnięcia najwyżej 90 dni od decyzji i odwołaniem do identyfikatora w [ryzyka.md](../08-plan/ryzyka.md). Nie zmienia to karencji ani domyślnych terminów naprawy z SEC § 4.2.
+
+W M0-1 wszystkie własne workflow mają wyłącznie `permissions: { contents: read }`. Nie dodajemy konfiguracji zaawansowanej CodeQL ani `security-events: write`. Stan „tylko Python” przed scaleniem szkieletu nie jest docelową listą języków: na `main` nie ma jeszcze TypeScript ani workflow. Brak `actions` w panelu należy zapisać jako lukę pokrycia do rozstrzygnięcia; nie zakładać dostępności i nie zastępować konfiguracji domyślnej bez nowej decyzji. Kryterium M0 nr 7 nie jest spełnione przez samo dodanie plików.
+
+`pnpm ci:deps-audit` uruchamia przypięte OSV 2.6.0 i Syft 1.52.0 (SHA-256 sprawdzane przed wykonaniem). Skan z jawnym `--config=osv-scanner.toml` obejmuje oba lockfile; dodatkowy pełny skan bez filtracji służy raportowaniu i egzekwowaniu zatwierdzonych wyjątków. Próg wynosi zawsze 7,0. Wpis wymaga daty `approved=YYYY-MM-DD`, uzasadnienia, identyfikatora ryzyka i terminu do 90 dni; wygasły lub niepoprawny wpis blokuje. Błąd skanera/parsera, brak oceny, pakietu w SBOM lub nieznana licencja także blokuje. Raport Markdown, pełne JSON i CycloneDX trafiają do artefaktu także przy czerwonym wyniku. Moderate/low pozostają w podsumowaniu dla przeglądu Renovate. Testy polityki są offline.
+
+Archiwalny szkic pozostaje w `.github/workflow-drafts/`. Nie kopiować go do aktywnych workflow: rzeczywiste kontrole mają podział opisany powyżej i w README szkicu.
+
+BL-008: osobny [workflow Database](../../.github/workflows/db.yml) uruchamia zadanie `db` na pull requestach i push do main. Sprawdza moduły i pakiet db, następnie `pnpm db:test` tworzy usługę PostgreSQL 18 z przypiętego `compose.dev.yaml`, wykonuje migracje, niezmienione testy RLS, audyt uprawnień, testy pul i pełne porównanie schematu. Hasła są losowe i syntetyczne, bez sekretów GitHub; sprzątanie dotyczy tylko projektu testu. Artefakt zawiera wyłącznie pięć wskazanych plików diagnostycznych z `.git/bl007-db/`, nigdy całego `.git`. Workflow Module boundaries realizuje już BL-003 przez zadanie `modules`. BL-010 dodaje [workflow API contracts](../../.github/workflows/contracts.yml): `pnpm check:contracts`, testy negatywne i porównanie pending z SHA bazy PR (na push: SHA sprzed zmiany), przy `fetch-depth: 0`. Zakres obejmuje OpenAPI/pending i wygenerowane typy klienta. ACK Node/Python sprawdza `workers`; JSON Schema zadań domenowych powstanie wraz z analizami M3. Pozostałe workflow BL-017 są aktywne; testy API będą dodawane wraz z implementacją endpointów. Rzeczywisty wynik przebiegu zapisujemy w bieżącym raporcie sesji.
+
+```yaml
+# .github/workflows/ci.yml — fragment ilustracyjny
+name: ci
+on:
+  pull_request:
+  push: { branches: [main] }
+permissions: { contents: read }
+concurrency: { group: "ci-${{ github.ref }}", cancel-in-progress: true }
+jobs:
+  db:
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:18@sha256:<DIGEST>
+        env: { POSTGRES_PASSWORD: ci-only }
+        ports: ["5432:5432"]
+    steps:
+      - uses: actions/checkout@<FULL_SHA>        # przypięte pełnym SHA (Renovate aktualizuje)
+        with: { persist-credentials: false }
+      - uses: pnpm/action-setup@<FULL_SHA>
+      - uses: actions/setup-node@<FULL_SHA>
+        with: { node-version-file: .nvmrc, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm db:test   # migracje od zera → porównanie z docs/03-dane/schema.sql → testy-rls.sql
+```
+
+Pull requesty z forków uruchamiają się z tokenem tylko do odczytu i bez sekretów (domyślne zachowanie GitHub); `pull_request_target` nie jest używany.
+
+## 4. Zadania cykliczne
+
+| Zadanie | Kiedy | Co |
+|---|---|---|
+| `security-weekly` | poniedziałek | osv-scanner na lockfile'ach i na obrazach ostatniego wydania; wynik jako issue prywatne lub alert |
+| Renovate | wg harmonogramu § 7 | PR z aktualizacjami |
+| `scorecard` (opcjonalnie) | co tydzień | OpenSSF Scorecard — ocena praktyk repozytorium |
+| `ct-check` | codziennie | uruchamiany na serwerze, nie w CI ([`monitoring.md`](monitoring.md) § 3) |
+
+## 5. Wydanie
+
+**Wyzwalacz:** tag `vMAJOR.MINOR.PATCH` na `main` (SemVer aplikacji; wersja API `/v1` jest niezależna). Tag tworzy właściciel po scaleniu zmian; opis zmian generowany z Conventional Commits.
+
+Zadanie `release` (uprawnienia tylko dla tego zadania: `contents: write`, `packages: write`, `id-token: write`, `attestations: write`):
+
+1. Buduje obrazy `web`, `api`, `jobs`, `analytics`, `postgres` (z pgBackRest) i `migrate` z obrazów bazowych przypiętych digestem.
+2. Publikuje je w GHCR (pakiety publiczne) i zapisuje digesty w `images.lock`.
+3. Generuje SBOM (syft, CycloneDX) dla każdego obrazu i dołącza go do wydania oraz jako poświadczenie (`actions/attest-sbom`).
+4. Tworzy poświadczenie pochodzenia (`actions/attest-build-provenance`) i podpis cosign keyless (tożsamość: workflow `release.yml` tego repozytorium, wystawca OIDC GitHub).
+5. Skanuje obrazy osv-scannerem — krytyczna podatność z dostępną poprawką przerywa wydanie.
+6. Publikuje **paczkę wdrożeniową** (`compose.yaml`, szablony konfiguracji Caddy i PostgreSQL, `images.lock`, skrypty) podpisaną `cosign sign-blob`.
+
+## 6. Wdrożenie (serwer pobiera wydanie)
+
+Administrator uruchamia na VM (przez SSH w sieci administracyjnej) skrypt `infra/scripts/deploy.sh <wersja>` (M0):
+
+```mermaid
+sequenceDiagram
+  autonumber
+  actor A as Administrator
+  participant D as deploy.sh na VM
+  participant G as GitHub (Releases, GHCR)
+  participant P as postgres
+  participant S as usługi aplikacji
+  A->>D: deploy.sh v1.4.0
+  D->>G: pobranie paczki wydania i obrazów wg images.lock
+  D->>D: weryfikacja podpisów i tożsamości workflow (cosign), poświadczenia pochodzenia
+  D->>P: kopia przyrostowa pgBackRest + sprawdzenie
+  D->>P: migracje (kontener migrate, rola owner): tylko zmiany rozszerzające
+  D->>S: podmiana usług api, jobs, analytics, web i przeładowanie Caddy
+  D->>S: bramka zdrowia: /api/v1/health/ready + test dymny (≤ 2 min)
+  alt zdrowe
+    D->>D: zapis wersji, wpis audytu system.deploy, sygnał do Uptime Kuma
+  else niezdrowe
+    D->>S: powrót do poprzednich obrazów (baza zgodna wstecz)
+    D->>A: alert e-mail
+  end
+```
+
+- **Weryfikacja przed uruchomieniem:** każdy obraz musi mieć ważny podpis cosign wystawiony dla workflow `release.yml` tego repozytorium (sprawdzenie tożsamości certyfikatu i wystawcy OIDC) — obraz bez podpisu lub z innej tożsamości nie zostanie uruchomiony (T-SC-03).
+- **Przerwa ≤ 1 min (NFR-09.05):** usługi podmieniane kolejno; Caddy przez czas restartu ponawia połączenia do upstreamu (`lb_try_duration`), więc użytkownik widzi dłuższą odpowiedź zamiast błędu; SSE łączy się ponownie z `Last-Event-ID`.
+- **Automatyczne aktualizacje:** domyślnie wyłączone — wdrożenie jest decyzją właściciela (moment kontroli przy przejęciu konta GitHub, T-SC-04). Opcja na później: timer, który sam wdraża tylko wersje poprawkowe (PATCH) po weryfikacji podpisu.
+
+### 6.1 Migracje bazy (expand/contract)
+
+- **Rozszerzanie** (nowe tabele, kolumny dopuszczające `NULL`, nowe indeksy `CONCURRENTLY`, nowe polityki RLS) — w dowolnym wydaniu, przed kodem, który ich używa.
+- **Zawężanie** (usunięcie kolumn, `NOT NULL`, zmiana typu) — najwcześniej w następnym wydaniu po tym, w którym kod przestał używać starej struktury.
+- **Brak migracji „w dół”:** wycofanie aplikacji nie wymaga cofania bazy (zgodność wstecz); błąd migracji naprawia kolejna migracja; poważna awaria — odtworzenie do punktu w czasie sprzed wdrożenia ([`backup-dr.md`](backup-dr.md) procedura A).
+- **Każda nowa tabela z `user_id`:** polityka RLS i test w tym samym PR (CI wykrywa tabelę bez polityki).
+
+## 7. Aktualizacje zależności — Renovate
+
+```json
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended", "helpers:pinGitHubActionDigests", "docker:pinDigests", ":pinAllExceptPeerDependencies"],
+  "timezone": "Europe/Warsaw",
+  "schedule": ["before 6am on monday"],
+  "minimumReleaseAge": "3 days",
+  "prConcurrentLimit": 5,
+  "vulnerabilityAlerts": { "labels": ["security"], "schedule": ["at any time"], "minimumReleaseAge": null },
+  "lockFileMaintenance": { "enabled": true, "schedule": ["before 6am on the first day of the month"] },
+  "packageRules": [
+    { "matchUpdateTypes": ["major"], "dependencyDashboardApproval": true },
+    { "matchManagers": ["github-actions"], "groupName": "akcje GitHub" },
+    { "matchDepTypes": ["devDependencies"], "matchUpdateTypes": ["minor", "patch"], "groupName": "narzędzia deweloperskie" }
+  ]
+}
+```
+
+(`renovate.json` powstaje w M0.) Brak automatycznego scalania zależności produkcyjnych; aktualizacje bezpieczeństwa omijają opóźnienie i harmonogram, ale nadal przechodzą pełne CI i przegląd.
+
+## 8. Środowiska
+
+| Środowisko | Gdzie | Dane | Uwagi |
+|---|---|---|---|
+| Lokalne | samodzielne `compose.dev.yaml` (bez profilu i produkcyjnych obrazów aplikacji) | seed demo + fixtures syntetyczne (po implementacji) | PostgreSQL, Valkey ×2, Mailpit jako lokalny serwer SMTP; [instrukcja](srodowisko-deweloperskie.md); atrapy dostawców z zapisanych odpowiedzi; bez połączeń do prawdziwych API bez jawnej zmiennej |
+| CI | runnery GitHub (efemeryczne) | fixtures syntetyczne | M0-1: lokalny build produkcyjny i usługi developerskie; obrazy produkcyjne w testach e2e od M0-2 |
+| Produkcja | VM `oliginvest` | prawdziwe | wdrożenie wg § 6 |
+
+Brak osobnego środowiska testowego na serwerze — nie mieści się w budżecie RAM (NFR-01.08). Zastępują je testy e2e na obrazach produkcyjnych w CI i możliwość uruchomienia wydania lokalnie przed wdrożeniem.
+
+## 9. Koszt
+
+0 zł: GitHub Actions na runnerach hostowanych i GHCR dla pakietów publicznych są bezpłatne dla repozytoriów publicznych; Renovate jako aplikacja GitHub — bez opłat; cosign, syft, osv-scanner — narzędzia open source; Sigstore (Fulcio, Rekor) — publiczna infrastruktura bez opłat.
 
 ## 10. Kontrole M0-1 — uruchamianie lokalne
 
