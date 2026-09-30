@@ -77,12 +77,14 @@ Bez logiki domenowej; wynik: działające CI, baza z RLS, wydanie podpisane i wd
 | BL-030 | Spike: przedrostek `__Host-` w Better Auth — notatka lub ADR (odstępstwo O-01) | NFR-03.03 | AUTH | BL-009 | 1 | todo |
 | BL-031 | Spike: przechowywanie sekretu TOTP, kodów zapasowych (`encrypted`) i kluczy API w Better Auth; czas Argon2id na serwerze (100–250 ms) | NFR-03.02, NFR-03.08 | [ADR-004](../09-decyzje/ADR-004-postgres-better-auth-rls.md), AUTH | BL-009, BL-023 | 1 | todo |
 | BL-032 | Spike: TypeScript 7 z Next.js, Hono, Drizzle i Better Auth — decyzja 7.x albo 6.x | NFR-10.05 | STACK | BL-011 | 0,5 | w toku |
-| BL-033 | Raport rozmiarów bazowych (Next.js, Zod, Radix) i aktualizacja PERF §2 | NFR-01.02 | PERF | BL-016 | 0,5 | todo |
+| BL-033 | Raport rozmiarów bazowych (Next.js, Zod, natywne prymitywy UI — BL-012 nie używa Radix) i aktualizacja PERF §2 | NFR-01.02 | PERF | BL-016 | 0,5 | w toku |
 | BL-034 | Środowisko deweloperskie w M0-1: samodzielne `compose.dev.yaml` (PostgreSQL, Valkey ×2, Mailpit), `pnpm dev`, dane syntetyczne; bez zależności od produkcyjnego Compose i obrazów aplikacji | NFR-10.01 | CI | BL-013, BL-014 | 1 | w toku |
 | BL-035 | Test spójności dokumentacji w CI: każde FR/NFR z `wymagania.md` ma zadanie w `backlog.md` i wiersz w `macierz-pokrycia.md`; linki wewnętrzne w `docs/` działają; każdy dokument zaczyna się od „Cel:” | NFR-10.01 | CI | BL-017 | 0,5 | w toku |
 | | **Suma etapu** | | | | **51** | |
 
 ### 1.1 Postęp i odchylenia
+
+- **2026-09-30, BL-016/033:** size-limit, budżety i markery, Lighthouse 13.5.0 w CI web (raport M0); odtwarzalny pomiar Next.js/Zod/natywnego UI w PERF §2. Poprawiono nadmiarowy import decimal.js w i18n, bez zmiany core. Frozen, monorepo 88/88, 9 testów kontroli, Chromium 11/11 PASS. Statusy `w toku` do CI i wspólnego DoD; estymacje 2 d / 0,5 d bez zmian, nakład niezmierzony; bez nowego ADR/ryzyka. Dowody i ograniczenia: [raport](m0-1-session-report.md).
 
 - **2026-09-29, BL-011:** zakres wykonany lokalnie: dynamiczna strona techniczna z nonce per żądanie, CSP bez unsafe-inline i źródeł zewnętrznych, klient server-only, tokeny Tailwind 4, motywy dark/light/system i dwie palety. Prywatny generator TS 5.9.3 zatwierdzony przez właściciela; web nadal TS 7.0.2, strict peers bez wyciszeń, typy commitowane i sprawdzane w contracts, narzędzie izolowane przez check:deps i Renovate. Monorepo 88/88, web 9 testów, ui 3 testy, Chromium 7 testów, granice 36 testów i negatywny build server-only PASS. Status `w toku` do wspólnego DoD; estymacja 3 d bez zmian, nakład niezmierzony. R-20 uzupełnione, bez nowego ADR. Core bez zmian, profil i synchronizacja preferencji w M1; pełne budżety i macierz E2E w BL-016/018. [Raport i CI](m0-1-session-report.md).
 
@@ -342,5 +344,3 @@ Poza planem etapów; estymacja orientacyjna. Przed startem każde zadanie przech
 | Później | 8 | 18,5 | poza planem |
 
 **Pokrycie wymagań:** każde z 151 wymagań FR/NFR z [`../00-przeglad/wymagania.md`](../00-przeglad/wymagania.md) ma co najmniej jedno zadanie (sprawdzone skryptem 2026-09-19: brak wymagań bez zadania, brak zależności wstecz między etapami, M3 i M4 niezależne). Pełna macierz wymaganie → dokument → zadanie: [`../00-przeglad/macierz-pokrycia.md`](../00-przeglad/macierz-pokrycia.md).
-
-- **2026-09-30, BL-016:** zakres wykonany lokalnie: size-limit, budżety i markery, Lighthouse 13.5.0 w CI web (raport M0). Poprawiono nadmiarowy import decimal.js w i18n, bez zmiany core. Frozen, monorepo 88/88, 9 testów kontroli, Chromium 11/11 PASS. Status w toku do CI i wspólnego DoD; estymacja 2 d bez zmiany, nakład niezmierzony; bez nowego ADR/ryzyka. Dowody i ograniczenia: [raport](m0-1-session-report.md).

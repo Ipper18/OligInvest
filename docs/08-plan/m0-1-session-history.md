@@ -276,3 +276,7 @@ BL-007 lokalnie 4/4, status w toku do CI/DoD; następny BL-008. Brak nowego ADR/
 ## BL-016 — 2026-09-30
 - Budżety tras/markerów, size-limit i Lighthouse 13.5.0 w CI web; M0 raport LH, M1 asercje. Korekta importu decimal.js w i18n po wykryciu przekroczenia UI.
 - Frozen, monorepo 88/88, 9 testów kontroli, Chromium 11/11 PASS; LH: LCP 1897 ms, TBT 40 ms, CLS 0. CI po push; core bez zmian, M0 otwarty.
+
+## BL-033 — 2026-09-30
+- Receptury pomiaru w measure-baselines.mjs; PERF §2 z bieżącym buildem Next.js, trzema importami Zod i sześcioma natywnymi prymitywami UI (bez Radix).
+- Next bootstrap 126,44 KiB; strony 131,34 / 130,52 KiB; Zod 24,19 / 90,48 / 4,35 KiB; prymitywy 2,16 KiB. Lint i dokumentacja PASS.

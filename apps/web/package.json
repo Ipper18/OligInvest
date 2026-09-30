@@ -13,6 +13,7 @@
     "dev": "next dev",
     "start": "next start",
     "size": "size-limit",
+    "measure:baselines": "node scripts/measure-baselines.mjs",
     "budgets": "node scripts/route-budgets.mjs",
     "test:performance": "node --test --test-reporter=dot scripts/performance.test.mjs",
     "lighthouse": "node scripts/lighthouse-assert.mjs",

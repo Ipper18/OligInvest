@@ -19,18 +19,20 @@ Powiązane: [`architektura-ui.md`](architektura-ui.md), [`mapa-ekranow.md`](mapa
 | Wpływ analiz na API | p95 odczytów rośnie o ≤ 20 % podczas MC | test obciążeniowy | NFR-01.07 |
 | Zasoby | VM ≤ 6 GB RAM / 3 vCPU przy ≤ 5 użytkownikach | test obciążeniowy | NFR-01.08 |
 
-## 2. Pomiary bazowe (2026-09-19)
+## 2. Pomiary bazowe (2026-09-30)
 
-**Framework.** Minimalna aplikacja Next.js 16.3.5 + React 19.3.0 (App Router, jedna strona z jednym komponentem klienckim), skrypty z wygenerowanego HTML, gzip -9:
+**Framework — BL-033, pomiar 2026-09-30.** Bieżący produkcyjny build OligInvest: Next.js 16.3.5 + React 19.3.0, Turbopack, Node 24.21.0. Suma gzip -9 każdego unikalnego pliku, 1 KB w budżetach = 1 KiB = 1024 B. Polecenie odtworzenia po `pnpm turbo run build --filter=@oliginvest/web`: `pnpm --filter @oliginvest/web measure:baselines` ([skrypt](../../apps/web/scripts/measure-baselines.mjs)).
 
-| Builder | JS dla nowoczesnych przeglądarek | Polyfille `noModule` (niepobierane przez nowoczesne przeglądarki) |
-|---|---|---|
-| Turbopack (domyślny w Next.js 16) | **130,1 KB** | 38,5 KB |
-| webpack (`next build --webpack`) | **127,7 KB** | 38,5 KB |
+| Wejście bieżącego buildu | Bajty gzip | KiB |
+|---|---:|---:|
+| Wspólny bootstrap Next.js/React (`rootMainFiles` manifestu) | 129 471 | **126,44** |
+| `/`: wszystkie zewnętrzne skrypty z HTML, bez `noModule` | 134 489 | **131,34** |
+| `/ui-preview`: wszystkie zewnętrzne skrypty z HTML, bez `noModule` | 133 653 | **130,52** |
+| Polyfille `noModule`, osobno (nowoczesne przeglądarki ich nie pobierają) | 39 520 | 38,59 |
 
-Wniosek: z budżetu 200 KB **framework zużywa ok. 130 KB**; na powłokę aplikacji i kod trasy zostaje ok. **70 KB**. Next.js 16 nie wypisuje już rozmiarów tras w wyniku `next build`, dlatego CI mierzy je własnym skryptem (§ 6.1).
+`rootMainFiles` mierzy wspólny bootstrap z manifestu aktualnego buildu, nie całą stronę. `/` i `/ui-preview` są dziś technicznymi stronami M0, więc nie dowodzą rozmiaru docelowego pulpitu ani pełnej powłoki BL-121. Na `/` pozostaje 58,66 KiB do limitu 190 KiB. Next.js 16 nie wypisuje rozmiarów tras w wyniku `next build`, dlatego CI mierzy je własnym skryptem (§ 6.1).
 
-**Biblioteki** (esbuild, minifikacja, ESM, gzip -9, React jako zależność zewnętrzna; import typowego API):
+**Biblioteki.** Zod i natywne UI zmierzono ponownie **2026-09-30**: esbuild 0.28.2, minifikacja, ESM, browser/es2022, gzip -9, React/React DOM jako zależności zewnętrzne. Trzy warianty Zod eksportują identyczne `strictObject({ symbol: string(), quantity: string() })`; UI eksportuje sześć nazwanych prymitywów przez publiczne wejście `@oliginvest/ui`. Pozostałe pozycje zachowują **historyczne pomiary z 2026-09-19**, nie były mierzone w BL-033.
 
 | Biblioteka | Wersja | gzip | Gdzie wolno |
 |---|---|---|---|
@@ -43,10 +45,12 @@ Wniosek: z budżetu 200 KB **framework zużywa ok. 130 KB**; na powłokę aplika
 | openapi-fetch | 0.17.0 | 2,5 KB | powłoka aplikacji |
 | web-vitals | 6.2.2 | 3,2 KB | po zdarzeniu `load` (poza budżetem początkowym) |
 | decimal.js | 10.6.0 | 12,6 KB | **nie w przeglądarce** (UI nie liczy pieniędzy) |
-| Zod: `import * as z` / `import { z }` / `zod/mini` | 4.6.5 | 25,3 / 89,9 / 5,2 KB | tylko leniwe formularze; `{ z }` zakazany |
-| Radix: 6 komponentów łącznie (dropdown, popover, tooltip, toast, tabs, slider) | 1.x–2.x | 41,7 KB | tylko leniwie ([`architektura-ui.md`](architektura-ui.md) § 10) |
+| Zod: `import * as z` / `import { z }` / `zod/mini` | 4.6.5 | **24,19 / 90,48 / 4,35 KiB** (24 773 / 92 656 / 4 456 B) | tylko leniwe formularze; `{ z }` zakazany |
+| Natywne `packages/ui`: Button, TextField, SelectField, Disclosure, ModalDialog, Popover | kod BL-012 | **2,16 KiB** (2 208 B) | HTML natywny; hydratacja dialogu/popovera w wyspie klienta |
 
-Pomiary powtarza w M0 zadanie „raport rozmiarów” — liczby w tym dokumencie aktualizujemy przy każdej zmianie wersji głównej.
+**Radix nie jest używany ani zainstalowany w BL-012**, dlatego BL-033 mierzy faktyczne prymitywy natywne zamiast hipotetycznego importu Radix. Historyczne porównanie kandydatów pozostaje w [`architektura-ui.md`](architektura-ui.md) § 10. Pomiary powtarzamy po zmianie wersji głównej.
+
+BL-016 wykrył, że formatery i18n importowały runtime `decimal.js` wyłącznie dla `isDecimal`; to podnosiło UI ponad 15 KiB. Import zastąpiono typem i sprawdzeniem znacznika instancji (tak jak obsługa klonów w `Decimal.isDecimal`), z zachowaniem walidacji tekstu i zakazu `number`. Bez zmian `packages/core`. Po korekcie `size-limit`: całe UI **4,25 KiB**, UI+i18n **5,61 KiB** (zaokrąglone; bundlowanie IIFE narzędzia, gzip -9 z korektą pustego projektu, inne wejście niż sześć prymitywów powyżej). Test buildu odrzuca kod arytmetyczny Decimal w przeglądarce.
 
 ## 3. Budżety per trasa (gzip)
 
