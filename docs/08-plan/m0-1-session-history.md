@@ -281,3 +281,11 @@ BL-007 lokalnie 4/4, status w toku do CI/DoD; następny BL-008. Brak nowego ADR/
 - Receptury pomiaru w measure-baselines.mjs; PERF §2 z bieżącym buildem Next.js, trzema importami Zod i sześcioma natywnymi prymitywami UI (bez Radix).
 - Next bootstrap 126,44 KiB; strony 131,34 / 130,52 KiB; Zod 24,19 / 90,48 / 4,35 KiB; prymitywy 2,16 KiB. Lint i dokumentacja PASS.
 - CI: Lighthouse w runnerze nie startował z pobranym Chromium; `56d081a` — systemowy Chrome z sandboxem, web PASS (LCP 1522 ms, TBT 79 ms, CLS 0). Wpis dokończony poza Codexem po limicie.
+
+## 2026-09-30 — CI M0-1
+
+- f66dd7f: repository/lint/typecheck/unit i sześć czystych buildów.
+- ba13426: E2E 36/36, OSV/Syft, Next 16.3.6; trzy licencje zatwierdzone przez właściciela.
+- ff3f00f: poprawka parsera komponentów file w linuksowym CycloneDX; kontrola 553 pakietów PASS.
+- a22adfe: 17 kontekstów rulesetu, test zgodności nazw, raport kryteriów 1–3 PASS / 7 NIE; wszystkie 19 kontroli PR PASS.
+- BL-018 M0-2 i BL-019 ustawienia pozostają otwarte; reguła historycznych commitów czeka na decyzję dotyczącą 8d91754. Core i status PR bez zmian.
