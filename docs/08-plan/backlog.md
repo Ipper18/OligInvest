@@ -62,7 +62,7 @@ Bez logiki domenowej; wynik: działające CI, baza z RLS, wydanie podpisane i wd
 | BL-015 | `packages/test-vectors` z loaderami dla Vitest i pytest; jedyne źródło `docs/03-dane/wektory-testowe.json` | NFR-02.06, NFR-08.02 | OBL, VEC | BL-002, BL-014 | 0,5 | w toku |
 | BL-016 | Egzekwowanie budżetów: `size-limit`, `route-budgets.mjs`, wykrywanie zakazanych bibliotek w chunkach początkowych, skrypt Lighthouse 13.5 z asercjami (w M0 raport); Lighthouse 13.5.0 w manifeście po karencji | NFR-01.02, NFR-01.03 | PERF | BL-011 | 2 | w toku |
 | BL-017 | CI w GitHub Actions: `lint`, `typecheck`, `unit`, `contracts`, `build` (macierz bez modułów), `budgets`, `deps-audit`; akcje przypięte SHA, token tylko do odczytu; CodeQL przez konfigurację domyślną GitHub po scaleniu M0-1 (BL-019), poza własnymi workflow | NFR-03.09, NFR-10.02, NFR-10.03, NFR-02.02 | CI | BL-003, BL-008, BL-010, BL-016 | 2 | w toku |
-| BL-018 | E2E: Playwright (Chromium, WebKit, Firefox) z `@axe-core/playwright`; M0-1: test dymny lokalnego buildu produkcyjnego z usługami `compose.dev.yaml`; M0-2: ten sam test na obrazach produkcyjnych po BL-020–BL-023; zamknięcie dopiero po obu częściach | NFR-04.01, NFR-06.01 | CI, A11Y | BL-017; część M0-2: BL-020–BL-023 | 1 | todo |
+| BL-018 | E2E: Playwright (Chromium, WebKit, Firefox) z `@axe-core/playwright`; M0-1: test dymny lokalnego buildu produkcyjnego z usługami `compose.dev.yaml`; M0-2: ten sam test na obrazach produkcyjnych po BL-020–BL-023; zamknięcie dopiero po obu częściach | NFR-04.01, NFR-06.01 | CI, A11Y | BL-017; część M0-2: BL-020–BL-023 | 1 | w toku |
 | BL-019 | Ustawienia repozytorium: ruleset `main`, skanowanie sekretów z push protection, CodeQL, alerty Dependabot, prywatne zgłaszanie podatności, `CODEOWNERS`, Renovate, reguła CI dla `.xlsx/.csv` spoza fixtures | NFR-03.12, NFR-03.09, NFR-10.03 | CI, [ADR-013](../09-decyzje/ADR-013-repozytorium-publiczne.md) | BL-017 | 1 | w toku |
 | BL-020 | Obrazy Docker (nie-root, FS tylko do odczytu, bazy przypięte digestem): `web`, `api`, `jobs`, `analytics`, `postgres` z pgBackRest, `migrate` | NFR-03.11 | INF | BL-009, BL-011, BL-013, BL-014 | 2 | todo |
 | BL-021 | Workflow `release.yml`: GHCR, SBOM (syft), poświadczenia, cosign keyless, osv-scanner obrazów, podpisana paczka wdrożeniowa | NFR-03.09 | CI | BL-020 | 2 | todo |
@@ -83,6 +83,9 @@ Bez logiki domenowej; wynik: działające CI, baza z RLS, wydanie podpisane i wd
 | | **Suma etapu** | | | | **51** | |
 
 ### 1.1 Postęp i odchylenia
+
+- **2026-09-30, BL-017/018/019/035:** aktywowane repository/lint/typecheck/unit i 6 buildów, pierwszy CI PASS. E2E lokalnie 36/36 (3 przeglądarki, HTTPS, production API, Compose, axe), monorepo 88/88 PASS; deps-audit lokalnie PASS (OSV/Syft, 7 testów polityki). Next.js 16.3.6 usuwa critical bez wyjątku; trzy licencje przechodnie zatwierdzone przez właściciela. Dalsze CI, synchronizacja rulesetu i kontrola kryteriów w raporcie paczki. BL-018 pozostaje otwarty do M0-2, BL-019 do ustawień właściciela; pozostałe statusy do wspólnego DoD. Estymacje 2/1/1/0,5 d bez zmian, nakład niezmierzony.
+
 
 - **2026-09-30, BL-016/033:** size-limit, budżety i markery, Lighthouse 13.5.0 w CI web (raport M0); odtwarzalny pomiar Next.js/Zod/natywnego UI w PERF §2. Poprawiono nadmiarowy import decimal.js w i18n, bez zmiany core. Frozen, monorepo 88/88, 9 testów kontroli, Chromium 11/11 PASS. Statusy `w toku` do CI i wspólnego DoD; estymacje 2 d / 0,5 d bez zmian, nakład niezmierzony; bez nowego ADR/ryzyka. Dowody i ograniczenia: [raport](m0-1-session-report.md).
 

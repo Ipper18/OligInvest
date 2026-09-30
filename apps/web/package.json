@@ -23,7 +23,7 @@
     "@oliginvest/config": "workspace:*",
     "@oliginvest/i18n": "workspace:*",
     "@oliginvest/ui": "workspace:*",
-    "next": "16.3.5",
+    "next": "16.3.6",
     "openapi-fetch": "0.17.0",
     "react": "19.3.0",
     "react-dom": "19.3.0",
@@ -31,18 +31,18 @@
     "zod": "4.6.5"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.13.0",
+    "@playwright/test": "1.63.0",
     "@size-limit/esbuild": "14.0.0",
     "@size-limit/file": "14.0.0",
-    "chrome-launcher": "1.2.1",
-    "esbuild": "0.28.2",
-    "lighthouse": "13.5.0",
-    "size-limit": "14.0.0",
-    "@playwright/test": "1.63.0",
     "@tailwindcss/postcss": "4.3.3",
     "@types/node": "24.13.5",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
-    "tailwindcss": "4.3.3",
-    "@axe-core/playwright": "4.13.0"
+    "chrome-launcher": "1.2.1",
+    "esbuild": "0.28.2",
+    "lighthouse": "13.5.0",
+    "size-limit": "14.0.0",
+    "tailwindcss": "4.3.3"
   }
 }

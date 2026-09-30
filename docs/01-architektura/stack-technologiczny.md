@@ -14,6 +14,8 @@ Nowa zależność runtime trafia do projektu tylko, jeśli spełnia **wszystkie*
 4. Wpływ na bundle przeglądarki mieści się w budżecie trasy (`04-frontend/wydajnosc.md`).
 5. Wpis w tym dokumencie (lub w ADR) z uzasadnieniem.
 
+BL-017 (2026-09-30): Next.js **16.3.6** zastępuje 16.3.5 ze względu na [GHSA-vcvr-r3jv-pc5j](https://github.com/vercel/next.js/security/advisories/GHSA-vcvr-r3jv-pc5j), CVSS 9,5. Poprawka opublikowana w npm 2026-09-22 16:19 UTC, po karencji; bez wyjątku OSV i bez zmiany linii stosu. OligInvest nie używa `next/og`, jednak próg audytu obowiązuje niezależnie od osiągalności. OSV Scanner **2.6.0** i Syft **1.52.0** (Apache-2.0) to istniejące wybory stosu, przypięte w skrypcie instalacji CI z SHA-256 oficjalnych artefaktów GitHub Releases (sprawdzone 2026-09-30); nie trafiają do runtime aplikacji.
+
 ## 2. Runtime i platforma
 
 | Element | Wybór | Wersja | Licencja | Uzasadnienie | Odrzucone |
@@ -126,6 +128,11 @@ BL-007: pakiet db deklaruje także istniejące `zod@4.6.5` do walidacji konfigur
 | Tylko testy | **TA-Lib** (python), **empyrical-reloaded** (≥ 0.5.12 — starsze używają `np.NINF`, usuniętego w NumPy 2) | 0.8 / 0.5.12 | BSD / Apache-2.0 | Wartości referencyjne dla wektorów testowych `packages/core` i analityki. | pandas-ta (repozytorium autora zniknęło z GitHuba). |
 
 ## 7. Infrastruktura, CI/CD i łańcuch dostaw
+
+BL-017, przegląd licencji 2026-09-30: właściciel zatwierdził **Python-2.0 wyłącznie dla argparse**, **PSF-2.0 dla typing-extensions** i **CC-BY-4.0 dla caniuse-lite**. Pozostała allowlista z §1 i SEC §4.4 bez rozszerzeń. LGPL w istniejących psycopg/psycopg-binary i pakietach @img/sharp-* dotyczy niezmodyfikowanych bibliotek: natywne libvips są linkowane dynamicznie, opcjonalny wariant WASM występuje w lockfile, ale nie jest używany przez aplikację. Nie jest to ogólna zgoda na LGPL w innych pakietach; zmiana sposobu dystrybucji wymaga ponownego przeglądu.
+
+Syft tworzy CycloneDX ze **wszystkich pakietów obu lockfile**, także wariantów platformowych; wzbogaca licencje z rejestrów, a kontrola porównuje pokrycie z pełnym wynikiem OSV. Uzupełnienia niepełnych metadanych są przypisane do konkretnych wersji: bullmq 3.2.2 MIT i pathspec 1.1.1 MPL-2.0 (klasyfikatory PyPI), colorama 0.4.6 BSD-3-Clause oraz mypy-extensions 1.1.0 MIT (LICENSE w zainstalowanym wheel), python-dateutil 2.9.0.post0 Apache-2.0 OR BSD-3-Clause (LICENSE w wheel). Nazwy „MIT License” i „Apache 2.0” są normalizowane do SPDX. Źródła: [PyPI bullmq](https://pypi.org/project/bullmq/3.2.2/), [pathspec](https://pypi.org/project/pathspec/1.1.1/), [colorama](https://pypi.org/project/colorama/0.4.6/), [mypy-extensions](https://pypi.org/project/mypy-extensions/1.1.0/), [python-dateutil](https://pypi.org/project/python-dateutil/2.9.0.post0/). Własny prywatny workspace oliginvest-analytics nie podlega allowliście zależności (ADR-013). Inna nieznana licencja lub brak pakietu w SBOM blokuje audyt.
+
 
 | Element | Wybór | Wersja | Licencja | Uzasadnienie | Odrzucone |
 |---|---|---|---|---|---|

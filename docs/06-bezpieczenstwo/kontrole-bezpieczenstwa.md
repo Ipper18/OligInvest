@@ -189,7 +189,7 @@ allowBuilds:
 
 ### 4.4 Licencje
 
-Dozwolone bez przeglądu: MIT, ISC, BSD-2/3-Clause, Apache-2.0, 0BSD, CC0-1.0, Unlicense. Wymagają przeglądu: MPL-2.0 (na poziomie pliku — dopuszczalna), LGPL (tylko linkowanie dynamiczne), licencje z klauzulami dodatkowymi (vectorbt: Apache-2.0 + Commons Clause — dopuszczalne dla projektu niekomercyjnego). Niedozwolone w kodzie aplikacji: GPL i AGPL. Kontrola licencji w CI na podstawie SBOM.
+Dozwolone bez przeglądu: MIT, ISC, BSD-2/3-Clause, Apache-2.0, 0BSD, CC0-1.0, Unlicense. Wymagają przeglądu: MPL-2.0 (na poziomie pliku — dopuszczalna), LGPL (tylko linkowanie dynamiczne), licencje z klauzulami dodatkowymi (vectorbt: Apache-2.0 + Commons Clause — dopuszczalne dla projektu niekomercyjnego). Niedozwolone w kodzie aplikacji: GPL i AGPL. Kontrola licencji w CI na podstawie SBOM. Decyzja właściciela 2026-09-30 dopuszcza Python-2.0 dla argparse, PSF-2.0 dla typing-extensions i CC-BY-4.0 dla caniuse-lite; szczegóły przeglądu i normalizacji metadanych w STACK §7. Wyjątki są ograniczone do tych pakietów, a nie całych licencji.
 
 ## 5. Logowanie, monitoring bezpieczeństwa i wykrywanie (NFR-03.10, ASVS V16)
 

@@ -56,8 +56,8 @@ test("invalid preferences fall back to the default in the initial HTML", async (
   page,
 }) => {
   await context.addCookies([
-    { name: "oi-test-theme", value: "invalid", url: "http://127.0.0.1:3197" },
-    { name: "oi-test-palette", value: "invalid", url: "http://127.0.0.1:3197" },
+    { name: "oi-test-theme", value: "invalid", url: "https://127.0.0.1:3197" },
+    { name: "oi-test-palette", value: "invalid", url: "https://127.0.0.1:3197" },
   ]);
   const response = await page.goto("/");
   const html = await response?.text();

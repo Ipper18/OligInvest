@@ -48,3 +48,6 @@ Thumbs.db
 *.sqlite
 *.db
 /data/
+
+# CI reports
+/reports/

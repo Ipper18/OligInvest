@@ -1,0 +1,47 @@
+name: Dependency audit
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions: { contents: read }
+
+concurrency:
+  group: deps-audit-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deps-audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version-file: .nvmrc
+          package-manager-cache: false
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+        with:
+          version: '12.4.2'
+          run_install: false
+      - run: pnpm install --frozen-lockfile
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.13.13'
+      - run: python scripts/test-deps-audit.py
+      - run: pnpm ci:deps-audit
+      - name: Publish dependency findings, exceptions and license results
+        if: always()
+        run: cat reports/deps-audit.md >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: deps-audit-report
+          path: reports/deps-audit*
+          retention-days: 7
+          if-no-files-found: error

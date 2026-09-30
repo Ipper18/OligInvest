@@ -31,11 +31,12 @@ test("browser resources stay on origin and RSC forwards the request context", as
   const id = crypto.randomUUID();
   const context = await browser.newContext({
     locale: "pl-PL",
+    ignoreHTTPSErrors: true,
     extraHTTPHeaders: { "X-Request-Id": id, "Accept-Language": "pl-PL" },
   });
   try {
     await context.addCookies([
-      { name: "session", value: "synthetic-e2e", url: "http://127.0.0.1:3197" },
+      { name: "session", value: "synthetic-e2e", url: "https://127.0.0.1:3197" },
     ]);
     const page = await context.newPage();
     const urls: string[] = [];
@@ -49,13 +50,13 @@ test("browser resources stay on origin and RSC forwards the request context", as
     page.on("console", (message) => {
       if (message.type() === "error") errors.push(message.text());
     });
-    await page.goto("http://127.0.0.1:3197");
+    await page.goto("https://127.0.0.1:3197");
     await expect(page.getByText("API: proces działa.")).toBeVisible();
     await page.waitForLoadState("networkidle");
     expect(errors).toEqual([]);
     expect(fonts).toEqual([]);
     expect(urls.some((url) => url.includes("/_next/static/"))).toBe(true);
-    expect(urls.every((url) => new URL(url).origin === "http://127.0.0.1:3197")).toBe(true);
+    expect(urls.every((url) => new URL(url).origin === "https://127.0.0.1:3197")).toBe(true);
     // Next creates its accessibility announcer with CSSOM styles after hydration.
     expect(
       await page
@@ -74,11 +75,12 @@ test("browser resources stay on origin and RSC forwards the request context", as
 });
 
 test("CSP refuses a script without the response nonce", async ({ page }) => {
-  const errors: string[] = [];
-  page.on("console", (message) => {
-    if (message.type() === "error") errors.push(message.text());
+  await page.addInitScript(() => {
+    document.addEventListener("securitypolicyviolation", (event) => {
+      document.documentElement.dataset.blockedDirective = event.effectiveDirective;
+    });
   });
-  await page.route("http://127.0.0.1:3197/", async (route) => {
+  await page.route("https://127.0.0.1:3197/", async (route) => {
     const response = await route.fetch();
     const html = await response.text();
     await route.fulfill({
@@ -91,5 +93,5 @@ test("CSP refuses a script without the response nonce", async ({ page }) => {
   });
   await page.goto("/");
   expect(await page.locator("html").getAttribute("data-unsafe-script")).toBeNull();
-  expect(errors.some((message) => message.includes("Content Security Policy"))).toBe(true);
+  await expect(page.locator("html")).toHaveAttribute("data-blocked-directive", /script-src/);
 });

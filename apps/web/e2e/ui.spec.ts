@@ -5,7 +5,7 @@ import { expect, test } from "@playwright/test";
 for (const theme of ["dark", "light"]) {
   test(`native UI and compliance components pass axe in ${theme}`, async ({ page, context }) => {
     await context.addCookies([
-      { name: "oi-test-theme", value: theme, url: "http://127.0.0.1:3197" },
+      { name: "oi-test-theme", value: theme, url: "https://127.0.0.1:3197" },
     ]);
     await page.goto("/ui-preview");
     for (const width of [320, 1280]) {

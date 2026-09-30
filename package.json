@@ -38,7 +38,9 @@
     "ci:lint": "pnpm turbo run lint --output-logs=new-only",
     "ci:typecheck": "pnpm turbo run typecheck --output-logs=new-only",
     "ci:unit": "pnpm turbo run test --output-logs=new-only",
-    "ci:build": "node scripts/ci-build.mjs"
+    "ci:build": "node scripts/ci-build.mjs",
+    "ci:e2e": "node scripts/ci-e2e.mjs",
+    "ci:deps-audit": "python scripts/deps-audit.py"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.14",
