@@ -10,7 +10,7 @@ Lighthouse 13.5.0, size-limit/file/esbuild 14.0.0, esbuild 0.28.2 i chrome-launc
 
 size-limit sprawdza UI (15 KiB) i współdzielone UI+i18n (30 KiB, część przyszłej powłoki BL-121). Pomiar wykrył runtime import decimal.js do rozpoznawania Decimal: poprawiono i18n na import typu i zgodny znacznik biblioteki, bez zmiany pieniędzy/core. UI 4,35 kB i UI+i18n 5,75 kB (wyjście size-limit, jednostki dziesiętne). Initial JS: `/` 131,34 KiB, `/ui-preview` 130,52 KiB. Lighthouse: mediana 3 przebiegów mobilnych `/`: LCP 1897 ms, TBT 40 ms, CLS 0; raport M0, twarde asercje i wymóg 4 tras przez `lighthouse:assert` od M1. Cookies/surowe raporty nie są publikowane. Kroki podłączone do CI web, wynik po push do sprawdzenia.
 
-Dowody lokalne: monorepo 88/88 (31 cache), i18n 14, ui 9, web 9 testów, Chromium 11/11 i axe bez naruszeń PASS. Granice, dokumentacja, repo, diff check PASS. Logi `.git/bl016-*.log`. Commit/push BL-016: `851c743`. CI contracts/db/modules/workers/CodeQL PASS, [web trwa](https://github.com/Ipper18/OligInvest/actions/runs/36733009258). Status `w toku` do CI i wspólnego DoD; estymacja 2 d bez zmiany, odchylenie nakładu niezmierzone. Bez nowego ADR/ryzyka.
+Dowody lokalne: monorepo 88/88 (31 cache), i18n 14, ui 9, web 9 testów, Chromium 11/11 i axe bez naruszeń PASS. Granice, dokumentacja, repo, diff check PASS. Logi `.git/bl016-*.log`. Commit/push BL-016: `851c743`. Pierwszy przebieg web: Lighthouse przerwany błędem uruchomienia pobranego Chromium (nie przekroczeniem progu); `ad2720a` dodał diagnostykę, `56d081a` przełączył audyt na systemowy Chrome runnera z sandboxem. CI `56d081a` PASS: [web](https://github.com/Ipper18/OligInvest/actions/runs/36735121531) (size, budgets, Lighthouse: `/` LCP 1522 ms, TBT 79 ms, CLS 0), contracts, db, modules, workers, CodeQL. Status `w toku` do wspólnego DoD; estymacja 2 d bez zmiany, odchylenie nakładu niezmierzone. Bez nowego ADR/ryzyka.
 
 ## BL-033 — pomiary 2026-09-30
 
@@ -18,6 +18,6 @@ Dowody lokalne: monorepo 88/88 (31 cache), i18n 14, ui 9, web 9 testów, Chromiu
 
 ## Paczka i następny krok
 
-Dalej sprawdzenie CI BL-016/033, BL-018, pełne CI BL-017, ustawienia BL-019, pozostałe BL-035. M0 otwarty: kryteria 1–3 mają dowody, 4–7 wymagają dalszych prac/właściciela, 8 częściowo.
+Dalej BL-018, pełne CI BL-017, ustawienia BL-019, pozostałe BL-035. M0 otwarty: kryteria 1–3 mają dowody, 4–7 wymagają dalszych prac/właściciela, 8 częściowo.
 
 BL-001–015/034 wykonane lokalnie, BL-032 technicznie zamknięty. BL-012: słowniki, skaner tekstów i natywne UI, zatwierdzone uzupełnienia TXT; BL-011: CSP nonce, klient server-only, motywy. Prywatny generator `tools/openapi-client`: TS 5.9.3, aplikacje TS 7.0.2 (R-20). Baza: RLS/audyt, 12 testów pul, ZERO DIFFERENCES; queues:test/db:seed:test/dev:test PASS. Analytics: izolacja systemowa od M3, dziś pytest blokuje gniazda poza Valkey. Ruleset disabled. Serwery i ustawienia GitHub bez zmian.

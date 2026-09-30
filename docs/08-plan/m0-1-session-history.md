@@ -280,3 +280,4 @@ BL-007 lokalnie 4/4, status w toku do CI/DoD; następny BL-008. Brak nowego ADR/
 ## BL-033 — 2026-09-30
 - Receptury pomiaru w measure-baselines.mjs; PERF §2 z bieżącym buildem Next.js, trzema importami Zod i sześcioma natywnymi prymitywami UI (bez Radix).
 - Next bootstrap 126,44 KiB; strony 131,34 / 130,52 KiB; Zod 24,19 / 90,48 / 4,35 KiB; prymitywy 2,16 KiB. Lint i dokumentacja PASS.
+- CI: Lighthouse w runnerze nie startował z pobranym Chromium; `56d081a` — systemowy Chrome z sandboxem, web PASS (LCP 1522 ms, TBT 79 ms, CLS 0). Wpis dokończony poza Codexem po limicie.
