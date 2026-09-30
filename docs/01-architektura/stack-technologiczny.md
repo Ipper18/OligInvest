@@ -50,7 +50,7 @@ BL-010 (2026-09-27): `@redocly/cli` **2.54.2** (MIT) jako devDependency realizuj
 
 ### 3.1 Pakiety pomocnicze szkieletu M0-1
 
-Decyzja właściciela 2026-09-21: start na `bullmq` npm 6.3.6, `bullmq` PyPI 3.2.2 (najnowsze dojrzałe 3.2.x), `psycopg` i `psycopg-binary` 3.3.5; późniejsze patche proponuje Renovate w zwykłym trybie po karencji. Źródła publikacji i sumy kontrolne: [inwentarz](../08-plan/audits/m0-1-release-age.json). Lighthouse 13.5.0 pozostaje poza manifestami do sesji BL-016; bez zmiany linii na 13.4. Better Auth 1.7.5 jest zależnością deweloperską `apps/api` wyłącznie dla spike BL-032, bez implementacji uwierzytelniania.
+Decyzja właściciela 2026-09-21: start na `bullmq` npm 6.3.6, `bullmq` PyPI 3.2.2 (najnowsze dojrzałe 3.2.x), `psycopg` i `psycopg-binary` 3.3.5; późniejsze patche proponuje Renovate w zwykłym trybie po karencji. Źródła publikacji i sumy kontrolne: [inwentarz](../08-plan/audits/m0-1-release-age.json). Lighthouse 13.5.0 dodano do manifestu w BL-016 (2026-09-30, po karencji zakończonej 2026-09-21). Better Auth 1.7.5 jest zależnością deweloperską `apps/api` wyłącznie dla spike BL-032, bez implementacji uwierzytelniania.
 
 Przygotowane manifesty (BL-001, 2026-09-20) używają dokładnych wersji z [inwentarza audytu](../08-plan/audits/m0-1-release-age.json). 2026-09-21 utworzono oba lockfile, porównano wybrane wersje i sumy z audytem oraz wykonano instalacje frozen i lokalne testy; dowody w [raporcie sesji § 8](../08-plan/m0-1-session-history.md#8-lockfile-i-instalacja-po-zatwierdzeniu-patchy--2026-09-21). Pełny audyt CI pozostaje do BL-017.
 
@@ -63,6 +63,9 @@ Przygotowane manifesty (BL-001, 2026-09-20) używają dokładnych wersji z [inwe
 | `@vitest/coverage-v8` | 5.0.1 | MIT | Provider pokrycia Vitest tej samej wersji, potrzebny do bramki pokrycia `core` |
 | `setuptools` | 84.0.0 | MIT | Backend budowania minimalnego pakietu Python (BL-002); przypięty w build-system i grupie dev, już uwzględniony w audycie; build bez izolowanego pobierania zależności |
 | `@tailwindcss/postcss` | 4.3.3 | MIT | Oficjalny adapter Tailwind 4 dla potoku CSS Next.js |
+| `size-limit`, `@size-limit/esbuild`, `@size-limit/file` | 14.0.0 | MIT | BL-016: bundlowanie współdzielonych wejść i kontrola gzip; tylko narzędzia deweloperskie web |
+| `esbuild` | 0.28.2 | MIT | BL-033: powtarzalne pomiary Zod i natywnych prymitywów UI; ta sama zatwierdzona wersja co w potoku testowym |
+| `chrome-launcher` | 1.2.1 | Apache-2.0 | BL-016: programowe uruchamianie lokalnego Chromium dla Lighthouse 13.5.0, bez pobierania przeglądarki przez skrypt; 1.2.2 jeszcze w karencji |
 
 Te pakiety uzupełniają wybrane narzędzia, bez zmiany architektury lub ADR. Inne biblioteki figurujące w audycie (np. Better Auth do spike BL-032, narzędzia e2e i biblioteki naukowe) nie są automatycznie dodawane do manifestów. `apps/analytics/package.json` zawiera wyłącznie polecenia dla Turbo; minimalne zależności Pythona są już zapisane w `pyproject.toml` i `uv.lock`; konsument testowej kolejki BL-014 korzysta z tego samego lockfile, bez dodatkowych zależności Pythona.
 

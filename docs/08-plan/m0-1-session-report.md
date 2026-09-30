@@ -2,22 +2,18 @@
 
 **Cel:** przekazać stan i następny krok; wcześniejsze dowody w [historii](m0-1-session-history.md).
 
-**2026-09-29**, gałąź `feat/m0-1-skeleton`, [roboczy PR #2](https://github.com/Ipper18/OligInvest/pull/2), bez scalania. Node 24.21.0, pnpm 12.4.2, Python 3.13.13; uv `.git/tools/uv-0.12.16/uv.exe` (PATH lub `UV_BIN`). `packages/core` bez zmian — osobny PR #3.
+**2026-09-30**, gałąź `feat/m0-1-skeleton`, [roboczy PR #2](https://github.com/Ipper18/OligInvest/pull/2), bez scalania. Node 24.21.0, pnpm 12.4.2, Python 3.13.13; uv `.git/tools/uv-0.12.16/uv.exe` musi być w PATH. `packages/core` bez zmian — osobny PR #3.
 
-## BL-012 — wykonane lokalnie
+## BL-016 — wykonane lokalnie
 
-12 disclaimerów `2026-09` dosłownie z LAW § 4.3, 23 komunikaty błędów z TXT i zgodność kodów z OpenAPI. Słowniki JSON, interpolacja tekstu i polskie formy liczby mnogiej. Formatery Intl przyjmują `string | Decimal`, odrzucają number również w runtime; bez konwersji kwot na float, z ROUND_HALF_UP na prezentacji. Osobno daty sesyjne i znaczniki ze strefą.
+Lighthouse 13.5.0, size-limit/file/esbuild 14.0.0, esbuild 0.28.2 i chrome-launcher 1.2.1 w manifeście oraz lockfile; frozen PASS bez wyjątków karencji. Launcher 1.2.2 jeszcze niedojrzały. Budżety wszystkich wzorców PERF §3, pokrycie manifestu, gzip -9 bez noModule, markery sześciu rodzin bibliotek, podsumowanie CI. Brak trasy = OCZEKUJE; nowa trasa bez budżetu, brak fixture, redirect i błąd HTTP = błąd pomiaru. Testy negatywne i rzeczywisty zminifikowany Zod: 9 PASS. Leniwe/razem wymagają interakcji M1, wartości zapisane w konfiguracji.
 
-Skaner całych słów Unicode obejmuje słowniki, MDX i komponenty; zawiera tabelę zamienników TXT. Wyjątki tylko dla 12 tekstów disclaimerów, z uzasadnieniem i osobnym testem dosłownej zgodności. Lint AST odrzuca teksty JSX i etykiet dostępności. Kontrole w lint/test oraz CI web, bez cache skanera całego repo.
+size-limit sprawdza UI (15 KiB) i współdzielone UI+i18n (30 KiB, część przyszłej powłoki BL-121). Pomiar wykrył runtime import decimal.js do rozpoznawania Decimal: poprawiono i18n na import typu i zgodny znacznik biblioteki, bez zmiany pieniędzy/core. UI 4,35 kB i UI+i18n 5,75 kB (wyjście size-limit, jednostki dziesiętne). Initial JS: `/` 131,34 KiB, `/ui-preview` 130,52 KiB. Lighthouse: mediana 3 przebiegów mobilnych `/`: LCP 1897 ms, TBT 40 ms, CLS 0; raport M0, twarde asercje i wymóg 4 tras przez `lighthouse:assert` od M1. Cookies/surowe raporty nie są publikowane. Kroki podłączone do CI web, wynik po push do sprawdzenia.
 
-Natywne Button/TextField/SelectField/Disclosure/ModalDialog/Popover oraz DataFreshness/AssumptionsBlock/Disclaimer, bez literałów. Dialog showModal, fokus i Escape; popover natywny, kotwice CSS z fallbackiem; domyślnie otwarte założenia, zawsze widoczne podsumowanie. Świeżość: rzeczywiste opóźnienie, EOD, NBP, wszystkie przyczyny stale i region status. Techniczna trasa `/ui-preview`, wyłącznie syntetyczne dane. Właściciel zatwierdził w TXT zmienne opóźnienie, flagę „nieaktualne” i pięć brakujących przyczyn. Bez zmiany ADR.
-
-Dowody: frozen PASS; monorepo **88/88** (78 cache); i18n **13**, ui **9**, web **9**, skaner **21** testów PASS. Chromium **11/11**, axe **0 naruszeń** (oba motywy, 320/1280 px, dialog i popover), klawiatura/fokus/reflow PASS; zrzuty obejrzane. check:deps, check:docs, check:repository i diff check PASS. WebKit/Firefox oraz pełne budżety pozostają BL-018/016. Logi `.git/bl012-*.log`. Uszkodzony cache Turbopacka zachowany w `.git/bl012-next-cache`; ponowny build PASS.
-
-Commity/push po etapach: słowniki `f8eacfd`, kontrole `10d590a`, UI `136299b`; końcowa korekta usuwa znaczniki formatowania MDX przed skanowaniem (dwa testy MDX oraz dwa testy etykiet dialogu i błędów pól PASS). CI `136299b`: [web](https://github.com/Ipper18/OligInvest/actions/runs/36620268371), contracts, db, modules, workers i CodeQL PASS. Status `w toku` do wspólnego DoD; estymacja 2 d bez zmiany, odchylenie nakładu niezmierzone. Bez nowych ADR/ryzyk, serwery i ustawienia GitHub bez zmian.
+Dowody lokalne: monorepo 88/88 (31 cache), i18n 14, ui 9, web 9 testów, Chromium 11/11 i axe bez naruszeń PASS. Granice, dokumentacja, repo, diff check PASS. Logi `.git/bl016-*.log`. Status `w toku` do CI i wspólnego DoD; estymacja 2 d bez zmiany, odchylenie nakładu niezmierzone. Bez nowego ADR/ryzyka.
 
 ## Paczka i następny krok
 
-BL-001–015/034 wykonane lokalnie, BL-032 technicznie zamknięty. BL-011: CSP nonce, klient server-only, tokeny/motywy; CI `e368c9a` PASS, initial JS 169,7 KiB. Wyjątek TS: prywatne `tools/openapi-client` z openapi-typescript 7.13.0 i TS 5.9.3; aplikacje nadal TS 7.0.2, strict peers bez wyciszeń (R-20). Usunąć wyjątek po wsparciu TS 7 przez generator. Baza: RLS/audyt, 12 testów pul i ZERO DIFFERENCES; queues:test/db:seed:test/dev:test PASS. Analytics: izolacja systemowa od M3, obecnie pytest blokuje gniazda poza Valkey.
+Dalej BL-033: powtarzalny pomiar Next.js/Zod/natywnych prymitywów i aktualizacja PERF §2. Potem BL-018, pełne CI BL-017, ustawienia BL-019, pozostałe BL-035. M0 otwarty: kryteria 1–3 mają dowody, 4–7 wymagają dalszych prac/właściciela, 8 częściowo.
 
-Dalej BL-016/018/033, pełne CI BL-017, ustawienia BL-019 i pozostałe BL-035. Ruleset disabled. M0 pozostaje otwarty: kryteria 1–3 mają dowody, 4–7 wymagają dalszych prac/właściciela, 8 częściowo.
+BL-001–015/034 wykonane lokalnie, BL-032 technicznie zamknięty. BL-012: słowniki, skaner tekstów i natywne UI, zatwierdzone uzupełnienia TXT; BL-011: CSP nonce, klient server-only, motywy. Prywatny generator `tools/openapi-client`: TS 5.9.3, aplikacje TS 7.0.2 (R-20). Baza: RLS/audyt, 12 testów pul, ZERO DIFFERENCES; queues:test/db:seed:test/dev:test PASS. Analytics: izolacja systemowa od M3, dziś pytest blokuje gniazda poza Valkey. Ruleset disabled. Serwery i ustawienia GitHub bez zmian.

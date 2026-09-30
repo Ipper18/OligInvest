@@ -272,3 +272,7 @@ BL-007 lokalnie 4/4, status w toku do CI/DoD; następny BL-008. Brak nowego ADR/
 - `e368c9a`: test bez przeładowania mierzy żądanie dokumentu (fałszywy błąd w CI). Monorepo 88/88, Chromium 7, initial JS 169,7 KiB gzip; CI wszystkich workflow PASS.
 
 - 2026-09-29, BL-012: słowniki i formatery `f8eacfd`; skaner/lint `10d590a`; UI/axe `136299b`; 2 dodatkowe regresje formatowania MDX PASS. Monorepo 88/88, i18n 13, ui 9, web 9, skaner 21, Chromium 11/11 PASS. Zatwierdzone uzupełnienia TXT; bez zmian core i ADR.
+
+## BL-016 — 2026-09-30
+- Budżety tras/markerów, size-limit i Lighthouse 13.5.0 w CI web; M0 raport LH, M1 asercje. Korekta importu decimal.js w i18n po wykryciu przekroczenia UI.
+- Frozen, monorepo 88/88, 9 testów kontroli, Chromium 11/11 PASS; LH: LCP 1897 ms, TBT 40 ms, CLS 0. CI po push; core bez zmian, M0 otwarty.

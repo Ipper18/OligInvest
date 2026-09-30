@@ -39,6 +39,9 @@ test("all numeric formatters reject numbers and invalid decimals at runtime", ()
     "Infinity",
     "0xff",
     {},
+    null,
+    { toString: () => "1.23" },
+    { toStringTag: "[object Decimal]", toString: () => "Infinity" },
     new Decimal(Infinity),
   ]) {
     for (const format of [
@@ -53,6 +56,14 @@ test("all numeric formatters reject numbers and invalid decimals at runtime", ()
       expect(() => format(value)).toThrow();
     }
   }
+});
+
+test("presentation accepts Decimal clones without importing their arithmetic into the browser", () => {
+  const ClonedDecimal = Decimal.clone({ precision: 34 });
+  expect(formatMoney(new ClonedDecimal("9007199254740993.125"), "PLN")).toBe(
+    "9\u00a0007\u00a0199\u00a0254\u00a0740\u00a0993,13\u00a0zł",
+  );
+  expect(formatQuantity(new Decimal("1.23456"))).toBe("1,2346");
 });
 
 test("quantity, quote, percent, ratio, FX and compact precision follow the design system", () => {

@@ -14,7 +14,7 @@ test("production browser chunks do not contain the server API client or configur
   expect(files.length).toBeGreaterThan(0);
   for (const file of files)
     expect(readFileSync(file, "utf8")).not.toMatch(
-      /API_INTERNAL_URL|API boundary violation|DB_APP_PASSWORD|server-only|openapi-fetch/,
+      /API_INTERNAL_URL|API boundary violation|DB_APP_PASSWORD|server-only|openapi-fetch|\[DecimalError\]/,
     );
 });
 

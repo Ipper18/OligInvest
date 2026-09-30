@@ -1,4 +1,4 @@
-import { Decimal } from "decimal.js";
+import type { Decimal } from "decimal.js";
 
 export type DecimalInput = string | Decimal;
 export type CurrencyCode = "PLN" | "USD" | "EUR";
@@ -9,7 +9,17 @@ const dateFormats = new Map<string, Intl.DateTimeFormat>();
 const relativeFormat = new Intl.RelativeTimeFormat(LOCALE);
 
 function decimalText(value: DecimalInput): string {
-  if (typeof value !== "string" && !Decimal.isDecimal(value)) {
+  // Decimal.isDecimal also accepts this stable cross-constructor brand.
+  // A type-only import keeps decimal arithmetic out of browser formatters (PERF § 2).
+  if (
+    typeof value !== "string" &&
+    !(
+      typeof value === "object" &&
+      value !== null &&
+      "toStringTag" in value &&
+      value.toStringTag === "[object Decimal]"
+    )
+  ) {
     throw new TypeError("Expected a decimal string or Decimal, never number");
   }
   const text = value.toString();

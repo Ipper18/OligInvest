@@ -113,6 +113,12 @@ Wszystkie strony są renderowane dynamicznie (CSP z nonce — [`architektura-ui.
 
 ### 6.1 Raport JS per trasa
 
+Implementacja M0 (BL-016): `pnpm budgets` uruchamia produkcyjny build przez `next start` i syntetyczny endpoint health z testów BL-011. Nie tworzy pozornej sesji MFA: logowanie i dane domenowe powstaną w M1. Konfiguracja obejmuje wszystkie wzorce z § 3; istniejące strony wykrywa manifest buildu, a niewdrożone wzorce raportuje jako **OCZEKUJE**, nie PASS. `/ui-preview` jest techniczną próbką BL-012 z limitem jak `/`. Każda nowa strona bez przypisanego budżetu przerywa kontrolę. Trasy dynamiczne wymagają wartości `PERF_FIXTURES` (JSON: nazwa parametru → syntetyczny identyfikator). `BASE_URL` pozwala sprawdzić już uruchomione środowisko, `LH_SESSION_COOKIE` przekazuje sesję testową bez zapisywania jej w raporcie. Przekierowania, błędy HTTP i brak skryptów są błędami pomiaru.
+
+Jednostka tabel: **1 KB = 1024 bajty (KiB)**, zgodnie z pomiarami gzip -9. Sumujemy każdy zewnętrzny skrypt JS wskazany przez HTML tylko raz, bez `noModule`; nie doliczamy prefetch/preload ani danych RSC w skryptach inline. Pomiar nie dowodzi budżetu „Razem” ani rozmiarów leniwych po interakcjach — te wymagają scenariuszy ekranów M1. Limity te pozostają zapisane w konfiguracji. Globalnie obowiązuje również ścisłe `< 200 KB` z NFR-01.02.
+
+Markery tekstowe: Lightweight Charts — `lightweight-charts` / `TradingView, Inc.`; uPlot — `u-over` / `u-under`; driver.js — `driver-popover` / `driver-active`; Radix — `data-radix-` / `radix-ui`; Query — `queryHash` wraz z `queryKey`; Zod — `ZodError` / `ZodObject` / `invalid_type` wraz z `unrecognized_keys`. Testy negatywne sprawdzają wykrywanie i progi. Po zmianie wersji bibliotek trzeba zweryfikować markery na zminifikowanym wyjściu; to kontrola regresji, nie pełna identyfikacja pochodzenia kodu.
+
 Next.js 16 nie podaje rozmiarów tras w wyniku buildu, więc `apps/web/scripts/route-budgets.mjs` (zadanie M0):
 
 1. uruchamia `next start` na buildzie produkcyjnym z bazą z danymi testowymi i sesją użytkownika testowego (sesja z `mfa_verified_at`, tworzona skryptem seedującym wyłącznie w CI);
@@ -134,6 +140,8 @@ Next.js 16 nie podaje rozmiarów tras w wyniku buildu, więc `apps/web/scripts/r
 
 ### 6.2 size-limit dla pakietów współdzielonych
 
+W M0 `pnpm size` sprawdza istniejące wejścia `packages/ui` (15 KiB) oraz wspólny zestaw UI i i18n (30 KiB jako część przyszłej powłoki). React i Next są zewnętrzne; zależności formatowania są wliczone. Pełna powłoka z API/SSE/nawigacją zostanie dołączona w BL-121, a wejścia wykresów przy ich implementacji. Brak tych wejść nie jest wynikiem PASS ich przyszłych budżetów.
+
 `size-limit` 14 pilnuje punktów wejścia, które trafiają do wielu tras — regresja jest widoczna w PR, zanim wpłynie na trasę:
 
 ```json
@@ -148,6 +156,8 @@ Next.js 16 nie podaje rozmiarów tras w wyniku buildu, więc `apps/web/scripts/r
 `size-limit` domyślnie liczy brotli — `"gzip": true` utrzymuje zgodność z budżetami w gzip.
 
 ### 6.3 Lighthouse w CI
+
+W M0 `pnpm lighthouse` wykonuje po trzy przebiegi istniejących tras z listy poniżej i raportuje mediany LCP/TBT/CLS; przekroczenia są raportem, bez blokowania CI. Błąd uruchomienia, przekierowanie, brak audytu lub niepoprawna wartość zawsze blokują kontrolę. `pnpm lighthouse:assert` włącza twarde progi i wymaga wszystkich czterech tras (brama M1). Równość progowi także oznacza przekroczenie, zgodnie ze ścisłymi nierównościami § 1. Przeglądarka pochodzi z instalacji Playwright albo `CHROME_PATH`; skrypt nie pobiera jej samodzielnie. Raporty Markdown trafiają do podsumowania GitHub Actions, bez cookies i surowych raportów zawierających nagłówki.
 
 Lighthouse 13.5 uruchamiany programowo (bez `@lhci/cli`, który nie jest rozwijany od 2025-06 — [`stack-technologiczny.md`](../01-architektura/stack-technologiczny.md) § 10). Domyślny profil Lighthouse = telefon z symulowanym dławieniem sieci i CPU. Trasy: `/logowanie`, `/`, `/portfel`, `/rynek/{fixtureInstrumentId}`.
 

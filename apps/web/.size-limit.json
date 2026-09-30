@@ -1,0 +1,16 @@
+[
+  {
+    "name": "packages/ui: shared components",
+    "path": "../../packages/ui/dist/index.js",
+    "limit": "15 KiB",
+    "gzip": true,
+    "ignore": ["react", "react-dom"]
+  },
+  {
+    "name": "M0 shared UI and i18n (part of future shell)",
+    "path": "scripts/shared-entry.mjs",
+    "limit": "30 KiB",
+    "gzip": true,
+    "ignore": ["react", "react-dom", "next"]
+  }
+]
