@@ -51,7 +51,8 @@ export async function main() {
     const chrome = await launch({
       chromePath,
       chromeFlags: ["--headless=new"],
-      logLevel: "silent",
+      // Startup diagnostics concern an empty, isolated profile, before any cookie is supplied.
+      logLevel: "error",
     });
     try {
       const rows = [];
