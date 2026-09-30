@@ -4,11 +4,17 @@ import { createServer } from "node:http";
 import test from "node:test";
 import { gzipSync } from "node:zlib";
 import { build } from "esbuild";
-import { assessLighthouse, lighthouseExitCode } from "./lighthouse-assert.mjs";
+import { assessLighthouse, diagnosticCode, lighthouseExitCode } from "./lighthouse-assert.mjs";
 import { fetchChecked, webDirectory } from "./performance-server.mjs";
 import { assessRoute, matchBudget, planRoutes, scriptSources } from "./route-budgets.mjs";
 
 const budgets = JSON.parse(readFileSync(new URL("../budgets.json", import.meta.url)));
+
+test("Lighthouse diagnostics expose only a bounded symbolic code, never raw error messages", () => {
+  assert.equal(diagnosticCode({ code: "ECONNREFUSED", message: "private-cookie" }), "ECONNREFUSED");
+  assert.equal(diagnosticCode({ message: "private-cookie" }), "UNKNOWN");
+  assert.equal(diagnosticCode({ code: "Cookie: private-cookie" }), "UNKNOWN");
+});
 
 test("measurement rejects redirects, missing routes and invalid response types", async () => {
   const server = createServer((request, response) => {

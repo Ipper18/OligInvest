@@ -41,4 +41,8 @@ jobs:
       - run: pnpm --filter @oliginvest/web test:performance
       - run: pnpm size
       - run: pnpm budgets
-      - run: pnpm lighthouse
+      - name: Lighthouse (M0 report, system Chrome sandbox)
+        run: |
+          export CHROME_PATH="$(command -v google-chrome)"
+          "$CHROME_PATH" --version
+          pnpm lighthouse

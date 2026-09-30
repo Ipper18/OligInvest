@@ -165,6 +165,8 @@ W M0 `pnpm lighthouse` wykonuje po trzy przebiegi istniejących tras z listy pon
 
 Lighthouse 13.5 uruchamiany programowo (bez `@lhci/cli`, który nie jest rozwijany od 2025-06 — [`stack-technologiczny.md`](../01-architektura/stack-technologiczny.md) § 10). Domyślny profil Lighthouse = telefon z symulowanym dławieniem sieci i CPU. Trasy: `/logowanie`, `/`, `/portfel`, `/rynek/{fixtureInstrumentId}`.
 
+CI ustawia `CHROME_PATH` na systemowy Google Chrome dostarczony przez obraz `ubuntu-24.04` i wypisuje jego wersję. Ta instalacja korzysta z systemowego profilu AppArmor dla Chrome, podczas gdy pobrany Chromium może nie mieć dostępu do user namespaces. Sandbox pozostaje włączony; nie zmieniamy ustawień hosta. Źródła (2026-09-30): [obraz runnera](https://github.com/actions/runner-images/blob/main/images/ubuntu/Ubuntu2404-Readme.md), [dokumentacja Chromium o AppArmor](https://chromium.googlesource.com/chromium/src/+show/main/docs/security/apparmor-userns-restrictions.md). Diagnostyka launchera obejmuje pusty profil przed przekazaniem sesji; raport audytu i nagłówki pozostają pominięte.
+
 ```js
 // apps/web/scripts/lighthouse-assert.mjs — fragment ilustracyjny
 import lighthouse from 'lighthouse';

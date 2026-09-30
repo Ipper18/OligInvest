@@ -7,17 +7,24 @@ const LIMITS = {
   "total-blocking-time": 200,
   "cumulative-layout-shift": 0.1,
 };
+let phase = "configuration";
+const failure = (code) => Object.assign(new Error(code), { code });
+export function diagnosticCode(error) {
+  return typeof error?.code === "string" && /^[A-Z][A-Z0-9_]{0,63}$/.test(error.code)
+    ? error.code
+    : "UNKNOWN";
+}
 export function assessLighthouse(runs, expectedUrl) {
-  if (runs.length !== 3) throw new Error("Lighthouse requires three runs");
+  if (runs.length !== 3) throw failure("LH_REQUIRES_THREE_RUNS");
   for (const run of runs) {
-    if (run.runtimeError) throw new Error("Lighthouse runtime failure");
+    if (run.runtimeError) throw failure(`LH_RUNTIME_${diagnosticCode(run.runtimeError)}`);
     if ((run.finalDisplayedUrl ?? run.finalUrl) !== expectedUrl)
-      throw new Error("Lighthouse navigation mismatch");
+      throw failure("LH_NAVIGATION_MISMATCH");
   }
   const metrics = Object.entries(LIMITS).map(([audit, limit]) => {
     const values = runs.map((run) => run.audits?.[audit]?.numericValue);
     if (values.some((value) => !Number.isFinite(value) || value < 0))
-      throw new Error(`Invalid Lighthouse metric: ${audit}`);
+      throw failure(`LH_INVALID_${audit.replaceAll("-", "_").toUpperCase()}`);
     const median = values.sort((a, b) => a - b)[1];
     return { audit, limit, median, failed: median >= limit };
   });
@@ -38,16 +45,17 @@ export async function main() {
   ];
   const routes = wanted.filter((route) => plan.routes.some((entry) => entry.route === route));
   const pending = wanted.filter((route) => !routes.includes(route));
-  if (!routes.length || (enforce && pending.length))
-    throw new Error("Lighthouse required routes are not implemented");
+  if (!routes.length || (enforce && pending.length)) throw failure("LH_REQUIRED_ROUTES_MISSING");
   const [{ default: lighthouse }, { launch }, { chromium }] = await Promise.all([
     import("lighthouse"),
     import("chrome-launcher"),
     import("@playwright/test"),
   ]);
   const chromePath = process.env.CHROME_PATH || chromium.executablePath();
-  if (!existsSync(chromePath)) throw new Error("Install Playwright Chromium or set CHROME_PATH");
+  if (!existsSync(chromePath)) throw failure("LH_CHROME_PATH_MISSING");
+  phase = "next-start";
   const results = await withPerformanceServer(async (origin) => {
+    phase = "chrome-launch";
     const chrome = await launch({
       chromePath,
       chromeFlags: ["--headless=new"],
@@ -55,6 +63,7 @@ export async function main() {
       logLevel: "error",
     });
     try {
+      phase = "audit";
       const rows = [];
       for (const route of routes) {
         const url = new URL(route, origin).href;
@@ -72,10 +81,12 @@ export async function main() {
               ? { Cookie: process.env.LH_SESSION_COOKIE }
               : {},
           });
-          if (!result?.lhr) throw new Error("Lighthouse returned no report");
+          if (!result?.lhr) throw failure("LH_NO_REPORT");
           runs.push(result.lhr);
         }
+        phase = "assessment";
         rows.push({ route, ...assessLighthouse(runs, url) });
+        phase = "audit";
       }
       return rows;
     } finally {
@@ -103,7 +114,9 @@ export async function main() {
   process.exitCode = lighthouseExitCode(results, enforce);
 }
 if (isMain(import.meta.url))
-  main().catch(() => {
-    console.error("Lighthouse measurement failed (headers and report suppressed).");
+  main().catch((error) => {
+    console.error(
+      `Lighthouse measurement failed: ${phase}/${diagnosticCode(error)} (headers and report suppressed).`,
+    );
     process.exitCode = 1;
   });
