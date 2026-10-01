@@ -175,10 +175,10 @@ Obraz przypięty digestem i podpisany (weryfikacja przy wdrożeniu — [`ci-cd.m
 | Kontener | Obraz bazowy | Użytkownik | Sieci | Wyjście do internetu | Limit RAM |
 |---|---|---|---|---|---|
 | `caddy` | oficjalny `caddy` 2.11 | nie-root; port 443 przez `net.ipv4.ip_unprivileged_port_start=0` w przestrzeni sieci kontenera | `edge`, `egress` | ACME | 64 MB |
-| `web` | `node:24` (slim) | `node` | `edge` | **brak** | 512 MB |
-| `api` | `node:24` (slim) | `node` | `edge`, `backend`, `egress` | Pwned Passwords, OAuth (P2) | 384 MB |
-| `jobs` | `node:24` (slim) | `node` | `backend`, `egress` | allowlista dostawców, SMTP, push | 384 MB |
-| `analytics` | `python:3.13` (slim) | UID 10001 | `analytics` | **brak** | 1,5 GB, CPU ≤ 2 |
+| `web` | `node:24` (slim) | wg §8.1 | `edge` | **brak** | 512 MB |
+| `api` | `node:24` (slim) | wg §8.1 | `edge`, `backend`, `egress` | Pwned Passwords, OAuth (P2) | 384 MB |
+| `jobs` | `node:24` (slim) | wg §8.1 | `backend`, `egress` | allowlista dostawców, SMTP, push | 384 MB |
+| `analytics` | `python:3.13` (slim) | wg §8.1 | `analytics` | **brak** | 1,5 GB, CPU ≤ 2 |
 | `postgres` | oficjalny `postgres:18` + pgBackRest (obraz własny, podpisany) | `postgres` (UID 999, bez przełączania użytkownika) | `backend`, `analytics` | brak | 1 GB |
 | `valkey-queue` | oficjalny `valkey` 9 | `valkey` | `backend`, `analytics` | brak | 128 MB |
 | `valkey-cache` | oficjalny `valkey` 9 | `valkey` | `backend` | brak | 128 MB |
@@ -197,7 +197,7 @@ networks:
 services:
   api:
     image: ghcr.io/<OWNER>/oliginvest-api@sha256:<DIGEST>
-    user: "1000:1000"
+    # USER z Dockerfile, zgodny z tabelą §8.1
     read_only: true
     tmpfs: ["/tmp:size=64m"]
     cap_drop: ["ALL"]
@@ -384,3 +384,5 @@ Dziś Caddy na VPS kończy TLS Immicha i ma jego klucz prywatny. Cel: VPS przeka
 **DNS i TLS:** ☐ CAA z `accounturi` i `validationmethods` (albo decyzja z § 7) ☐ DNSSEC w home.pl ☐ monitoring CT, także `*.oligi.pl` ☐ 2FA u rejestratora, blokada transferu ☐ TLS 1.3, HSTS ☐ automatyczne odnawianie certyfikatów (Caddy) z alertem ważności < 14 dni
 
 **Aplikacja:** ☐ nagłówki z `kontrole-bezpieczenstwa.md` § 2 ☐ trasy Better Auth spoza listy zablokowane ☐ tryb produkcyjny bez debugowania ☐ skan zewnętrzny po wdrożeniu
+
+Implementacja M0-2 i kolejność poleceń właściciela: [instrukcja uruchomienia](m0-2-owner-runbook.md). Test Linux czyta macierz §8.1 tym samym parserem co generator i sprawdza każdy obraz oraz dokładny zestaw montowań.
