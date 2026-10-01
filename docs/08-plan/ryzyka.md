@@ -41,9 +41,11 @@ Powiązane: [`roadmapa.md`](roadmapa.md), [`backlog.md`](backlog.md), [`../06-be
 | **R-25** | Niespójne deklaracje zależności ukryte przez skipLibCheck | [BL-032](bl-032-typescript-7-spike.md) | 3 | 2 | 6 | zatwierdzone przez właściciela skipLibCheck=true, strict=true bez zmian; testy typowanych granic i negatywne fixture’y; przegląd przy aktualizacji bibliotek | nowe błędy własnego kodu lub zmiany typów API bibliotek | agent, CI | M0 i aktualizacje |
 | **R-26** | Porty developerskiego Compose nieosiągalne z hosta przy internal=true | [test BL-034](../07-wdrozenie/srodowisko-deweloperskie.md#5-wynik-testu-hosta-i-proponowana-korekta) | 1 | 2 | 2 | właściciel zatwierdził 2026-09-21 internal=false wyłącznie w compose.dev.yaml, porty nadal na loopback; wariant przeszedł wszystkie sondy, produkcyjna izolacja BL-022 bez zmian | ryzyko niedostępności ograniczone; nadal wybierać wolne porty hosta | agent, właściciel | przed zamknięciem BL-034 |
 
+| **R-27** | Sekrety root/0600 nieczytelne dla procesów non-root w Compose | BL-022/023, INF §5.3 i §6.1, [reprodukcja i propozycja](m0-2-secret-permissions.md) | 5 | 1 | 5 | zatrzymanie implementacji; proponowane kopie per odbiorca 0400 pod katalogiem root/0700, bez osłabiania kontenerów; oczekuje na właściciela | lokalny test potwierdził brak odczytu i ignorowanie uid/gid/mode dla secrets.file | agent, właściciel | M0-2 przed implementacją |
+
 ## 3. Podsumowanie
 
-26 ryzyk: **4 wysokie** (R-01, R-07, R-11, R-16), 18 średnich, 4 niskie; brak krytycznych.
+27 ryzyk: **4 wysokie** (R-01, R-07, R-11, R-16), 19 średnich, 4 niskie; brak krytycznych.
 
 | Ryzyko wysokie | Działanie przed końcem etapu |
 |---|---|

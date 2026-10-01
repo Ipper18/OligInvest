@@ -66,7 +66,7 @@ Bez logiki domenowej; wynik: działające CI, baza z RLS, wydanie podpisane i wd
 | BL-019 | Ustawienia repozytorium: ruleset `main`, skanowanie sekretów z push protection, CodeQL, alerty Dependabot, prywatne zgłaszanie podatności, `CODEOWNERS`, Renovate, reguła CI dla `.xlsx/.csv` spoza fixtures | NFR-03.12, NFR-03.09, NFR-10.03 | CI, [ADR-013](../09-decyzje/ADR-013-repozytorium-publiczne.md) | BL-017 | 1 | w toku |
 | BL-020 | Obrazy Docker (nie-root, FS tylko do odczytu, bazy przypięte digestem): `web`, `api`, `jobs`, `analytics`, `postgres` z pgBackRest, `migrate` | NFR-03.11 | INF | BL-009, BL-011, BL-013, BL-014 | 2 | todo |
 | BL-021 | Workflow `release.yml`: GHCR, SBOM (syft), poświadczenia, cosign keyless, osv-scanner obrazów, podpisana paczka wdrożeniowa | NFR-03.09 | CI | BL-020 | 2 | todo |
-| BL-022 | `compose.yaml`: sieci `edge`/`backend`/`analytics` (internal) i `egress`, limity zasobów, sekrety jako pliki, dwie instancje Valkey z ACL | NFR-01.08, NFR-03.11 | INF, [ADR-003](../09-decyzje/ADR-003-hybryda-obliczen-i-kolejki.md) | BL-020 | 1,5 | todo |
+| BL-022 | `compose.yaml`: sieci `edge`/`backend`/`analytics` (internal) i `egress`, limity zasobów, sekrety jako pliki, dwie instancje Valkey z ACL | NFR-01.08, NFR-03.11 | INF, [ADR-003](../09-decyzje/ADR-003-hybryda-obliczen-i-kolejki.md) | BL-020 | 1,5 | w toku |
 | BL-023 | Skrypty `bootstrap-vm.sh`, `generate-secrets.sh`, `deploy.sh` (weryfikacja cosign, kopia przed migracją, bramka zdrowia, wycofanie) | NFR-09.05, NFR-03.11 | INF, CI | BL-021, BL-022 | 3 | todo |
 | BL-024 | VPS: nginx `stream` (SNI, PROXY v1), port 80 (301/403), nftables, WireGuard (tunel i przekaźnik administracyjny z MTU), NAT ruchu wychodzącego | NFR-03.11 | INF, [ADR-011](../09-decyzje/ADR-011-topologia-wdrozenia.md) | — | 2 | todo |
 | BL-025 | VM i Caddy: hardening (nftables, SSH, chrony z NTS, DNS-over-TLS, AppArmor), `daemon.json`, Caddyfile (TLS 1.3, `proxy_protocol`, TLS-ALPN-01), BIOS *AC Recovery*, VM „Start at boot” | NFR-03.11, NFR-03.06 | INF | BL-024 | 2 | todo |
@@ -83,6 +83,8 @@ Bez logiki domenowej; wynik: działające CI, baza z RLS, wydanie podpisane i wd
 | | **Suma etapu** | | | | **51** | |
 
 ### 1.1 Postęp i odchylenia
+
+- **2026-10-01, M0-2 / BL-022:** analiza konfiguracji ujawniła konflikt sekretów root/0600 z kontenerami non-root. Lokalna reprodukcja Compose potwierdzona; [propozycja korekty INF](m0-2-secret-permissions.md) oczekuje na decyzję właściciela (AGENTS §2.5). Implementacja paczki wstrzymana; R-27, estymacje bez zmian, nakład niezmierzony. [Stan M0-2](m0-2-session-report.md).
 
 - **2026-09-30, domknięcie BL-017:** właściciel zatwierdził jedyny historyczny wyjątek Conventional Commits (8d91754b0adadfb5a2d7e9c2324d4e62f4125a64, commit z 2026-09-20 sprzed reguły). Kontrola historii i tytułu PR w repository; 9 testów lokalnie PASS, nazwy 17 zadań bez zmian. Po scaleniu PR #2 usunąć listę wyjątków i jej obsługę (BL-019, ustawienia-repozytorium.md §5). Bez przepisywania historii, nowych ADR/ryzyk ani zmiany estymacji.
 
