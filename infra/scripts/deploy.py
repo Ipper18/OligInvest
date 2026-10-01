@@ -79,6 +79,12 @@ def compose_args(release, config):
     return ["docker", "compose", "--project-name", "oliginvest", "--env-file", str(config / "instance.env"), "--env-file", str(release / "images.env"), "-f", str(release / "compose.yaml"), "-f", str(config / "runtime-compose.json")]
 
 
+def notify_owner(path):
+    # Hooks are instance configuration, never downloaded from release assets.
+    if path.is_file() and not path.is_symlink() and path.stat().st_uid == 0 and path.stat().st_mode & 0o022 == 0:
+        subprocess.run([str(path)], check=True, timeout=30, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+
 def healthy(compose, execute=run):
     deadline = time.monotonic() + 120
     while time.monotonic() < deadline:
@@ -173,6 +179,11 @@ def main():
     pending.symlink_to(candidate)
     os.replace(pending, current)
     run(["logger", "--tag", "oliginvest", f"system.deploy success {args.version}"])
+    try:
+        notify_owner(args.config / "deploy-succeeded")
+    except (OSError, subprocess.SubprocessError):
+        # Monitoring failure must not misreport a completed healthy deployment.
+        print("Deployment is healthy, but its monitoring hook failed.")
     print(f"Deployment healthy: {args.version}")
 
 
@@ -182,6 +193,8 @@ if __name__ == "__main__":
     except Exception:
         # Owner installs a local alert hook (mail via existing SMTP) outside the package.
         alert = Path("/etc/oliginvest/deploy-failed")
-        if alert.is_file() and not alert.is_symlink() and alert.stat().st_uid == 0 and alert.stat().st_mode & 0o022 == 0:
-            subprocess.run([str(alert)], check=False, timeout=30, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        try:
+            notify_owner(alert)
+        except (OSError, subprocess.SubprocessError):
+            pass
         raise SystemExit("Deployment failed; inspect service health. Current release pointer was not advanced.")

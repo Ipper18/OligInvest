@@ -179,9 +179,9 @@ Obraz przypięty digestem i podpisany (weryfikacja przy wdrożeniu — [`ci-cd.m
 | `api` | `node:24` (slim) | wg §8.1 | `edge`, `backend`, `egress` | Pwned Passwords, OAuth (P2) | 384 MB |
 | `jobs` | `node:24` (slim) | wg §8.1 | `backend`, `egress` | allowlista dostawców, SMTP, push | 384 MB |
 | `analytics` | `python:3.13` (slim) | wg §8.1 | `analytics` | **brak** | 1,5 GB, CPU ≤ 2 |
-| `postgres` | oficjalny `postgres:18` + pgBackRest (obraz własny, podpisany) | `postgres` (UID 999, bez przełączania użytkownika) | `backend`, `analytics` | brak | 1 GB |
-| `valkey-queue` | oficjalny `valkey` 9 | `valkey` | `backend`, `analytics` | brak | 128 MB |
-| `valkey-cache` | oficjalny `valkey` 9 | `valkey` | `backend` | brak | 128 MB |
+| `postgres` | oficjalny `postgres:18` + pgBackRest (obraz własny, podpisany) | wg §8.1, bez przełączania użytkownika | `backend`, `analytics` | brak | 1 GB |
+| `valkey-queue` | oficjalny `valkey` 9 | wg §8.1 | `backend`, `analytics` | brak | 128 MB |
+| `valkey-cache` | oficjalny `valkey` 9 | wg §8.1 | `backend` | brak | 128 MB |
 
 Procesy operacyjne na hoście VM (nie w Compose aplikacji): agent CrowdSec (pakiet z repozytorium CrowdSec; czyta logi Caddy i journald), timery systemd kopii zapasowych (restic, polecenia pgBackRest w kontenerze bazy) i skrypty sygnałów życia ([`monitoring.md`](monitoring.md)).
 
