@@ -189,7 +189,7 @@ allowBuilds:
 
 ### 4.4 Licencje
 
-Dozwolone bez przeglądu: MIT, ISC, BSD-2/3-Clause, Apache-2.0, 0BSD, CC0-1.0, Unlicense. Wymagają przeglądu: MPL-2.0 (na poziomie pliku — dopuszczalna), LGPL (tylko linkowanie dynamiczne), licencje z klauzulami dodatkowymi (vectorbt: Apache-2.0 + Commons Clause — dopuszczalne dla projektu niekomercyjnego). Niedozwolone w kodzie aplikacji: GPL i AGPL. Kontrola licencji w CI na podstawie SBOM.
+Dozwolone bez przeglądu: MIT, ISC, BSD-2/3-Clause, Apache-2.0, 0BSD, CC0-1.0, Unlicense. Wymagają przeglądu: MPL-2.0 (na poziomie pliku — dopuszczalna), LGPL (tylko linkowanie dynamiczne), licencje z klauzulami dodatkowymi (vectorbt: Apache-2.0 + Commons Clause — dopuszczalne dla projektu niekomercyjnego). Niedozwolone w kodzie aplikacji: GPL i AGPL. Kontrola licencji w CI na podstawie SBOM. Decyzja właściciela 2026-09-30 dopuszcza Python-2.0 dla argparse, PSF-2.0 dla typing-extensions i CC-BY-4.0 dla caniuse-lite; szczegóły przeglądu i normalizacji metadanych w STACK §7. Wyjątki są ograniczone do tych pakietów, a nie całych licencji.
 
 ## 5. Logowanie, monitoring bezpieczeństwa i wykrywanie (NFR-03.10, ASVS V16)
 
@@ -245,6 +245,8 @@ Logi trafiają wyłącznie do miejsc z tej tabeli (ASVS V16.2.3); znaczniki czas
 ### 5.4 Redakcja danych w logach (ASVS V16.2.5)
 
 Nigdy nie logujemy: haseł, kodów TOTP i zapasowych, tokenów (sesji, PAT, zaproszeń, resetu), nagłówków `Cookie` i `Authorization`, treści plików importu, kwot, ilości i cen z portfela użytkownika, treści notatek i dziennika. Maskujemy: adres e-mail (`a***@d***.pl`) w logach aplikacji (pełny adres tylko w audycie), token sesji — wyłącznie jako skrót SHA-256. Logger ma listę ścieżek do redakcji (pino `redact`) i test, który sprawdza, że przykładowe żądania nie zostawiają tych wartości w logu.
+
+BL-006: `createLogger` wystawia ograniczony interfejs strukturalny nad pino, bez dowolnego tekstu wiadomości, surowych wyjątków ani loggera bazowego. Dozwolone pola to stały klucz zdarzenia, UUID korelacji/użytkownika, identyfikator modułu, wzorzec trasy przekazany przez kod (nie URL żądania), status, czas, kod błędu i maskowany e-mail. Nieznane pola są usuwane przed zapisem; pino `redact` dodatkowo usuwa znane ścieżki sekretów i payloadów. Nie przekazujemy danych użytkownika jako klucza zdarzenia ani wzorca trasy. Testy obejmują sekrety w nagłówkach, zagnieżdżone payloady, finanse, treść pliku/notatki, wyjątki i e-mail; obiekty wejściowe nie są modyfikowane. Rejestr audytu działa osobno (późniejsze zadania).
 
 ## 6. OWASP Top 10 — mapowanie (2021 i 2025)
 

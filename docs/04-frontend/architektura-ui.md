@@ -69,6 +69,8 @@ flowchart LR
 
 **Typowany klient:** `openapi-typescript` 7.13 generuje `src/api/schema.d.ts` z `docs/02-api/openapi.yaml`; `openapi-fetch` 0.17 wykonuje żądania z typami ścieżek, parametrów i odpowiedzi. CI sprawdza, że wygenerowany plik jest aktualny.
 
+BL-011: `pnpm gen:api-client` uruchamia odizolowany generator w `tools/openapi-client`, `pnpm check:api-client` sprawdza wynik w CI contracts. Klient `server-only` wymusza origin z konfiguracji, prefiks `/api/v1/`, `no-store`, limit czasu i brak przekierowań; przekazuje tylko cookie, request-id i accept-language z kontekstu żądania. Strona testowa odpytuje sondę `health/live` (odpowiedź walidowana Zod), bez danych domenowych. `src/proxy.ts` jest obok `src/app/`: nadpisuje wejściowy nonce i CSP oraz ustawia UUID korelacji. Polityka trafia do renderera i odpowiedzi; cała strona jest dynamiczna.
+
 ## 4. Mutacje i błędy
 
 - **Idempotencja:** formularz generuje `Idempotency-Key` (`crypto.randomUUID()`) przy pierwszym wysłaniu i używa go przy ponowieniach (np. po utracie sieci na telefonie).
@@ -147,6 +149,8 @@ Najpierw HTML natywny, Radix tylko tam, gdzie natywne elementy nie zapewniają d
 | Suwaki (wagi, parametry analiz) | `@radix-ui/react-slider`, zawsze z polem liczbowym obok | 9,5 KB | tylko formularze analiz |
 
 `@radix-ui/react-tooltip` (18,9 KB) nie jest dozwolony — wyjaśnienia realizuje `popover`. Każdy inny pakiet UI wymaga uzasadnienia w PR i przejścia `size-limit`. Import wyłącznie per komponent (`@radix-ui/react-*`), nie pakietu zbiorczego `radix-ui`.
+
+BL-012: `packages/ui` eksportuje natywne `Button`, `TextField`, `SelectField`, `Disclosure`, `ModalDialog` i `Popover`; style z `@oliginvest/ui/components.css` korzystają z tokenów. Etykiety, opisy i błędy przekazuje słownik. Dialog używa `showModal()`, natywnej izolacji tła i powrotu fokusu do wyzwalacza. Popover korzysta z kotwic CSS, z wyśrodkowaniem w silnikach bez ich obsługi. Techniczna trasa `/ui-preview` pokazuje wyłącznie syntetyczne przykłady M0; Playwright sprawdza klawiaturę, axe, oba motywy i reflow. Nie jest ekranem produktu.
 
 ## 11. Formularze
 

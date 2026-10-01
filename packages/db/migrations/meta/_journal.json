@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1790006539610,
+      "tag": "0000_initial-tables",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1790006540114,
+      "tag": "0001_postgres-contract",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790023763537,
+      "tag": "0002_align-indexes-and-consent",
+      "breakpoints": true
+    }
+  ]
+}

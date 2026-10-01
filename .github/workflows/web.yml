@@ -1,0 +1,45 @@
+name: Web security
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions: { contents: read }
+
+concurrency:
+  group: web-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  web:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version-file: .nvmrc
+          package-manager-cache: false
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+        with:
+          version: '12.4.2'
+          run_install: false
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm check:ui-text
+      - run: node --test --test-reporter=dot scripts/check-ui-text.test.mjs
+      - run: pnpm turbo run build --filter=@oliginvest/web^... --output-logs=new-only
+      - run: pnpm --filter @oliginvest/web test:boundary
+      - run: pnpm turbo run lint typecheck test build --filter=@oliginvest/web --filter=@oliginvest/ui --filter=@oliginvest/i18n --output-logs=new-only
+      - run: pnpm --filter @oliginvest/web test:performance
+      - run: pnpm size
+      - run: pnpm budgets
+      - name: Lighthouse (M0 report, system Chrome sandbox)
+        run: |
+          export CHROME_PATH="$(command -v google-chrome)"
+          "$CHROME_PATH" --version
+          pnpm lighthouse

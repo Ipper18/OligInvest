@@ -1,0 +1,1 @@
+-- No tables or RLS policies until the module is implemented.

@@ -271,3 +271,45 @@ erDiagram
 - **Funkcje `SECURITY DEFINER`** działają jako `oliginvest_owner` — przy `FORCE ROW LEVEL SECURITY` wymagają jawnej polityki dla właściciela (patrz `identity.invitations`); każda taka funkcja ma `SET search_path` i odebrane `EXECUTE` od `PUBLIC`.
 - **Migracje danych** (backfill) na tabelach z FORCE RLS: wykonywane w kontekście właściwego użytkownika (`SET LOCAL app.user_id`) lub zadaniem aplikacyjnym — nigdy przez wyłączenie RLS na produkcji.
 - **Test spójności:** CI stawia PostgreSQL 18, stosuje migracje Drizzle i porównuje wynik z `schema.sql` (np. przez `pg_dump --schema-only` obu wersji), następnie uruchamia `testy-rls.sql`.
+
+### 5.1 Implementacja M0 (BL-007)
+
+Definicje Drizzle są w `modules/*/db/schema.ts`; tabele jądra `platform` są w `packages/db/src/schema.ts`. Moduł identity posiada także schemat `auth`. Tabele potrzebne innym modułom są eksportowane przez publiczne wejście `/server`; kod pakietu db nie importuje modułów. Konfiguracja narzędzia migracji zbiera pliki definicji przez glob. Pola TypeScript używają camelCase, kolumny SQL zachowują snake_case. `numeric` pozostaje ciągiem, `bigint` używa `bigint`, daty i znaczniki czasu są ciągami.
+
+Migracja wygenerowana przez Drizzle Kit obejmuje tabele, indeksy i ograniczenia obsługiwane przez DSL. Towarzyszący SQL odtwarza funkcje, widok, triggery, uprawnienia, RLS i komentarze. Sześć kluczy obcych jest zapisanych w `packages/db/sql/foreign-keys.sql`: pięć z `ON DELETE SET NULL (kolumna)` (zachowanie `user_id`) oraz odwołanie tabeli platformy do `auth.users`, które nie wprowadza odwrotnej zależności pakietu od modułu. To odwzorowanie istniejącego DDL, bez zmiany kontraktu. Bootstrap ról jest oddzielony od migracji właściciela; haseł nie ma w plikach SQL.
+
+Przed `pnpm db:generate` należy zbudować moduły, aby publiczne eksporty tabel odpowiadały źródłom. Każdą wygenerowaną migrację i jej uzupełnienie SQL należy przejrzeć; pliki w `sql/` są źródłami do nowych migracji, nie są wykonywane ponownie na starcie aplikacji. `schema.sql` pozostaje niezależnym wzorcem porównania.
+
+`pnpm db:test` tworzy własny losowo nazwany projekt `compose.dev.yaml` z PostgreSQL 18, syntetycznymi hasłami i wolnym portem loopback. Porównuje pełne `pg_dump --schema-only --create` bazy wzorcowej i migracji (także właścicieli, ACL, RLS, funkcje, triggery i komentarze). Pomija wyłącznie techniczny schemat dziennika `drizzle`, losowe znaczniki psql i różnicę nazw baz testowych. Sprawdza powtórne wykonanie migracji i CHECK wersji zgody. Logi i dumpy trafiają do `.git/bl007-db/`; po teście usuwany jest wyłącznie utworzony projekt i jego wolumen. Nie czyta lokalnego `.env`.
+
+Test bazy uruchamia niezmieniony `testy-rls.sql` i audyt katalogu uprawnień przed załadowaniem wzorca, aby bootstrap wzorca nie uzupełniał brakujących grantów globalnych. Audyt obejmuje role, członkostwa, wszystkie tabele z `user_id` poza auth, izolację auth/app/analytics i zabezpieczenia funkcji DEFINER.
+
+### 5.2 Pule i transakcje aplikacji
+
+`createAppDatabase`, `createAuthDatabase` i `createAnalyticsDatabase` tworzą niezależne pule z przypisaną na stałe rolą PostgreSQL. Przyjmują jawne parametry host/port/database/password oraz opcjonalne max/ssl; nie czytają środowiska ani nie przyjmują roli/URL od żądania. Migracje i kopie nie korzystają z tych fabryk. Wejścia mają walidację Zod strict, a błędy konfiguracji nie zawierają wartości ani sekretów.
+
+`app.transaction({userId, role}, callback)` przyjmuje zweryfikowaną tożsamość z API/jobs: role user/pro/admin wymagają UUID, system może mieć UUID lub null, anonymous wymaga null. Walidacja kształtu nie zastępuje uwierzytelnienia/RBAC — kontekst nigdy nie pochodzi bezpośrednio z payloadu klienta. `auth.transaction(callback)` i `analytics.transaction(callback)` mają pusty kontekst użytkownika; analityka dodatkowo otwiera transakcję tylko do odczytu.
+
+Helper rezerwuje jedno połączenie na całą transakcję i ustawia obie zmienne przez parametryzowane `set_config(..., true)` (odpowiednik SET LOCAL). Sprawdza rzeczywistą rolę sesji i brak uprzywilejowanych członkostw. Callback otrzymuje transakcję Drizzle (zagnieżdżenia używają savepointów), nie pulę. Po COMMIT/ROLLBACK helper wykonuje `RESET ALL`, przywracając ustawienia sesji (także `search_path` i limity czasu) do domyślnych wartości połączenia oraz usuwając kontekst użytkownika. Fabryki nie ustawiają domyślnego kontekstu app.*. Błąd resetowania lub niesprawne połączenie powoduje usunięcie klienta z puli. Błąd SQL przechwycony przez callback nadal nie pozwala zgłosić sukcesu przerwanej transakcji. `close()` zamyka wyłącznie daną pulę.
+
+
+### 5.3 Limity czasu ról (P-03)
+
+Decyzja projektu 2026-09-27, w ramach zatwierdzonej poprawki P-03:
+
+| Rola | `statement_timeout` | `idle_in_transaction_session_timeout` | `lock_timeout` |
+|---|---|---|---|
+| `oliginvest_app`, `oliginvest_auth` | 5 s | 10 s | 2 s |
+| `oliginvest_analytics_ro` | 60 s | 60 s | 2 s |
+
+Analityka pobiera większe serie rynkowe; limit pojedynczego odczytu 60 s nie przekracza limitu najkrótszej ciężkiej analizy (MC ≤ 60 s, obliczenia-finansowe § 12). Worker musi zamknąć transakcję po pobraniu danych, przed obliczeniami; limit całego zadania nadal obejmuje odczyt i obliczenia. Limit oczekiwania na blokadę pozostaje krótki dla wszystkich ról. Nie narzucamy tych limitów rolom migracji i backupu.
+
+[PostgreSQL 18: ALTER ROLE](https://www.postgresql.org/docs/18/sql-alterrole.html) i [limity sesji](https://www.postgresql.org/docs/18/runtime-config-client.html) (sprawdzone 2026-09-27): ustawienia ról działają przy nowym logowaniu, nie przy `SET ROLE`. Przekroczenie czasu zapytania/blokady przerywa polecenie, bezczynność w transakcji zamyka połączenie.
+
+Migracja administracyjna [0001-role-timeouts.sql](../../packages/db/admin-migrations/0001-role-timeouts.sql) jest oddzielona od migracji Drizzle wykonywanych przez `oliginvest_owner` (NOCREATEROLE). Właściciel wdrożenia wykonuje ją jako administrator PostgreSQL po bootstrapie ról, także na istniejącej instancji:
+
+1. Wykonaj plik przez lokalne `psql -X -v ON_ERROR_STOP=1 -f packages/db/admin-migrations/0001-role-timeouts.sql` z połączeniem administratora skonfigurowanym poza repozytorium.
+2. Uruchom zwykłe migracje schematu jako `oliginvest_owner`.
+3. Uruchom ponownie procesy korzystające z pul, aby wszystkie połączenia odziedziczyły nowe limity. Sprawdź `SHOW statement_timeout`, `SHOW idle_in_transaction_session_timeout`, `SHOW lock_timeout` po zalogowaniu każdą rolą aplikacyjną.
+
+Migracja jest idempotentna i nie zmienia uprawnień. `pnpm db:test` wykonuje ją dwukrotnie, bada domyślne limity na rzeczywistych połączeniach ról i przekroczenie limitów przed załadowaniem wzorca. Ustawienia ról są globalne dla klastra i nie trafiają do `pg_dump --schema-only`: test osobno porównuje ich stan przed i po wzorcu, oprócz wymaganego porównania schematu z zerem różnic.

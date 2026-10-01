@@ -1,0 +1,24 @@
+{
+  "title": "OligInvest — strona testowa",
+  "description": "Szkielet aplikacji. Funkcje produktu nie są jeszcze dostępne.",
+  "appearance": "Próba wyglądu",
+  "themeLabel": "Motyw",
+  "paletteLabel": "Paleta",
+  "themes": {
+    "dark": "Ciemny",
+    "light": "Jasny",
+    "system": "Systemowy"
+  },
+  "palettes": {
+    "standard": "Standardowa",
+    "colorblind": "Dla daltonistów"
+  },
+  "preferenceNotice": "Wybór jest zapamiętywany tylko w tej przeglądarce na potrzeby strony testowej.",
+  "gainSample": "+ wzrost — próbka koloru",
+  "lossSample": "− spadek — próbka koloru",
+  "apiStatus": {
+    "ok": "API: proces działa.",
+    "fail": "API: sonda zgłasza błąd.",
+    "unavailable": "API: sonda jest niedostępna."
+  }
+}

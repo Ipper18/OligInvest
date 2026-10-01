@@ -1,0 +1,28 @@
+{
+  "name": "@oliginvest/ui",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "lint": "biome check . && node ../../scripts/check-ui-text.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "build": "tsc -p tsconfig.json"
+  },
+  "exports": {
+    "./tokens.css": "./src/tokens.css",
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./components.css": "./src/components.css"
+  },
+  "dependencies": {
+    "@oliginvest/i18n": "workspace:*",
+    "react": "19.3.0"
+  },
+  "devDependencies": {
+    "@types/react": "19.3.0",
+    "react-dom": "19.3.0"
+  }
+}

@@ -91,7 +91,6 @@ paths:
       x-requirements: [FR-08.08]
       responses:
         '200': {description: 'Proces działa.', content: {application/json: {schema: {$ref: '#/components/schemas/HealthStatus'}}}}
-        '429': {$ref: '#/components/responses/RateLimited'}
   /health/ready:
     get:
       operationId: getHealthReady
@@ -102,7 +101,6 @@ paths:
       x-requirements: [FR-08.08]
       responses:
         '200': {description: 'Gotowy do obsługi ruchu.', content: {application/json: {schema: {$ref: '#/components/schemas/HealthStatus'}}}}
-        '429': {$ref: '#/components/responses/RateLimited'}
         '503': {description: 'Co najmniej jedna zależność niedostępna.', content: {application/json: {schema: {$ref: '#/components/schemas/HealthStatus'}}}}
   /openapi.json:
     get:
@@ -114,7 +112,6 @@ paths:
       x-requirements: [NFR-02.05]
       responses:
         '200': {description: 'Dokument OpenAPI 3.1.', content: {application/json: {schema: {type: object}}}}
-        '429': {$ref: '#/components/responses/RateLimited'}
   /stream:
     get:
       operationId: openEventStream
@@ -3309,6 +3306,7 @@ components:
         existingImportId: {$ref: '#/components/schemas/Uuid'}
     HealthStatus:
       type: object
+      additionalProperties: false
       required: [status]
       properties:
         status: {type: string, enum: [ok, fail]}

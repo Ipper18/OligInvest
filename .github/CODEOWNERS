@@ -1,0 +1,8 @@
+# Właściciel przegląda każdy PR. Reguły zatwierdzania: docs/07-wdrozenie/ustawienia-repozytorium.md.
+* @Ipper18
+/docs/06-bezpieczenstwo/ @Ipper18
+/docs/09-decyzje/ @Ipper18
+/infra/ @Ipper18
+/.github/ @Ipper18
+/packages/db/ @Ipper18
+/apps/api/src/auth/ @Ipper18

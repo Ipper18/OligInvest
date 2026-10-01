@@ -18,23 +18,39 @@ Fakty sprawdzone 2026-09-19 w dokumentacji GitHub: runnery hostowane przez GitHu
 - **Model:** trunk-based — krótkie gałęzie tematyczne, PR do `main`, scalanie przez „squash”, tytuł PR w formacie Conventional Commits (sprawdzany w CI).
 - **Reguły ochrony (ruleset) dla `main`:** wymagany PR; wymagane zadania CI z § 3 (status „success”); historia liniowa; zakaz force-push i usuwania gałęzi; wymagane rozwiązanie wątków przeglądu; reguły obowiązują także właściciela (bez obejść). Podpisane commity — zalecane.
 - **Przegląd:** właściciel przegląda każdy PR, także przygotowany przez agenta AI (Codex, Claude) — T-SC-06; plik `CODEOWNERS` wskazuje właściciela dla `docs/06-bezpieczenstwo/`, `infra/`, `.github/`, `packages/db/`, `apps/api/src/auth/`.
+- Przegląd właściciela jest obowiązkiem procesu (R-11), nie jest egzekwowany mechanizmem zatwierdzeń GitHuba; `CODEOWNERS` wskazuje obszary wymagające szczególnej uwagi. Przy jednym współpracowniku ruleset wymaga 0 zatwierdzeń i nie wymaga zatwierdzenia code ownera, bez odrębnej tożsamości autora i bez bypass. Pozostałe reguły ochrony obowiązują bez zmian (decyzja właściciela z 2026-09-20, R-23; bez nowego ADR).
 - **Ustawienia repozytorium:** skanowanie sekretów z push protection, CodeQL, alerty Dependabot, prywatne zgłaszanie podatności (ADR-013); domyślne uprawnienia tokenu zadań: tylko odczyt; akcje tylko z listy dozwolonych (organizacje `actions`, `github`, `docker`, `sigstore`, `pnpm`, `astral-sh` i zweryfikowani twórcy) i przypięte SHA.
 
 ## 3. Zadania CI (pull request i `main`)
 
+Kontrola Conventional Commits działa w istniejącym zadaniu **repository**: sprawdza tytuł PR (także po edycji — przy squash merge trafia on na main) oraz każdy commit między SHA bazy i głowy PR; przy push na main między poprzednim i nowym SHA. Jedyny wyjątek, zatwierdzony przez właściciela 2026-09-30, to jawny pełny SHA **8d91754b0adadfb5a2d7e9c2324d4e62f4125a64**: commit sprzed reguły (2026-09-20). Lista nie zawiera wzorców ani zakresów dat; każdy inny niezgodny commit blokuje CI, a wyjątek nigdy nie zwalnia tytułu PR. Nie przepisujemy historii, ponieważ na tej gałęzi opiera się PR #3. **Po scaleniu PR #2 należy usunąć listę wyjątków i gałąź kodu ją obsługującą**, dostosować testy i potwierdzić kontrolę bez wyjątków (krok BL-019 w ustawienia-repozytorium.md §5).
+
+**BL-017/018/035 (2026-09-30):** aktywne workflow `contracts`, `db`, `modules`, `workers` i `web` uzupełniono o `repository` (dokumentacja i higiena repo), `lint`, `typecheck`, `unit`, sześć wariantów `build`, `deps-audit` i `e2e`. Budżety i Lighthouse pozostają krokami `web`, typy klienta w `contracts`; nie tworzymy zduplikowanych kontekstów. Ruleset pozostaje wyłączony; nazwy rozszerzamy po potwierdzeniu rzeczywistych zielonych przebiegów. Wyniki i otwarte kryteria w [raporcie M0-1](../08-plan/m0-1-session-report.md).
+
 | Zadanie | Co sprawdza | Blokuje scalenie |
 |---|---|---|
-| `lint` | Biome (TS/JS, w tym reguły bezpieczeństwa: zakaz `eval`, `dangerouslySetInnerHTML`, `sql.raw`, importu `{ z }` z `zod` w kodzie klienckim), Ruff (Python), tytuł PR, format commitów | tak |
+| `lint` | Biome (TS/JS, w tym reguły bezpieczeństwa: zakaz `eval`, `dangerouslySetInnerHTML`, `sql.raw`, importu `{ z }` z `zod` w kodzie klienckim), Ruff (Python); tytuł PR i format commitów sprawdza `repository` | tak |
 | `typecheck` | TypeScript (`strict`) w całym monorepo, mypy/pyright w `apps/analytics` | tak |
 | `unit` | Vitest (w tym wektory `packages/test-vectors`), pytest (te same wektory dla Pythona) | tak |
-| `contracts` | lint Redocly `docs/02-api/openapi.yaml`; zgodność OpenAPI generowanego z Zod z plikiem w `docs/`; aktualność typów klienta (`openapi-typescript`); zgodność JSON Schema dla zadań; `pnpm check:deps` (reguły warstw modułów) | tak |
+| `modules` | Osobny workflow Module boundaries: `pnpm check:deps` (reguły warstw modułów) i testy negatywne skryptu | tak — aktywne |
+| `contracts` | BL-010: lint Redocly `docs/02-api/openapi.yaml`, zgodność zaimplementowanych operacji Zod i malejąca lista pending względem SHA bazy; aktualność typów klienta (`openapi-typescript`); JSON Schema zadań domenowych wraz z analizami M3 | tak |
 | `db` | PostgreSQL 18 jako usługa: migracje Drizzle od zera, porównanie schematu z `docs/03-dane/schema.sql`, `testy-rls.sql`, testy integracyjne API z prawdziwą bazą | tak |
-| `build` | Turborepo: wszystkie aplikacje; obrazy Docker (bez publikacji); wariant „bez modułu funkcjonalnego” (macierz: po kolei bez `analytics`, `alerts`, `education`, `quick-actions`) | tak |
-| `budgets` | `size-limit`, raport JS per trasa, obecność zakazanych bibliotek w chunkach początkowych ([`../04-frontend/wydajnosc.md`](../04-frontend/wydajnosc.md) § 6) | tak |
-| `e2e` | Playwright (Chromium, WebKit) na obrazach produkcyjnych z bazą testową: ścieżki krytyczne, `@axe-core/playwright`, testy nagłówków, bramek MFA i regulaminu, zgody RUM | tak |
-| `lighthouse` | Lighthouse 13 (profil mobilny, 3 przebiegi, mediana) dla tras z budżetami | tak (od M1) |
-| `deps-audit` | osv-scanner na lockfile'ach; licencje z SBOM (lista dozwolonych) | tak (dla podatności z dostępną poprawką powyżej progu) |
-| `codeql` | CodeQL: JavaScript/TypeScript, Python, GitHub Actions | alerty wysokie — tak |
+| `build` | Turborepo: wszystkie aplikacje; wariant „bez modułu funkcjonalnego” (macierz: po kolei bez `analytics`, `alerts`, `education`, `admin`, `quick-actions`); obrazy Docker (bez publikacji) od M0-2 / BL-020 | tak |
+| `budgets` (kroki `web`) | `size-limit`, raport JS per trasa, obecność zakazanych bibliotek w chunkach początkowych ([`../04-frontend/wydajnosc.md`](../04-frontend/wydajnosc.md) § 6) | tak |
+| `e2e` | Playwright (Chromium, WebKit, Firefox), `@axe-core/playwright` i nagłówki; M0-1: strona testowa z lokalnego buildu produkcyjnego i usługi `compose.dev.yaml`; M0-2: obrazy produkcyjne po BL-020–BL-023; bramki MFA/regulaminu i zgoda RUM wraz z ich implementacją w M1 | tak |
+| `lighthouse` (krok `web`) | Lighthouse 13 (profil mobilny, 3 przebiegi, mediana) dla tras z budżetami | tak (od M1) |
+| `deps-audit` | osv-scanner na lockfile'ach; licencje z SBOM (lista dozwolonych) | tak — high/critical (CVSS ≥ 7,0), niezależnie od dostępności poprawki |
+| `codeql` (kontrola GitHub) | Konfiguracja domyślna GitHub, poza własnymi workflow; **włączenie lub ponowna konfiguracja po scaleniu M0-1**. Właściciel sprawdza `javascript-typescript`, `python` oraz dostępność `actions` w panelu i zapisuje wynik według [instrukcji](ustawienia-repozytorium.md). Nazwę rzeczywistej kontroli pobiera z zakończonego przebiegu | alerty wysokie — tak; potwierdzenie ustawień jest częścią BL-019 |
+
+Wyjątek właściciela z 2026-09-21: [osv-scanner.toml](../../osv-scanner.toml) pomija wyłącznie GHSA-67mh-4wv8-2f99 (R-24), do 2026-12-20 (90 dni). esbuild 0.18.20 jest zależnością developerską Drizzle Kit; podatny serwer developerski nie jest uruchamiany. Wyjątek usuwa aktualizacja Drizzle Kit eliminująca `@esbuild-kit/*`. Jest to jawne odstępstwo od zwykłego terminu naprawy moderate (30 dni w SEC § 4.2), zaakceptowane przez właściciela; bez overrides i audit fix. Przyszłe polecenie `deps-audit` musi przekazać `--config=osv-scanner.toml`, także dla lockfile Pythona: konfiguracja lokalna OSV nie jest dziedziczona przez podkatalogi ([oficjalny format konfiguracji](https://google.github.io/osv-scanner/configuration/)). BL-017: lokalny skan OSV 2.6.0 i kontrola CycloneDX PASS; rzeczywisty przebieg CI zapisujemy w raporcie paczki. Decyzja właściciela 2026-09-21 doprecyzowuje próg: **high i critical (CVSS ≥ 7,0) blokują scalenie**, zgodnie z `security_alerts_threshold: high_or_higher` w rulesecie CodeQL. Moderate i low nie blokują; muszą trafić do podsumowania zadania CI i przeglądu przy aktualizacjach Renovate. Wpis esbuild (moderate) pozostaje udokumentowaną decyzją, choć sam poziom nie przekracza progu. Wyjątek od blokady jest możliwy wyłącznie przez `osv-scanner.toml`, z uzasadnieniem, datą wygaśnięcia najwyżej 90 dni od decyzji i odwołaniem do identyfikatora w [ryzyka.md](../08-plan/ryzyka.md). Nie zmienia to karencji ani domyślnych terminów naprawy z SEC § 4.2.
+
+W M0-1 wszystkie własne workflow mają wyłącznie `permissions: { contents: read }`. Nie dodajemy konfiguracji zaawansowanej CodeQL ani `security-events: write`. Stan „tylko Python” przed scaleniem szkieletu nie jest docelową listą języków: na `main` nie ma jeszcze TypeScript ani workflow. Brak `actions` w panelu należy zapisać jako lukę pokrycia do rozstrzygnięcia; nie zakładać dostępności i nie zastępować konfiguracji domyślnej bez nowej decyzji. Kryterium M0 nr 7 nie jest spełnione przez samo dodanie plików.
+
+`pnpm ci:deps-audit` uruchamia przypięte OSV 2.6.0 i Syft 1.52.0 (SHA-256 sprawdzane przed wykonaniem). Skan z jawnym `--config=osv-scanner.toml` obejmuje oba lockfile; dodatkowy pełny skan bez filtracji służy raportowaniu i egzekwowaniu zatwierdzonych wyjątków. Próg wynosi zawsze 7,0. Wpis wymaga daty `approved=YYYY-MM-DD`, uzasadnienia, identyfikatora ryzyka i terminu do 90 dni; wygasły lub niepoprawny wpis blokuje. Błąd skanera/parsera, brak oceny, pakietu w SBOM lub nieznana licencja także blokuje. Raport Markdown, pełne JSON i CycloneDX trafiają do artefaktu także przy czerwonym wyniku. Moderate/low pozostają w podsumowaniu dla przeglądu Renovate. Testy polityki są offline.
+
+Archiwalny szkic pozostaje w `.github/workflow-drafts/`. Nie kopiować go do aktywnych workflow: rzeczywiste kontrole mają podział opisany powyżej i w README szkicu.
+
+BL-008: osobny [workflow Database](../../.github/workflows/db.yml) uruchamia zadanie `db` na pull requestach i push do main. Sprawdza moduły i pakiet db, następnie `pnpm db:test` tworzy usługę PostgreSQL 18 z przypiętego `compose.dev.yaml`, wykonuje migracje, niezmienione testy RLS, audyt uprawnień, testy pul i pełne porównanie schematu. Hasła są losowe i syntetyczne, bez sekretów GitHub; sprzątanie dotyczy tylko projektu testu. Artefakt zawiera wyłącznie pięć wskazanych plików diagnostycznych z `.git/bl007-db/`, nigdy całego `.git`. Workflow Module boundaries realizuje już BL-003 przez zadanie `modules`. BL-010 dodaje [workflow API contracts](../../.github/workflows/contracts.yml): `pnpm check:contracts`, testy negatywne i porównanie pending z SHA bazy PR (na push: SHA sprzed zmiany), przy `fetch-depth: 0`. Zakres obejmuje OpenAPI/pending i wygenerowane typy klienta. ACK Node/Python sprawdza `workers`; JSON Schema zadań domenowych powstanie wraz z analizami M3. Pozostałe workflow BL-017 są aktywne; testy API będą dodawane wraz z implementacją endpointów. Rzeczywisty wynik przebiegu zapisujemy w bieżącym raporcie sesji.
 
 ```yaml
 # .github/workflows/ci.yml — fragment ilustracyjny
@@ -150,8 +166,8 @@ sequenceDiagram
 
 | Środowisko | Gdzie | Dane | Uwagi |
 |---|---|---|---|
-| Lokalne | Docker Compose, profil `dev` | seed demo + fixtures syntetyczne | Mailpit jako lokalny serwer SMTP; atrapy dostawców z zapisanych odpowiedzi; bez połączeń do prawdziwych API bez jawnej zmiennej |
-| CI | runnery GitHub (efemeryczne) | fixtures syntetyczne | obrazy produkcyjne w testach e2e |
+| Lokalne | samodzielne `compose.dev.yaml` (bez profilu i produkcyjnych obrazów aplikacji) | seed demo + fixtures syntetyczne (po implementacji) | PostgreSQL, Valkey ×2, Mailpit jako lokalny serwer SMTP; [instrukcja](srodowisko-deweloperskie.md); atrapy dostawców z zapisanych odpowiedzi; bez połączeń do prawdziwych API bez jawnej zmiennej |
+| CI | runnery GitHub (efemeryczne) | fixtures syntetyczne | M0-1: lokalny build produkcyjny i usługi developerskie; obrazy produkcyjne w testach e2e od M0-2 |
 | Produkcja | VM `oliginvest` | prawdziwe | wdrożenie wg § 6 |
 
 Brak osobnego środowiska testowego na serwerze — nie mieści się w budżecie RAM (NFR-01.08). Zastępują je testy e2e na obrazach produkcyjnych w CI i możliwość uruchomienia wydania lokalnie przed wdrożeniem.
@@ -159,3 +175,9 @@ Brak osobnego środowiska testowego na serwerze — nie mieści się w budżecie
 ## 9. Koszt
 
 0 zł: GitHub Actions na runnerach hostowanych i GHCR dla pakietów publicznych są bezpłatne dla repozytoriów publicznych; Renovate jako aplikacja GitHub — bez opłat; cosign, syft, osv-scanner — narzędzia open source; Sigstore (Fulcio, Rekor) — publiczna infrastruktura bez opłat.
+
+## 10. Kontrole M0-1 — uruchamianie lokalne
+
+`pnpm ci:lint`, `pnpm ci:typecheck`, `pnpm ci:unit` obejmują całe monorepo. `pnpm ci:build -- <none|analytics|alerts|education|admin|quick-actions>` tworzy dla pominiętego modułu czystą kopię śledzonych źródeł, instalacje frozen i własny cache; nie edytuje oryginalnego workspace.
+
+`pnpm ci:e2e` buduje web/API/db, uruchamia izolowany projekt Compose i seed, API w trybie production z losowymi sekretami przez `*_FILE` oraz produkcyjny Next na lokalnym HTTPS. Wymaga przeglądarek z `pnpm --filter @oliginvest/web exec playwright install --with-deps chromium webkit firefox` i OpenSSL (Ubuntu; Git for Windows). Certyfikat powstaje na czas testu, nie trafia do repo ani raportów. Nagłówki CSP pozostają produkcyjne. Rejestrujący proxy testowy przekazuje sondę live do prawdziwego API; test readiness sprawdza PostgreSQL i obie instancje Valkey. Cały zestaw zabezpieczeń, UI i axe działa w trzech silnikach; błąd i sukces sprzątają procesy oraz własne wolumeny. Raport HTML i logi są artefaktem CI. M0-2 zastąpi lokalne procesy obrazami po BL-020–023; MFA/regulamin i scenariusze domenowe dopiero M1.

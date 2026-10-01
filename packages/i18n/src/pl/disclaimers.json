@@ -1,0 +1,50 @@
+{
+  "general": {
+    "version": "2026-09",
+    "text": "OligInvest służy do analizy i nauki. Nie świadczy doradztwa inwestycyjnego ani nie formułuje rekomendacji inwestycyjnych. Decyzje inwestycyjne podejmujesz samodzielnie i na własne ryzyko."
+  },
+  "analysis": {
+    "version": "2026-09",
+    "text": "To scenariusze obliczone na danych historycznych i przyjętych założeniach, a nie prognoza. Rzeczywisty wynik może znaleźć się poza pokazanym przedziałem. Wyniki z przeszłości nie gwarantują przyszłych."
+  },
+  "optimization": {
+    "version": "2026-09",
+    "text": "Wagi są wynikiem modelu matematycznego wrażliwego na założenia i błędy oszacowania. Nie są zaleceniem zmiany portfela."
+  },
+  "rebalance": {
+    "version": "2026-09",
+    "text": "Lista pokazuje transakcje potrzebne do osiągnięcia alokacji docelowej, którą ustawiłeś. Nie jest zaleceniem ich zawarcia; koszty i podatek są szacunkowe."
+  },
+  "backtest": {
+    "version": "2026-09",
+    "text": "Backtest pokazuje, jak reguła zachowałaby się w przeszłości przy przyjętych kosztach i uproszczeniach. Nie przewiduje przyszłości. Im więcej wariantów sprawdzono, tym większe ryzyko, że dobry wynik jest przypadkowy."
+  },
+  "screener": {
+    "version": "2026-09",
+    "text": "Lista zawiera instrumenty spełniające Twoje kryteria. Nie jest rankingiem ani zachętą do zakupu."
+  },
+  "alerts": {
+    "version": "2026-09",
+    "text": "Alert informuje, że spełnił się warunek ustawiony przez Ciebie. Nie jest sygnałem do zawarcia transakcji."
+  },
+  "tax_view": {
+    "version": "2026-09",
+    "text": "Widok podatkowy ma charakter informacyjny i może różnić się od PIT-8C oraz zeznania podatkowego. Nie jest doradztwem podatkowym."
+  },
+  "data_delay": {
+    "version": "2026-09",
+    "text": "Notowania są opóźnione (zwykle ok. 15 min) albo pochodzą z zamknięcia sesji. Źródło i czas danych podajemy przy każdej wartości."
+  },
+  "export": {
+    "version": "2026-09",
+    "text": "Dane wyeksportowane z OligInvest do użytku osobistego; zawierają dane objęte licencjami dostawców — nie publikuj ich. Analizy nie są rekomendacją ani doradztwem."
+  },
+  "education": {
+    "version": "2026-09",
+    "text": "Materiały edukacyjne mają charakter ogólny i nie uwzględniają Twojej sytuacji."
+  },
+  "demo": {
+    "version": "2026-09",
+    "text": "Tryb demo: fikcyjny portfel na danych historycznych. Operacje nie wpływają na Twoje dane."
+  }
+}

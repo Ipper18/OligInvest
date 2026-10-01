@@ -1,0 +1,48 @@
+{
+  "name": "@oliginvest/web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "lint": "biome check . && node ../../scripts/check-ui-text.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:security": "playwright test",
+    "test:boundary": "node scripts/test-server-boundary.mjs",
+    "build": "next build",
+    "dev": "next dev",
+    "start": "next start",
+    "size": "size-limit",
+    "measure:baselines": "node scripts/measure-baselines.mjs",
+    "budgets": "node scripts/route-budgets.mjs",
+    "test:performance": "node --test --test-reporter=dot scripts/performance.test.mjs",
+    "lighthouse": "node scripts/lighthouse-assert.mjs",
+    "lighthouse:assert": "node scripts/lighthouse-assert.mjs --assert"
+  },
+  "dependencies": {
+    "@oliginvest/config": "workspace:*",
+    "@oliginvest/i18n": "workspace:*",
+    "@oliginvest/ui": "workspace:*",
+    "next": "16.3.6",
+    "openapi-fetch": "0.17.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "server-only": "0.0.1",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.13.0",
+    "@playwright/test": "1.63.0",
+    "@size-limit/esbuild": "14.0.0",
+    "@size-limit/file": "14.0.0",
+    "@tailwindcss/postcss": "4.3.3",
+    "@types/node": "24.13.5",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "chrome-launcher": "1.2.1",
+    "esbuild": "0.28.2",
+    "lighthouse": "13.5.0",
+    "size-limit": "14.0.0",
+    "tailwindcss": "4.3.3"
+  }
+}

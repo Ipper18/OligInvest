@@ -42,7 +42,7 @@ Zadanie jest skończone, gdy spełnia **wszystkie** punkty (lista trafia do szab
 1. **Zakres:** zrobione dokładnie to, co opisuje zadanie w backlogu; kryteria akceptacji wymagań z kolumny „Wymagania” ([`docs/00-przeglad/wymagania.md`](docs/00-przeglad/wymagania.md)) spełnione i wskazane w opisie PR.
 2. **Dokumentacja:** zaktualizowane dokumenty źródłowe z kolumny „Dokumenty”; status zadania i odchylenia w [`docs/08-plan/backlog.md`](docs/08-plan/backlog.md); nowe ryzyka w [`docs/08-plan/ryzyka.md`](docs/08-plan/ryzyka.md).
 3. **Testy:** jednostkowe (w `packages/core` pokrycie ≥ 90 % linii i 100 % wzorów na wektorach referencyjnych), integracyjne z prawdziwym PostgreSQL (każda nowa tabela z `user_id` ma politykę RLS i test w tym samym PR), kontraktowe (OpenAPI, parsery, adaptery), e2e dla ścieżek krytycznych z axe.
-4. **CI zielone:** `lint`, `typecheck`, `unit`, `contracts`, `db`, `build` (także bez modułów opcjonalnych), `budgets`, `e2e`, `lighthouse`, `deps-audit`, `codeql`.
+4. **CI zielone:** `repository`, `lint`, `typecheck`, `unit`, `contracts`, `db`, `modules`, `workers`, wszystkie warianty `build`, `web` (budżety i Lighthouse; progi Lighthouse od M1), `e2e`, `deps-audit` oraz natywna kontrola CodeQL.
 5. **Bezpieczeństwo:** walidacja Zod na każdym wejściu; zapytania parametryzowane; brak sekretów, adresów IP i danych rzeczywistych; klucze cache i kanały SSE z `user_id`; logi bez danych finansowych; brak nowych połączeń wychodzących poza allowlistę; wymagania ASVS oznaczone „T” mają test ([`docs/06-bezpieczenstwo/kontrole-bezpieczenstwa.md`](docs/06-bezpieczenstwo/kontrole-bezpieczenstwa.md) § 7).
 6. **Pieniądze i czas:** `decimal.js`/`Decimal`/`NUMERIC`, nigdy `float`; waluta zawsze jawna; kwoty w JSON jako ciągi ([ADR-014](docs/09-decyzje/ADR-014-pieniadze-waluty-czas.md)).
 7. **Wydajność:** budżety tras dotrzymane; biblioteki wykresów, onboarding, panel admina i analizy tylko leniwie ([`docs/04-frontend/wydajnosc.md`](docs/04-frontend/wydajnosc.md)).
@@ -54,7 +54,8 @@ Zadanie jest skończone, gdy spełnia **wszystkie** punkty (lista trafia do szab
 ## 4. Przegląd kodu
 
 - Właściciel przegląda **każdy** PR — także przygotowany przez agenta i z zielonym CI (R-11 w [`docs/08-plan/ryzyka.md`](docs/08-plan/ryzyka.md)).
-- `CODEOWNERS` wymusza przegląd właściciela dla: `docs/06-bezpieczenstwo/`, `infra/`, `.github/`, `packages/db/`, `apps/api/src/auth/`.
+- Przegląd właściciela pozostaje obowiązkiem procesu (R-11), nie jest egzekwowany mechanizmem zatwierdzeń GitHuba: repozytorium ma jednego współpracownika, który nie może zatwierdzić własnego PR. Ruleset wymaga 0 zatwierdzeń i nie wymaga zatwierdzenia code ownera; nie tworzymy odrębnej tożsamości autora ani obejść reguł.
+- `CODEOWNERS` wskazuje obszary wymagające szczególnej uwagi właściciela: `docs/06-bezpieczenstwo/`, `infra/`, `.github/`, `packages/db/`, `apps/api/src/auth/`.
 - Na co patrzeć: zakres zgodny z zadaniem; nowe zależności i skrypty instalacyjne; usunięte lub osłabione testy; zmiany w politykach RLS, nagłówkach i CSP; nowe połączenia wychodzące; język wyników (zakazy z [`docs/11-zgodnosc-prawna.md`](docs/11-zgodnosc-prawna.md) § 4.1).
 
 ## 5. Dokumentacja
@@ -94,7 +95,7 @@ grep -rnE 'pip install|npm install|npx |uv add' .claude/skills/<skill>
 
 ## 8. Uruchamianie lokalne
 
-Polecenia powstają w etapie M0 (BL-001–BL-035); do tego czasu repozytorium zawiera tylko dokumentację.
+Polecenia powstają w etapie M0 (BL-001–BL-035). Zweryfikowano instalacje frozen i pełne `pnpm turbo run lint typecheck test build` na Node 24.21.0, pnpm 12.4.2, Python 3.13.13 i uv 0.12.16; uv musi być dostępne w PATH bieżącej powłoki. Kontrole `node scripts/check-docs.mjs` i `node scripts/check-repository.mjs` działają bez zależności. `pnpm check:deps`, `pnpm gen:module` i `pnpm test:scripts` wymagają zainstalowanych zależności z lockfile; generator sprawdzamy także przez `pnpm test:module-generator` w odizolowanym workspace. `pnpm dev` uruchamia cztery aplikacje na hoście z migracjami i seedem; `pnpm dev:test`, `pnpm queues:test` i `pnpm db:seed:test` sprawdzają ten przepływ na izolowanym Compose. `pnpm db:test` sprawdzono na PostgreSQL 18.6 (migracje, pełne porównanie, RLS i pule). Korekta sieci Compose jest zatwierdzona ([raport](docs/08-plan/m0-1-session-report.md), [Compose dev](docs/07-wdrozenie/srodowisko-deweloperskie.md)).
 
 | Polecenie | Co robi |
 |---|---|
@@ -103,5 +104,5 @@ Polecenia powstają w etapie M0 (BL-001–BL-035); do tego czasu repozytorium za
 | `pnpm dev` | aplikacje w trybie deweloperskim |
 | `pnpm turbo run lint typecheck test build` | pełne sprawdzenie jak w CI |
 | `pnpm db:test` | migracje od zera, porównanie z `docs/03-dane/schema.sql`, testy RLS |
-| `pnpm check:deps` | reguły warstw modułów |
+| `pnpm check:deps` | reguły warstw modułów i importów produkcyjnych; test negatywny: `node --test scripts/check-deps.test.mjs` |
 | `pnpm gen:module <nazwa>` | nowy moduł według [`docs/01-architektura/moduly.md`](docs/01-architektura/moduly.md) § 8.1 |

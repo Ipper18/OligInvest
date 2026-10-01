@@ -13,7 +13,7 @@
 
 1. Znajdź swoje zadania w [`docs/08-plan/backlog.md`](docs/08-plan/backlog.md) (`BL-xxx`) i sprawdź, że ich zależności mają status `gotowe`. Pracuj wyłącznie w zakresie tych zadań.
 2. Przeczytaj sekcję etapu w [`docs/08-plan/roadmapa.md`](docs/08-plan/roadmapa.md) (kryteria wyjścia) i dokumenty z kolumny „Dokumenty” (legenda: backlog § 0.1).
-3. Zawsze obowiązują: [`CONTRIBUTING.md`](CONTRIBUTING.md) (Definition of Done), [`docs/00-przeglad/wymagania.md`](docs/00-przeglad/wymagania.md) (FR/NFR i kryteria akceptacji), decyzje w [`docs/09-decyzje/`](docs/09-decyzje/ADR-000-szablon.md) (ADR-001…014).
+3. Zawsze obowiązują: [`CONTRIBUTING.md`](CONTRIBUTING.md) (Definition of Done), [`docs/00-przeglad/wymagania.md`](docs/00-przeglad/wymagania.md) (FR/NFR i kryteria akceptacji), decyzje w [`docs/09-decyzje/`](docs/09-decyzje/ADR-000-szablon.md) (ADR-001…015).
 4. Źródła kontraktów: API — [`docs/02-api/openapi.yaml`](docs/02-api/openapi.yaml) i [`konwencje-api.md`](docs/02-api/konwencje-api.md); SSE — [`realtime.md`](docs/02-api/realtime.md); baza — [`docs/03-dane/schema.sql`](docs/03-dane/schema.sql) i [`testy-rls.sql`](docs/03-dane/testy-rls.sql); wzory — [`docs/03-dane/obliczenia-finansowe.md`](docs/03-dane/obliczenia-finansowe.md) i [`wektory-testowe.json`](docs/03-dane/wektory-testowe.json); importy — [`formaty-importu.md`](docs/03-dane/formaty-importu.md); moduły — [`docs/01-architektura/moduly.md`](docs/01-architektura/moduly.md); UI — [`docs/04-frontend/`](docs/04-frontend/mapa-ekranow.md); bezpieczeństwo — [`docs/06-bezpieczenstwo/`](docs/06-bezpieczenstwo/kontrole-bezpieczenstwa.md); wdrożenie — [`docs/07-wdrozenie/`](docs/07-wdrozenie/infrastruktura.md).
 5. Gdy dokumentacja jest sprzeczna, niepełna albo nie zgadza się z rzeczywistością (wersja biblioteki, zachowanie API) — **zatrzymaj się**, opisz rozbieżność i zaproponuj zmianę dokumentu lub nowy ADR. Nie zgaduj i nie zmieniaj decyzji po cichu.
 
@@ -23,7 +23,7 @@ Szczegóły, licencje i uzasadnienia: [`docs/01-architektura/stack-technologiczn
 
 | Obszar | Wybór |
 |---|---|
-| Monorepo | pnpm 12.4 (workspace z polityką z § 5.8), Turborepo 2.11, TypeScript 7.0 `strict` (spike BL-032; zapas 6.x), Biome 2.5 |
+| Monorepo | pnpm 12.4 (workspace z polityką z § 5.8), Turborepo 2.10.13 na starcie M0 → 2.11 osobnym PR po karencji ([ADR-015](docs/09-decyzje/ADR-015-linia-turborepo-na-starcie-m0.md)), TypeScript 7.0 `strict` (spike BL-032; zapas 6.x), Biome 2.5 |
 | Runtime | Node.js 24 LTS; Python 3.13 (uv 0.12, Ruff 0.16, mypy 2.3) |
 | `apps/web` | Next.js 16.3 (App Router, RSC, streaming, `proxy.ts` z CSP nonce), React 19.3, Tailwind CSS 4.3, natywny HTML + wybrane Radix Primitives, TanStack Query 5, TanStack Table 9 + Virtual 3, Lightweight Charts 5.2, uPlot 1.6, driver.js 1.8, własny service worker; **bez dostępu do bazy** |
 | `apps/api` | Hono 4.13 + `@hono/node-server`, Zod 4.6 + `@hono/zod-openapi` 1.6, Better Auth 1.7.5 (`twoFactor`, `admin`, `haveIBeenPwned`, `@better-auth/api-key`), Argon2id przez `@node-rs/argon2`, SSE; jedyna granica domenowa (REST `/api/v1`) |
@@ -97,6 +97,15 @@ Szczegóły, licencje i uzasadnienia: [`docs/01-architektura/stack-technologiczn
 - Raport na koniec sesji: zrobione / pominięte i dlaczego / odchylenia / decyzje do ADR / nowe ryzyka / kryteria wyjścia etapu z dowodami (jeśli etap się kończy).
 - Język: dokumentacja i teksty UI po polsku (klucze w `packages/i18n`, brak literałów w komponentach); kod, identyfikatory, nazwy plików i commity po angielsku.
 - Nazwy: pliki i katalogi `kebab-case`, komponenty i typy `PascalCase`, funkcje `camelCase`, stałe i env `SCREAMING_SNAKE_CASE`, tabele SQL `snake_case` w liczbie mnogiej.
+
+### 6.1 Oszczędzanie kontekstu i limitu (obowiązuje w każdej sesji)
+
+- **Start sesji:** stan paczki czytaj z krótkiego raportu stanu (np. [`docs/08-plan/m0-1-session-report.md`](docs/08-plan/m0-1-session-report.md)); historii sesji nie czytaj bez potrzeby konkretnego dowodu. Po sesji raport stanu **nadpisz** (ok. 3 KB), a do historii dopisz najwyżej 10 linii na zamknięty etap.
+- **Duże dokumenty czytaj fragmentami.** `docs/02-api/openapi.yaml` (ok. 290 KB) nigdy w całości: znajdź operację (`grep -n "operationId: <id>"` albo ścieżkę `grep -n "^  /<ścieżka>:"`), przeczytaj jej blok, a schematy wyszukuj w `components.schemas` (`grep -n "^    <Nazwa>:"`), idąc tylko za potrzebnymi `$ref`. `docs/03-dane/schema.sql` — tylko tabele i sekcje dotyczące zadania. `backlog.md` — tylko wiersze zadań sesji i legendę § 0.1.
+- **Ciche wyjście narzędzi:** reporter `dot`/`summary`, `pnpm -s`, `--output-logs=new-only`; długie wyniki (dumpy, logi Dockera, diffy SQL) zapisuj w `.git/` i czytaj podsumowanie oraz pierwsze różnice. Nie twórz inwentarzy, sum kontrolnych ani raportów JSON, o które nikt nie prosił.
+- **Commit i push po każdym zamkniętym zadaniu lub etapie**, żeby wyczerpanie limitu nie przerwało pracy w połowie niezapisanej.
+- **Zależności:** zadanie wykonane lokalnie ma status `w toku` tylko do zielonego CI i wspólnego DoD — traktuj je jako spełnioną zależność.
+- **Rozbieżność z dokumentem:** błąd własnego odwzorowania (kod ≠ dokument) poprawiaj bez pytania i wymień w raporcie; zatrzymuj się, gdy to dokument źródłowy (`schema.sql`, `testy-rls.sql`, `openapi.yaml`, ADR) wydaje się błędny.
 
 **Zatrzymaj się i zapytaj właściciela, gdy:** zadanie wymaga zmiany decyzji z ADR, nowej usługi zewnętrznej lub kosztu; potrzebne są sekrety, dostęp do serwera albo realne dane; funkcja zbliża się do granicy doradztwa (§ 5.5) albo zmienia status z `11-zgodnosc-prawna.md` § 8; test bezpieczeństwa lub RLS nie przechodzi, a poprawka wymaga osłabienia kontroli.
 

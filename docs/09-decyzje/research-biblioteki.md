@@ -1,8 +1,8 @@
 # Research: biblioteki i komponenty gotowe
 
-> **Aktualizacja (Krok 3, 2026-09-18):** finalne wybory i wersje są w [`../01-architektura/stack-technologiczny.md`](../01-architektura/stack-technologiczny.md). Zmiany względem tego researchu: Serwist → własny service worker; Redis → Valkey 9 (dwie instancje); PostgreSQL 16 → 18; dodane: SheetJS CE (XLS z archiwum GPW), `@node-rs/argon2` (Better Auth domyślnie używa scrypt), `yahoo-finance2`, `nodemailer`, TanStack Query, Tailwind CSS 4, Biome.
-
 **Cel:** dla każdego elementu systemu wybrać gotowe, darmowe rozwiązanie open source (lub uzasadnić budowę własną), na podstawie zweryfikowanych wersji, licencji i rozmiarów — tak, aby `stack-technologiczny.md` i ADR-y nie opierały się na pamięci.
+
+> **Aktualizacja (Krok 3, 2026-09-18):** finalne wybory i wersje są w [`../01-architektura/stack-technologiczny.md`](../01-architektura/stack-technologiczny.md). Zmiany względem tego researchu: Serwist → własny service worker; Redis → Valkey 9 (dwie instancje); PostgreSQL 16 → 18; dodane: SheetJS CE (XLS z archiwum GPW), `@node-rs/argon2` (Better Auth domyślnie używa scrypt), `yahoo-finance2`, `nodemailer`, TanStack Query, Tailwind CSS 4, Biome.
 
 Data weryfikacji: 2026-09-18. Wersje i licencje z `npm view` / PyPI JSON / GitHub REST API; rozmiary gzip z bundlephobia.com. Kryteria wspólne: 0 zł, self-host, licencja niewymuszająca publikacji kodu aplikacji przy prywatnym użyciu, aktywne utrzymanie (commit ≤ 6 mies.), zgodność z budżetem 200 KB gzip na initial bundle.
 

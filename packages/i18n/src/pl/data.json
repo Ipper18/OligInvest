@@ -1,0 +1,17 @@
+{
+  "delayed": "{time} · opóźnione ok. {minutes} min · {source}",
+  "eod": "zamknięcie {date} · {source}",
+  "fx": "kurs średni NBP z {date} (tabela A)",
+  "stale": "ostatnia aktualizacja {time} — {reason}",
+  "staleLabel": "nieaktualne",
+  "assumptions": "Założenia tej analizy",
+  "reasons": {
+    "market_closed": "giełda zamknięta",
+    "provider_error": "dostawca danych nie odpowiada",
+    "provider_quota": "wyczerpany limit dostawcy danych",
+    "provider_disabled": "dostawca danych wyłączony",
+    "no_data": "brak danych",
+    "eod_only": "dostępne tylko dane z zamknięcia sesji",
+    "data_quality_hold": "dane wstrzymane z powodu problemów jakości"
+  }
+}

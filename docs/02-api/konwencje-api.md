@@ -76,6 +76,32 @@ Powiązane: [`openapi.yaml`](openapi.yaml), [`realtime.md`](realtime.md), [ADR-0
 
 Dane rynkowe nieaktualne **nie są błędem** — zwracamy `200` z `meta.stale = true` (NFR-09.02).
 
+### 4.1 Fundament obsługi błędów i korelacji (BL-006)
+
+`withRequestContext` z `packages/platform` otacza handler standardowych `Request`/`Response`. Akceptuje `X-Request-Id` tylko jako poprawny UUID, w przeciwnym razie generuje UUID; zwraca ten sam identyfikator w nagłówku, kontekście `AsyncLocalStorage`, logu i `Problem.instance`, także dla nieobsłużonego wyjątku. Dane uwierzytelnione wprowadza osobny `withIdentity` (bez odczytu tożsamości z nagłówków klienta). `requestLogger()` wiąże logi operacji z bieżącym request_id i uwierzytelnionym user_id, nadpisując przekazane identyfikatory. Log zakończenia/błędu także zawiera uwierzytelnionego użytkownika; próba zmiany aktora w tym samym żądaniu jest odrzucana. Kontekst jest izolowany między równoległymi żądaniami. Adapter Hono i sondy BL-009 opisano w § 4.2.
+
+Status i polski tytuł błędu wynikają z kodu kontraktu; URI typu korzysta z originu PUBLIC_BASE_URL. Nieznane wyjątki i kod INTERNAL nie ujawniają szczegółów, stosu ani przyczyny. Odpowiedzi mają `application/problem+json`, `Cache-Control: no-store`; 429/503 mają dodatni `Retry-After` (domyślnie 1 s, adapter może podać czas rzeczywistego limitu). `parseBoundary(shape, input)` tworzy obiekt Zod `.strict()`; nieznane pola są błędem 422. Zagnieżdżone obiekty w shape również deklarujemy jako strict. Komunikaty walidacji są stałe po polsku, bez wartości wejścia; ścieżka pokazuje tylko znany klucz główny, aby nie odbijać w odpowiedzi kluczy rekordów pochodzących od użytkownika. Nie publikujemy domenowych rozszerzeń Problem przed ich implementacją.
+
+### 4.2 Szkielet HTTP i sondy (BL-009)
+
+W obrębie instancji API żądania `ready` współdzielą jedno trwające wykonanie sond (*single-flight*). Wynik sukcesu lub awarii jest buforowany w pamięci przez 3 s od zakończenia sond (P-01, decyzja projektu 2026-09-27); po wygaśnięciu następne żądanie rozpoczyna nowe sprawdzenie. Bufor obejmuje tylko wynik sond, nie odpowiedź HTTP ani kontekst żądania. `Cache-Control: no-store` nadal obowiązuje klientów i proxy. Sondy zdrowia są odpytywane przez monitoring (`live`: 200, `ready`: 200/503) i nie mogą zwracać 429 — także na brzegu (Caddy).
+
+`apps/api` montuje adapter Hono do `withRequestContext`; wyjątki i nieznane trasy korzystają z platformowego RFC 9457. `GET /api/v1/health/live` zawsze zwraca `200 {"status":"ok"}` bez wywoływania zależności. `GET /api/v1/health/ready` równolegle wykonuje `SELECT 1` rolą `oliginvest_app` (bez odczytu danych użytkowników) oraz `AUTH` i `PING` osobno dla obu instancji Valkey. Każda sonda ma limit 1500 ms i zamyka połączenie, także po błędzie lub przekroczeniu czasu. Odpowiedź `HealthStatus` zawiera `checks.postgres`, `checks.valkeyQueue`, `checks.valkeyCache`, wyłącznie `ok`/`fail`; dowolna awaria daje 503 i `Retry-After: 1`. Sondy mają `Cache-Control: no-store`. Nie ujawniamy błędów sterowników w odpowiedzi ani logu.
+
+Uruchomienie po buildzie: `pnpm --filter @oliginvest/api start`. Proces czyta konfigurację BL-005 (w produkcji sekrety przez `*_FILE`) i jawne niesekretne zmienne: `API_HOST`, `API_PORT`, `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_SSL` (`true`/`false`, domyślnie `false`), `VALKEY_QUEUE_HOST`, `VALKEY_QUEUE_PORT`, `VALKEY_QUEUE_USER`, `VALKEY_CACHE_HOST`, `VALKEY_CACHE_PORT`, `VALKEY_CACHE_USER`. W Compose dev użytkownik obu instancji Valkey to `default`, a hasła API odpowiadają lokalnym hasłom tych instancji; produkcja używa użytkowników ACL API. Brak lub błędna konfiguracja zatrzymuje start ze stałym komunikatem bez wartości zmiennych. `NODE_ENV` jest wymagane (`development`, `test` albo `production`); brak, pusta lub nieznana wartość zatrzymuje start. W produkcji ustaw `production` (wymagane HTTPS i sekrety przez `*_FILE`). Przyszły `compose.yaml` musi jawnie ustawić `NODE_ENV=production`; ta sama zasada dotyczy entrypointów jobs i analytics, gdy powstaną. Proces nie wymaga dostępności zależności przy starcie, więc liveness działa również podczas ich awarii.
+
+Publiczny `/api/v1/openapi.json` generuje OpenAPI 3.1 z zarejestrowanych tras Zod, z relatywnym serwerem `/api/v1` (bez adresów wewnętrznych). Dokument obejmuje na razie trzy wdrożone operacje; zgodność z projektem kontraktu sprawdza BL-010 (§ 4.3). Limity żądań pozostają poza BL-009; sonda live nie jest ograniczana.
+
+### 4.3 Test kontraktu OpenAPI (BL-010)
+
+`pnpm check:contracts` buduje API, uruchamia lint Redocly, testy porównywarki i porównanie dokumentu pobranego przez `app.request("/api/v1/openapi.json")` z `openapi.yaml`. Nie uruchamia serwera ani połączeń z bazą/dostawcami. Sprawdza ścieżkę, metodę, `operationId`, parametry (także dziedziczone z path item), wszystkie kody odpowiedzi, typy mediów i schematy. Lokalne `$ref` są rozwiązywane; opisy i przykłady nie wpływają na zgodność. Kolejność `required`/`enum` jest nieistotna; brak `additionalProperties`, `true` i pusty schemat oznaczają tę samą otwartość obiektu. Ograniczenia walidacji i nazwy właściwości pozostają porównywane. Nieobsługiwane zewnętrzne/cykliczne odwołania kończą się błędem, bez pobierania z sieci.
+
+`pnpm gen:openapi-pending` wylicza posortowaną listę wszystkich operationId z dokumentu poza zaimplementowanymi. Nie edytujemy jej ręcznie. Porównanie wymaga dokładnie takiej listy, bez duplikatów, nieznanych lub już zaimplementowanych pozycji. Niezależnie sprawdza, czy lista jest podzbiorem listy z gałęzi bazowej — podmiana pozycji przy tej samej długości też jest błędem. Nowe operacje wymagają jednoczesnej implementacji.
+
+Baza: lokalnie po `git fetch origin main` używane jest `origin/main`; można wskazać `OPENAPI_BASE_REF`. CI podaje SHA bazy PR, a na push SHA sprzed zmiany, przy pełnej historii Git. Brak refa lub błędny plik bazowy jest błędem. Jednorazowy bootstrap M0-1: jeżeli baza nie ma jeszcze ani pending, ani `apps/api/src/app.ts`, bazę pending wyznacza jej `openapi.yaml`, z wyłączeniem `getHealthLive`, `getHealthReady`, `getOpenApiDocument`. Nie korzystamy w tym celu z dokumentu bieżącej gałęzi. Po wprowadzeniu szkieletu brak pending na bazie jest błędem.
+
+Wyjątki Redocly są zapisane jako trzy dokładne wskaźniki w `.redocly.lint-ignore.yaml`; test sprawdza ich powiązanie z zatwierdzonymi operationId i utrzymanie reguły `operation-4xx-response: error`.
+
 ## 5. Paginacja, sortowanie, filtrowanie
 
 - **Kursor:** `?limit=50&cursor=<nieprzezroczysty>`; odpowiedź `{"data": [...], "page": {"nextCursor": "…", "hasMore": true}}`; `limit` domyślnie 50, maks. 200. Paginacji offsetowej nie stosujemy.
@@ -88,6 +114,8 @@ Dane rynkowe nieaktualne **nie są błędem** — zwracamy `200` z `meta.stale =
 Nagłówek `Idempotency-Key` z kluczem klienta — UUID (zalecany) lub ciąg 16–64 znaków `[A-Za-z0-9_-]`, bo Skróty iOS nie mają generatora UUID (wzorowany na [draft-ietf-httpapi-idempotency-key-header](https://datatracker.ietf.org/doc/draft-ietf-httpapi-idempotency-key-header/)) jest **wymagany** dla: `POST /portfolio/transactions`, `POST /portfolio/imports/{id}/commit`, `POST /analytics/runs`, `POST /quick/transactions`, `POST /me/tokens`, `POST /me/exports`; opcjonalny dla pozostałych `POST`. Klucz przechowujemy 24 h per użytkownik (`platform.idempotency_keys`): ten sam klucz i to samo ciało → ta sama odpowiedź z nagłówkiem `Idempotent-Replayed: true`; ten sam klucz i inne ciało → `409 IDEMPOTENCY_CONFLICT`; żądanie w trakcie → `409 CONFLICT` z `Retry-After: 1`.
 
 ## 7. Limity żądań
+
+Sondy zdrowia (`getHealthLive`, `getHealthReady`) i `/openapi.json` (`getOpenApiDocument`) są wyłączone z limitów żądań. Przyszły globalny limiter (zadania uwierzytelniania i PAT) musi je pomijać. Readiness korzysta z bufora i współdzielenia sond opisanych w § 4.2 (P-01). Wyjątek Redocly od wymagania odpowiedzi 4xx obejmuje tylko te trzy operacje — reguła pozostaje aktywna dla pozostałych. Decyzja właściciela w BL-010, 2026-09-27.
 
 | Grupa | Limit (domyślnie, konfigurowalny) | Klucz |
 |---|---|---|
