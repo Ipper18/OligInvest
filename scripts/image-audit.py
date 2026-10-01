@@ -28,11 +28,17 @@ def assess(document, ignored):
                 groups = [g for g in package.get("groups", []) if vulnerability["id"] in g["ids"]]
                 if len(groups) != 1:
                     raise ValueError("Missing image severity")
+                package_id = package["package"]
+                affected_here = [a for a in vulnerability.get("affected", []) if a.get("package", {}).get("ecosystem") == package_id["ecosystem"] and a.get("package", {}).get("name") == package_id["name"]]
+                # Debian explicitly classifies some historical entries as
+                # unimportant without a CVSS score. This is a known distro
+                # classification, not an unknown score or a local exception.
+                if groups[0]["max_severity"] == "" and affected_here and all(a.get("ecosystem_specific", {}).get("urgency") == "unimportant" for a in affected_here):
+                    continue
                 score = float(groups[0]["max_severity"])
                 if not math.isfinite(score) or not 0 <= score <= 10:
                     raise ValueError("Invalid image severity")
                 aliases = {vulnerability["id"], *vulnerability.get("aliases", [])}
-                package_id = package["package"]
                 fixed = any(
                     affected.get("package", {}).get("ecosystem") == package_id["ecosystem"]
                     and affected.get("package", {}).get("name") == package_id["name"]
@@ -69,11 +75,14 @@ def main():
         if result.returncode not in (0, 1):
             raise ValueError("Image scanner failed")
         document = json.loads(report.read_text())
-        blocked = assess(document, ignored)
+        try:
+            blocked = assess(document, ignored)
+        except ValueError as error:
+            blocked = [f"Assessment failed: {error}"]
         failures.extend(f"{service}: {item}" for item in blocked)
         findings = sorted({v["id"] for source in document["results"] for package in source.get("packages", []) for v in package.get("vulnerabilities", [])})
         summaries.append(f"{service}: {'FAIL' if blocked else 'PASS'}; reported findings: {', '.join(findings) or 'none'}")
-        print(f"{service}: {'FAIL' if blocked else 'PASS'}")
+        print(f"{service}: {'FAIL' if blocked else 'PASS'}", flush=True)
     (destination / "summary.md").write_text("Image gate: critical with available fix (CI/CD §5). Full severities and affected packages: *.osv.json.\n\n" + "\n".join(summaries) + "\n", encoding="utf-8")
     if failures:
         raise ValueError("Fixable critical image findings; see reports/images/summary.md")

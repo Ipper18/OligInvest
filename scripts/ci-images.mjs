@@ -126,7 +126,7 @@ try {
       python,
       "sh",
       "-ec",
-      "python /source/infra/tests/test-secrets.py && python /source/infra/scripts/secret-files.py --root /state",
+      "python /source/infra/tests/test-secrets.py && python /source/infra/scripts/secret-files.py --root /state/config",
     ],
     { log: "secrets.log" },
   );
@@ -139,7 +139,7 @@ try {
     `type=volume,source=${state},target=/state,readonly`,
     python,
     "cat",
-    "/state/runtime-compose.json",
+    "/state/config/runtime-compose.json",
   ]);
   const overlay = JSON.parse(json);
   for (const entry of Object.values(overlay.secrets))

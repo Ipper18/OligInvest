@@ -23,6 +23,7 @@ jobs:
       - run: pnpm --filter @oliginvest/web exec playwright install --with-deps chromium webkit firefox
       - run: node --test --test-reporter=dot scripts/check-ci.test.mjs
       - run: sudo python3 infra/tests/test-deploy.py
+      - run: python3 infra/tests/test-image-audit.py
       - run: node apps/api/spike/auth-storage.mjs
       - run: node scripts/ci-images.mjs
       - run: python3 scripts/image-audit.py web api jobs analytics postgres migrate caddy valkey-queue valkey-cache
