@@ -2,7 +2,7 @@
 
 **Cel:** przekazać stan paczki wydaniowej i następny krok; dowody zamkniętych etapów w [historii](m0-2-session-history.md).
 
-**2026-10-01**, gałąź `feat/m0-2-release` z aktualnego `main` (`25e8762`). Zakres: BL-020, BL-021, BL-022, BL-023, BL-030, BL-031 i część obrazowa BL-018. Zależności M0-1 wykonane technicznie i scalone; zgodnie z AGENTS §6.1 ich status `w toku` nie blokuje pracy.
+**2026-10-01**, [roboczy PR #5](https://github.com/Ipper18/OligInvest/pull/5), gałąź `feat/m0-2-release` z aktualnego `main` (`25e8762`). Zakres: BL-020, BL-021, BL-022, BL-023, BL-030, BL-031 i część obrazowa BL-018. Zależności M0-1 wykonane technicznie i scalone; zgodnie z AGENTS §6.1 ich status `w toku` nie blokuje pracy.
 
 ## Zrobione
 
