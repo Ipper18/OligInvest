@@ -22,7 +22,12 @@ class ImagePolicyTests(unittest.TestCase):
     def test_image_gate_is_critical_with_fix_for_same_distribution(self):
         self.assertEqual(audit.assess(report("8.9"), set()), [])
         self.assertEqual(audit.assess(report(fixed=False), set()), [])
-        self.assertEqual(audit.assess(report(ecosystem="Debian:14"), set()), [])
+        document = report(fixed=False)
+        document["results"][0]["packages"][0]["vulnerabilities"][0]["affected"].extend(report(ecosystem="Debian:14")["results"][0]["packages"][0]["vulnerabilities"][0]["affected"])
+        self.assertEqual(audit.assess(document, set()), [])
+        with self.assertRaises(ValueError):
+            audit.assess(report(ecosystem="Debian:14"), set())
+        self.assertEqual(audit.assess(report("", fixed=False), set()), [])
 
     def test_unknown_score_is_rejected_except_explicit_distribution_classification(self):
         for value in ["", "NaN", "Infinity", "11"]:

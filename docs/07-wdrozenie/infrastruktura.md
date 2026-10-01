@@ -386,3 +386,5 @@ Dziś Caddy na VPS kończy TLS Immicha i ma jego klucz prywatny. Cel: VPS przeka
 **Aplikacja:** ☐ nagłówki z `kontrole-bezpieczenstwa.md` § 2 ☐ trasy Better Auth spoza listy zablokowane ☐ tryb produkcyjny bez debugowania ☐ skan zewnętrzny po wdrożeniu
 
 Implementacja M0-2 i kolejność poleceń właściciela: [instrukcja uruchomienia](m0-2-owner-runbook.md). Test Linux czyta macierz §8.1 tym samym parserem co generator i sprawdza każdy obraz oraz dokładny zestaw montowań.
+
+M0-2, 2026-10-01: Caddy 2.11.6 zastępuje binarium 2.11.4 ze względu na poprawki bezpieczeństwa ([oficjalne wydanie](https://github.com/caddyserver/caddy/releases/tag/v2.11.6)). Obraz bazowy pozostaje przypięty digestem, archiwum linux/amd64 wydawcy dodatkowo SHA-256; po publikacji oficjalnego obrazu aktualizację zaproponuje Renovate. Bez zmiany linii 2.11 ani decyzji ADR. Pakiety Debian w bazach Python/Valkey mają przypięte poprawki glibc, OpenSSL, Perl i util-linux; nieużywane root-only gosu usunięto z PostgreSQL uruchamianego zawsze jako UID z tabeli §8.1. Testy Caddyfile i E2E weryfikują zgodność konfiguracji. Poprawki bezpieczeństwa korzystają z trybu pilnego SEC §4.2.

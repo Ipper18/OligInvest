@@ -30,6 +30,13 @@ def assess(document, ignored):
                     raise ValueError("Missing image severity")
                 package_id = package["package"]
                 affected_here = [a for a in vulnerability.get("affected", []) if a.get("package", {}).get("ecosystem") == package_id["ecosystem"] and a.get("package", {}).get("name") == package_id["name"]]
+                if not affected_here:
+                    raise ValueError("Missing matching affected package")
+                fixed = any("fixed" in event for affected in affected_here for interval in affected.get("ranges", []) for event in interval.get("events", []))
+                # Availability of a fix is an explicit condition of CI/CD §5.
+                # Unknown severities without a fix remain visible in the report.
+                if not fixed:
+                    continue
                 # Debian explicitly classifies some historical entries as
                 # unimportant without a CVSS score. This is a known distro
                 # classification, not an unknown score or a local exception.
@@ -39,12 +46,6 @@ def assess(document, ignored):
                 if not math.isfinite(score) or not 0 <= score <= 10:
                     raise ValueError("Invalid image severity")
                 aliases = {vulnerability["id"], *vulnerability.get("aliases", [])}
-                fixed = any(
-                    affected.get("package", {}).get("ecosystem") == package_id["ecosystem"]
-                    and affected.get("package", {}).get("name") == package_id["name"]
-                    and any("fixed" in event for interval in affected.get("ranges", []) for event in interval.get("events", []))
-                    for affected in vulnerability.get("affected", [])
-                )
                 # CI/CD §5: image release gate = critical with an available fix.
                 # The independent lockfile gate remains high/critical regardless of fix.
                 if score >= 9 and fixed and not aliases.intersection(ignored):
