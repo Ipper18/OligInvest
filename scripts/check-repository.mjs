@@ -2,15 +2,8 @@ import { execFileSync } from "node:child_process";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const LEGACY_COMMIT_EXCEPTIONS = new Set([
-  // Commit predating the rule (2026-09-20); owner approved 2026-09-30.
-  // Remove this list and exception handling after PR #2 is merged (BL-019).
-  "8d91754b0adadfb5a2d7e9c2324d4e62f4125a64",
-]);
-
 export function checkCommit(sha, subject) {
-  return /^[a-f0-9]{40}$/.test(sha)
-    && (LEGACY_COMMIT_EXCEPTIONS.has(sha) || checkPullRequestTitle(subject));
+  return /^[a-f0-9]{40}$/.test(sha) && checkPullRequestTitle(subject);
 }
 
 export function checkFixturePaths(paths) {
