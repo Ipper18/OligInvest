@@ -1,21 +1,26 @@
 # M0-2 — stan bieżący
 
-**Cel:** przekazać stan paczki wydaniowej i następny krok; dowody zamkniętych etapów w [historii](m0-2-session-history.md).
+**Cel:** przekazać stan paczki i kryteria wyjścia; szczegóły etapów w [historii](m0-2-session-history.md).
 
-**2026-10-01**, [roboczy PR #5](https://github.com/Ipper18/OligInvest/pull/5), gałąź `feat/m0-2-release` z aktualnego `main` (`25e8762`). Zakres: BL-020, BL-021, BL-022, BL-023, BL-030, BL-031 i część obrazowa BL-018. Zależności M0-1 wykonane technicznie i scalone; zgodnie z AGENTS §6.1 ich status `w toku` nie blokuje pracy.
+**2026-10-01**, `feat/m0-2-release` z `main` (`25e8762`), [roboczy PR #5](https://github.com/Ipper18/OligInvest/pull/5). Zakres: BL-020–023, BL-030/031 i obrazowa część BL-018. Etapy wypchnięte; bez tagów, wydań, GHCR, działań na serwerach i zmian ustawień GitHub.
 
-## Zrobione
+## Wykonane i dowody
 
-Przeczytano instrukcje, raport M0-1, wiersze backlogu, kryteria M0, INF, CI, SEC §4 i ADR-003/004/011/013. Utworzono gałąź; przygotowano propozycję rozstrzygnięcia sprzeczności uprawnień sekretów w [notatce](m0-2-secret-permissions.md). Docker Engine 29.4.3 jest dostępny po uruchomieniu Docker Desktop.
+- BL-020/022: dziewięć obrazów non-root z przypiętymi bazami, read-only FS, limity, dwa Valkey z ACL. Web/analytics bez egress; analytics nie czyta portfela. Generator i test czytają tę samą tabelę INF §8.1. Dokładne montowania własnych sekretów bez zapisu, idempotencja, atomowa rotacja i odrzucanie symlinków PASS. R-27 obsłużone zgodnie z zatwierdzeniem właściciela.
+- BL-021: PR tylko buduje/testuje; wyłącznie job `release` po tagu ma zapis. Podpisy i poświadczenia poprzedzają paczkę. SBOM/OSV 9 obrazów lokalnie PASS według CI §5. Poprawiono pakiety bazowe i Caddy do 2.11.6; pozostałe znaleziska jawne (R-28). Próg lockfile bez zmian.
+- BL-023: bootstrap, weryfikacja paczki/digestów/tożsamości/commita, kopia przed migracją, health gate, rollback aplikacji. 5 testów negatywnych/kolejności PASS; szyfrowana pełna kopia pgBackRest i check w Compose PASS. [Instrukcja właściciela](../07-wdrozenie/m0-2-owner-runbook.md).
+- BL-018: **36/36 E2E** na obrazach, Chromium/WebKit/Firefox, axe, motywy, klawiatura, CSP/nagłówki. Artefakt CI ujawnił brak hostowego `i18n/dist`; build importu naprawiony. Wyścig natywnego close poprawiony, regresja bez osłabienia asercji.
+- BL-030/031: trzy przeglądarki PASS dla `__Host-`, TOTP, szyfrowanych kodów i hashy PAT. Argon2id lokalnie ok. 4 ms — **nie jest to pomiar VM**. [Notatka do zatwierdzenia](bl-030-031-auth-spikes.md); produkcyjne auth pozostaje M1.
 
-Lokalny Compose na przypiętym obrazie PostgreSQL z `compose.dev.yaml`: syntetyczny plik `root:root 0600` jest nieczytelny dla UID 10001, także po ustawieniu `secrets.uid/gid/mode`. Kopia `10001:10001 0400` jest czytelna i niezapisywalna w kontenerze non-root, read-only, bez capabilities i sieci. Test PASS; projekt i jego wolumen usunięte. To dowód uprawnień, nie test obrazów aplikacji ani zamknięcie BL-018.
+## Kryteria wyjścia M0
 
-## Decyzja i następny krok
+| Nr | Stan / dowód |
+|---|---|
+| 1–3 | Monorepo, sześć buildów, granice, RLS/schema i OpenAPI w kontrolach PR; końcowy przebieg po ostatnim commicie w toku |
+| 4 | Skrypty i testy lokalne gotowe; wydanie, wdrożenie VM i publiczny TLS wykonuje właściciel |
+| 5 | Hardening, tunel, CAA i migracja Immicha poza paczką; brak dowodu docelowego |
+| 6 | Lokalny pgBackRest PASS; restic/VPS i Kuma pozostają BL-028/029 |
+| 7 | Dodano images do pliku rulesetu; ustawień nie zmieniono; CodeQL sprawdzany w PR |
+| 8 | Notatka BL-030/031 gotowa; decyzja właściciela i kalibracja VM otwarte; TS7 z M0-1, CAA poza paczką |
 
-Właściciel zatwierdził 2026-10-01 korektę INF §5.3 i §8: oryginały root/0600, kopie per odbiorca 0400, katalogi root/0700. Jedna tabela UID/GID i sekretów w INF jest źródłem generatora i testów. Wymagane idempotencja, atomowa wymiana wszystkich kopii przed odtworzeniem odbiorców i test Linux w CI. Dokumentacja w osobnym commicie docs:, bez ADR. Blokada R-27 rozstrzygnięta; kontynuacja obrazów, Compose i wydania.
-
-## Pominięte, odchylenia i ryzyka
-
-Implementacja BL-020–023 oraz spiki BL-030/031 pozostają do wykonania po zatwierdzeniu korekty. BL-018 czeka na obrazy. BL-022 rozpoczęto od analizy dokumentu; pozostałe statusy bez zmian. Estymacje bez zmian, nakład niezmierzony. Nowe R-27: niedostępność sekretów dla non-root. Bez zmian OpenAPI, SQL, wzorów i disclaimerów; bez nowych zależności.
-
-M0 nie jest zamknięty: kryterium 4 (wydanie i wdrożenie) oraz 8 (spiki) otwarte. Ta sesja nie potwierdza kryteriów infrastruktury docelowej. Bez tagów, wydań, publikacji GHCR, zmian ustawień GitHub i operacji na serwerach. Wynik bieżących kontroli: zakładka Checks roboczego PR; zielone CI dokumentacji nie oznacza ukończenia paczki.
+M0 pozostaje otwarty. Statusy w toku do zielonego CI i wspólnego DoD/przeglądu właściciela. Estymacje bez zmian, nakład niezmierzony. Nowe R-28: znaleziska obrazów bez poprawki. Bez nowego ADR i zmian OpenAPI, SQL, wzorów czy disclaimerów. Zależności dev spików uzasadniono w STACK; nie trafiają do obrazów aplikacji.
