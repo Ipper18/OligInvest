@@ -81,7 +81,7 @@ test("keyboard opens modal, traps focus, closes with Escape and restores trigger
   const popoverTrigger = page.getByRole("button", { name: messages.col.note, exact: true });
   await expect(popoverTrigger).toBeFocused();
   // A queued native close event must not steal focus after the next Tab.
-  await dialog.dispatchEvent("close");
+  await page.locator("dialog").dispatchEvent("close");
   await expect(popoverTrigger).toBeFocused();
   await page.keyboard.press("Enter");
   await expect(page.locator("[popover]")).toBeVisible();
