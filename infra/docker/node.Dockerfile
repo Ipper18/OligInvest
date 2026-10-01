@@ -7,6 +7,11 @@ RUN pnpm install --frozen-lockfile
 RUN pnpm turbo run build --filter=@oliginvest/web --filter=@oliginvest/api --filter=@oliginvest/jobs --filter=@oliginvest/db --output-logs=new-only
 RUN pnpm --filter @oliginvest/api deploy --legacy --prod /out/api && pnpm --filter @oliginvest/jobs deploy --legacy --prod /out/jobs && pnpm --filter @oliginvest/db deploy --legacy --prod /out/migrate
 
+# Owner-only calibration tool; never published as an application service.
+FROM build AS auth-benchmark
+USER 10002:10002
+CMD ["node", "apps/api/spike/auth-storage.mjs", "--benchmark-only"]
+
 FROM node:24.21.0-trixie-slim@sha256:8ec5d7557396cfe32d21c3f9c13072355ceab22b584578ca4bb28af31120cffe AS web
 ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1
 WORKDIR /app
