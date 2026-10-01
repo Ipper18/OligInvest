@@ -73,6 +73,19 @@ for (const service of Object.keys(catalog)) {
   );
 }
 if (process.argv.includes("--build-only")) process.exit(0);
+// Playwright imports the shared messages on the host. Image builds do not
+// populate workspace dist directories on a clean CI checkout.
+run(
+  process.execPath,
+  [
+    "node_modules/turbo/bin/turbo",
+    "run",
+    "build",
+    "--filter=@oliginvest/i18n",
+    "--output-logs=new-only",
+  ],
+  { log: "e2e-dependencies.log" },
+);
 const server = createServer();
 await new Promise((accept) => server.listen(0, "localhost", accept));
 const { port, address } = server.address();

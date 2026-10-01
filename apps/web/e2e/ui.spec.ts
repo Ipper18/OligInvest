@@ -5,7 +5,11 @@ import { expect, test } from "@playwright/test";
 for (const theme of ["dark", "light"]) {
   test(`native UI and compliance components pass axe in ${theme}`, async ({ page, context }) => {
     await context.addCookies([
-      { name: "oi-test-theme", value: theme, url: "https://127.0.0.1:3197" },
+      {
+        name: "oi-test-theme",
+        value: theme,
+        url: process.env.E2E_BASE_URL ?? "https://127.0.0.1:3197",
+      },
     ]);
     await page.goto("/ui-preview");
     for (const width of [320, 1280]) {
@@ -75,6 +79,9 @@ test("keyboard opens modal, traps focus, closes with Escape and restores trigger
   await expect(trigger).toBeFocused();
   await page.keyboard.press("Tab");
   const popoverTrigger = page.getByRole("button", { name: messages.col.note, exact: true });
+  await expect(popoverTrigger).toBeFocused();
+  // A queued native close event must not steal focus after the next Tab.
+  await dialog.dispatchEvent("close");
   await expect(popoverTrigger).toBeFocused();
   await page.keyboard.press("Enter");
   await expect(page.locator("[popover]")).toBeVisible();
