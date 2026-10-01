@@ -168,9 +168,9 @@ Brama A (**[A]**) — MVP właściciela; brama B (**[B]**) — funkcje wymagane 
 | BL-137 | **[A]** Karta instrumentu: `getInstrument`, `getQuotes`, `getMarketDataStatus`, status i wiek danych | FR-01.02, FR-01.15 | EKR, API | BL-135, BL-121 | 2 | todo |
 | BL-138 | **[A]** Wykres świecowy: `getInstrumentChart` z decymacją ≤ 3 000 punktów (1W/1M), leniwy wrapper Lightweight Charts, tabela alternatywna, atrybucja TradingView | FR-01.03, NFR-01.04, NFR-06.01 | [ADR-009](../09-decyzje/ADR-009-wykresy.md), PERF, LAW | BL-137 | 3 | todo |
 | BL-139 | **[A]** Minimalna kontrola jakości EOD przy zapisie: integralność OHLC, duplikaty, skoki bez zdarzenia korporacyjnego | NFR-08.04 | OBL | BL-133 | 1,5 | todo |
-| BL-141 | **[A]** `packages/core`: `Money`, `Quantity`, `Price`, `FxRate` (decimal.js, precyzja 34, zaokrąglenia), formatowanie pl-PL | NFR-08.01, NFR-04.04 | OBL, [ADR-014](../09-decyzje/ADR-014-pieniadze-waluty-czas.md) | BL-015 | 2 | todo |
-| BL-142 | **[A]** `packages/core`: model operacji, partie FIFO (sprzedaż częściowa, split, przeniesienie), P/L zrealizowany ekonomiczny i podatkowy (`settle_date`, NBP D-1; marża przewalutowania osobno jako `fxCosts`, ustawienia `tax_date_basis` i `tax_include_fx_fee`) — wektor A | FR-02.07, FR-03.05, NFR-08.02 | OBL, VEC | BL-141 | 4 | todo |
-| BL-143 | **[A]** `packages/core`: pozycje, gotówka per waluta, wycena, P/L niezrealizowany, wynik dnia — wektory F i G | FR-02.02, FR-02.04, FR-02.09 | OBL, VEC | BL-142 | 2 | todo |
+| BL-141 | **[A]** `packages/core`: `Money`, `Quantity`, `Price`, `FxRate` (decimal.js, precyzja 34, zaokrąglenia), formatowanie pl-PL | NFR-08.01, NFR-04.04 | OBL, [ADR-014](../09-decyzje/ADR-014-pieniadze-waluty-czas.md) | BL-015 | 2 | w toku |
+| BL-142 | **[A]** `packages/core`: model operacji, partie FIFO (sprzedaż częściowa, split, przeniesienie), P/L zrealizowany ekonomiczny i podatkowy (`settle_date`, NBP D-1; marża przewalutowania osobno jako `fxCosts`, ustawienia `tax_date_basis` i `tax_include_fx_fee`) — wektor A | FR-02.07, FR-03.05, NFR-08.02 | OBL, VEC | BL-141 | 4 | w toku |
+| BL-143 | **[A]** `packages/core`: pozycje, gotówka per waluta, wycena, P/L niezrealizowany, wynik dnia — wektory F i G | FR-02.02, FR-02.04, FR-02.09 | OBL, VEC | BL-142 | 2 | w toku |
 | BL-144 | **[A]** Moduł `portfolio`: rachunki (zwykły, IKE, IKZE), operacje z walidacją per typ, przeliczenie ≤ 5 s | FR-02.01, FR-03.03 | API, DB | BL-108, BL-143 | 3 | todo |
 | BL-145 | **[A]** Import XTB: upload ≤ 10 MB, parsowanie w `jobs`, oba szablony, statusy wierszy, idempotencja, mapowanie instrumentów, CFD jako `unsupported`, uzgodnienie sald, zatwierdzenie | FR-03.01, NFR-08.03, NFR-03.07 | IMP | BL-144, BL-135 | 5 | todo |
 | BL-146 | **[A]** Przeliczanie pozycji i wycen (kolejka `recompute`), zdarzenie `portfolio.valuation.updated` do SSE, nocne `recompute-all` | FR-02.03 | MOD, FLOW | BL-145, BL-125 | 2 | todo |
@@ -189,7 +189,7 @@ Brama A (**[A]**) — MVP właściciela; brama B (**[B]**) — funkcje wymagane 
 
 | ID | Zadanie | Wymagania | Dokumenty | Zależy od | d | Status |
 |---|---|---|---|---|---|---|
-| BL-201 | `packages/core`: SMA, EMA, wstęgi Bollingera, RSI, MACD, ATR — zgodność z TA-Lib (wektor E, 1e-8) | FR-01.05, NFR-08.02 | OBL, VEC | BL-141 | 3 | todo |
+| BL-201 | `packages/core`: SMA, EMA, wstęgi Bollingera, RSI, MACD, ATR — zgodność z TA-Lib (wektor E, 1e-8) | FR-01.05, NFR-08.02 | OBL, VEC | BL-141 | 3 | w toku |
 | BL-202 | `getInstrumentIndicators`, nakładki i panele na wykresie, parametry wskaźników | FR-01.05 | API, [ADR-009](../09-decyzje/ADR-009-wykresy.md) | BL-201, BL-138 | 2 | todo |
 | BL-203 | Wyjaśnienia kontekstowe `<Explainer/>` (klucze i treści MDX modułu `education`) dla wskaźników i metryk MVP; test pokrycia kluczy | FR-01.07, FR-06.02, NFR-06.03 | DS, MOD | BL-202 | 2 | todo |
 | BL-204 | Glosariusz: indeks statyczny, wyszukiwanie po fragmencie i synonimie, pierwsze 30 haseł ze słownika pojęć | FR-06.03 | EKR, SLOW | BL-203 | 2 | todo |
@@ -213,21 +213,21 @@ M3 nie zależy od M4 (etapy mogą iść równolegle).
 
 | ID | Zadanie | Wymagania | Dokumenty | Zależy od | d | Status |
 |---|---|---|---|---|---|---|
-| BL-301 | `packages/core`: TWR (metoda łańcuchowa) i XIRR, okresy, waluta stopy — wektor B | FR-03.06, NFR-08.02 | OBL, VEC | BL-143 | 3 | todo |
+| BL-301 | `packages/core`: TWR (metoda łańcuchowa) i XIRR, okresy, waluta stopy — wektor B | FR-03.06, NFR-08.02 | OBL, VEC | BL-143 | 3 | todo (rdzeń w `packages/core`, PR `feat/m1-core-engine`) |
 | BL-302 | Wyceny dzienne i historia wartości (`valuations_daily`, `cash_balances_daily`), `getPortfolioHistory`, wykres uPlot ładowany leniwie | FR-02.10 | OBL, [ADR-009](../09-decyzje/ADR-009-wykresy.md) | BL-146 | 3 | todo |
-| BL-303 | `getPerformance` i ekran wyników (TWR, XIRR, okresy, P/L zrealizowany) | FR-03.06 | EKR | BL-301, BL-302 | 2 | todo |
+| BL-303 | `getPerformance` i ekran wyników (TWR, XIRR, okresy, P/L zrealizowany); zmiana OpenAPI: `ReturnFigures.xirrStatus` += `period_too_short` (okres < 30 dni, § 6.3; decyzja właściciela 2026-09-24, rdzeń już ją zwraca) | FR-03.06 | EKR | BL-301, BL-302 | 2 | todo |
 | BL-304 | Benchmark: TWR portfela kontra indeks i symulacja „te same przepływy” | FR-03.07 | OBL | BL-303, BL-206 | 2 | todo |
-| BL-305 | Obsunięcia i wykres „underwater” — wektor C | FR-03.09 | OBL, VEC | BL-302 | 1,5 | todo |
-| BL-306 | Ekspozycja walutowa i rozbicie wyniku na efekt ceny i kursu | FR-02.06 | OBL | BL-143 | 1,5 | todo |
-| BL-307 | Dywidendy: brutto, podatek u źródła, netto, stopa od kosztu, szacowana dopłata | FR-02.08 | OBL, VEC | BL-143 | 1,5 | todo |
-| BL-308 | Średnia ważona jako metoda widoku i przeliczenie po zmianie metody | FR-03.05 | OBL | BL-142 | 1 | todo |
+| BL-305 | Obsunięcia i wykres „underwater” — wektor C | FR-03.09 | OBL, VEC | BL-302 | 1,5 | todo (rdzeń w `packages/core`, PR `feat/m1-core-engine`) |
+| BL-306 | Ekspozycja walutowa i rozbicie wyniku na efekt ceny i kursu | FR-02.06 | OBL | BL-143 | 1,5 | todo (rdzeń § 4.2 w `packages/core`, PR `feat/m1-core-engine`; ekspozycja walutowa — dalej) |
+| BL-307 | Dywidendy: brutto, podatek u źródła, netto, stopa od kosztu, szacowana dopłata | FR-02.08 | OBL, VEC | BL-143 | 1,5 | todo (rdzeń § 4.3 w `packages/core`, PR `feat/m1-core-engine`) |
+| BL-308 | Średnia ważona jako metoda widoku i przeliczenie po zmianie metody | FR-03.05 | OBL | BL-142 | 1 | todo (rdzeń § 3.3 w `packages/core`, PR `feat/m1-core-engine`) |
 | BL-309 | Dziennik transakcji i postmortem | FR-03.11 | API, EKR | BL-144 | 2 | todo |
 | BL-310 | Eksport transakcji, pozycji i wyników (CSV/JSON) z neutralizacją formuł i linią `export`; test eksport → import | FR-03.13 | SEC, LAW | BL-144 | 1,5 | todo |
 | BL-311 | Worker `analytics`: kontrakty zadań (JSON Schema z Zod), walidacja `jsonschema`, rola `analytics_ro`, sieć bez wyjścia, limity CPU/RAM/czasu, testy izolacji | NFR-03.13, NFR-01.07 | [ADR-003](../09-decyzje/ADR-003-hybryda-obliczen-i-kolejki.md), INF | BL-014, BL-022 | 3 | todo |
 | BL-312 | Moduł `analytics`: uruchomienia, postęp i wynik przez SSE, limity roli, anulowanie, zapis wyników w kontekście RLS | FR-04.01, NFR-01.07 | API, MOD | BL-311, BL-125 | 3 | todo |
 | BL-313 | Monte Carlo: bootstrap stacjonarny i t-Student, proxy klas aktywów, przepływy, inflacja, podatek; wachlarz, P(cel), rozkład obsunięć, tabela wrażliwości, ziarno | FR-04.02, NFR-08.05 | OBL | BL-312 | 5 | todo |
 | BL-314 | Ekran wyników analiz: rozkłady, „jak czytać”, blok założeń, disclaimer, dane do odtworzenia | FR-04.01, FR-06.06 | EKR, LAW | BL-313 | 2 | todo |
-| BL-315 | Kalkulator rebalancingu: alokacje docelowe, tryby `full` i `buy_only`, koszty, szacowany podatek, blokada przy nieuzgodnionych danych — wektor H | FR-04.06 | OBL, VEC, LAW | BL-143, BL-207 | 3 | todo |
+| BL-315 | Kalkulator rebalancingu: alokacje docelowe, tryby `full` i `buy_only`, koszty, szacowany podatek, blokada przy nieuzgodnionych danych — wektor H; przyszła opcja: `buy_only` z wolnej gotówki na rachunku (nie tylko nowej) | FR-04.06 | OBL, VEC, LAW | BL-143, BL-207 | 3 | todo (rdzeń § 12.5 w `packages/core`, PR #3) |
 | BL-316 | Bramkowanie roli `pro` dla analiz ciężkich, komunikaty w UI | FR-07.06 | MOD | BL-312 | 1 | todo |
 | BL-317 | Wektory B–D w pytest kontra empyrical-reloaded | NFR-02.06, NFR-08.02 | OBL | BL-311 | 1 | todo |
 | BL-318 | Przegląd metodologiczny Monte Carlo i rebalancingu (checklisty z AGENTS.md) zapisany w PR | NFR-07.02 | LAW, OBL | BL-314, BL-315 | 0,5 | todo |
@@ -281,7 +281,7 @@ Każde zadanie z analizą przyszłości kończy się przeglądem metodologicznym
 
 | ID | Zadanie | Wymagania | Dokumenty | Zależy od | d | Status |
 |---|---|---|---|---|---|---|
-| BL-551 | Metryki ryzyka: zmienność, Sharpe, Sortino, beta, korelacja, VaR i CVaR historyczne — wektor D; ekran z założeniami | FR-03.10 | OBL, VEC | BL-319, BL-302 | 3 | todo |
+| BL-551 | Metryki ryzyka: zmienność, Sharpe, Sortino, beta, korelacja, VaR i CVaR historyczne — wektor D; ekran z założeniami | FR-03.10 | OBL, VEC | BL-319, BL-302 | 3 | todo (rdzeń § 8 w `packages/core`, PR #3) |
 | BL-552 | Atrybucja wyniku: pozycje, sektory, waluty | FR-03.08 | OBL | BL-303, BL-207 | 2 | todo |
 | BL-553 | Statystyki skuteczności decyzji z dziennika | FR-03.12 | OBL | BL-309 | 1,5 | todo |
 | BL-554 | Import generyczny CSV z szablonami mapowania kolumn | FR-03.04 | IMP | BL-145 | 3 | todo |

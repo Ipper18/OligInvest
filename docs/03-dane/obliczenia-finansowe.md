@@ -28,7 +28,7 @@ Metryki statystyczne (zmienność, Sharpe, wskaźniki TA) liczymy w `float64` �
 
 - Obliczenia pośrednie: `decimal.js` z precyzją 34 cyfr, tryb `ROUND_HALF_EVEN`; **bez zaokrągleń pośrednich**.
 - Prezentacja i zapis kwot rozliczeniowych: do jednostki waluty (2 miejsca dla PLN, USD, EUR), tryb `ROUND_HALF_UP`.
-- Procenty w UI: 2 miejsca (`0,84 %`); małe wartości (< 0,01 %) jako `< 0,01 %`.
+- Procenty w UI: 2 miejsca (`0,84%` — zapis `Intl` pl-PL bez spacji, [`system-projektowy.md`](../04-frontend/system-projektowy.md) § 5); małe wartości niezerowe (< 0,01%) jako `< 0,01%` (ujemne: `> -0,01%`).
 - Widok podatkowy: kwoty do grosza (informacyjnie). Zeznanie roczne zaokrągla podstawę i podatek do pełnych złotych (Ordynacja podatkowa) — OligInvest tego nie robi, bo nie liczy zeznań.
 
 ### 0.3 Czas i daty
@@ -56,6 +56,8 @@ Metryki statystyczne (zmienność, Sharpe, wskaźniki TA) liczymy w `float64` �
 | Wskaźniki vs TA-Lib | 1e-8 |
 | Porównanie TS ↔ Python (te same wektory) | jak wyżej, w zależności od wielkości |
 
+Wartości w [`wektory-testowe.json`](wektory-testowe.json) są zaokrąglone do podanej liczby miejsc (np. stopy w wektorze B do 6 miejsc w procentach). Test porównuje wynik z wektorem z dokładnością do połowy jednostki ostatniej cyfry wektora, a tolerancję z tabeli sprawdza względem wartości dokładnej, gdy da się ją policzyć (np. łańcuch TWR z ułamków).
+
 ---
 
 ## 1. Model operacji (wejście wszystkich obliczeń)
@@ -71,13 +73,15 @@ Metryki statystyczne (zmienność, Sharpe, wskaźniki TA) liczymy w `float64` �
 | `FEE` | — | `−kwota` | — (koszt okresu) | nie |
 | `TAX` | — | `−kwota` (np. podatek od odsetek, FTT) | — | nie |
 | `DEPOSIT` / `WITHDRAWAL` | — | `+kwota` / `−kwota` | — | **tak** (`+` / `−`) |
-| `CASH_TRANSFER_IN` / `_OUT` (między własnymi rachunkami) | — | `±kwota` | — | tak na poziomie rachunku, **nie** na poziomie portfela zbiorczego |
+| `CASH_TRANSFER_IN` / `_OUT` | — | `±kwota` | — | tak na poziomie rachunku; na poziomie portfela **tylko bez drugiej strony** wśród śledzonych rachunków (np. subkonto bez importu) |
 | `FX_CONVERSION` (wymiana walut w rachunku) | — | `−kwota A` i `+kwota B` | — | nie |
 | `SPLIT` (współczynnik `k`) | `q → q·k` | — | koszt bez zmian | nie |
-| `SECURITY_TRANSFER_IN` / `_OUT` | `±q` | — | przenosi partie z pierwotną datą i kosztem | tak (wartość rynkowa w dniu transferu) na poziomie rachunku |
+| `SECURITY_TRANSFER_IN` / `_OUT` | `±q` | — | przenosi partie z pierwotną datą i kosztem (§ 3.5) | tak (wartość rynkowa w dniu transferu) na poziomie rachunku; na poziomie portfela **tylko bez drugiej strony** wśród śledzonych rachunków; brak wartości rynkowej = błąd (`missing_transfer_value`) |
 | `ADJUSTMENT` (kategoria, np. `cfd_pl`, `corporate_action`, `correction`) | — | `±kwota` | — | nie — wynik okresu w kategorii „inne” (np. wynik CFD z importu XTB, Z-15) |
 
-Kolejność przetwarzania w obrębie dnia: według `executed_at` (lub `trade_date` + `sequence`), przy remisie — `SPLIT` przed transakcjami tego dnia, potem według `id` (UUIDv7, rosnąco).
+Przeniesienie jest wewnętrzne dla portfela, gdy jego druga strona (`related_transaction_id`, typ przeciwny) jest wśród operacji śledzonych rachunków; w przeciwnym razie jest przepływem portfela o wartości rynkowej z dnia przeniesienia (decyzja właściciela 2026-09-24, przegląd C-02) — inaczej TWR i XIRR liczyłyby wniesione papiery jako zysk.
+
+Kolejność przetwarzania (porządek całkowity, decyzja właściciela 2026-09-24): (1) `trade_date`; (2) w obrębie dnia `SPLIT` przed pozostałymi operacjami; (3) `executed_at` rosnąco — operacje bez `executed_at` po operacjach z czasem; (4) `sequence`; (5) `id` (UUIDv7, rosnąco). Porównywanie `executed_at` tylko wtedy, gdy obie operacje go mają, nie jest przechodnie, dlatego brak czasu traktujemy jak „koniec dnia”. `SECURITY_TRANSFER_IN` musi w tym porządku następować po powiązanym `SECURITY_TRANSFER_OUT` (niższe `sequence`).
 
 ---
 
@@ -104,7 +108,8 @@ Na podstawie art. 11a ust. 1–2 ustawy o PIT (przeliczenie przychodów i koszt�
 $$\text{koszt}_{\text{PLN}}^{\text{pod}} = q\cdot p \cdot \text{nbp}(\text{prev\_bd}(d_{\text{kupna}})) + \text{prowizja}\cdot \text{nbp}(\text{prev\_bd}(d_{\text{kupna}}))$$
 $$\text{przychód}_{\text{PLN}}^{\text{pod}} = q\cdot p \cdot \text{nbp}(\text{prev\_bd}(d_{\text{sprzedaży}})) - \text{prowizja}\cdot \text{nbp}(\text{prev\_bd}(d_{\text{sprzedaży}}))$$
 
-- Dzień przychodu i kosztu (`d_kupna`, `d_sprzedaży` we wzorach) = **dzień rozliczenia transakcji** (`settle_date`, przeniesienie własności — art. 17 ust. 1ab pkt 1 ustawy o PIT; interpretacja Dyrektora KIS z 29.03.2024, sygn. 0114-KDIP3-1.4011.1149.2023.1.AK; tak samo liczy XTB — [`../11-zgodnosc-prawna.md`](../11-zgodnosc-prawna.md) § 5). Gdy import nie podaje daty rozliczenia, wyliczamy ją z `trade_date` i kalendarza rynku: USA — T+1 (od 28.05.2024, wcześniej T+2); GPW i pozostałe rynki UE — T+2, od 11.10.2027 T+1 (rozporządzenie (UE) 2025/2075). ❓ Dni, w których giełda działa, a system rozliczeń nie (np. niektóre święta federalne w USA), wymagają kalendarza rozliczeń — w MVP wpisy admina w `market.trading_calendar` (`notes`), weryfikacja przed M1. Parametr `tax_date_basis = settlement|trade` (domyślnie `settlement`; `trade` tylko do porównań).
+- Dzień przychodu i kosztu (`d_kupna`, `d_sprzedaży` we wzorach) = **dzień rozliczenia transakcji** (`settle_date`, przeniesienie własności — art. 17 ust. 1ab pkt 1 ustawy o PIT; interpretacja Dyrektora KIS z 29.03.2024, sygn. 0114-KDIP3-1.4011.1149.2023.1.AK; tak samo liczy XTB — [`../11-zgodnosc-prawna.md`](../11-zgodnosc-prawna.md) § 5). Gdy import nie podaje daty rozliczenia, wyliczamy ją z `trade_date` i kalendarza rynku: USA — T+1 (od 28.05.2024, wcześniej T+2); GPW i pozostałe rynki UE — T+2, od 11.10.2027 T+1 (rozporządzenie (UE) 2025/2075). Mapowanie rynków w rdzeniu (przegląd C-21): USA — XNYS, XNAS, ARCX, BATS, XASE; UE — XWAR, XETR, XFRA, XAMS, XPAR, XBRU, XLIS, XDUB, XMIL, XMAD, XWBO, XHEL, XSTO, XCSE. XLON i SIX (poza UE) — cykl do ustalenia; do tego czasu import podaje datę rozliczenia jawnie. ❓ Dni, w których giełda działa, a system rozliczeń nie (np. niektóre święta federalne w USA), wymagają kalendarza rozliczeń — w MVP wpisy admina w `market.trading_calendar` (`notes`), weryfikacja przed M1. Parametr `tax_date_basis = settlement|trade` (domyślnie `settlement`; `trade` tylko do porównań).
+- Kurs musi pochodzić z **ostatniego dnia roboczego NBP** przed dniem przychodu/kosztu: gdy użyty kurs jest starszy (luka w danych), wynik zostaje, ale z ostrzeżeniem `stale_tax_rate`; data użytej tabeli jest częścią wyniku (partia, sprzedaż, dywidenda). Kalendarz dni roboczych NBP podaje wywołujący (domyślnie pon.–pt.) (przegląd C-06).
 - **Koszt przewalutowania brokera w widoku podatkowym** (decyzja właściciela 2026-09-19): marży brokera nie dodajemy do kosztu podatkowego — widok pokazuje ją jako **osobny koszt** (`fxCosts` = część kosztów przewalutowania partii zużytych przy sprzedaży + koszt przewalutowania przy sprzedaży). Ustawienie użytkownika `tax_include_fx_fee` (domyślnie `false`) wlicza ją do kosztu; zmiana przelicza wyłącznie widok podatkowy (dane pochodne), a widok ekonomiczny zawsze zawiera ten koszt. Brak jednolitej praktyki — [`../11-zgodnosc-prawna.md`](../11-zgodnosc-prawna.md) § 5.3.
 - Rachunki IKE/IKZE: widok podatkowy pokazuje „nie dotyczy” (brak rozliczenia bieżącego).
 
@@ -134,17 +139,23 @@ Sprzedaż większa niż dostępna ilość = błąd danych (import oznacza wiersz
 
 ### 3.3 Średnia ważona (widok informacyjny)
 
-$$\bar c = \frac{\sum_{L \in \text{otwarte}} \text{koszt}_L^{\text{pozostały}}}{\sum_{L} q_L^{\text{pozostałe}}} \qquad \text{P/L}_{\text{zreal}}^{\text{śr}} = \text{przychód netto} - q_s\cdot \bar c$$
+$$\bar c = \frac{\text{koszt puli}}{\text{ilość puli}} \qquad \text{P/L}_{\text{zreal}}^{\text{śr}} = \text{przychód netto} - q_s\cdot \bar c$$
+
+Pula średniej (per rachunek i instrument; decyzja właściciela 2026-09-24): zakup dodaje do puli swój koszt i ilość; sprzedaż zdejmuje z puli `q_s·c̄` kosztu i `q_s` ilości; split zmienia tylko ilość. Pula nie jest sumą pozostałych partii FIFO.
 
 Średnia jest przeliczana po każdym zakupie; sprzedaż nie zmienia `c̄` pozostałych sztuk.
 
 ### 3.4 Split / scalenie
 
-Współczynnik `k` (split 4:1 → `k = 4`; scalenie 1:10 → `k = 0.1`): dla każdej otwartej partii `q_L ← q_L·k`, `c_L ← c_L / k`, `koszt_L` bez zmian, data nabycia bez zmian. Ułamki powstałe przy scaleniu rozliczane gotówką (`cash_in_lieu`) jak sprzedaż ułamka.
+Split zapisujemy jako **parę liczb całkowitych** `ratioFrom → ratioTo` (decyzja właściciela 2026-09-24, przegląd C-03; ułamek dziesiętny nie zapisze dokładnie scaleń 1:3, 1:7 itd.): split 4:1 → `1 → 4`, scalenie 1:10 → `10 → 1`, `k = ratioTo / ratioFrom`. Dla każdej otwartej partii `q_L ← q_L·ratioTo/ratioFrom`, `c_L ← c_L·ratioFrom/ratioTo`, `koszt_L` bez zmian, data nabycia bez zmian. Ułamek powstały przy scaleniu rozliczany gotówką (`cash_in_lieu`, pole `cashInLieu` operacji `SPLIT`) jak sprzedaż FIFO — w rdzeniu przed przeskalowaniem, w jednostkach sprzed scalenia, tak aby pozostałe całe akcje wyszły dokładnie (31 szt. przy 1:3: sprzedaż 1 szt., zostaje 10 szt.). Zmiana kolumn `schema.sql` (`transactions.split_ratio`, `corporate_actions.ratio`) — zadanie BL-144.
 
 ### 3.5 Przeniesienie papierów między rachunkami
 
 `SECURITY_TRANSFER_OUT` z rachunku A i `SECURITY_TRANSFER_IN` na rachunek B (powiązane `related_transaction_id`) przenoszą **partie z pierwotną datą i kosztem** (FIFO liczone per rachunek — po przeniesieniu partie należą do B).
+
+Przeniesienie między rachunkami w różnych walutach (decyzja właściciela 2026-09-24, przegląd C-01): koszt ekonomiczny partii (z marżą przewalutowania) przeliczamy na walutę rachunku docelowego **kursem NBP z dnia przeniesienia** (ostatnia tabela do tego dnia); kurs zapisujemy w partii (`transferRate`). Koszt podatkowy w PLN pozostaje bez zmian. Brak kursu → partia z nieznanym kosztem ekonomicznym i ostrzeżenie `missing_transfer_rate`. Kwoty w różnych walutach nigdy nie są sumowane bez przeliczenia.
+
+`SECURITY_TRANSFER_IN` bez odpowiadającego `_OUT` (przeniesienie spoza śledzonych rachunków; decyzja właściciela 2026-09-24): użytkownik podaje **koszt nabycia** (w walucie rachunku) i **datę nabycia** — partia dostaje ten koszt i datę (kolejność FIFO, widok podatkowy: koszt w PLN wprost albo po NBP D-1 od daty nabycia). Bez tych danych pozycja jest **wyceniana**, ale **wyłączona z P/L i z widoku podatkowego** (partia z nieznanym kosztem, data nabycia = dzień przeniesienia), z ostrzeżeniem „brak kosztu nabycia” — kod `missing_acquisition_cost` w API `packages/core`.
 
 ### 3.6 Edycja operacji
 
@@ -204,11 +215,14 @@ Suma obu efektów = P/L w PLN (tożsamość; test).
 | 19 % od brutto / zaliczenie podatku u źródła | 17,53 / 13,84 PLN |
 | Szacowana dopłata (informacyjnie) | **3,69 PLN** |
 
-Stopa dywidendy od kosztu = suma dywidend brutto z 12 miesięcy / koszt nabycia pozycji.
+- Dzień przychodu dywidendy = dzień wypłaty (`settle_date`, a gdy brak — `trade_date`); kurs NBP z ostatniego dnia roboczego przed nim.
+- Zaliczenie podatku u źródła **najwyżej do wysokości 19 %** od brutto — szacowana dopłata nigdy nie jest ujemna (decyzja właściciela 2026-09-24; podstawa: art. 30a ust. 9 ustawy o PIT — **NIEZWERYFIKOWANE**, do potwierdzenia przy widoku podatkowym).
+
+Stopa dywidendy od kosztu = suma dywidend brutto z 12 miesięcy / koszt nabycia pozycji, **w PLN** (decyzja właściciela 2026-09-24): brutto przeliczone kursem NBP D-1 jak w widoku podatkowym, niezależnie od typu rachunku.
 
 ### 4.4 Pozostałe pozycje gotówkowe
 
-Odsetki od wolnych środków (`INTEREST`) i podatek od nich (`TAX`), opłaty (`FEE`), podatki transakcyjne (FTT — `TAX` powiązany z transakcją lub część kosztu partii) wchodzą do wyniku okresu jako osobne kategorie; nie zmieniają kosztu nabycia (poza FTT przypisanym do zakupu).
+Odsetki od wolnych środków (`INTEREST`) i podatek od nich (`TAX`), opłaty (`FEE`), podatki transakcyjne (FTT — `TAX` powiązany z transakcją lub część kosztu partii) wchodzą do wyniku okresu jako osobne kategorie; nie zmieniają kosztu nabycia (poza FTT przypisanym do zakupu). `TAX`/`FEE` powiązane przez `related_transaction_id` z `BUY`, `SELL` lub `DIVIDEND` tego samego rachunku (import zapisuje tak FTT, opłatę SEC i podatek u źródła z osobnego wiersza — [`formaty-importu.md`](formaty-importu.md) § 2.2) rdzeń przypisuje operacji docelowej w obu widokach: do kosztu partii, do przychodu sprzedaży albo do podatku u źródła dywidendy; gotówka jest księgowana raz, z wiersza `TAX`/`FEE` (przegląd C-04). Powiązanie z innym rachunkiem lub w innej walucie jest błędem danych.
 
 ---
 
@@ -224,7 +238,7 @@ Wartość portfela zbiorczego w PLN: `V(t) = Σ_a V_a(t)·kurs_{CCY_a→PLN}(t)`
 
 $$\Delta_{\text{dzień}} = V(t) - V(\text{zamknięcie } D{-}1) - F_{\text{dzień}}$$
 
-Przykład: 53 120,55 − 52 340,10 − 500,00 (wpłata dziś) = **280,45 PLN (0,54 %)**; procent względem `V(D−1)`.
+Przykład: 53 120,55 − 52 340,10 − 500,00 (wpłata dziś) = **280,45 PLN (0,53%)**; procent względem `V(D−1) + F_dzień` = 52 840,10 — ta sama baza co stopa dnia w TWR (§ 6.2), więc duża wpłata nie zawyża procentu (decyzja właściciela 2026-09-24, przegląd C-13; wcześniej `V(D−1)` i 0,54%).
 
 ---
 
@@ -240,8 +254,8 @@ Dzienna metoda łańcuchowa. **Konwencja:** przepływ zewnętrzny z dnia `d` ksi
 $$r_d = \frac{V_d}{V_{d-1} + F_d} - 1 \qquad \text{TWR}_{[0,T]} = \prod_{d=1}^{T}(1 + r_d) - 1$$
 
 - Pierwszy dzień z wpłatą początkową: `V_0 = 0`, `F_1 = wpłata` → `r_1 = V_1 / F_1 − 1`.
-- Dzień z `V_{d−1} + F_d ≤ 0` (np. wypłata całości): okres zamykamy, kolejny zaczyna się od nowej wpłaty (łańcuch kontynuowany).
-- Annualizacja tylko dla okresów ≥ 365 dni: `(1 + TWR)^{365/dni} − 1`; dla krótszych pokazujemy wartość skumulowaną.
+- Dzień z `V_{d−1} + F_d ≤ 0` (np. wypłata całości) albo z `V_d ≤ 0` (np. opłata większa niż reszta gotówki): okres zamykamy bez mnożenia indeksu (stopa dnia „brak”), kolejny zaczyna się od następnej dodatniej bazy — łańcuch kontynuowany, indeks zawsze > 0 (przegląd C-05).
+- Annualizacja tylko dla okresów ≥ 365 dni: `(1 + TWR)^{365/dni} − 1`; dla krótszych pokazujemy wartość skumulowaną. `dni` = dni kalendarzowe od początku okresu do jego końca; dla okresu od pierwszej wpłaty — od daty pierwszego przepływu (jak `t_0` w XIRR; wektor B: 364).
 
 ### 6.3 MWR / XIRR (FR-03.06)
 
@@ -251,7 +265,7 @@ $$\sum_{k} \frac{CF_k}{(1 + x)^{(t_k - t_0)/365}} = 0$$
 
 gdzie `CF_k` to wpłaty (−), wypłaty (+) i wartość końcowa (+) w dniu końca okresu; wartość początkowa (jeśli okres nie zaczyna się od zera) wchodzi jako wpłata w `t_0`.
 
-Algorytm: Newton-Raphson od `x₀ = 0,1` (maks. 100 iteracji, tolerancja 1e-12), przy braku zbieżności — bisekcja na przedziale `[−0,9999; 10]`. Brak zmiany znaku → wynik `null` („nie da się wyznaczyć”). Okresy < 30 dni: XIRR niepokazywany (niestabilny).
+Algorytm: Newton-Raphson od `x₀ = 0,1` (maks. 100 iteracji, tolerancja 1e-12), przy braku zbieżności — bisekcja na przedziale `[−0,9999; 10]`. Brak zmiany znaku → wynik `null` („nie da się wyznaczyć”). Solver liczy w float64 na bezwymiarowych wagach `CF_k / max|CF|` (XIRR jest stopą, § 0.1; kwoty pozostają `Decimal`) — tolerancja z § 0.5 bez zmian, czas mieści się w budżecie żądania (przegląd C-28). Okresy < 30 dni: XIRR niepokazywany (niestabilny).
 
 ### 6.4 Przykład B — TWR a XIRR (wektor `B_twr_xirr`)
 
@@ -295,8 +309,8 @@ Wejście: dzienne stopy zwrotu `r_t` z indeksu TWR (w PLN); `N` obserwacji; `P =
 | Sortino | `mean(r − MAR)·P / (DD·√P)`, `DD = √(mean(min(r − MAR, 0)²))` po **wszystkich** obserwacjach, MAR = 0 | 2,793216 |
 | Beta / korelacja | `cov(r, b)/var(b)` (n−1) / Pearson | 1,302072 / 0,996597 |
 | VaR 95 % 1D historyczny | `−percentyl₅(r)` (interpolacja liniowa) | 1,2150 % |
-| CVaR 95 % 1D | `−mean(r | r ≤ percentyl₅)` | 1,5000 % |
-| VaR 95 % 1D parametryczny | `−(mean − 1,6449·σ)` (rozkład normalny) | 1,2203 % |
+| CVaR 95 % 1D | `−mean` z `k = ⌊(n − 1)·0,05⌋ + 1` najniższych stóp (definicja empyrical, jednoznaczna przy remisach na progu — decyzja właściciela 2026-09-24, przegląd C-23; wektor `D_risk.tied_*`) | 1,5000 % |
+| VaR 95 % 1D parametryczny | `−(mean − z·σ)` (rozkład normalny); z = 1,6449 dla 95 %, dla innego poziomu ufności kwantyl rozkładu normalnego z(c) (przegląd C-08) | 1,2203 % |
 | Calmar | `CAGR / |max DD|` | — |
 
 - **Stopa wolna od ryzyka** jest zawsze pokazywanym założeniem. Domyślnie: dla PLN — stopa referencyjna NBP wprowadzana przez admina jako szereg z datami obowiązywania; dla USD — rentowność 3M bonów skarbowych z FRED (`DGS3MO`). ❓ Źródło szeregu stopy referencyjnej NBP w formie API — do ustalenia w M3 (w razie braku: wpis ręczny).
@@ -393,7 +407,7 @@ Porównanie „przed/po” na tym samym oknie (domyślnie 3 lata tygodniowo): zm
 
 Wejście: wagi docelowe `t_i` (suma 1), pasmo tolerancji (domyślnie ±5 p.p.), tryb (`full` / `buy_only`), nowa gotówka, minimalna wartość zlecenia, podzielność (całe akcje GPW; ułamki tylko gdy broker obsługuje), model kosztów (§ 12.7), rachunek (skutek podatkowy FIFO dla sprzedaży na rachunku zwykłym).
 
-Algorytm: (1) `W = Σ V_i + gotówka`; (2) instrumenty z `|w_i − t_i| ≤ pasmo` pomijamy; (3) `full`: transakcja `t_i·W − V_i`; `buy_only`: nowa gotówka rozdzielana proporcjonalnie do dodatnich luk `max(0, t_i·W − V_i)`; (4) zaokrąglenie do podzielności (kupno w dół, sprzedaż do najbliższej), resztę gotówki ponownie przydzielamy; (5) koszty i szacowany podatek; (6) wagi po transakcjach. **Blokada:** brak uzgodnionego importu w ostatnich 7 dniach lub otwarte różnice uzgodnienia → kalkulator pokazuje ostrzeżenie i nie generuje listy (wynik przeglądu `strategy-critique`, § 13.2).
+Algorytm: (1) `W = Σ V_i + gotówka`; (2) instrumenty z `|w_i − t_i| ≤ pasmo` pomijamy; (3) `full`: transakcja `t_i·W − V_i`; `buy_only`: nowa gotówka rozdzielana proporcjonalnie do dodatnich luk `max(0, t_i·W − V_i)`; (4) zaokrąglenie do podzielności (kupno w dół, sprzedaż do najbliższej), resztę gotówki ponownie przydzielamy; (5) koszty i szacowany podatek; (6) wagi po transakcjach. Doprecyzowania (decyzja właściciela 2026-09-24): w kroku (2) `w_i = V_i / (Σ V + gotówka)` — wagi **sprzed** nowej gotówki (tak wychodzi przykład H); `buy_only` rozdziela **tylko nową gotówkę** (wolna gotówka już na rachunku — przyszła opcja, backlog BL-315), a zakup jest **najwyżej do wielkości luki** — gdy suma luk jest mniejsza niż nowa gotówka, reszta zostaje gotówką (decyzja właściciela 2026-09-24, przegląd C-12; przykład H bez zmian); sprzedaż zaokrąglana do **pełnych sztuk** (najbliższa, najwyżej posiadana ilość), chyba że broker obsługuje ułamki. Szacowany podatek (tylko rachunek zwykły, etykieta „szacunek”; decyzja właściciela 2026-09-24, przegląd C-11): dla każdej sprzedaży **wynik ze znakiem** = wartość sprzedaży − koszt zlecenia − koszt partii FIFO z **widoku podatkowego** (data rozliczenia, kurs NBP D-1; marża przewalutowania partii tylko przy `tax_include_fx_fee`, § 2.2); podatek planu = **19 % × max(0, Σ wyników)** — zyski i straty sprzedaży z tego samego rachunku się kompensują. Brak kosztu podatkowego partii → szacunek niedostępny. **Blokada:** brak uzgodnionego importu w ostatnich 7 dniach lub otwarte różnice uzgodnienia → kalkulator pokazuje ostrzeżenie i nie generuje listy (wynik przeglądu `strategy-critique`, § 13.2).
 
 Przykład: A 7 000 / B 3 000, cel 60/40 → `full`: A −1 000, B +1 000; `buy_only` z nową gotówką 2 000 → A +200, B +1 800 → 60,00 % / 40,00 %.
 
