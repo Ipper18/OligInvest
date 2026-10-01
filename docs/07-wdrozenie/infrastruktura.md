@@ -161,7 +161,8 @@ Panel i SSH hosta dostępne wyłącznie z sieci administracyjnej; 2FA (TOTP) do 
 | Ścieżka | Zawartość | Uprawnienia |
 |---|---|---|
 | `/opt/oliginvest/` | pliki Compose i konfiguracje z paczki wydania (bez sekretów) | root, `0755` |
-| `/etc/oliginvest/secrets/` | pliki sekretów (§ 8) | root, katalog `0700`, pliki `0600` |
+| `/etc/oliginvest/secrets/` | oryginały sekretów (§ 8) | root:root, katalog `0700`, pliki `0600` |
+| `/etc/oliginvest/runtime-secrets/` | kopie per odbiorca, tylko pojedyncze pliki montowane do kontenerów | katalog główny i podkatalogi root:root `0700`; pliki UID/GID odbiorcy, `0400` |
 | `/srv/oliginvest/` | wolumeny: `postgres`, `valkey-queue`, `caddy-data`, `caddy-logs` | właściciel = UID kontenera |
 | `/srv/backup/` | dysk HDD: repozytorium pgBackRest, logi kopii | root / UID postgres |
 
@@ -301,7 +302,35 @@ Generowane skryptem instalacyjnym (`infra/scripts/generate-secrets.sh`, M0) z ge
 | klucze WireGuard, SSH | hosty | raz w roku |
 | klucz konta ACME | wolumen `caddy-data` | przy utracie (zmiana CAA) |
 
-### 8.1 Walidacja konfiguracji aplikacji (BL-005)
+### 8.1 Uprawnienia i macierz sekretów (BL-022/023)
+
+**Decyzja właściciela 2026-10-01:** zatwierdzona [korekta](../08-plan/m0-2-secret-permissions.md), bez nowego ADR. Oryginały pozostają root:root/0600. Compose dla `secrets.file` zachowuje właściciela i tryb pliku hosta; pola `uid/gid/mode` nie remapują bind mountów. Kopie należą do UID/GID odbiorcy, mają tryb 0400 i leżą pod katalogami root:root/0700. Kontener otrzymuje tylko pojedyncze własne pliki, tylko do odczytu. Nie montujemy katalogu oryginałów ani katalogów innych usług.
+
+Poniższa **jedyna tabela wykonawcza** jest źródłem macierzy sekret → odbiorcy dla generatora kopii oraz testu integracyjnego. Parser odrzuca nieznane pola i duplikaty. UID/GID są stałe, liczbowe i zapisane także jako `USER UID:GID` w finalnym etapie Dockerfile; CI porównuje je z tabelą i obrazem. Nazwy w kolumnach sekretów są rozdzielone przecinkami; `—` oznacza brak. Wpis opcjonalny jest montowany tylko po dostarczeniu kompletnej konfiguracji funkcji.
+
+<!-- runtime-secret-matrix:start -->
+| Usługa | UID | GID | Sekrety wymagane | Sekrety opcjonalne |
+|---|---|---|---|---|
+| web | 1000 | 1000 | — | — |
+| api | 10002 | 10002 | BETTER_AUTH_SECRETS, AUDIT_PSEUDONYM_KEY, DB_AUTH_PASSWORD, DB_APP_PASSWORD, VALKEY_QUEUE_API_PASSWORD, VALKEY_CACHE_API_PASSWORD | GOOGLE_CLIENT_SECRET, GITHUB_CLIENT_SECRET |
+| jobs | 10003 | 10003 | AUDIT_PSEUDONYM_KEY, DB_APP_PASSWORD, VALKEY_QUEUE_JOBS_PASSWORD, VALKEY_CACHE_JOBS_PASSWORD | SMTP_USER, SMTP_PASSWORD, VAPID_PRIVATE_KEY, FINNHUB_API_KEY, TWELVEDATA_API_KEY, ALPHAVANTAGE_API_KEY, FRED_API_KEY, MARKETAUX_API_KEY |
+| analytics | 10001 | 10001 | DB_ANALYTICS_RO_PASSWORD, VALKEY_QUEUE_ANALYTICS_PASSWORD | — |
+| postgres | 999 | 999 | DB_POSTGRES_PASSWORD, DB_OWNER_PASSWORD, DB_AUTH_PASSWORD, DB_APP_PASSWORD, DB_ANALYTICS_RO_PASSWORD, DB_BACKUP_PASSWORD, PGBACKREST_REPO1_CIPHER_PASS | — |
+| migrate | 10004 | 10004 | DB_OWNER_PASSWORD | — |
+| caddy | 10005 | 10005 | — | — |
+| valkey-queue | 10006 | 10006 | VALKEY_QUEUE_ACL | — |
+| valkey-cache | 10007 | 10007 | VALKEY_CACHE_ACL | — |
+<!-- runtime-secret-matrix:end -->
+
+Pliki `VALKEY_QUEUE_ACL` i `VALKEY_CACHE_ACL` są pochodnymi haseł usług: zawierają skróty SHA-256 haseł i reguły ACL, nigdy hasła jawne. PostgreSQL potrzebuje haseł ról do pierwszego provisioningu i kontrolowanej rotacji, a `DB_POSTGRES_PASSWORD` wyłącznie do konta administracyjnego bazy. `migrate` dostaje tylko rolę owner. Sekrety hosta (restic, CrowdSec, WireGuard, SSH) nie należą do macierzy kontenerów. Caddy i Valkey mają cienkie własne obrazy z przypiętych baz, aby także ich finalny `USER` odpowiadał tabeli; wydanie podpisuje te obrazy obok sześciu obrazów z BL-020.
+
+Skrypt uruchamiany przez właściciela na hoście jest idempotentny: nie nadpisuje istniejących oryginałów, nie wypisuje wartości, kontroluje właściciela/tryb i odrzuca dowiązania. Kopie wymienia atomowo przez plik tymczasowy w tym samym katalogu. Przy rotacji wspólnego sekretu najpierw przygotowuje i wymienia **wszystkie** kopie odbiorców (oraz zależne ACL), a dopiero po powodzeniu całej operacji pozwala odtworzyć kontenery. Błąd przerywa operację przed odtwarzaniem; ponowne uruchomienie uzgadnia kopie. Blokada procesu wyklucza równoległe generowanie i wdrożenie. Sam restart procesu nie wystarcza: po atomowym podmienieniu pliku bind mount może wskazywać stary inode. Rotacja hasła DB wymaga też zmiany hasła roli; sama wymiana pliku jej nie wykonuje.
+
+Wszystkie UID/GID należy zarezerwować na VM bez kont interaktywnych. Wspierany jest rootful Docker bez user namespace remapping; inny model mapowania wymaga weryfikacji. Kopie nie trafiają do repozytorium, obrazów, wydania, logów ani artefaktów CI. Usunięcie sekretu obejmuje wszystkie kopie, a depozyt oryginałów pozostaje w menedżerze haseł.
+
+**Test Linux w CI:** na podstawie tej tabeli każda usługa odczytuje tylko własne sekrety, nie może ich zapisać, w kontenerze nie ma sekretów nieprzydzielonych tej usłudze. Test obejmuje zgodność USER obrazu, uprawnienia hosta, idempotencję, atomową wymianę, rotację wspólnego sekretu przed odtworzeniem i brak wartości w wyjściu skryptu. Non-root, read-only FS, `cap_drop: ALL`, `no-new-privileges` i `_FILE` pozostają obowiązkowe.
+
+### 8.2 Walidacja konfiguracji aplikacji (BL-005)
 
 `packages/config` eksportuje schematy Zod `.strict()` i `loadConfig(service, env, { mode })` dla `web`, `api`, `jobs`, `analytics`. Tryb jest jawny (`development`, `test`, `production`); loader nie czyta `.env` samodzielnie. Korzeń kompozycji przekazuje środowisko procesu i tryb. Loader wybiera wyłącznie klucze danej usługi, dzięki czemu zmienne systemu, MCP, hosta i Compose nie trafiają do wyniku. Bezpośrednie parsowanie schematu odrzuca nieznane pola. Klucze pochodzą z [.env.example](../../.env.example); kontrakt połączeń i uruchamianie workerów pozostają do BL-007/008/013/014.
 

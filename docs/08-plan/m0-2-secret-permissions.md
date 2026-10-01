@@ -2,7 +2,7 @@
 
 **Cel:** udokumentować sprzeczność w INF i przedstawić właścicielowi konkretną korektę przed implementacją BL-020/022/023.
 
-**Status: propozycja do zatwierdzenia, 2026-10-01.** Nie zmienia obowiązującej konfiguracji ani ADR. Powiązane: [INF](../07-wdrozenie/infrastruktura.md) §5.3, §6.1 i §8, [AGENTS](../../AGENTS.md) §2.5, R-27 w [rejestrze ryzyk](ryzyka.md).
+**Status: zatwierdzona przez właściciela 2026-10-01.** Korekta INF §5.3 i §8, bez nowego ADR; stała tabela UID/GID i odbiorców, atomowa idempotentna wymiana wszystkich kopii przed odtworzeniem kontenerów oraz test Linux w CI są obowiązkowe. Powiązane: [INF](../07-wdrozenie/infrastruktura.md) §5.3, §6.1 i §8, [AGENTS](../../AGENTS.md) §2.5, R-27 w [rejestrze ryzyk](ryzyka.md).
 
 ## Sprzeczność i dowód
 
@@ -35,4 +35,4 @@ Zachowane pozostają: non-root, read-only FS, `cap_drop: ALL`, `no-new-privilege
 
 Testy Linux/Compose sprawdzą odczyt wyłącznie własnych sekretów przez każdy produkcyjny UID, brak zapisu, brak montowań cudzych sekretów, brak dostępu zwykłego użytkownika hosta przez katalog root/0700, idempotencję generatora, rotację z odtworzeniem kontenera i brak wartości w logach. Reprodukcja powyżej potwierdza mechanizm uprawnień, ale nie zastępuje tych testów integracyjnych.
 
-**Decyzja oczekiwana:** zatwierdzić tę korektę INF przed implementacją. Nie zmienia ona topologii ani stosu, dlatego proponujemy zmianę dokumentu, bez nowego ADR.
+**Decyzja:** właściciel zatwierdził korektę i kontynuację M0-2. Źródłem wykonawczym jest teraz INF §8.1. Nie zmienia to topologii ani stosu; bez nowego ADR.
