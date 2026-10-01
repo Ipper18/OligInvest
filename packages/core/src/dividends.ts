@@ -7,7 +7,7 @@ import type { DividendRecord } from "./ledger.js";
 import { assertSameCurrency, type Money, money, zeroMoney } from "./money.js";
 
 /** Flat PIT rate on dividends and capital gains (ustawa o PIT, art. 30a–30b; 11-zgodnosc-prawna.md § 5). */
-export const PIT_CAPITAL_RATE = new Decimal("0.19");
+export const PIT_CAPITAL_RATE: Decimal = new Decimal("0.19");
 
 /** Informational tax view of one dividend (obliczenia-finansowe.md § 4.3); amounts unrounded. */
 export interface DividendTaxView {
