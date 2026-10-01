@@ -36,9 +36,7 @@ test("browser resources stay on origin and RSC forwards the request context", as
     extraHTTPHeaders: { "X-Request-Id": id, "Accept-Language": "pl-PL" },
   });
   try {
-    await context.addCookies([
-      { name: "session", value: "synthetic-e2e", url: origin },
-    ]);
+    await context.addCookies([{ name: "session", value: "synthetic-e2e", url: origin }]);
     const page = await context.newPage();
     const urls: string[] = [];
     const fonts: string[] = [];
@@ -67,7 +65,9 @@ test("browser resources stay on origin and RSC forwards the request context", as
         .count(),
     ).toBe(0);
     if (process.env.E2E_BASE_URL) {
-      const result = await request.get(`${origin}/api/v1/health/live`, { headers: { "X-Request-Id": id } });
+      const result = await request.get(`${origin}/api/v1/health/live`, {
+        headers: { "X-Request-Id": id },
+      });
       expect(result.status()).toBe(200);
       expect(result.headers()["x-request-id"]).toMatch(/^[a-f0-9-]{36}$/);
       expect(result.headers()["x-request-id"]).not.toBe(id);
@@ -88,7 +88,7 @@ test("CSP refuses a script without the response nonce", async ({ page }) => {
       document.documentElement.dataset.blockedDirective = event.effectiveDirective;
     });
   });
-  await page.route("https://127.0.0.1:3197/", async (route) => {
+  await page.route(`${process.env.E2E_BASE_URL || "https://127.0.0.1:3197"}/`, async (route) => {
     const response = await route.fetch();
     const html = await response.text();
     await route.fulfill({

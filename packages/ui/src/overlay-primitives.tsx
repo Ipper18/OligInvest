@@ -26,7 +26,16 @@ export function ModalDialog({
         ref={dialog}
         aria-labelledby={id}
         className="oi-dialog"
-        onClose={() => trigger.current?.focus()}
+        onClose={() => {
+          // Native close already restores focus. A delayed close event must not
+          // steal it after the user has moved to the next control.
+          if (
+            document.activeElement === document.body ||
+            dialog.current?.contains(document.activeElement)
+          ) {
+            trigger.current?.focus();
+          }
+        }}
       >
         <h2 id={id}>{title}</h2>
         {children}
