@@ -157,6 +157,8 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", type=Path, default=Path("/etc/oliginvest"))
     args = parser.parse_args()
+    if os.geteuid() != 0 or not args.root.is_absolute() or len(args.root.parts) < 3 or any(path.is_symlink() for path in [args.root, *args.root.parents]):
+        raise ValueError("Root and an absolute private configuration directory required")
     directory(args.root)
     lock = os.open(args.root / ".operation.lock", os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW, 0o600)
     try:

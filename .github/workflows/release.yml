@@ -22,6 +22,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @oliginvest/web exec playwright install --with-deps chromium webkit firefox
       - run: node --test --test-reporter=dot scripts/check-ci.test.mjs
+      - run: sudo python3 infra/tests/test-deploy.py
+      - run: node apps/api/spike/auth-storage.mjs
       - run: node scripts/ci-images.mjs
       - run: python3 scripts/image-audit.py web api jobs analytics postgres migrate caddy valkey-queue valkey-cache
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
@@ -161,3 +163,7 @@ jobs:
           subject-digest: ${{ steps.publish.outputs.valkey_cache_digest }}
           sbom-path: reports/images/valkey-cache.cdx.json
           push-to-registry: true
+      - name: Publish complete signed deployment package
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" --verify-tag --generate-notes release/oliginvest.tar.gz release/oliginvest.sigstore.json reports/images/*.cdx.json

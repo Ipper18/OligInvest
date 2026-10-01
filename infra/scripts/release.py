@@ -50,7 +50,6 @@ def main():
             if path.is_file() and "__pycache__" not in path.parts and path.suffix != ".pyc":
                 bundle.add(path, arcname=path.as_posix(), recursive=False)
     run("cosign", "sign-blob", "--yes", "--bundle", "release/oliginvest.sigstore.json", str(package))
-    run("gh", "release", "create", version, "--verify-tag", "--generate-notes", str(package), "release/oliginvest.sigstore.json", *[f"reports/images/{service}.cdx.json" for service in services])
     with open(os.environ["GITHUB_OUTPUT"], "a") as output:
         for service, image in images.items():
             output.write(f"{service.replace('-', '_')}_name={image.split('@')[0]}\n")
