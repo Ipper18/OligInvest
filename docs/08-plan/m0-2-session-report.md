@@ -16,11 +16,13 @@
 
 | Nr | Stan / dowód |
 |---|---|
-| 1–3 | Monorepo, sześć buildów, granice, RLS/schema i OpenAPI w kontrolach PR; końcowy przebieg po ostatnim commicie w toku |
+| 1–3 | PASS techniczny na b2e41ff: [monorepo i 6 buildów](https://github.com/Ipper18/OligInvest/actions/runs/36913646193), [granice](https://github.com/Ipper18/OligInvest/actions/runs/36913645946), [RLS/schema](https://github.com/Ipper18/OligInvest/actions/runs/36913646143), [OpenAPI](https://github.com/Ipper18/OligInvest/actions/runs/36913646162) |
 | 4 | Skrypty i testy lokalne gotowe; wydanie, wdrożenie VM i publiczny TLS wykonuje właściciel |
 | 5 | Hardening, tunel, CAA i migracja Immicha poza paczką; brak dowodu docelowego |
 | 6 | Lokalny pgBackRest PASS; restic/VPS i Kuma pozostają BL-028/029 |
 | 7 | Dodano images do pliku rulesetu; ustawień nie zmieniono; CodeQL sprawdzany w PR |
 | 8 | Notatka BL-030/031 gotowa; decyzja właściciela i kalibracja VM otwarte; TS7 z M0-1, CAA poza paczką |
+
+Bieżący wynik całego CI ostatniego commita: [Checks PR #5](https://github.com/Ipper18/OligInvest/pull/5/checks), w tym images i E2E.
 
 M0 pozostaje otwarty. Statusy w toku do zielonego CI i wspólnego DoD/przeglądu właściciela. Estymacje bez zmian, nakład niezmierzony. Nowe R-28: znaleziska obrazów bez poprawki. Bez nowego ADR i zmian OpenAPI, SQL, wzorów czy disclaimerów. Zależności dev spików uzasadniono w STACK; nie trafiają do obrazów aplikacji.

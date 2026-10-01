@@ -55,5 +55,4 @@ Powiązane: [`roadmapa.md`](roadmapa.md), [`backlog.md`](backlog.md), [`../06-be
 | R-11 kod agenta | M0: reguły w `AGENTS.md`, ochrona `main`, `CODEOWNERS`; każdy etap: przegląd PR i bramki CI |
 | R-16 niedoszacowanie | M1: brama A przed B, cięcia awaryjne, weryfikacja ADR-001 |
 | R-23 blokada zatwierdzania własnego PR | Rozstrzygnięte 2026-09-20: przegląd w procesie R-11, 0 zatwierdzeń w rulesecie, bez code owner review i bypass; potwierdzić w panelu przy aktywacji |
-
 | R-28 podatności baz bez poprawki | Każde wydanie: przegląd pełnego OSV, pilne poprawki dostępnych pakietów; brak poprawki pozostaje jawnym ryzykiem, nie dowodem bezpieczeństwa |

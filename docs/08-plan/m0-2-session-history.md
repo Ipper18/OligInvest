@@ -31,4 +31,4 @@
 - 6988453/5f5ca26: przypięte poprawki glibc, OpenSSL, Perl, util-linux; usunięte nieużywane gosu; bez wyjątku OSV.
 - a7c6fda: oficjalny Caddy 2.11.6 z SHA-256; 9 SBOM/OSV lokalnie PASS według CI §5. Lockfile gate ≥7 bez zmian; R-28.
 - 45986ab/b2e41ff: instrukcja właściciela, rotacja, rollback i lokalne hooki monitoringu; 5 testów wdrożenia PASS.
-- Końcowe kontrole PR nadal sprawdzane. Brak tagów, wydań, GHCR i działań na serwerach.
+- b2e41ff: CI monorepo/6 buildów, db, contracts, modules, workers, web, deps-audit i CodeQL PASS; dalszy wynik images/E2E w Checks PR #5. Brak tagów, wydań, GHCR i działań na serwerach.
