@@ -29,3 +29,19 @@ test("unpinned actions and writable permissions fail", () => {
   writable.permissions.contents = "write";
   assert.throws(() => checkContexts([writable], ruleset));
 });
+
+test("write permissions are restricted to the guarded tag release job", () => {
+  const changed = structuredClone(workflow);
+  changed.jobs.workers.permissions = { packages: "write" };
+  assert.throws(() => checkContexts([changed], ruleset), /read-only/);
+  delete changed.jobs.workers.permissions;
+  changed.on.push = { tags: ["v*.*.*"] };
+  changed.jobs.release = {
+    if: "github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')",
+    needs: "images",
+    permissions: { contents: "write", packages: "write", "id-token": "write", attestations: "write" },
+  };
+  assert.equal(checkContexts([changed], ruleset).length, 3);
+  changed.jobs.release.if = "always()";
+  assert.throws(() => checkContexts([changed], ruleset));
+});

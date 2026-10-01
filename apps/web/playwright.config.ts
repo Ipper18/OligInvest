@@ -15,13 +15,13 @@ export default defineConfig({
       },
     ],
   ],
-  use: { ignoreHTTPSErrors: true, baseURL: "https://127.0.0.1:3197" },
+  use: { ignoreHTTPSErrors: true, baseURL: process.env.E2E_BASE_URL || "https://127.0.0.1:3197" },
   projects: [
     { name: "chromium", use: { browserName: "chromium" } },
     { name: "webkit", use: { browserName: "webkit" } },
     { name: "firefox", use: { browserName: "firefox" } },
   ],
-  webServer: [
+  webServer: process.env.E2E_BASE_URL ? undefined : [
     {
       command: "node test/api-fixture.mjs",
       url: "http://127.0.0.1:3198/api/v1/health/live",
