@@ -7,15 +7,15 @@ import test from "node:test";
 import { fileURLToPath } from "node:url";
 import { checkCommit, checkFixturePaths, checkPullRequestTitle } from "./check-repository.mjs";
 
-test("only the approved full SHA may bypass the commit subject rule", () => {
-  const approved = "8d91754b0adadfb5a2d7e9c2324d4e62f4125a64";
+test("no commit SHA bypasses the commit subject rule", () => {
+  const formerException = "8d91754b0adadfb5a2d7e9c2324d4e62f4125a64";
   const subject = "Document dependency readiness and split M0 CI responsibilities";
-  assert.equal(checkCommit(approved, subject), true);
-  for (const sha of [approved.slice(0, 7), `${approved}0`, `${approved.slice(0, -1)}5`, "a".repeat(40)]) {
+  for (const sha of [formerException, "a".repeat(40)]) {
     assert.equal(checkCommit(sha, subject), false);
   }
+  assert.equal(checkCommit(formerException.slice(0, 7), "ci: verify commits"), false);
   assert.equal(checkCommit("a".repeat(40), "ci: verify commits"), true);
-  assert.equal(checkPullRequestTitle(subject), false, "Commit exception must never waive the PR title");
+  assert.equal(checkPullRequestTitle(subject), false);
 });
 
 test("CLI validates actual commit ranges and independently blocks invalid PR titles", () => {

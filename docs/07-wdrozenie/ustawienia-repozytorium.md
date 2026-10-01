@@ -42,7 +42,7 @@ Decyzja właściciela z 2026-09-20 (R-23): `required_approving_review_count: 0` 
 
 ## 5. Ruleset main
 
-**BL-019 — po scaleniu PR #2:** w następnym małym PR usuń listę historycznych wyjątków z scripts/check-repository.mjs (jedyny SHA: 8d91754b0adadfb5a2d7e9c2324d4e62f4125a64, commit sprzed reguły z 2026-09-20) oraz obsługującą ją gałąź kodu. Dostosuj test wyjątku do bezwarunkowego odrzucania niezgodnych commitów; zachowaj kontrolę tytułu PR i testy negatywne. Sprawdź zielone repository bez wyjątków. Nie przepisuj historii PR #2 ani opartego na nim PR #3.
+**BL-019 — po scaleniu PR #2 (wykonane 2026-10-01):** w następnym małym PR usuń listę historycznych wyjątków z scripts/check-repository.mjs (jedyny SHA: 8d91754b0adadfb5a2d7e9c2324d4e62f4125a64, commit sprzed reguły z 2026-09-20) oraz obsługującą ją gałąź kodu. Dostosuj test wyjątku do bezwarunkowego odrzucania niezgodnych commitów; zachowaj kontrolę tytułu PR i testy negatywne. Sprawdź zielone repository bez wyjątków. Nie przepisuj historii PR #2 ani opartego na nim PR #3.
 
 
 1. Potwierdź scalony M0-1 i zielone rzeczywiste przebiegi CI/CodeQL; zachowaj 0 wymaganych zatwierdzeń i wyłączony wymóg zatwierdzenia code ownera zgodnie z § 1.
