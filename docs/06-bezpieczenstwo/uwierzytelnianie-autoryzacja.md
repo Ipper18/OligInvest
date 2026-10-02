@@ -4,7 +4,7 @@
 
 Powiązane: [ADR-004](../09-decyzje/ADR-004-postgres-better-auth-rls.md), [`../02-api/konwencje-api.md`](../02-api/konwencje-api.md) § 2, [`../01-architektura/moduly.md`](../01-architektura/moduly.md) § 6, [`../01-architektura/przeplywy-danych.md`](../01-architektura/przeplywy-danych.md) § 1, [`../03-dane/schema.sql`](../03-dane/schema.sql), [`kontrole-bezpieczenstwa.md`](kontrole-bezpieczenstwa.md) (mapowanie ASVS), [`model-zagrozen.md`](model-zagrozen.md). Wymagania: FR-07.01–FR-07.12, FR-08.01–FR-08.02, NFR-03.02–NFR-03.05.
 
-Wersje i fakty o Better Auth sprawdzone 2026-09-19 w dokumentacji v1.6.23 i w kodzie źródłowym (gałąź `main`): nazwy ciasteczek, szyfrowanie sekretów TOTP (XChaCha20-Poly1305), wersjonowane sekrety `BETTER_AUTH_SECRETS`, domyślne przechowywanie kodów zapasowych jawnym tekstem, token sesji `generateId(32)` zapisywany w bazie bez haszowania.
+Weryfikacja 2026-10-02: Better Auth i `@better-auth/api-key` 1.7.5, kod przypiętych pakietów oraz [spiki BL-030/031](../08-plan/bl-030-031-auth-spikes.md). Właściciel zatwierdził konfigurację `__Host-` dla BL-105 (techniczny warunek O-01 potwierdzony), natywne szyfrowanie TOTP, jawne `storeBackupCodes: "encrypted"` i haszowanie PAT. W 1.7.5 kody domyślnie są szyfrowane; wcześniejszy opis plaintext dotyczył 1.6.23. Token sesji pozostaje zapisywany bez haszowania; integracja SQL i rotacja wersjonowanych `BETTER_AUTH_SECRETS` wymagają testów M1.
 
 ## 1. Ścieżki uwierzytelniania (ASVS V6.1.3, V6.3.4)
 
@@ -95,7 +95,7 @@ Posiadanie linku wysłanego na adres z zaproszenia dowodzi kontroli nad skrzynk�
 
 ### 4.1 Przedrostek `__Host-`
 
-Przedrostek `__Host-` gwarantuje, że ciasteczka nie ustawi ani nie nadpisze sąsiednia subdomena `oligi.pl` (np. przejęty Immich) — bez niego możliwe jest „podrzucenie” ciasteczka sesji atakującego. Better Auth przy bezpiecznych ciasteczkach zawsze dokleja `__Secure-` do nazwy (sprawdzone w `createCookieGetter`), więc potrzebne jest obejście, które spike w M0 musi potwierdzić testem:
+Przedrostek `__Host-` gwarantuje, że ciasteczka nie ustawi ani nie nadpisze sąsiednia subdomena `oligi.pl` (np. przejęty Immich) — bez niego możliwe jest „podrzucenie” ciasteczka sesji atakującego. Better Auth automatycznie dokleja `__Secure-` przy włączonym `useSecureCookies`, dlatego stosujemy poniższą konfigurację. Spike dla 1.7.5 potwierdził ją w trzech przeglądarkach; właściciel zatwierdził ją 2026-10-02 dla BL-105.
 
 ```ts
 // apps/api/src/auth/config.ts — fragment ilustracyjny (spike M0)
@@ -106,6 +106,9 @@ advanced: {
     session_token: { name: "__Host-oliginvest.session_token" },
     dont_remember: { name: "__Host-oliginvest.dont_remember" },
     two_factor: { name: "__Host-oliginvest.two_factor" },
+    session_data: { name: "__Host-oliginvest.session_data" },
+    account_data: { name: "__Host-oliginvest.account_data" },
+    trust_device: { name: "__Host-oliginvest.trust_device" },
   },
   ipAddress: { ipAddressHeaders: ["x-forwarded-for"], trustedProxies: ["<CADDY_NET_CIDR>"] },
 },
@@ -129,7 +132,7 @@ NIST SP 800-63B-4 (wersja finalna z 2025 r.) zaleca dla AAL2 czas życia sesji n
 | Konfiguracja | obowiązkowa przed dostępem do danych (bramka MFA); kod QR + sekret do ręcznego wpisania; aktywacja po poprawnym kodzie |
 | Zmiana urządzenia | ponowne `two-factor/enable`: hasło + step-up (pełne ponowne uwierzytelnienie — ASVS V7.5.1), potem propozycja wylogowania innych urządzeń |
 | Wyłączenie 2FA | niemożliwe (trasa zablokowana) |
-| Kody zapasowe | 10 kodów po 10 znaków, **jawnie ustawione `storeBackupCodes: "encrypted"`** (domyślnie Better Auth zapisuje je jawnym tekstem); zużycie atomowe (warunkowy UPDATE); nowy komplet wymaga step-upu i unieważnia poprzedni; odstępstwo od haszowania — O-02 |
+| Kody zapasowe | 10 kodów po 10 znaków, **jawnie ustawione `storeBackupCodes: "encrypted"`** (także domyślne w zweryfikowanej 1.7.5); zużycie atomowe (warunkowy UPDATE); nowy komplet wymaga step-upu i unieważnia poprzedni; odstępstwo od haszowania — O-02 |
 | Blokada | 5 błędnych kodów → 15 min (licznik w `auth.two_factors`) + e-mail |
 | „Zaufane urządzenie” | wyłączone — każde logowanie wymaga drugiego czynnika |
 
@@ -144,7 +147,7 @@ Mechanizm: `POST /api/v1/me/step-up` z kodem → `auth.sessions.mfa_verified_at 
 | Element | Rozwiązanie |
 |---|---|
 | Format | `oli_pat_` + ≥ 256 bitów losowych (base62); pokazywany raz, potem tylko początek (`start`) |
-| Przechowywanie | skrót SHA-256 (wtyczka `@better-auth/api-key`); tokeny o entropii ≥ 112 bitów nie wymagają funkcji haszującej hasła (ASVS V6.5.2) |
+| Przechowywanie | skrót SHA-256 (wtyczka `@better-auth/api-key` 1.7.5, `disableKeyHashing: false`); bez dodatkowego szyfrowania odwracalnego; tokeny o entropii ≥ 112 bitów nie wymagają funkcji haszującej hasła (ASVS V6.5.2) |
 | Zakresy | `portfolio:read`, `transactions:write`, `alerts:read`, `market:read`; brak zakresu → `403 PAT_SCOPE_MISSING` |
 | Gdzie działa | wyłącznie `/api/v1/quick/*`; nie otwiera stron, SSE ani innych tras API; nie może zarządzać tokenami ani kontem |
 | Ważność | domyślnie 90 dni, maks. 365; przypomnienie e-mail 7 dni przed wygaśnięciem |
