@@ -56,7 +56,10 @@ class HostConfigTests(unittest.TestCase):
                 self.checked(["nft", "--check", "--file", str(config)])
 
     def test_chrony_requires_authenticated_sources(self):
-        with tempfile.TemporaryDirectory() as directory:
+        # Ubuntu's AppArmor profile permits /etc/chrony, not arbitrary /tmp files.
+        # Keep the profile active; only a synthetic temporary config is created.
+        with tempfile.TemporaryDirectory(dir="/etc/chrony") as directory:
+            Path(directory).chmod(0o755)
             config = Path(directory) / "chrony.conf"
             config.write_text(render("chrony.conf.template"))
             self.checked(["chronyd", "-p", "-f", str(config)])

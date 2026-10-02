@@ -134,7 +134,15 @@ def verify_provenance(output, document, version):
 
 
 def compose_args(release, config):
-    return ["docker", "compose", "--project-name", "oliginvest", "--env-file", str(config / "instance.env"), "--env-file", str(release / "images.env"), "-f", str(release / "compose.yaml"), "-f", str(config / "runtime-compose.json")]
+    args = ["docker", "compose", "--project-name", "oliginvest", "--env-file", str(config / "instance.env"), "--env-file", str(release / "images.env"), "-f", str(release / "compose.yaml"), "-f", str(config / "runtime-compose.json")]
+    storage = config / "storage-compose.yaml"
+    if storage.is_symlink():
+        raise ValueError("Untrusted storage configuration")
+    if storage.exists():
+        if not storage.is_file() or storage.stat().st_uid != 0 or storage.stat().st_mode & 0o022:
+            raise ValueError("Untrusted storage configuration")
+        args += ["-f", str(storage)]
+    return args
 
 
 def notify_owner(path):

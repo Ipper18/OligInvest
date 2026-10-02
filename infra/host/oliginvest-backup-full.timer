@@ -1,0 +1,8 @@
+[Unit]
+Description=Weekly full PostgreSQL backup
+[Timer]
+OnCalendar=Sun *-*-* 02:15:00 UTC
+Persistent=true
+Unit=oliginvest-operation@backup-full.service
+[Install]
+WantedBy=timers.target

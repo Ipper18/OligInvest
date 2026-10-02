@@ -20,3 +20,4 @@ jobs:
           sudo apt-get install -y --no-install-recommends nginx libnginx-mod-stream nftables chrony
       - run: sudo python3 infra/tests/test-host-config.py
       - run: sudo python3 infra/tests/test-deploy.py
+      - run: sudo python3 infra/tests/test-host-operations.py

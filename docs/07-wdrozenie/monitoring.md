@@ -26,6 +26,8 @@ Przerwy planowane (okno nocne) liczą się do niedostępności — raport pokazu
 
 ## 3. Sondy i sygnały życia (Uptime Kuma)
 
+M0-3 / BL-029: [instrukcja właściciela](m0-3-backup-monitoring-runbook.md) dostarcza instalację Kuma, `app-ready`, `app-certificate` i skrypt/timer `vm-health`; dodatkowo sygnały kopii z BL-028 i oddzielny `verify` co tydzień (alarm po 8 dniach). `verify` nie odświeża monitorów wykonania kopii ani odtworzenia. Skrypt używa progów dysku 80%, RAM available 10%, zegara 2 s oraz zdrowia ośmiu usług. Pozostałe sondy domenowe i CT pozostają BL-152, testy odtworzenia BL-153. Rzeczywisty odbiór e-maili i terminy alarmów sprawdza właściciel.
+
 | Monitor | Typ | Cel lub źródło | Interwał | Alert |
 |---|---|---|---|---|
 | `app-ready` | HTTP(S) | `https://invest.oligi.pl/api/v1/health/ready` — status 200 i `"status":"ok"` | 60 s | 3 kolejne porażki |

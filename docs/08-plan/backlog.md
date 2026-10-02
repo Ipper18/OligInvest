@@ -74,8 +74,8 @@ M0-3, 2026-10-02: właściciel zatwierdził decyzje BL-030/031; kalibracja Argon
 | BL-025 | VM i Caddy: hardening (nftables, SSH, chrony z NTS, DNS-over-TLS, AppArmor), `daemon.json`, Caddyfile (TLS 1.3, `proxy_protocol`, TLS-ALPN-01), BIOS *AC Recovery*, VM „Start at boot” | NFR-03.11, NFR-03.06 | INF | BL-024 | 2 | w toku |
 | BL-026 | DNS w home.pl: A/AAAA, spike parametrów CAA (`accounturi`, `validationmethods`) z decyzją, DNSSEC, 2FA, blokada transferu | NFR-03.11 | INF | BL-025 | 0,5 | w toku |
 | BL-027 | Migracja TLS Immicha na dom (fazy 0–3; faza 4 po 7 dniach) w oknie serwisowym | NFR-03.11 | INF | BL-024, BL-025 | 1,5 | w toku |
-| BL-028 | Kopie: pgBackRest (WAL, zst, AES-256-CBC), restic → rest-server append-only na VPS, timery, weryfikacja repozytoriów | NFR-09.03 | DR | BL-022, BL-024 | 2 | todo |
-| BL-029 | Uptime Kuma na VPS: sondy `app-ready`, `app-certificate`, `vm-health`, alerty e-mail | NFR-09.01, NFR-09.04 | MON | BL-023, BL-024 | 1 | todo |
+| BL-028 | Kopie: pgBackRest (WAL, zst, AES-256-CBC), restic → rest-server append-only na VPS, timery, weryfikacja repozytoriów | NFR-09.03 | DR | BL-022, BL-024 | 2 | w toku |
+| BL-029 | Uptime Kuma na VPS: sondy `app-ready`, `app-certificate`, `vm-health`, alerty e-mail | NFR-09.01, NFR-09.04 | MON | BL-023, BL-024 | 1 | w toku |
 | BL-030 | Spike: przedrostek `__Host-` w Better Auth — notatka lub ADR (odstępstwo O-01) | NFR-03.03 | AUTH | BL-009 | 1 | w toku |
 | BL-031 | Spike: przechowywanie sekretu TOTP, kodów zapasowych (`encrypted`) i kluczy API w Better Auth; czas Argon2id na serwerze (100–250 ms) | NFR-03.02, NFR-03.08 | [ADR-004](../09-decyzje/ADR-004-postgres-better-auth-rls.md), AUTH | BL-009, BL-023 | 1 | w toku |
 | BL-032 | Spike: TypeScript 7 z Next.js, Hono, Drizzle i Better Auth — decyzja 7.x albo 6.x | NFR-10.05 | STACK | BL-011 | 0,5 | w toku |

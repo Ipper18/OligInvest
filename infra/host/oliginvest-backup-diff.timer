@@ -1,0 +1,8 @@
+[Unit]
+Description=Daily differential PostgreSQL backup
+[Timer]
+OnCalendar=Mon..Sat *-*-* 02:15:00 UTC
+Persistent=true
+Unit=oliginvest-operation@backup-diff.service
+[Install]
+WantedBy=timers.target

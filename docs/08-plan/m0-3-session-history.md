@@ -22,3 +22,11 @@
 - DNS: protokół próby CAA, bez deklarowania wyniku panelu; odmowa parametrów wymaga ADR. Immich: fazy 0–3, powrót i faza 4 po 7 dniach.
 - 5 testów Debian 13 PASS (nginx/nft/chrony rzeczywiste parsery); kontrola 90 dokumentów PASS. Nowa kontrola CI infrastructure.
 - Zakres plikowy przygotowany, uruchomienie i dowody właściciela otwarte. Estymacje bez zmian, nakład niezmierzony; bez nowego ADR.
+
+## 2026-10-02 — przygotowanie BL-028/029
+
+- Kopie full/diff/WAL/offsite, retencja 5 pełnych wg DR, override HDD, kontrola rzeczywistego bindu; timery i instrukcja rest-server append-only.
+- Kuma jako usługa VPS, trzy sondy M0, oddzielne sygnały kopii/verify, vm-health dla kontenerów/zasobów/zegara; brak wysłanych powiadomień.
+- 8 testów operacji hosta, 11 deploy i 5 konfiguracji PASS; 91 dokumentów i 19 kontekstów CI PASS lokalnie.
+- Naprawiono test chrony dla AppArmor runnera i brak nowego kontekstu w pliku rulesetu; bez zmian aktywnych ustawień GitHub.
+- R-29 opisuje ryzyko kopii na SSD; lokalna poprawka retencji odwzorowuje DR, bez nowego ADR. Statusy `w toku` do dowodów właściciela; estymacje bez zmian, nakład niezmierzony.

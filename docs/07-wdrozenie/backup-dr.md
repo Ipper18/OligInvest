@@ -6,6 +6,8 @@ Powiązane: [`infrastruktura.md`](infrastruktura.md), [`monitoring.md`](monitori
 
 Narzędzia (sprawdzone 2026-09-19): pgBackRest 2.59.1 (MIT; szyfrowanie repozytorium wyłącznie `aes-256-cbc`, kompresja m.in. `zst`, repozytoria `posix` i `sftp`), restic 0.19.1 (BSD-2), rest-server 0.14.0 (BSD-2; tryb `--append-only`, `--private-repos`, uwierzytelnianie `.htpasswd` z bcrypt), Proxmox `vzdump`.
 
+Implementacja BL-028 (M0-3): [instrukcja kopii i monitoringu](m0-3-backup-monitoring-runbook.md), timery systemd i `host-operations.py`. Przed pierwszym wdrożeniem wymagany hostowy override wolumenu kopii na HDD; zastany wolumen lokalny Dockera wymaga jawnej migracji. Skorygowano kod retencji z 2 do wymaganych 5 pełnych kopii, bez zmiany decyzji DR. Właściciel wykonuje próby append-only i odtworzenia; same pliki i testy lokalne nie potwierdzają RPO/RTO.
+
 ## 1. Cele
 
 | Scenariusz | RPO (utrata danych) | RTO (czas przywrócenia) |

@@ -1,0 +1,22 @@
+[Unit]
+Description=OligInvest external availability monitoring
+After=network-online.target
+Wants=network-online.target
+[Service]
+User=uptime-kuma
+Group=uptime-kuma
+WorkingDirectory=/opt/uptime-kuma
+Environment=NODE_ENV=production
+Environment=UPTIME_KUMA_HOST=<VPS_TUNNEL_IP>
+Environment=UPTIME_KUMA_PORT=<KUMA_PORT>
+Environment=DATA_DIR=/var/lib/uptime-kuma
+ExecStart=/usr/bin/node server/server.js
+Restart=on-failure
+UMask=0077
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/var/lib/uptime-kuma
+[Install]
+WantedBy=multi-user.target

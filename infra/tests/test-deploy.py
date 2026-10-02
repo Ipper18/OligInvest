@@ -134,6 +134,17 @@ class DeploymentTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 deploy.prepare_candidate(root, candidate, None, True)
 
+    def test_storage_override_is_used_for_both_candidate_and_previous(self):
+        with tempfile.TemporaryDirectory() as directory:
+            config = Path(directory)
+            storage = config / "storage-compose.yaml"
+            storage.touch(mode=0o600)
+            for release in (Path("/opt/oliginvest/releases/v1.2.3"), Path("/opt/oliginvest/releases/v1.2.2")):
+                self.assertEqual(deploy.compose_args(release, config)[-2:], ["-f", str(storage)])
+            storage.chmod(0o666)
+            with self.assertRaises(ValueError):
+                deploy.compose_args(Path("/candidate"), config)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -186,6 +186,8 @@ Brak osobnego środowiska testowego na serwerze — nie mieści się w budżecie
 
 [release.yml](../../.github/workflows/release.yml) dodaje kontrolę `images`: dziewięć obrazów (także Caddy i obie instancje Valkey), Linux, testy sekretów/wdrożenia, trzy przeglądarki i SBOM/OSV. PR buduje lokalnie bez publikacji i uprawnień zapisu; wyłącznie zadanie `release` po tagu ma uprawnienia zapisu. Lokalny plik rulesetu uwzględnia `images`; aktywnych ustawień agent nie zmienia.
 
+M0-3 dodaje [kontrolę infrastructure](../../.github/workflows/infra.yml): parsery nginx/nftables/chrony na syntetycznych wartościach, regresje P-08/P-09, testy rollbacku/retry/journald oraz operacji kopii i sygnałów życia. Plik rulesetu obejmuje teraz 19 kontekstów (17 M0-1 + `images` + `infrastructure`); jego aktywację/aktualizację wykonuje właściciel. Żadne testy nie łączą się z serwerami instancji ani nie wysyłają powiadomień.
+
 Skan obrazów realizuje próg §5: critical (CVSS ≥9) z poprawką dla danego pakietu i dystrybucji. Wszystkie znaleziska pozostają w artefakcie, także high bez poprawki. Brak oceny przy dostępnej poprawce blokuje; wpis bez poprawki pozostaje jawny w raporcie zgodnie z warunkiem §5. Rekord tej samej dystrybucji może też jawnie klasyfikować wpis jako `unimportant` — pozostaje on raportowany. Próg lockfile ≥7 z §3 nie ulega zmianie. Testy polityki sprawdzają próg, dopasowanie dystrybucji, pusty raport i nieznaną ocenę.
 
 Publikacja paczki następuje dopiero po podpisaniu obrazów i ukończeniu poświadczeń. Weryfikacja po stronie VM obejmuje tożsamość tagu/workflow, wystawcę OIDC i commit pochodzenia. Procedura i ograniczenia: [instrukcja właściciela](m0-2-owner-runbook.md). Pierwsze rzeczywiste wydanie, wdrożenie i próba wycofania pozostają działaniami właściciela.

@@ -1,0 +1,17 @@
+[Unit]
+Description=Append-only encrypted OligInvest backup repository
+After=network-online.target
+Wants=network-online.target
+[Service]
+User=rest-server
+Group=rest-server
+ExecStart=/usr/local/bin/rest-server --path /srv/restic --listen <VPS_TUNNEL_IP>:<REST_PORT> --append-only --private-repos --htpasswd-file /etc/rest-server/htpasswd
+Restart=on-failure
+UMask=0077
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/srv/restic
+[Install]
+WantedBy=multi-user.target
