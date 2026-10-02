@@ -145,6 +145,55 @@ class DeploymentTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 deploy.compose_args(Path("/candidate"), config)
 
+    def test_retry_can_publish_after_interrupted_pointer_update(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            previous = root / "releases/v1.2.2"
+            candidate = root / "releases/v1.2.3"
+            previous.mkdir(parents=True)
+            candidate.mkdir()
+            (root / "current").symlink_to(previous)
+            (root / ".current-pending").symlink_to(candidate)
+            deploy.publish_current(root, candidate)
+            self.assertEqual((root / "current").resolve(), candidate)
+            self.assertFalse((root / ".current-pending").exists())
+            (root / ".current-pending").write_text("preserve unexpected file")
+            with self.assertRaises(ValueError):
+                deploy.publish_current(root, candidate)
+
+    def test_retry_reverifies_package_and_all_images_before_activation(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "application"
+            config = Path(directory) / "config"
+            candidate = root / "releases/v1.2.3"
+            previous = root / "releases/v1.2.2"
+            candidate.mkdir(parents=True)
+            previous.mkdir()
+            (candidate / "evidence").write_text("preserved")
+            (root / "current").symlink_to(previous)
+            document = {"version": "v1.2.3", "commit": "a" * 40, "images": {s: f"ghcr.io/ipper18/oliginvest-{s}@sha256:" + "b" * 64 for s in deploy.SERVICES}}
+            statement = {"predicate": {"buildDefinition": {"resolvedDependencies": [{"digest": {"gitCommit": "a" * 40}}]}, "runDetails": {"builder": {"id": deploy.identity("v1.2.3")}}}}
+            envelope = json.dumps({"payload": base64.b64encode(json.dumps(statement).encode()).decode()})
+            calls = []
+            def execute(command):
+                calls.append(command)
+                return envelope if "verify-attestation" in command else ""
+            def unpack(_archive, destination):
+                (destination / "images.lock").write_text(json.dumps(document))
+            def activate(*_):
+                self.assertEqual(sum("verify-blob" in c for c in calls), 1)
+                self.assertEqual(sum("verify" in c for c in calls), len(deploy.SERVICES))
+                self.assertEqual(sum("verify-attestation" in c for c in calls), len(deploy.SERVICES))
+            with patch("sys.argv", ["deploy.py", "v1.2.3", "--retry-staged", "--root", str(root), "--config", str(config)]), \
+                 patch.object(deploy, "download_assets") as download, patch.object(deploy, "unpack", side_effect=unpack), \
+                 patch.object(deploy, "run", side_effect=execute), patch.object(deploy, "provision"), \
+                 patch.object(deploy, "activate", side_effect=activate) as activation, patch.object(deploy, "notify_owner"):
+                deploy.main()
+                download.assert_called_once()
+                activation.assert_called_once()
+            self.assertEqual(next((root / "failed").glob("*/release/evidence")).read_text(), "preserved")
+            self.assertEqual((root / "current").resolve(), candidate)
+
 
 if __name__ == "__main__":
     unittest.main()

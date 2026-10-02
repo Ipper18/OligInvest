@@ -30,3 +30,9 @@
 - 8 testów operacji hosta, 11 deploy i 5 konfiguracji PASS; 91 dokumentów i 19 kontekstów CI PASS lokalnie.
 - Naprawiono test chrony dla AppArmor runnera i brak nowego kontekstu w pliku rulesetu; bez zmian aktywnych ustawień GitHub.
 - R-29 opisuje ryzyko kopii na SSD; lokalna poprawka retencji odwzorowuje DR, bez nowego ADR. Statusy `w toku` do dowodów właściciela; estymacje bez zmian, nakład niezmierzony.
+
+## 2026-10-02 — końcowy przegląd ponowienia
+
+- Usunięto blokadę ponowienia po przerwaniu między utworzeniem `.current-pending` i atomową publikacją; pliki niebędące poprawnym linkiem są zachowane i odrzucane.
+- Test pełnego ponowienia potwierdza pobranie, podpis paczki i podpisy/pochodzenie wszystkich 9 obrazów przed aktywacją. Deploy: 13/13 PASS; kalendarze systemd PASS.
+- Raport i opis PR wskazują dowody oraz czynności właściciela; brak nowego ADR/ryzyka, estymacje bez zmian.

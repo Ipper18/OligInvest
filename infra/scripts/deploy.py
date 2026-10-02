@@ -145,6 +145,19 @@ def compose_args(release, config):
     return args
 
 
+def publish_current(root, candidate):
+    pending = root / ".current-pending"
+    # A crash after symlink creation must not make all subsequent retries fail.
+    if pending.is_symlink():
+        if pending.resolve().parent != root / "releases":
+            raise ValueError("Unexpected pending release")
+        pending.unlink()
+    elif pending.exists():
+        raise ValueError("Unexpected pending file")
+    pending.symlink_to(candidate)
+    os.replace(pending, root / "current")
+
+
 def notify_owner(path):
     # Hooks are instance configuration, never downloaded from release assets.
     if path.is_file() and not path.is_symlink() and path.stat().st_uid == 0 and path.stat().st_mode & 0o022 == 0:
@@ -237,9 +250,7 @@ def main():
     activate(compose, old_compose)
     # SQL is fixed; no shell interpolation or user data enters the statement.
     step("audit", run, compose + ["exec", "-T", "postgres", "psql", "-X", "-v", "ON_ERROR_STOP=1", "-U", "postgres", "-d", "oliginvest", "-c", "INSERT INTO platform.audit_log(actor_ref,actor_type,action,outcome) VALUES ('deployment','system','system.deploy','success')"])
-    pending = args.root / ".current-pending"
-    step("prepare-current", pending.symlink_to, candidate)
-    step("publish-current", os.replace, pending, current)
+    step("publish-current", publish_current, args.root, candidate)
     step("log-success", run, ["logger", "--tag", "oliginvest", f"system.deploy success {args.version}"])
     try:
         notify_owner(args.config / "deploy-succeeded")
