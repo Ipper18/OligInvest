@@ -1,0 +1,9 @@
+# Install as the first applicable sshd_config.d snippet, verify with sshd -T.
+PermitRootLogin no
+PasswordAuthentication no
+KbdInteractiveAuthentication no
+PubkeyAuthentication yes
+AuthenticationMethods publickey
+AllowUsers <ADMIN_USER>
+AllowAgentForwarding no
+X11Forwarding no

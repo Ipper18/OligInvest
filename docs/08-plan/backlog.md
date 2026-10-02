@@ -70,10 +70,10 @@ M0-3, 2026-10-02: właściciel zatwierdził decyzje BL-030/031; kalibracja Argon
 | BL-021 | Workflow `release.yml`: GHCR, SBOM (syft), poświadczenia, cosign keyless, osv-scanner obrazów, podpisana paczka wdrożeniowa | NFR-03.09 | CI | BL-020 | 2 | w toku |
 | BL-022 | `compose.yaml`: sieci `edge`/`backend`/`analytics` (internal) i `egress`, limity zasobów, sekrety jako pliki, dwie instancje Valkey z ACL | NFR-01.08, NFR-03.11 | INF, [ADR-003](../09-decyzje/ADR-003-hybryda-obliczen-i-kolejki.md) | BL-020 | 1,5 | w toku |
 | BL-023 | Skrypty `bootstrap-vm.sh`, `generate-secrets.sh`, `deploy.sh` (weryfikacja cosign, kopia przed migracją, bramka zdrowia, wycofanie) | NFR-09.05, NFR-03.11 | INF, CI | BL-021, BL-022 | 3 | w toku |
-| BL-024 | VPS: nginx `stream` (SNI, PROXY v1), port 80 (301/403), nftables, WireGuard (tunel i przekaźnik administracyjny z MTU), NAT ruchu wychodzącego | NFR-03.11 | INF, [ADR-011](../09-decyzje/ADR-011-topologia-wdrozenia.md) | — | 2 | todo |
-| BL-025 | VM i Caddy: hardening (nftables, SSH, chrony z NTS, DNS-over-TLS, AppArmor), `daemon.json`, Caddyfile (TLS 1.3, `proxy_protocol`, TLS-ALPN-01), BIOS *AC Recovery*, VM „Start at boot” | NFR-03.11, NFR-03.06 | INF | BL-024 | 2 | todo |
-| BL-026 | DNS w home.pl: A/AAAA, spike parametrów CAA (`accounturi`, `validationmethods`) z decyzją, DNSSEC, 2FA, blokada transferu | NFR-03.11 | INF | BL-025 | 0,5 | todo |
-| BL-027 | Migracja TLS Immicha na dom (fazy 0–3; faza 4 po 7 dniach) w oknie serwisowym | NFR-03.11 | INF | BL-024, BL-025 | 1,5 | todo |
+| BL-024 | VPS: nginx `stream` (SNI, PROXY v1), port 80 (301/403), nftables, WireGuard (tunel i przekaźnik administracyjny z MTU), NAT ruchu wychodzącego | NFR-03.11 | INF, [ADR-011](../09-decyzje/ADR-011-topologia-wdrozenia.md) | — | 2 | w toku |
+| BL-025 | VM i Caddy: hardening (nftables, SSH, chrony z NTS, DNS-over-TLS, AppArmor), `daemon.json`, Caddyfile (TLS 1.3, `proxy_protocol`, TLS-ALPN-01), BIOS *AC Recovery*, VM „Start at boot” | NFR-03.11, NFR-03.06 | INF | BL-024 | 2 | w toku |
+| BL-026 | DNS w home.pl: A/AAAA, spike parametrów CAA (`accounturi`, `validationmethods`) z decyzją, DNSSEC, 2FA, blokada transferu | NFR-03.11 | INF | BL-025 | 0,5 | w toku |
+| BL-027 | Migracja TLS Immicha na dom (fazy 0–3; faza 4 po 7 dniach) w oknie serwisowym | NFR-03.11 | INF | BL-024, BL-025 | 1,5 | w toku |
 | BL-028 | Kopie: pgBackRest (WAL, zst, AES-256-CBC), restic → rest-server append-only na VPS, timery, weryfikacja repozytoriów | NFR-09.03 | DR | BL-022, BL-024 | 2 | todo |
 | BL-029 | Uptime Kuma na VPS: sondy `app-ready`, `app-certificate`, `vm-health`, alerty e-mail | NFR-09.01, NFR-09.04 | MON | BL-023, BL-024 | 1 | todo |
 | BL-030 | Spike: przedrostek `__Host-` w Better Auth — notatka lub ADR (odstępstwo O-01) | NFR-03.03 | AUTH | BL-009 | 1 | w toku |

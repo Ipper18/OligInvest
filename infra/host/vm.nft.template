@@ -1,0 +1,21 @@
+table inet oliginvest_vm {
+    chain input {
+        type filter hook input priority 0; policy drop;
+        ct state invalid drop
+        ct state established,related accept
+        iifname "lo" accept
+        meta l4proto { icmp, ipv6-icmp } accept
+        iifname "<VM_INGRESS_IF>" ip saddr <ADMIN_CIDR> tcp dport <SSH_PORT> accept
+        iifname "<VM_INGRESS_IF>" ip saddr <VPS_TUNNEL_IP> tcp dport 443 accept
+    }
+    # Docker DNAT bypasses INPUT. Guard external ingress before Docker's filter.
+    # Other forwarding is still subject to Docker's own isolation rules.
+    chain docker_ingress {
+        type filter hook forward priority -10; policy accept;
+        ct state invalid drop
+        ct state established,related accept
+        iifname "<VM_INGRESS_IF>" ip saddr <VPS_TUNNEL_IP> tcp dport 443 ct status dnat accept
+        iifname "<VM_INGRESS_IF>" drop
+    }
+    chain output { type filter hook output priority 0; policy accept; }
+}

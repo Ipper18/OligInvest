@@ -1,0 +1,34 @@
+# Dedicated VPS, native host services. Merge existing rules first; never flush ruleset.
+table inet oliginvest_vps {
+    chain input {
+        type filter hook input priority 0; policy drop;
+        ct state invalid drop
+        ct state established,related accept
+        iifname "lo" accept
+        meta l4proto { icmp, ipv6-icmp } accept
+        iifname "<WAN_IF>" tcp dport { 80, 443 } accept
+        iifname "<WAN_IF>" udp dport <WG_SITE_PORT> accept
+        iifname "<SITE_IF>" ip saddr <ADMIN_CIDR> tcp dport { <SSH_PORT>, <KUMA_PORT> } accept
+        iifname "<SITE_IF>" ip saddr <VM_TUNNEL_IP> tcp dport { <REST_PORT>, <KUMA_PORT> } accept
+    }
+    chain forward {
+        type filter hook forward priority 0; policy drop;
+        ct state invalid drop
+        ct state established,related accept
+        iifname "<WAN_IF>" oifname "<SITE_IF>" ip daddr <HOME_TUNNEL_IP> udp dport <HOME_ADMIN_PORT> ct status dnat accept
+        iifname "<SITE_IF>" oifname "<WAN_IF>" ip saddr { <HOME_EGRESS_CIDR>, <ADMIN_CIDR> } accept
+    }
+    chain output { type filter hook output priority 0; policy accept; }
+}
+table ip oliginvest_nat {
+    chain prerouting {
+        type nat hook prerouting priority dstnat; policy accept;
+        iifname "<WAN_IF>" udp dport <WG_ADMIN_PORT> dnat to <HOME_TUNNEL_IP>:<HOME_ADMIN_PORT>
+    }
+    chain postrouting {
+        type nat hook postrouting priority srcnat; policy accept;
+        oifname "<WAN_IF>" ip saddr { <HOME_EGRESS_CIDR>, <ADMIN_CIDR> } masquerade
+        # The inner encrypted admin tunnel returns through this same site peer.
+        oifname "<SITE_IF>" ip daddr <HOME_TUNNEL_IP> udp dport <HOME_ADMIN_PORT> ct status dnat snat to <VPS_TUNNEL_IP>
+    }
+}
