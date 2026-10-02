@@ -44,9 +44,11 @@ Powiązane: [`roadmapa.md`](roadmapa.md), [`backlog.md`](backlog.md), [`../06-be
 
 | **R-28** | Podatności pakietów bazowych bez dostępnej poprawki, mimo zielonej bramki wydania | BL-020/021, CI §5, raport OSV images | 3 | 4 | 12 | poprawiono dostępne krytyczne: glibc/OpenSSL/Perl/util-linux, usunięto nieużywane gosu, Caddy 2.11.6; pozostałe high/critical bez poprawki i GO-2026-5932 (bez oceny/poprawki) są jawne w artefakcie; przegląd Renovate i właściciela przed wydaniem; próg lockfile bez zmian | nowa poprawka lub zmiana oceny OSV; zielona bramka nie oznacza braku znalezisk | agent, właściciel | M0-2 i każde wydanie |
 
+| **R-29** | Kopie w domyślnym wolumenie Dockera na SSD zamiast osobnego HDD | BL-028, [instrukcja](../07-wdrozenie/m0-3-backup-monitoring-runbook.md) | 2 | 3 | 6 | override bind przed pierwszym wdrożeniem; kontrola mountpoint i opcji wolumenów w operacjach hosta; istniejące wolumeny wymagają jawnej migracji właściciela | brak HDD lub wolumen bez oczekiwanego bindu zatrzymuje kopie i wysyła down | właściciel | M0-3, próba docelowa otwarta |
+
 ## 3. Podsumowanie
 
-28 ryzyk: **5 wysokich** (R-01, R-07, R-11, R-16, R-28), 19 średnich, 4 niskie; brak krytycznych.
+29 ryzyk: **5 wysokich** (R-01, R-07, R-11, R-16, R-28), 20 średnich, 4 niskie; brak krytycznych.
 
 | Ryzyko wysokie | Działanie przed końcem etapu |
 |---|---|

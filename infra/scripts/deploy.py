@@ -16,6 +16,48 @@ import urllib.request
 REPOSITORY = "Ipper18/OligInvest"
 ISSUER = "https://token.actions.githubusercontent.com"
 SERVICES = {"web", "api", "jobs", "analytics", "postgres", "migrate", "caddy", "valkey-queue", "valkey-cache"}
+ACTIVE_SERVICES = ("postgres", "valkey-queue", "valkey-cache", "api", "jobs", "analytics", "web", "caddy")
+
+
+class StepError(RuntimeError):
+    def __init__(self, step):
+        super().__init__(step)
+        self.step = step
+        self.rollback_step = None
+
+
+def step(name, function, *args):
+    try:
+        return function(*args)
+    except StepError:
+        raise
+    except Exception as error:
+        raise StepError(name) from error
+
+
+def log_failure(error, execute=None):
+    # Only fixed step names, never exception strings, argv, paths or tool output.
+    name = error.step if isinstance(error, StepError) else "preflight"
+    suffix = f" rollback_step={error.rollback_step}" if isinstance(error, StepError) and error.rollback_step else ""
+    try:
+        (execute or run)(["logger", "--tag", "oliginvest", "--priority", "user.err", f"system.deploy failed step={name}{suffix}"])
+    except Exception:
+        pass
+
+
+def prepare_candidate(root, candidate, previous, retry):
+    if candidate.is_symlink() or candidate.parent != root / "releases":
+        raise ValueError("Invalid candidate path")
+    if not candidate.exists():
+        return
+    if not retry or candidate == previous or not candidate.is_dir():
+        raise ValueError("Release already staged or active; inspect before retrying")
+    failed = root / "failed"
+    if failed.is_symlink():
+        raise ValueError("Invalid diagnostic directory")
+    failed.mkdir(mode=0o700, exist_ok=True)
+    archive = Path(tempfile.mkdtemp(prefix=candidate.name + "-", dir=failed))
+    candidate.rename(archive / "release")
 
 
 def run(args, **kwargs):
@@ -24,6 +66,22 @@ def run(args, **kwargs):
         # Tool output may contain local paths or credentials: do not echo it.
         raise RuntimeError(f"Deployment command failed: {args[0]}")
     return result.stdout
+
+
+def download_assets(directory, version):
+    for name in ("oliginvest.tar.gz", "oliginvest.sigstore.json"):
+        with urllib.request.urlopen(f"https://github.com/{REPOSITORY}/releases/download/{version}/{name}", timeout=60) as response:
+            content = response.read(12 * 1024 * 1024 + 1)
+        if len(content) > 12 * 1024 * 1024:
+            raise ValueError("Oversized download")
+        (directory / name).write_bytes(content)
+
+
+def provision(candidate, config):
+    spec = importlib.util.spec_from_file_location("secret_files", candidate / "infra/scripts/secret-files.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    module.provision(config)
 
 
 def unpack(archive, destination):
@@ -76,7 +134,28 @@ def verify_provenance(output, document, version):
 
 
 def compose_args(release, config):
-    return ["docker", "compose", "--project-name", "oliginvest", "--env-file", str(config / "instance.env"), "--env-file", str(release / "images.env"), "-f", str(release / "compose.yaml"), "-f", str(config / "runtime-compose.json")]
+    args = ["docker", "compose", "--project-name", "oliginvest", "--env-file", str(config / "instance.env"), "--env-file", str(release / "images.env"), "-f", str(release / "compose.yaml"), "-f", str(config / "runtime-compose.json")]
+    storage = config / "storage-compose.yaml"
+    if storage.is_symlink():
+        raise ValueError("Untrusted storage configuration")
+    if storage.exists():
+        if not storage.is_file() or storage.stat().st_uid != 0 or storage.stat().st_mode & 0o022:
+            raise ValueError("Untrusted storage configuration")
+        args += ["-f", str(storage)]
+    return args
+
+
+def publish_current(root, candidate):
+    pending = root / ".current-pending"
+    # A crash after symlink creation must not make all subsequent retries fail.
+    if pending.is_symlink():
+        if pending.resolve().parent != root / "releases":
+            raise ValueError("Unexpected pending release")
+        pending.unlink()
+    elif pending.exists():
+        raise ValueError("Unexpected pending file")
+    pending.symlink_to(candidate)
+    os.replace(pending, root / "current")
 
 
 def notify_owner(path):
@@ -101,27 +180,32 @@ def activate(candidate, previous, execute=run, gate=healthy):
     # Backup uses the current database binary/config before changing any image.
     database = previous or candidate
     if previous is None:
-        execute(candidate + ["up", "-d", "--wait", "postgres", "valkey-queue", "valkey-cache"])
-        execute(candidate + ["exec", "-T", "postgres", "oliginvest-pgbackrest", "stanza-create"])
-    execute(database + ["exec", "-T", "postgres", "oliginvest-pgbackrest", "--type=" + ("incr" if previous else "full"), "backup"])
-    execute(database + ["exec", "-T", "postgres", "oliginvest-pgbackrest", "check"])
-    execute(candidate + ["run", "--rm", "migrate"])
+        step("initialize-data", execute, candidate + ["up", "-d", "--wait", "postgres", "valkey-queue", "valkey-cache"])
+        step("stanza-create", execute, candidate + ["exec", "-T", "postgres", "oliginvest-pgbackrest", "stanza-create"])
+    step("backup", execute, database + ["exec", "-T", "postgres", "oliginvest-pgbackrest", "--type=" + ("incr" if previous else "full"), "backup"])
+    step("backup-check", execute, database + ["exec", "-T", "postgres", "oliginvest-pgbackrest", "check"])
+    step("migrate", execute, candidate + ["run", "--rm", "--no-deps", "migrate"])
     try:
-        for service in ("postgres", "valkey-queue", "valkey-cache", "api", "jobs", "analytics", "web", "caddy"):
-            execute(candidate + ["up", "-d", "--force-recreate", "--no-deps", "--wait", "--wait-timeout", "120", service])
-        gate(candidate, execute)
-    except Exception:
-        if previous:
-            execute(previous + ["up", "-d", "--force-recreate", "--no-deps", "--wait", "--wait-timeout", "120", "api", "jobs", "analytics", "web", "caddy"])
-            gate(previous, execute)
-        else:
-            execute(candidate + ["stop", "api", "jobs", "analytics", "web", "caddy"])
+        for service in ACTIVE_SERVICES:
+            step("activate-" + service, execute, candidate + ["up", "-d", "--force-recreate", "--no-deps", "--wait", "--wait-timeout", "120", service])
+        step("health", gate, candidate, execute)
+    except StepError as error:
+        try:
+            if previous:
+                for service in ACTIVE_SERVICES:
+                    step("rollback-" + service, execute, previous + ["up", "-d", "--force-recreate", "--no-deps", "--wait", "--wait-timeout", "120", service])
+                step("rollback-health", gate, previous, execute)
+            else:
+                step("stop-first-deployment", execute, candidate + ["stop", "api", "jobs", "analytics", "web", "caddy"])
+        except StepError as rollback:
+            error.rollback_step = rollback.step
         raise
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("version")
+    parser.add_argument("--retry-staged", action="store_true")
     parser.add_argument("--root", type=Path, default=Path("/opt/oliginvest"))
     parser.add_argument("--config", type=Path, default=Path("/etc/oliginvest"))
     args = parser.parse_args()
@@ -140,45 +224,34 @@ def main():
     releases = args.root / "releases"
     releases.mkdir(mode=0o755, exist_ok=True)
     candidate = releases / args.version
-    if candidate.exists():
-        raise ValueError("Release already staged; inspect previous attempt before retrying")
+    step("prepare-candidate", prepare_candidate, args.root, candidate, previous, args.retry_staged)
     with tempfile.TemporaryDirectory(prefix="download-", dir=args.root) as temporary:
         download = Path(temporary)
-        for name in ("oliginvest.tar.gz", "oliginvest.sigstore.json"):
-            with urllib.request.urlopen(f"https://github.com/{REPOSITORY}/releases/download/{args.version}/{name}", timeout=60) as response:
-                content = response.read(12 * 1024 * 1024 + 1)
-            if len(content) > 12 * 1024 * 1024:
-                raise ValueError("Oversized download")
-            (download / name).write_bytes(content)
+        step("download", download_assets, download, args.version)
         verification = ["--certificate-identity", identity(args.version), "--certificate-oidc-issuer", ISSUER]
-        run(["cosign", "verify-blob", *verification, "--bundle", str(download / "oliginvest.sigstore.json"), str(download / "oliginvest.tar.gz")])
+        step("verify-package", run, ["cosign", "verify-blob", *verification, "--bundle", str(download / "oliginvest.sigstore.json"), str(download / "oliginvest.tar.gz")])
         staged = download / "verified"
-        staged.mkdir()
-        unpack(download / "oliginvest.tar.gz", staged)
-        document = json.loads((staged / "images.lock").read_text())
-        validate_images(document, args.version)
+        step("stage-package", staged.mkdir)
+        step("unpack", unpack, download / "oliginvest.tar.gz", staged)
+        document = step("read-lock", lambda: json.loads((staged / "images.lock").read_text()))
+        step("validate-images", validate_images, document, args.version)
         for image in document["images"].values():
-            run(["cosign", "verify", *verification, image])
-            provenance = run(["cosign", "verify-attestation", *verification, "--type", "slsaprovenance1", image])
-            verify_provenance(provenance, document, args.version)
-        staged.rename(candidate)
+            step("verify-image", run, ["cosign", "verify", *verification, image])
+            provenance = step("verify-attestation", run, ["cosign", "verify-attestation", *verification, "--type", "slsaprovenance1", image])
+            step("verify-provenance", verify_provenance, provenance, document, args.version)
+        step("stage-release", staged.rename, candidate)
     # Only verified code and images are used below this point.
     lines = [f"{name.replace('-', '_').upper()}_IMAGE={image}" for name, image in document["images"].items()]
-    (candidate / "images.env").write_text("\n".join(lines) + "\n")
-    spec = importlib.util.spec_from_file_location("secret_files", candidate / "infra/scripts/secret-files.py")
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    module.provision(args.config)
+    step("write-images", (candidate / "images.env").write_text, "\n".join(lines) + "\n")
+    step("provision-secrets", provision, candidate, args.config)
     compose = compose_args(candidate, args.config)
     old_compose = compose_args(previous, args.config) if previous else None
-    run(compose + ["--profile", "operations", "pull"])
+    step("pull-images", run, compose + ["--profile", "operations", "pull"])
     activate(compose, old_compose)
     # SQL is fixed; no shell interpolation or user data enters the statement.
-    run(compose + ["exec", "-T", "postgres", "psql", "-X", "-v", "ON_ERROR_STOP=1", "-U", "postgres", "-d", "oliginvest", "-c", "INSERT INTO platform.audit_log(actor_ref,actor_type,action,outcome) VALUES ('deployment','system','system.deploy','success')"])
-    pending = args.root / ".current-pending"
-    pending.symlink_to(candidate)
-    os.replace(pending, current)
-    run(["logger", "--tag", "oliginvest", f"system.deploy success {args.version}"])
+    step("audit", run, compose + ["exec", "-T", "postgres", "psql", "-X", "-v", "ON_ERROR_STOP=1", "-U", "postgres", "-d", "oliginvest", "-c", "INSERT INTO platform.audit_log(actor_ref,actor_type,action,outcome) VALUES ('deployment','system','system.deploy','success')"])
+    step("publish-current", publish_current, args.root, candidate)
+    step("log-success", run, ["logger", "--tag", "oliginvest", f"system.deploy success {args.version}"])
     try:
         notify_owner(args.config / "deploy-succeeded")
     except (OSError, subprocess.SubprocessError):
@@ -190,11 +263,12 @@ def main():
 if __name__ == "__main__":
     try:
         main()
-    except Exception:
+    except Exception as error:
+        log_failure(error)
         # Owner installs a local alert hook (mail via existing SMTP) outside the package.
         alert = Path("/etc/oliginvest/deploy-failed")
         try:
             notify_owner(alert)
         except (OSError, subprocess.SubprocessError):
             pass
-        raise SystemExit("Deployment failed; inspect service health. Current release pointer was not advanced.")
+        raise SystemExit("Deployment failed; inspect journald, current release pointer and service health.")

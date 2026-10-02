@@ -7,7 +7,7 @@ import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { apiKey, defaultKeyHasher } from "@better-auth/api-key";
-import { hash, verify } from "@node-rs/argon2";
+import { hash, hashSync, verify } from "@node-rs/argon2";
 import { betterAuth } from "better-auth";
 import { memoryAdapter } from "better-auth/adapters/memory";
 import { symmetricDecrypt } from "better-auth/crypto";
@@ -17,6 +17,8 @@ import { twoFactor } from "better-auth/plugins";
 const options = { memoryCost: 19456, timeCost: 2, parallelism: 1, algorithm: 2 };
 const password = randomBytes(24).toString("hex");
 const timings = [];
+const syncTimings = [];
+const encodings = new Set();
 for (let index = 0; index < 12; index++) {
   const start = performance.now();
   const encoded = await hash(password, options);
@@ -24,9 +26,20 @@ for (let index = 0; index < 12; index++) {
   assert.match(encoded, /^\$argon2id\$v=19\$m=19456,t=2,p=1\$/u);
   assert.equal(await verify(encoded, password), true);
   assert.equal(await verify(encoded, `${password}-wrong`), false);
+  encodings.add(encoded);
+  const syncStart = performance.now();
+  const syncEncoded = hashSync(password, options);
+  if (index >= 2) syncTimings.push(performance.now() - syncStart);
+  assert.match(syncEncoded, /^\$argon2id\$v=19\$m=19456,t=2,p=1\$/u);
+  assert.equal(await verify(syncEncoded, password), true);
+}
+assert.equal(encodings.size, 12, "Every hash must use a fresh salt");
+function median(values) {
+  const sorted = values.toSorted((a, b) => a - b);
+  return ((sorted[4] + sorted[5]) / 2).toFixed(1);
 }
 console.log(
-  `Argon2id local median: ${timings.toSorted((a, b) => a - b)[5].toFixed(1)} ms; server calibration remains owner-run`,
+  `Argon2id full hash, 10 samples after 2 warmups: async median ${median(timings)} ms, sync median ${median(syncTimings)} ms; PHC and fresh salts verified; server calibration remains owner-run`,
 );
 if (process.argv.includes("--benchmark-only")) process.exit(0);
 

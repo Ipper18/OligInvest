@@ -74,3 +74,5 @@ Wypełnić po scaleniu M0-1; brak potwierdzenia oznacza otwarty BL-019 i niespe�
 ## 7. Odczyt kontrolny agenta — 2026-09-30
 
 GitHub API, wyłącznie odczyt: token workflow ma domyślnie read, zatwierdzanie PR przez Actions wyłączone; secret scanning i push protection włączone, private vulnerability reporting włączone. Squash jest dostępny, ale merge i rebase nadal dozwolone — właściciel pozostawia tylko squash. Brak aktywnego rulesetu (`GET /rulesets`: pusta lista); plik JSON nadal disabled. CodeQL default setup obejmuje tylko python, więc po scaleniu trzeba sprawdzić JS/TS i dostępność actions. Dependabot security updates włączone; Dependency graph, alerty oraz instalacja i walidacja Renovate wymagają osobnego potwierdzenia właściciela. Ten odczyt nie zastępuje protokołu po scaleniu w §6 i nie zamyka BL-019 ani kryterium M0 nr 7.
+
+M0-3, 2026-10-02: aktualny plik rulesetu ma 19 kontekstów: dotychczasowe 17 oraz `images` z M0-2 i `infrastructure` z M0-3. Właściciel aktualizuje aktywne wymagania po zielonym przebiegu PR #6; agent zmienia wyłącznie plik.

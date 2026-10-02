@@ -1,0 +1,23 @@
+name: Infrastructure configuration
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions: {contents: read}
+concurrency:
+  group: infra-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  infrastructure:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with: {persist-credentials: false}
+      - name: Install configuration parsers
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends nginx libnginx-mod-stream nftables chrony
+      - run: sudo python3 infra/tests/test-host-config.py
+      - run: sudo python3 infra/tests/test-deploy.py
+      - run: sudo python3 infra/tests/test-host-operations.py

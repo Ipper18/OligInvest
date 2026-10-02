@@ -1,0 +1,19 @@
+[Unit]
+Description=OligInvest host operation %i
+After=docker.service network-online.target
+Wants=network-online.target
+RequiresMountsFor=/srv/backup /srv/oliginvest/caddy-data
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /opt/oliginvest-ops/host-operations.py %i
+TimeoutStartSec=3h
+UMask=0077
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/etc/oliginvest /var/cache/oliginvest-restic

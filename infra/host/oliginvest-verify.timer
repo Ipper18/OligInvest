@@ -1,0 +1,8 @@
+[Unit]
+Description=Weekly backup repository verification
+[Timer]
+OnCalendar=Sun *-*-* 05:15:00 UTC
+Persistent=true
+Unit=oliginvest-operation@verify.service
+[Install]
+WantedBy=timers.target

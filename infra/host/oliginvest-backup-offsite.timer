@@ -1,0 +1,8 @@
+[Unit]
+Description=Hourly encrypted offsite backup
+[Timer]
+OnCalendar=*-*-* *:35:00 UTC
+Persistent=true
+Unit=oliginvest-operation@backup-offsite.service
+[Install]
+WantedBy=timers.target

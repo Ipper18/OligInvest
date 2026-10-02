@@ -1,0 +1,9 @@
+# Install outside the repository as /etc/oliginvest/storage-compose.yaml (root/0600).
+# Configure BEFORE the first deployment; existing volumes require owner migration.
+volumes:
+  backup-data:
+    driver: local
+    driver_opts: {type: none, o: bind, device: /srv/backup/pgbackrest}
+  caddy-data:
+    driver: local
+    driver_opts: {type: none, o: bind, device: /srv/oliginvest/caddy-data}

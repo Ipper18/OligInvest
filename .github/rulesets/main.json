@@ -93,6 +93,9 @@
           },
           {
             "context": "images"
+          },
+          {
+            "context": "infrastructure"
           }
         ]
       }

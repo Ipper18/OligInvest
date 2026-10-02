@@ -1,0 +1,23 @@
+# Include inside stream {}, after loading Debian's ngx_stream_module.
+map $ssl_preread_server_name $sni_upstream {
+    <PUBLIC_HOST> app;
+    <IMMICH_HOST> immich;
+    default reject;
+}
+upstream app { server <VM_TUNNEL_IP>:443; }
+# Phase 1: loopback + legacy port; phase 3: home proxy + 443.
+upstream immich { server <IMMICH_UPSTREAM_ADDRESS>:<IMMICH_UPSTREAM_PORT>; }
+upstream reject { server unix:/run/nginx/oliginvest-reject.sock; }
+limit_conn_zone $binary_remote_addr zone=perip:10m;
+log_format sni '$time_iso8601 $remote_addr $ssl_preread_server_name $status $bytes_sent $bytes_received $session_time';
+server {
+    listen 443;
+    listen [::]:443;
+    ssl_preread on;
+    proxy_protocol on;
+    proxy_pass $sni_upstream;
+    proxy_connect_timeout 5s;
+    proxy_timeout 600s;
+    limit_conn perip 50;
+    access_log /var/log/nginx/sni.log sni;
+}

@@ -1,0 +1,8 @@
+[Unit]
+Description=VM health heartbeat
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=5min
+Unit=oliginvest-operation@vm-health.service
+[Install]
+WantedBy=timers.target

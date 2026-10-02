@@ -1,0 +1,7 @@
+[Resolve]
+DNS=<DOT_IP_1>#<DOT_TLS_NAME_1> <DOT_IP_2>#<DOT_TLS_NAME_2>
+FallbackDNS=
+Domains=~.
+DNSOverTLS=yes
+LLMNR=no
+MulticastDNS=no

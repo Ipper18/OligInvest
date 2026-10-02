@@ -249,10 +249,10 @@ invest.oligi.pl {
 
 Fragment `security_headers` ustawia nagłówki z [`../06-bezpieczenstwo/kontrole-bezpieczenstwa.md`](../06-bezpieczenstwo/kontrole-bezpieczenstwa.md) § 2.2 (CSP ustawia `web`). HTTP/3 wyłączone (VPS przekazuje tylko TCP); `flush_interval -1` dla strumienia SSE; kompresja (`encode zstd gzip`) tylko dla odpowiedzi innych niż `text/event-stream`. Caddy domyślnie redaguje nagłówki `Cookie` i `Authorization` w logach.
 
-**Uzupełnienia z przeglądu kodu M0-1 (2026-09-22, do wdrożenia w M0-2 — [przegląd](../08-plan/m0-1-przeglad-kodu.md)):**
+**Uzupełnienia z przeglądu kodu M0-1 (2026-09-22, wdrożone w M0-2, regresje i instrukcja M0-3 — [przegląd](../08-plan/m0-1-przeglad-kodu.md)):**
 
-- **`X-Request-Id` (P-09):** Caddy usuwa nagłówek przychodzący z internetu i przekazuje do `api` własny identyfikator (np. `header_up X-Request-Id {http.request.uuid}`), który trafia też do logu dostępu — klient nie może wtedy nadawać identyfikatorów korelacji. Składnię i nazwę placeholdera potwierdzić w dokumentacji Caddy 2.11 (**NIEZWERYFIKOWANE**).
-- **Keep-alive do upstreamu (P-08):** czas bezczynności połączeń Caddy → `api`/`web` musi być krótszy niż `keepAliveTimeout` serwerów Node (domyślnie 5 s) albo `keepAliveTimeout` trzeba jawnie wydłużyć w aplikacji — inaczej proxy użyje połączenia zamkniętego przez Node i zwróci sporadyczne 502. Domyślną wartość w Caddy potwierdzić przy konfiguracji (**NIEZWERYFIKOWANE**).
+- **`X-Request-Id` (P-09):** Caddy usuwa nagłówek przychodzący z internetu i przekazuje do `api` własny identyfikator (np. `header_up X-Request-Id {http.request.uuid}`), który trafia też do logu dostępu — klient nie może wtedy nadawać identyfikatorów korelacji. W 2.11.6 potwierdzone przez adaptację Caddyfile; dyrektywa zastępuje wartość klienta. Testy i próba właściciela: [M0-3](m0-3-network-runbook.md).
+- **Keep-alive do upstreamu (P-08):** czas bezczynności połączeń Caddy → `api`/`web` musi być krótszy niż `keepAliveTimeout` serwerów Node (domyślnie 5 s) albo `keepAliveTimeout` trzeba jawnie wydłużyć w aplikacji — inaczej proxy użyje połączenia zamkniętego przez Node i zwróci sporadyczne 502. Jawne `keepalive 2s` w obu upstreamach; nie zależymy od domyślnej wartości Caddy. Regresja sprawdza wartość poniżej 5 s.
 - **`/api/v1/health/ready` (P-01):** ścieżka jest publiczna (monitor `app-ready` w [`monitoring.md`](monitoring.md)). Caddy bez dodatkowych modułów nie ogranicza częstotliwości żądań, a VPS widzi wyłącznie TLS, więc podstawową ochroną jest buforowanie wyniku sond w `api`; CrowdSec może blokować jawne nadużycia na podstawie logów.
 
 ### 6.4 PostgreSQL i Valkey
@@ -388,3 +388,7 @@ Dziś Caddy na VPS kończy TLS Immicha i ma jego klucz prywatny. Cel: VPS przeka
 Implementacja M0-2 i kolejność poleceń właściciela: [instrukcja uruchomienia](m0-2-owner-runbook.md). Test Linux czyta macierz §8.1 tym samym parserem co generator i sprawdza każdy obraz oraz dokładny zestaw montowań.
 
 M0-2, 2026-10-01: Caddy 2.11.6 zastępuje binarium 2.11.4 ze względu na poprawki bezpieczeństwa ([oficjalne wydanie](https://github.com/caddyserver/caddy/releases/tag/v2.11.6)). Obraz bazowy pozostaje przypięty digestem, archiwum linux/amd64 wydawcy dodatkowo SHA-256; po publikacji oficjalnego obrazu aktualizację zaproponuje Renovate. Bez zmiany linii 2.11 ani decyzji ADR. Pakiety Debian w bazach Python/Valkey mają przypięte poprawki glibc, OpenSSL, Perl i util-linux; nieużywane root-only gosu usunięto z PostgreSQL uruchamianego zawsze jako UID z tabeli §8.1. Testy Caddyfile i E2E weryfikują zgodność konfiguracji. Poprawki bezpieczeństwa korzystają z trybu pilnego SEC §4.2.
+
+M0-3: [sieć i hardening BL-024/025](m0-3-network-runbook.md), [DNS i migracja BL-026/027](m0-3-dns-immich-runbook.md). Szablony zawierają wyłącznie znaczniki; właściciel dostarcza dowody wykonania.
+
+BL-028/029: [kopie, timery, Kuma i próby alarmów](m0-3-backup-monitoring-runbook.md). Produkcyjny override storage przenosi repozytorium pgBackRest na HDD; bez niego domyślny wolumen Dockera nie dowodzi rozdzielenia nośników. Operacje hosta odrzucają wolumeny niepowiązane z oczekiwanymi źródłami.
