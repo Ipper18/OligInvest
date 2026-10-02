@@ -161,7 +161,8 @@ Panel i SSH hosta dostępne wyłącznie z sieci administracyjnej; 2FA (TOTP) do 
 | Ścieżka | Zawartość | Uprawnienia |
 |---|---|---|
 | `/opt/oliginvest/` | pliki Compose i konfiguracje z paczki wydania (bez sekretów) | root, `0755` |
-| `/etc/oliginvest/secrets/` | pliki sekretów (§ 8) | root, katalog `0700`, pliki `0600` |
+| `/etc/oliginvest/secrets/` | oryginały sekretów (§ 8) | root:root, katalog `0700`, pliki `0600` |
+| `/etc/oliginvest/runtime-secrets/` | kopie per odbiorca, tylko pojedyncze pliki montowane do kontenerów | katalog główny i podkatalogi root:root `0700`; pliki UID/GID odbiorcy, `0400` |
 | `/srv/oliginvest/` | wolumeny: `postgres`, `valkey-queue`, `caddy-data`, `caddy-logs` | właściciel = UID kontenera |
 | `/srv/backup/` | dysk HDD: repozytorium pgBackRest, logi kopii | root / UID postgres |
 
@@ -174,13 +175,13 @@ Obraz przypięty digestem i podpisany (weryfikacja przy wdrożeniu — [`ci-cd.m
 | Kontener | Obraz bazowy | Użytkownik | Sieci | Wyjście do internetu | Limit RAM |
 |---|---|---|---|---|---|
 | `caddy` | oficjalny `caddy` 2.11 | nie-root; port 443 przez `net.ipv4.ip_unprivileged_port_start=0` w przestrzeni sieci kontenera | `edge`, `egress` | ACME | 64 MB |
-| `web` | `node:24` (slim) | `node` | `edge` | **brak** | 512 MB |
-| `api` | `node:24` (slim) | `node` | `edge`, `backend`, `egress` | Pwned Passwords, OAuth (P2) | 384 MB |
-| `jobs` | `node:24` (slim) | `node` | `backend`, `egress` | allowlista dostawców, SMTP, push | 384 MB |
-| `analytics` | `python:3.13` (slim) | UID 10001 | `analytics` | **brak** | 1,5 GB, CPU ≤ 2 |
-| `postgres` | oficjalny `postgres:18` + pgBackRest (obraz własny, podpisany) | `postgres` (UID 999, bez przełączania użytkownika) | `backend`, `analytics` | brak | 1 GB |
-| `valkey-queue` | oficjalny `valkey` 9 | `valkey` | `backend`, `analytics` | brak | 128 MB |
-| `valkey-cache` | oficjalny `valkey` 9 | `valkey` | `backend` | brak | 128 MB |
+| `web` | `node:24` (slim) | wg §8.1 | `edge` | **brak** | 512 MB |
+| `api` | `node:24` (slim) | wg §8.1 | `edge`, `backend`, `egress` | Pwned Passwords, OAuth (P2) | 384 MB |
+| `jobs` | `node:24` (slim) | wg §8.1 | `backend`, `egress` | allowlista dostawców, SMTP, push | 384 MB |
+| `analytics` | `python:3.13` (slim) | wg §8.1 | `analytics` | **brak** | 1,5 GB, CPU ≤ 2 |
+| `postgres` | oficjalny `postgres:18` + pgBackRest (obraz własny, podpisany) | wg §8.1, bez przełączania użytkownika | `backend`, `analytics` | brak | 1 GB |
+| `valkey-queue` | oficjalny `valkey` 9 | wg §8.1 | `backend`, `analytics` | brak | 128 MB |
+| `valkey-cache` | oficjalny `valkey` 9 | wg §8.1 | `backend` | brak | 128 MB |
 
 Procesy operacyjne na hoście VM (nie w Compose aplikacji): agent CrowdSec (pakiet z repozytorium CrowdSec; czyta logi Caddy i journald), timery systemd kopii zapasowych (restic, polecenia pgBackRest w kontenerze bazy) i skrypty sygnałów życia ([`monitoring.md`](monitoring.md)).
 
@@ -196,7 +197,7 @@ networks:
 services:
   api:
     image: ghcr.io/<OWNER>/oliginvest-api@sha256:<DIGEST>
-    user: "1000:1000"
+    # USER z Dockerfile, zgodny z tabelą §8.1
     read_only: true
     tmpfs: ["/tmp:size=64m"]
     cap_drop: ["ALL"]
@@ -301,7 +302,35 @@ Generowane skryptem instalacyjnym (`infra/scripts/generate-secrets.sh`, M0) z ge
 | klucze WireGuard, SSH | hosty | raz w roku |
 | klucz konta ACME | wolumen `caddy-data` | przy utracie (zmiana CAA) |
 
-### 8.1 Walidacja konfiguracji aplikacji (BL-005)
+### 8.1 Uprawnienia i macierz sekretów (BL-022/023)
+
+**Decyzja właściciela 2026-10-01:** zatwierdzona [korekta](../08-plan/m0-2-secret-permissions.md), bez nowego ADR. Oryginały pozostają root:root/0600. Compose dla `secrets.file` zachowuje właściciela i tryb pliku hosta; pola `uid/gid/mode` nie remapują bind mountów. Kopie należą do UID/GID odbiorcy, mają tryb 0400 i leżą pod katalogami root:root/0700. Kontener otrzymuje tylko pojedyncze własne pliki, tylko do odczytu. Nie montujemy katalogu oryginałów ani katalogów innych usług.
+
+Poniższa **jedyna tabela wykonawcza** jest źródłem macierzy sekret → odbiorcy dla generatora kopii oraz testu integracyjnego. Parser odrzuca nieznane pola i duplikaty. UID/GID są stałe, liczbowe i zapisane także jako `USER UID:GID` w finalnym etapie Dockerfile; CI porównuje je z tabelą i obrazem. Nazwy w kolumnach sekretów są rozdzielone przecinkami; `—` oznacza brak. Wpis opcjonalny jest montowany tylko po dostarczeniu kompletnej konfiguracji funkcji.
+
+<!-- runtime-secret-matrix:start -->
+| Usługa | UID | GID | Sekrety wymagane | Sekrety opcjonalne |
+|---|---|---|---|---|
+| web | 1000 | 1000 | — | — |
+| api | 10002 | 10002 | BETTER_AUTH_SECRETS, AUDIT_PSEUDONYM_KEY, DB_AUTH_PASSWORD, DB_APP_PASSWORD, VALKEY_QUEUE_API_PASSWORD, VALKEY_CACHE_API_PASSWORD | GOOGLE_CLIENT_SECRET, GITHUB_CLIENT_SECRET |
+| jobs | 10003 | 10003 | AUDIT_PSEUDONYM_KEY, DB_APP_PASSWORD, VALKEY_QUEUE_JOBS_PASSWORD, VALKEY_CACHE_JOBS_PASSWORD | SMTP_USER, SMTP_PASSWORD, VAPID_PRIVATE_KEY, FINNHUB_API_KEY, TWELVEDATA_API_KEY, ALPHAVANTAGE_API_KEY, FRED_API_KEY, MARKETAUX_API_KEY |
+| analytics | 10001 | 10001 | DB_ANALYTICS_RO_PASSWORD, VALKEY_QUEUE_ANALYTICS_PASSWORD | — |
+| postgres | 999 | 999 | DB_POSTGRES_PASSWORD, DB_OWNER_PASSWORD, DB_AUTH_PASSWORD, DB_APP_PASSWORD, DB_ANALYTICS_RO_PASSWORD, DB_BACKUP_PASSWORD, PGBACKREST_REPO1_CIPHER_PASS | — |
+| migrate | 10004 | 10004 | DB_OWNER_PASSWORD | — |
+| caddy | 10005 | 10005 | — | — |
+| valkey-queue | 10006 | 10006 | VALKEY_QUEUE_ACL | — |
+| valkey-cache | 10007 | 10007 | VALKEY_CACHE_ACL | — |
+<!-- runtime-secret-matrix:end -->
+
+Pliki `VALKEY_QUEUE_ACL` i `VALKEY_CACHE_ACL` są pochodnymi haseł usług: zawierają skróty SHA-256 haseł i reguły ACL, nigdy hasła jawne. PostgreSQL potrzebuje haseł ról do pierwszego provisioningu i kontrolowanej rotacji, a `DB_POSTGRES_PASSWORD` wyłącznie do konta administracyjnego bazy. `migrate` dostaje tylko rolę owner. Sekrety hosta (restic, CrowdSec, WireGuard, SSH) nie należą do macierzy kontenerów. Caddy i Valkey mają cienkie własne obrazy z przypiętych baz, aby także ich finalny `USER` odpowiadał tabeli; wydanie podpisuje te obrazy obok sześciu obrazów z BL-020.
+
+Skrypt uruchamiany przez właściciela na hoście jest idempotentny: nie nadpisuje istniejących oryginałów, nie wypisuje wartości, kontroluje właściciela/tryb i odrzuca dowiązania. Kopie wymienia atomowo przez plik tymczasowy w tym samym katalogu. Przy rotacji wspólnego sekretu najpierw przygotowuje i wymienia **wszystkie** kopie odbiorców (oraz zależne ACL), a dopiero po powodzeniu całej operacji pozwala odtworzyć kontenery. Błąd przerywa operację przed odtwarzaniem; ponowne uruchomienie uzgadnia kopie. Blokada procesu wyklucza równoległe generowanie i wdrożenie. Sam restart procesu nie wystarcza: po atomowym podmienieniu pliku bind mount może wskazywać stary inode. Rotacja hasła DB wymaga też zmiany hasła roli; sama wymiana pliku jej nie wykonuje.
+
+Wszystkie UID/GID należy zarezerwować na VM bez kont interaktywnych. Wspierany jest rootful Docker bez user namespace remapping; inny model mapowania wymaga weryfikacji. Kopie nie trafiają do repozytorium, obrazów, wydania, logów ani artefaktów CI. Usunięcie sekretu obejmuje wszystkie kopie, a depozyt oryginałów pozostaje w menedżerze haseł.
+
+**Test Linux w CI:** na podstawie tej tabeli każda usługa odczytuje tylko własne sekrety, nie może ich zapisać, w kontenerze nie ma sekretów nieprzydzielonych tej usłudze. Test obejmuje zgodność USER obrazu, uprawnienia hosta, idempotencję, atomową wymianę, rotację wspólnego sekretu przed odtworzeniem i brak wartości w wyjściu skryptu. Non-root, read-only FS, `cap_drop: ALL`, `no-new-privileges` i `_FILE` pozostają obowiązkowe.
+
+### 8.2 Walidacja konfiguracji aplikacji (BL-005)
 
 `packages/config` eksportuje schematy Zod `.strict()` i `loadConfig(service, env, { mode })` dla `web`, `api`, `jobs`, `analytics`. Tryb jest jawny (`development`, `test`, `production`); loader nie czyta `.env` samodzielnie. Korzeń kompozycji przekazuje środowisko procesu i tryb. Loader wybiera wyłącznie klucze danej usługi, dzięki czemu zmienne systemu, MCP, hosta i Compose nie trafiają do wyniku. Bezpośrednie parsowanie schematu odrzuca nieznane pola. Klucze pochodzą z [.env.example](../../.env.example); kontrakt połączeń i uruchamianie workerów pozostają do BL-007/008/013/014.
 
@@ -355,3 +384,7 @@ Dziś Caddy na VPS kończy TLS Immicha i ma jego klucz prywatny. Cel: VPS przeka
 **DNS i TLS:** ☐ CAA z `accounturi` i `validationmethods` (albo decyzja z § 7) ☐ DNSSEC w home.pl ☐ monitoring CT, także `*.oligi.pl` ☐ 2FA u rejestratora, blokada transferu ☐ TLS 1.3, HSTS ☐ automatyczne odnawianie certyfikatów (Caddy) z alertem ważności < 14 dni
 
 **Aplikacja:** ☐ nagłówki z `kontrole-bezpieczenstwa.md` § 2 ☐ trasy Better Auth spoza listy zablokowane ☐ tryb produkcyjny bez debugowania ☐ skan zewnętrzny po wdrożeniu
+
+Implementacja M0-2 i kolejność poleceń właściciela: [instrukcja uruchomienia](m0-2-owner-runbook.md). Test Linux czyta macierz §8.1 tym samym parserem co generator i sprawdza każdy obraz oraz dokładny zestaw montowań.
+
+M0-2, 2026-10-01: Caddy 2.11.6 zastępuje binarium 2.11.4 ze względu na poprawki bezpieczeństwa ([oficjalne wydanie](https://github.com/caddyserver/caddy/releases/tag/v2.11.6)). Obraz bazowy pozostaje przypięty digestem, archiwum linux/amd64 wydawcy dodatkowo SHA-256; po publikacji oficjalnego obrazu aktualizację zaproponuje Renovate. Bez zmiany linii 2.11 ani decyzji ADR. Pakiety Debian w bazach Python/Valkey mają przypięte poprawki glibc, OpenSSL, Perl i util-linux; nieużywane root-only gosu usunięto z PostgreSQL uruchamianego zawsze jako UID z tabeli §8.1. Testy Caddyfile i E2E weryfikują zgodność konfiguracji. Poprawki bezpieczeństwa korzystają z trybu pilnego SEC §4.2.

@@ -1,0 +1,197 @@
+name: oliginvest
+
+x-service: &service
+  read_only: true
+  cap_drop: [ALL]
+  security_opt: [no-new-privileges:true]
+  pids_limit: 256
+  restart: unless-stopped
+  tmpfs: ["/tmp:size=64m,mode=1777"]
+  logging:
+    driver: local
+    options: {max-size: 20m, max-file: '5'}
+
+x-db: &db
+  DB_HOST: postgres
+  DB_PORT: '5432'
+  DB_NAME: oliginvest
+  DB_SSL: 'false'
+
+x-queue: &queue
+  VALKEY_QUEUE_HOST: valkey-queue
+  VALKEY_QUEUE_PORT: '6379'
+
+services:
+  web:
+    <<: *service
+    image: ${WEB_IMAGE:?Set verified image reference}
+    environment:
+      NODE_ENV: production
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:?Set public origin}
+      API_INTERNAL_URL: http://api:3000
+      HOSTNAME: '::'
+      PORT: '3000'
+    networks: [edge]
+    mem_limit: 512m
+    cpus: 1
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://localhost:3000').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+  api:
+    <<: *service
+    image: ${API_IMAGE:?Set verified image reference}
+    environment:
+      <<: [*db, *queue]
+      NODE_ENV: production
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:?Set public origin}
+      API_HOST: '::'
+      API_PORT: '3000'
+      VALKEY_QUEUE_USER: api
+      VALKEY_CACHE_HOST: valkey-cache
+      VALKEY_CACHE_PORT: '6379'
+      VALKEY_CACHE_USER: api
+    networks: [edge, backend, egress]
+    mem_limit: 384m
+    cpus: 1
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://localhost:3000/api/v1/health/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+  jobs:
+    <<: *service
+    image: ${JOBS_IMAGE:?Set verified image reference}
+    environment:
+      <<: [*db, *queue]
+      NODE_ENV: production
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:?Set public origin}
+      VALKEY_QUEUE_USER: jobs
+      JOBS_INSTANCE_ID: primary
+    networks: [backend, egress]
+    mem_limit: 384m
+    cpus: 1
+    healthcheck:
+      test: [CMD, node, dist/healthcheck.js]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+  analytics:
+    <<: *service
+    image: ${ANALYTICS_IMAGE:?Set verified image reference}
+    environment:
+      <<: [*db, *queue]
+      NODE_ENV: production
+      VALKEY_QUEUE_USER: analytics
+      ANALYTICS_INSTANCE_ID: primary
+    networks: [analytics]
+    mem_limit: 1536m
+    cpus: 2
+    healthcheck:
+      test: [CMD, python, -m, oliginvest_analytics, --health]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+  postgres:
+    <<: *service
+    image: ${POSTGRES_IMAGE:?Set verified image reference}
+    environment:
+      POSTGRES_DB: oliginvest
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD_FILE: /run/secrets/DB_POSTGRES_PASSWORD
+      POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256 --auth-local=peer
+    command: [postgres, -c, config_file=/etc/postgresql/postgresql.conf, -c, hba_file=/etc/postgresql/pg_hba.conf]
+    networks: [backend, analytics]
+    mem_limit: 1024m
+    cpus: 1
+    shm_size: 128m
+    tmpfs: ["/tmp:size=64m,mode=1777", "/var/run/postgresql:uid=999,gid=999,mode=0700"]
+    volumes:
+      - postgres-data:/var/lib/postgresql
+      - backup-data:/var/lib/pgbackrest
+      - backup-spool:/var/spool/pgbackrest
+      - ./infra/postgres/postgresql.conf:/etc/postgresql/postgresql.conf:ro
+      - ./infra/postgres/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
+      - ./infra/postgres/pgbackrest.conf:/etc/pgbackrest/pgbackrest.conf:ro
+    healthcheck:
+      test: [CMD, pg_isready, -U, postgres, -d, oliginvest]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  migrate:
+    <<: *service
+    image: ${MIGRATE_IMAGE:?Set verified image reference}
+    environment: *db
+    profiles: [operations]
+    networks: [backend]
+    mem_limit: 256m
+    cpus: 1
+    restart: 'no'
+  valkey-queue:
+    <<: *service
+    image: ${VALKEY_QUEUE_IMAGE:?Set verified image reference}
+    command: [valkey-server, --aclfile, /run/secrets/VALKEY_QUEUE_ACL, --maxmemory, 96mb, --maxmemory-policy, noeviction, --appendonly, 'yes', --appendfsync, everysec, --save, '']
+    networks: [backend, analytics]
+    mem_limit: 128m
+    cpus: 0.5
+    volumes: [queue-data:/data]
+    healthcheck:
+      test: [CMD-SHELL, "valkey-cli ping 2>&1 | grep -q NOAUTH"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+  valkey-cache:
+    <<: *service
+    image: ${VALKEY_CACHE_IMAGE:?Set verified image reference}
+    command: [valkey-server, --aclfile, /run/secrets/VALKEY_CACHE_ACL, --maxmemory, 96mb, --maxmemory-policy, allkeys-lru, --appendonly, 'no', --save, '']
+    networks: [backend]
+    mem_limit: 128m
+    cpus: 0.5
+    tmpfs: ["/tmp:size=16m,mode=1777", "/data:size=16m,uid=10007,gid=10007,mode=0700"]
+    healthcheck:
+      test: [CMD-SHELL, "valkey-cli ping 2>&1 | grep -q NOAUTH"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+  caddy:
+    <<: *service
+    image: ${CADDY_IMAGE:?Set verified image reference}
+    environment:
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:?Set public origin}
+      ACME_EMAIL: ${ACME_EMAIL:?Set ACME email}
+      VPS_TUNNEL_CIDR: ${VPS_TUNNEL_CIDR:?Set trusted proxy CIDR}
+      CADDY_ADMIN_URL: ${CADDY_ADMIN_URL:?Set container loopback admin URL}
+    networks: [edge, egress]
+    mem_limit: 64m
+    cpus: 0.5
+    sysctls: {net.ipv4.ip_unprivileged_port_start: '0'}
+    ports:
+      - target: 443
+        published: '${HTTPS_PORT:?Set HTTPS port}'
+        host_ip: ${HTTPS_BIND_ADDRESS:?Set bind address}
+    volumes:
+      - ./infra/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+      - caddy-logs:/var/log/caddy
+    healthcheck:
+      test: [CMD-SHELL, 'wget -q -O /dev/null "$$CADDY_ADMIN_URL"']
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
+networks:
+  edge: {internal: true}
+  backend: {internal: true}
+  analytics: {internal: true}
+  egress: {}
+
+volumes:
+  postgres-data:
+  backup-data:
+  backup-spool:
+  queue-data:
+  caddy-data:
+  caddy-config:
+  caddy-logs:

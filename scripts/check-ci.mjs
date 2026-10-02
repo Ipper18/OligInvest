@@ -11,6 +11,17 @@ export function checkContexts(workflows, ruleset) {
     assert.ok(workflow.on.pull_request !== undefined || "pull_request" in workflow.on);
     assert.ok(!("pull_request_target" in workflow.on));
     for (const [id, job] of Object.entries(workflow.jobs)) {
+      if (id === "release") {
+        assert.equal(job.if, "github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')");
+        assert.deepEqual(workflow.on.push.tags, ["v*.*.*"]);
+        assert.deepEqual(job.permissions, { contents: "write", packages: "write", "id-token": "write", attestations: "write" });
+        assert.equal(job.needs, "images");
+        for (const step of job.steps ?? []) {
+          if (step.uses) assert.match(step.uses, /^[\w.-]+\/[\w./-]+@[a-f0-9]{40}$/);
+        }
+        continue;
+      }
+      assert.ok(!job.permissions || Object.values(job.permissions).every((value) => value === "read" || value === "none"), "PR jobs must be read-only");
       const matrix = job.strategy?.matrix;
       let variants = [{}];
       if (matrix?.include) variants = matrix.include;

@@ -1,0 +1,170 @@
+name: Production images and release
+on:
+  pull_request:
+  push:
+    branches: [main]
+    tags: ['v*.*.*']
+permissions: {contents: read}
+concurrency:
+  group: images-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+jobs:
+  images:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
+        with: {node-version-file: .nvmrc, package-manager-cache: false}
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
+        with: {version: '12.4.2', run_install: false}
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @oliginvest/web exec playwright install --with-deps chromium webkit firefox
+      - run: node --test --test-reporter=dot scripts/check-ci.test.mjs
+      - run: sudo python3 infra/tests/test-deploy.py
+      - run: python3 infra/tests/test-image-audit.py
+      - run: node apps/api/spike/auth-storage.mjs
+      - run: node scripts/ci-images.mjs
+      - run: python3 scripts/image-audit.py web api jobs analytics postgres migrate caddy valkey-queue valkey-cache
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: production-images-report
+          path: |
+            .git/m0-2-images/*.log
+            reports/images/
+            apps/web/playwright-report/
+            apps/web/test-results/
+          include-hidden-files: true
+          retention-days: 7
+  release:
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    needs: images
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    permissions:
+      contents: write
+      packages: write
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with: {persist-credentials: false, fetch-depth: 0}
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
+        with: {node-version-file: .nvmrc, package-manager-cache: false}
+      - uses: sigstore/cosign-installer@faadad0cce49287aee09b3a48701e75088a2c6ad
+        with: {cosign-release: 'v3.1.3'}
+      - run: node scripts/ci-images.mjs --build-only
+      - run: python3 scripts/image-audit.py web api jobs analytics postgres migrate caddy valkey-queue valkey-cache
+      - name: Authenticate publication
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: printf '%s' "$GH_TOKEN" | docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
+      - id: publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 infra/scripts/release.py
+      - uses: actions/attest-build-provenance@43d14bc2b83dec42d39ecae14e916627a18bb661
+        with:
+          subject-name: ${{ steps.publish.outputs.web_name }}
+          subject-digest: ${{ steps.publish.outputs.web_digest }}
+          push-to-registry: true
+      - uses: actions/attest-sbom@51e74621a501c89df81fc1391c5a8f4cfc9fab2f
+        with:
+          subject-name: ${{ steps.publish.outputs.web_name }}
+          subject-digest: ${{ steps.publish.outputs.web_digest }}
+          sbom-path: reports/images/web.cdx.json
+          push-to-registry: true
+      - uses: actions/attest-build-provenance@43d14bc2b83dec42d39ecae14e916627a18bb661
+        with:
+          subject-name: ${{ steps.publish.outputs.api_name }}
+          subject-digest: ${{ steps.publish.outputs.api_digest }}
+          push-to-registry: true
+      - uses: actions/attest-sbom@51e74621a501c89df81fc1391c5a8f4cfc9fab2f
+        with:
+          subject-name: ${{ steps.publish.outputs.api_name }}
+          subject-digest: ${{ steps.publish.outputs.api_digest }}
+          sbom-path: reports/images/api.cdx.json
+          push-to-registry: true
+      - uses: actions/attest-build-provenance@43d14bc2b83dec42d39ecae14e916627a18bb661
+        with:
+          subject-name: ${{ steps.publish.outputs.jobs_name }}
+          subject-digest: ${{ steps.publish.outputs.jobs_digest }}
+          push-to-registry: true
+      - uses: actions/attest-sbom@51e74621a501c89df81fc1391c5a8f4cfc9fab2f
+        with:
+          subject-name: ${{ steps.publish.outputs.jobs_name }}
+          subject-digest: ${{ steps.publish.outputs.jobs_digest }}
+          sbom-path: reports/images/jobs.cdx.json
+          push-to-registry: true
+      - uses: actions/attest-build-provenance@43d14bc2b83dec42d39ecae14e916627a18bb661
+        with:
+          subject-name: ${{ steps.publish.outputs.analytics_name }}
+          subject-digest: ${{ steps.publish.outputs.analytics_digest }}
+          push-to-registry: true
+      - uses: actions/attest-sbom@51e74621a501c89df81fc1391c5a8f4cfc9fab2f
+        with:
+          subject-name: ${{ steps.publish.outputs.analytics_name }}
+          subject-digest: ${{ steps.publish.outputs.analytics_digest }}
+          sbom-path: reports/images/analytics.cdx.json
+          push-to-registry: true
+      - uses: actions/attest-build-provenance@43d14bc2b83dec42d39ecae14e916627a18bb661
+        with:
+          subject-name: ${{ steps.publish.outputs.postgres_name }}
+          subject-digest: ${{ steps.publish.outputs.postgres_digest }}
+          push-to-registry: true
+      - uses: actions/attest-sbom@51e74621a501c89df81fc1391c5a8f4cfc9fab2f
+        with:
+          subject-name: ${{ steps.publish.outputs.postgres_name }}
+          subject-digest: ${{ steps.publish.outputs.postgres_digest }}
+          sbom-path: reports/images/postgres.cdx.json
+          push-to-registry: true
+      - uses: actions/attest-build-provenance@43d14bc2b83dec42d39ecae14e916627a18bb661
+        with:
+          subject-name: ${{ steps.publish.outputs.migrate_name }}
+          subject-digest: ${{ steps.publish.outputs.migrate_digest }}
+          push-to-registry: true
+      - uses: actions/attest-sbom@51e74621a501c89df81fc1391c5a8f4cfc9fab2f
+        with:
+          subject-name: ${{ steps.publish.outputs.migrate_name }}
+          subject-digest: ${{ steps.publish.outputs.migrate_digest }}
+          sbom-path: reports/images/migrate.cdx.json
+          push-to-registry: true
+      - uses: actions/attest-build-provenance@43d14bc2b83dec42d39ecae14e916627a18bb661
+        with:
+          subject-name: ${{ steps.publish.outputs.caddy_name }}
+          subject-digest: ${{ steps.publish.outputs.caddy_digest }}
+          push-to-registry: true
+      - uses: actions/attest-sbom@51e74621a501c89df81fc1391c5a8f4cfc9fab2f
+        with:
+          subject-name: ${{ steps.publish.outputs.caddy_name }}
+          subject-digest: ${{ steps.publish.outputs.caddy_digest }}
+          sbom-path: reports/images/caddy.cdx.json
+          push-to-registry: true
+      - uses: actions/attest-build-provenance@43d14bc2b83dec42d39ecae14e916627a18bb661
+        with:
+          subject-name: ${{ steps.publish.outputs.valkey_queue_name }}
+          subject-digest: ${{ steps.publish.outputs.valkey_queue_digest }}
+          push-to-registry: true
+      - uses: actions/attest-sbom@51e74621a501c89df81fc1391c5a8f4cfc9fab2f
+        with:
+          subject-name: ${{ steps.publish.outputs.valkey_queue_name }}
+          subject-digest: ${{ steps.publish.outputs.valkey_queue_digest }}
+          sbom-path: reports/images/valkey-queue.cdx.json
+          push-to-registry: true
+      - uses: actions/attest-build-provenance@43d14bc2b83dec42d39ecae14e916627a18bb661
+        with:
+          subject-name: ${{ steps.publish.outputs.valkey_cache_name }}
+          subject-digest: ${{ steps.publish.outputs.valkey_cache_digest }}
+          push-to-registry: true
+      - uses: actions/attest-sbom@51e74621a501c89df81fc1391c5a8f4cfc9fab2f
+        with:
+          subject-name: ${{ steps.publish.outputs.valkey_cache_name }}
+          subject-digest: ${{ steps.publish.outputs.valkey_cache_digest }}
+          sbom-path: reports/images/valkey-cache.cdx.json
+          push-to-registry: true
+      - name: Publish complete signed deployment package
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" --verify-tag --generate-notes release/oliginvest.tar.gz release/oliginvest.sigstore.json reports/images/*.cdx.json

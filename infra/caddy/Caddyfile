@@ -1,0 +1,53 @@
+{
+ email {$ACME_EMAIL}
+ auto_https disable_redirects
+ servers :443 {
+  protocols h1 h2
+  listener_wrappers {
+   proxy_protocol {
+    timeout 2s
+    allow {$VPS_TUNNEL_CIDR}
+    fallback_policy reject
+   }
+   tls
+  }
+ }
+}
+
+{$PUBLIC_BASE_URL} {
+ tls {
+  protocols tls1.3
+  issuer acme {
+   disable_http_challenge
+  }
+ }
+ header {
+  Strict-Transport-Security "max-age=63072000; includeSubDomains"
+  X-Content-Type-Options nosniff
+  X-Frame-Options DENY
+  Cross-Origin-Opener-Policy same-origin
+  Cross-Origin-Resource-Policy same-origin
+  Referrer-Policy no-referrer
+  Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=(), serial=(), hid=(), bluetooth=(), display-capture=(), browsing-topics=()"
+  -Server
+ }
+ log {
+  output file /var/log/caddy/access.json
+ }
+ log_append request_id {http.request.uuid}
+ reverse_proxy /api/* api:3000 {
+  header_up X-Request-Id {http.request.uuid}
+  flush_interval -1
+  lb_try_duration 30s
+  transport http {
+   keepalive 2s
+  }
+ }
+ reverse_proxy web:3000 {
+  header_up X-Request-Id {http.request.uuid}
+  lb_try_duration 30s
+  transport http {
+   keepalive 2s
+  }
+ }
+}

@@ -29,15 +29,14 @@ test("browser resources stay on origin and RSC forwards the request context", as
   request,
 }) => {
   const id = crypto.randomUUID();
+  const origin = process.env.E2E_BASE_URL || "https://127.0.0.1:3197";
   const context = await browser.newContext({
     locale: "pl-PL",
     ignoreHTTPSErrors: true,
     extraHTTPHeaders: { "X-Request-Id": id, "Accept-Language": "pl-PL" },
   });
   try {
-    await context.addCookies([
-      { name: "session", value: "synthetic-e2e", url: "https://127.0.0.1:3197" },
-    ]);
+    await context.addCookies([{ name: "session", value: "synthetic-e2e", url: origin }]);
     const page = await context.newPage();
     const urls: string[] = [];
     const fonts: string[] = [];
@@ -50,13 +49,13 @@ test("browser resources stay on origin and RSC forwards the request context", as
     page.on("console", (message) => {
       if (message.type() === "error") errors.push(message.text());
     });
-    await page.goto("https://127.0.0.1:3197");
+    await page.goto(origin);
     await expect(page.getByText("API: proces działa.")).toBeVisible();
     await page.waitForLoadState("networkidle");
     expect(errors).toEqual([]);
     expect(fonts).toEqual([]);
     expect(urls.some((url) => url.includes("/_next/static/"))).toBe(true);
-    expect(urls.every((url) => new URL(url).origin === "https://127.0.0.1:3197")).toBe(true);
+    expect(urls.every((url) => new URL(url).origin === origin)).toBe(true);
     // Next creates its accessibility announcer with CSSOM styles after hydration.
     expect(
       await page
@@ -65,10 +64,19 @@ test("browser resources stay on origin and RSC forwards the request context", as
         )
         .count(),
     ).toBe(0);
-    const forwarded = await (await request.get("http://127.0.0.1:3198/last-request")).json();
-    expect(forwarded.cookie).toContain("session=synthetic-e2e");
-    expect(forwarded["x-request-id"]).toBe(id);
-    expect(forwarded["accept-language"]).toBe("pl-PL");
+    if (process.env.E2E_BASE_URL) {
+      const result = await request.get(`${origin}/api/v1/health/live`, {
+        headers: { "X-Request-Id": id },
+      });
+      expect(result.status()).toBe(200);
+      expect(result.headers()["x-request-id"]).toMatch(/^[a-f0-9-]{36}$/);
+      expect(result.headers()["x-request-id"]).not.toBe(id);
+    } else {
+      const forwarded = await (await request.get("http://127.0.0.1:3198/last-request")).json();
+      expect(forwarded.cookie).toContain("session=synthetic-e2e");
+      expect(forwarded["x-request-id"]).toBe(id);
+      expect(forwarded["accept-language"]).toBe("pl-PL");
+    }
   } finally {
     await context.close();
   }
@@ -80,7 +88,7 @@ test("CSP refuses a script without the response nonce", async ({ page }) => {
       document.documentElement.dataset.blockedDirective = event.effectiveDirective;
     });
   });
-  await page.route("https://127.0.0.1:3197/", async (route) => {
+  await page.route(`${process.env.E2E_BASE_URL || "https://127.0.0.1:3197"}/`, async (route) => {
     const response = await route.fetch();
     const html = await response.text();
     await route.fulfill({

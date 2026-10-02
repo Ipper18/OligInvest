@@ -1,0 +1,27 @@
+{
+ auto_https disable_redirects
+}
+https://localhost {
+ tls internal
+ header {
+  Strict-Transport-Security "max-age=63072000; includeSubDomains"
+  X-Content-Type-Options nosniff
+  X-Frame-Options DENY
+  Cross-Origin-Opener-Policy same-origin
+  Cross-Origin-Resource-Policy same-origin
+  Referrer-Policy no-referrer
+  Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=(), serial=(), hid=(), bluetooth=(), display-capture=(), browsing-topics=()"
+ }
+ reverse_proxy /api/* api:3000 {
+  header_up X-Request-Id {http.request.uuid}
+  transport http {
+   keepalive 2s
+  }
+ }
+ reverse_proxy web:3000 {
+  header_up X-Request-Id {http.request.uuid}
+  transport http {
+   keepalive 2s
+  }
+ }
+}

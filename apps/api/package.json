@@ -12,15 +12,17 @@
     "start": "node dist/server.js"
   },
   "dependencies": {
-    "@oliginvest/config": "workspace:*",
-    "@oliginvest/platform": "workspace:*",
     "@hono/node-server": "2.1.1",
     "@hono/zod-openapi": "1.6.3",
+    "@oliginvest/config": "workspace:*",
+    "@oliginvest/platform": "workspace:*",
     "hono": "4.13.8",
     "pg": "8.23.0",
     "zod": "4.6.5"
   },
   "devDependencies": {
+    "@better-auth/api-key": "1.7.5",
+    "@node-rs/argon2": "2.2.1",
     "@types/node": "24.13.5",
     "@types/pg": "8.23.1",
     "better-auth": "1.7.5"

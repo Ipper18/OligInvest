@@ -64,18 +64,18 @@ Bez logiki domenowej; wynik: działające CI, baza z RLS, wydanie podpisane i wd
 | BL-017 | CI w GitHub Actions: `lint`, `typecheck`, `unit`, `contracts`, `build` (macierz bez modułów), `budgets`, `deps-audit`; akcje przypięte SHA, token tylko do odczytu; CodeQL przez konfigurację domyślną GitHub po scaleniu M0-1 (BL-019), poza własnymi workflow | NFR-03.09, NFR-10.02, NFR-10.03, NFR-02.02 | CI | BL-003, BL-008, BL-010, BL-016 | 2 | w toku |
 | BL-018 | E2E: Playwright (Chromium, WebKit, Firefox) z `@axe-core/playwright`; M0-1: test dymny lokalnego buildu produkcyjnego z usługami `compose.dev.yaml`; M0-2: ten sam test na obrazach produkcyjnych po BL-020–BL-023; zamknięcie dopiero po obu częściach | NFR-04.01, NFR-06.01 | CI, A11Y | BL-017; część M0-2: BL-020–BL-023 | 1 | w toku |
 | BL-019 | Ustawienia repozytorium: ruleset `main`, skanowanie sekretów z push protection, CodeQL, alerty Dependabot, prywatne zgłaszanie podatności, `CODEOWNERS`, Renovate, reguła CI dla `.xlsx/.csv` spoza fixtures | NFR-03.12, NFR-03.09, NFR-10.03 | CI, [ADR-013](../09-decyzje/ADR-013-repozytorium-publiczne.md) | BL-017 | 1 | w toku |
-| BL-020 | Obrazy Docker (nie-root, FS tylko do odczytu, bazy przypięte digestem): `web`, `api`, `jobs`, `analytics`, `postgres` z pgBackRest, `migrate` | NFR-03.11 | INF | BL-009, BL-011, BL-013, BL-014 | 2 | todo |
-| BL-021 | Workflow `release.yml`: GHCR, SBOM (syft), poświadczenia, cosign keyless, osv-scanner obrazów, podpisana paczka wdrożeniowa | NFR-03.09 | CI | BL-020 | 2 | todo |
-| BL-022 | `compose.yaml`: sieci `edge`/`backend`/`analytics` (internal) i `egress`, limity zasobów, sekrety jako pliki, dwie instancje Valkey z ACL | NFR-01.08, NFR-03.11 | INF, [ADR-003](../09-decyzje/ADR-003-hybryda-obliczen-i-kolejki.md) | BL-020 | 1,5 | todo |
-| BL-023 | Skrypty `bootstrap-vm.sh`, `generate-secrets.sh`, `deploy.sh` (weryfikacja cosign, kopia przed migracją, bramka zdrowia, wycofanie) | NFR-09.05, NFR-03.11 | INF, CI | BL-021, BL-022 | 3 | todo |
+| BL-020 | Obrazy Docker (nie-root, FS tylko do odczytu, bazy przypięte digestem): `web`, `api`, `jobs`, `analytics`, `postgres` z pgBackRest, `migrate` | NFR-03.11 | INF | BL-009, BL-011, BL-013, BL-014 | 2 | w toku |
+| BL-021 | Workflow `release.yml`: GHCR, SBOM (syft), poświadczenia, cosign keyless, osv-scanner obrazów, podpisana paczka wdrożeniowa | NFR-03.09 | CI | BL-020 | 2 | w toku |
+| BL-022 | `compose.yaml`: sieci `edge`/`backend`/`analytics` (internal) i `egress`, limity zasobów, sekrety jako pliki, dwie instancje Valkey z ACL | NFR-01.08, NFR-03.11 | INF, [ADR-003](../09-decyzje/ADR-003-hybryda-obliczen-i-kolejki.md) | BL-020 | 1,5 | w toku |
+| BL-023 | Skrypty `bootstrap-vm.sh`, `generate-secrets.sh`, `deploy.sh` (weryfikacja cosign, kopia przed migracją, bramka zdrowia, wycofanie) | NFR-09.05, NFR-03.11 | INF, CI | BL-021, BL-022 | 3 | w toku |
 | BL-024 | VPS: nginx `stream` (SNI, PROXY v1), port 80 (301/403), nftables, WireGuard (tunel i przekaźnik administracyjny z MTU), NAT ruchu wychodzącego | NFR-03.11 | INF, [ADR-011](../09-decyzje/ADR-011-topologia-wdrozenia.md) | — | 2 | todo |
 | BL-025 | VM i Caddy: hardening (nftables, SSH, chrony z NTS, DNS-over-TLS, AppArmor), `daemon.json`, Caddyfile (TLS 1.3, `proxy_protocol`, TLS-ALPN-01), BIOS *AC Recovery*, VM „Start at boot” | NFR-03.11, NFR-03.06 | INF | BL-024 | 2 | todo |
 | BL-026 | DNS w home.pl: A/AAAA, spike parametrów CAA (`accounturi`, `validationmethods`) z decyzją, DNSSEC, 2FA, blokada transferu | NFR-03.11 | INF | BL-025 | 0,5 | todo |
 | BL-027 | Migracja TLS Immicha na dom (fazy 0–3; faza 4 po 7 dniach) w oknie serwisowym | NFR-03.11 | INF | BL-024, BL-025 | 1,5 | todo |
 | BL-028 | Kopie: pgBackRest (WAL, zst, AES-256-CBC), restic → rest-server append-only na VPS, timery, weryfikacja repozytoriów | NFR-09.03 | DR | BL-022, BL-024 | 2 | todo |
 | BL-029 | Uptime Kuma na VPS: sondy `app-ready`, `app-certificate`, `vm-health`, alerty e-mail | NFR-09.01, NFR-09.04 | MON | BL-023, BL-024 | 1 | todo |
-| BL-030 | Spike: przedrostek `__Host-` w Better Auth — notatka lub ADR (odstępstwo O-01) | NFR-03.03 | AUTH | BL-009 | 1 | todo |
-| BL-031 | Spike: przechowywanie sekretu TOTP, kodów zapasowych (`encrypted`) i kluczy API w Better Auth; czas Argon2id na serwerze (100–250 ms) | NFR-03.02, NFR-03.08 | [ADR-004](../09-decyzje/ADR-004-postgres-better-auth-rls.md), AUTH | BL-009, BL-023 | 1 | todo |
+| BL-030 | Spike: przedrostek `__Host-` w Better Auth — notatka lub ADR (odstępstwo O-01) | NFR-03.03 | AUTH | BL-009 | 1 | w toku |
+| BL-031 | Spike: przechowywanie sekretu TOTP, kodów zapasowych (`encrypted`) i kluczy API w Better Auth; czas Argon2id na serwerze (100–250 ms) | NFR-03.02, NFR-03.08 | [ADR-004](../09-decyzje/ADR-004-postgres-better-auth-rls.md), AUTH | BL-009, BL-023 | 1 | w toku |
 | BL-032 | Spike: TypeScript 7 z Next.js, Hono, Drizzle i Better Auth — decyzja 7.x albo 6.x | NFR-10.05 | STACK | BL-011 | 0,5 | w toku |
 | BL-033 | Raport rozmiarów bazowych (Next.js, Zod, natywne prymitywy UI — BL-012 nie używa Radix) i aktualizacja PERF §2 | NFR-01.02 | PERF | BL-016 | 0,5 | w toku |
 | BL-034 | Środowisko deweloperskie w M0-1: samodzielne `compose.dev.yaml` (PostgreSQL, Valkey ×2, Mailpit), `pnpm dev`, dane syntetyczne; bez zależności od produkcyjnego Compose i obrazów aplikacji | NFR-10.01 | CI | BL-013, BL-014 | 1 | w toku |
@@ -83,6 +83,10 @@ Bez logiki domenowej; wynik: działające CI, baza z RLS, wydanie podpisane i wd
 | | **Suma etapu** | | | | **51** | |
 
 ### 1.1 Postęp i odchylenia
+
+- **2026-10-01, M0-2 / BL-018/020–023/030/031:** implementacja i lokalne testy zakończone: 9 obrazów, izolacja sekretów/sieci, kopia pgBackRest, 36/36 E2E, skan obrazów PASS według CI §5, testy wdrożenia i spiki 3 przeglądarek. R-27 rozstrzygnięte i potwierdzone testami. Statusy `w toku` do końcowego CI i wspólnego DoD; spiki wymagają decyzji właściciela, Argon2id także pomiaru na VM. Estymacje bez zmian, nakład niezmierzony; dodatkowa naprawa pakietów bazowych oraz Caddy, R-28. [Raport](m0-2-session-report.md), [instrukcja właściciela](../07-wdrozenie/m0-2-owner-runbook.md).
+
+- **2026-10-01, M0-2 / BL-022:** analiza konfiguracji ujawniła konflikt sekretów root/0600 z kontenerami non-root. Lokalna reprodukcja Compose potwierdzona; [propozycja korekty INF](m0-2-secret-permissions.md) oczekuje na decyzję właściciela (AGENTS §2.5). Implementacja paczki wstrzymana; R-27, estymacje bez zmian, nakład niezmierzony. [Stan M0-2](m0-2-session-report.md).
 
 - **2026-09-30, domknięcie BL-017:** właściciel zatwierdził jedyny historyczny wyjątek Conventional Commits (8d91754b0adadfb5a2d7e9c2324d4e62f4125a64, commit z 2026-09-20 sprzed reguły). Kontrola historii i tytułu PR w repository; 9 testów lokalnie PASS, nazwy 17 zadań bez zmian. Po scaleniu PR #2 usunąć listę wyjątków i jej obsługę (BL-019, ustawienia-repozytorium.md §5). Bez przepisywania historii, nowych ADR/ryzyk ani zmiany estymacji.
 

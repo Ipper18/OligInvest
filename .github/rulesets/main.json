@@ -90,6 +90,9 @@
           },
           {
             "context": "workers"
+          },
+          {
+            "context": "images"
           }
         ]
       }
