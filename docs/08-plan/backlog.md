@@ -43,6 +43,8 @@ Powiązane: [`roadmapa.md`](roadmapa.md) (etapy i kryteria wyjścia), [`mvp.md`]
 
 Bez logiki domenowej; wynik: działające CI, baza z RLS, wydanie podpisane i wdrożone na docelową infrastrukturę.
 
+M0-3, 2026-10-02: właściciel zatwierdził decyzje BL-030/031; kalibracja Argon2id na VM pozostaje otwarta. Poprawki BL-023 po PR #5 mają 10 testów Linux PASS. Zakres agentowy BL-024–029 obejmuje konfiguracje i instrukcje; dowody docelowe dostarcza właściciel. Estymacje bez zmian, nakład niezmierzony. [Stan M0-3](m0-3-session-report.md).
+
 | ID | Zadanie | Wymagania | Dokumenty | Zależy od | d | Status |
 |---|---|---|---|---|---|---|
 | BL-001 | Bootstrap repozytorium kodu: pnpm 12 (workspace z polityką z SEC §4.3: `minimumReleaseAge`, `trustPolicy`, `strictDepBuilds`, `blockExoticSubdeps`, `allowBuilds`), Turborepo 2.10.13 na start (ADR-015), `.nvmrc` (Node 24), Biome 2.5, `tsconfig` strict, sprawdzanie tytułów PR (Conventional Commits) | NFR-02.01, NFR-03.09, NFR-10.03, NFR-10.05 | STACK, SEC | — | 1 | w toku |

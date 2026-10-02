@@ -7,6 +7,7 @@ from pathlib import Path
 import tarfile
 import tempfile
 import unittest
+from unittest.mock import patch
 
 spec = importlib.util.spec_from_file_location("deploy", Path(__file__).resolve().parents[1] / "scripts/deploy.py")
 deploy = importlib.util.module_from_spec(spec)
@@ -65,6 +66,73 @@ class DeploymentTests(unittest.TestCase):
         self.assertIn("up", calls[-1])
         self.assertNotIn("migrate", calls[-1])
         self.assertFalse(any("down" in call for call in calls))
+
+    def test_each_recreation_failure_restores_data_before_applications(self):
+        services = ("postgres", "valkey-queue", "valkey-cache", "api", "jobs", "analytics", "web", "caddy")
+        for failed in services:
+            with self.subTest(service=failed):
+                calls = []
+                def execute(command):
+                    calls.append(command)
+                    if command[0] == "candidate" and "up" in command and command[-1] == failed:
+                        raise RuntimeError("sensitive tool output")
+                with self.assertRaises(deploy.StepError) as caught:
+                    deploy.activate(["candidate"], ["previous"], execute, lambda *_: None)
+                restored = [c[-1] for c in calls if c[0] == "previous" and "up" in c]
+                self.assertEqual(restored, list(services))
+                self.assertEqual(caught.exception.step, "activate-" + failed)
+                migration = next(c for c in calls if c[-1] == "migrate")
+                self.assertIn("--no-deps", migration)
+
+    def test_failure_log_contains_step_but_no_exception_output(self):
+        calls = []
+        error = deploy.StepError("activate-postgres")
+        error.__cause__ = RuntimeError("password=synthetic-sensitive-value")
+        deploy.log_failure(error, calls.append)
+        self.assertEqual(calls, [["logger", "--tag", "oliginvest", "--priority", "user.err", "system.deploy failed step=activate-postgres"]])
+        with patch.object(deploy, "run", side_effect=OSError("sensitive")):
+            deploy.log_failure(error)
+
+    def test_rollback_failure_preserves_original_step(self):
+        def execute(command):
+            if "up" in command:
+                raise RuntimeError("private output")
+        with self.assertRaises(deploy.StepError) as caught:
+            deploy.activate(["candidate"], ["previous"], execute)
+        calls = []
+        deploy.log_failure(caught.exception, calls.append)
+        self.assertIn("step=activate-postgres rollback_step=rollback-postgres", calls[0][-1])
+
+    def test_wrapped_steps_and_unknown_errors_do_not_leak_output(self):
+        for name in ("download", "verify-package", "backup", "migrate", "provision-secrets", "audit", "publish-current"):
+            with self.assertRaises(deploy.StepError) as caught:
+                deploy.step(name, lambda: (_ for _ in ()).throw(RuntimeError("private output")))
+            calls = []
+            deploy.log_failure(caught.exception, calls.append)
+            self.assertEqual(calls[0][-1], "system.deploy failed step=" + name)
+        calls = []
+        deploy.log_failure(RuntimeError("private output"), calls.append)
+        self.assertEqual(calls[0][-1], "system.deploy failed step=preflight")
+
+    def test_retry_archives_only_inactive_candidate_without_touching_data(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            candidate = root / "releases/v1.2.3"
+            candidate.mkdir(parents=True)
+            (candidate / "images.lock").write_text("evidence")
+            volume = root / "data"
+            volume.write_text("preserved")
+            with self.assertRaises(ValueError):
+                deploy.prepare_candidate(root, candidate, None, False)
+            with self.assertRaises(ValueError):
+                deploy.prepare_candidate(root, candidate, candidate, True)
+            deploy.prepare_candidate(root, candidate, None, True)
+            self.assertFalse(candidate.exists())
+            self.assertEqual(next((root / "failed").glob("*/release/images.lock")).read_text(), "evidence")
+            self.assertEqual(volume.read_text(), "preserved")
+            candidate.symlink_to(root / "data")
+            with self.assertRaises(ValueError):
+                deploy.prepare_candidate(root, candidate, None, True)
 
 
 if __name__ == "__main__":
