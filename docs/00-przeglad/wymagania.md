@@ -114,7 +114,7 @@
 
 | ID | Wymaganie | P | Kryterium akceptacji | § |
 |---|---|---|---|---|
-| FR-07.01 | Rejestracja wyłącznie z zaproszenia: jednorazowy link ważny 72 h, wystawiany przez admina, przypisujący rolę. | P0 | Rejestracja bez ważnego zaproszenia → 403; użyty/wygasły link nie działa. | 3.2 |
+| FR-07.01 | Rejestracja HTTP wyłącznie z zaproszenia: jednorazowy link ważny 72 h, wystawiany przez admina, przypisujący rolę. Pierwsze konto właściciela tworzy lokalne CLI `create-owner` wyłącznie w pustej bazie, z audytem i obowiązkowym TOTP (decyzja 2026-10-03). | P0 | Rejestracja HTTP bez ważnego zaproszenia → 403; użyty/wygasły link nie działa. CLI odmawia przy istniejącym koncie i nie pozwala na dwa równoczesne bootstrapy. | 3.2 |
 | FR-07.02 | Logowanie e-mailem i hasłem (Argon2id), weryfikacja adresu e-mail, sprawdzanie hasła w bazie wycieków (k-anonimowość). | P0 | Hasło < 12 znaków lub z wycieku odrzucone; hash w formacie Argon2id. | 3.2, 4.3 |
 | FR-07.03 | Logowanie OAuth (Google, GitHub) jako alternatywny pierwszy składnik, z wymuszonym drugim składnikiem (Z-04). | P2 | Logowanie przez Google u użytkownika z TOTP kończy się ekranem kodu; bez kodu brak dostępu do danych. | 3.2 |
 | FR-07.04 | Obowiązkowe 2FA TOTP dla każdego konta: konfiguracja przed pierwszym dostępem do danych, 10 kodów zapasowych, reset tylko przez admina (audyt). | P0 | Każdy endpoint danych zwraca 403 `MFA_REQUIRED` dla sesji bez zweryfikowanego TOTP; test e2e całej ścieżki. | 3.2, 4.3 |

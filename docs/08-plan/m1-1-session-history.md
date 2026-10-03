@@ -1,0 +1,33 @@
+# M1-1 — historia sesji
+
+**Cel:** zachować krótkie podsumowania zamkniętych kroków paczki; bieżący stan i następny krok opisuje [raport](m1-1-session-report.md).
+
+## 2026-10-03 — przegląd wejściowy
+
+- Utworzono `feat/m1-1-auth` z aktualnego `origin/main` (`52b3120`), przy czystym katalogu roboczym.
+- Potwierdzono zatwierdzenie spików BL-030/031 oraz lokalne wykonanie zależności M0.
+- Wykryto niemożność pierwszego zaproszenia w pustej bazie i niespójny opis weryfikacji e-maila.
+- W raporcie zapisano propozycję CLI `create-owner` i korekty opisu OpenAPI; dokumenty źródłowe i kod bez zmian do decyzji właściciela.
+- Żadnego zadania implementacyjnego ani kryterium wyjścia M1 nie uznano za zakończone.
+- Właściciel zatwierdził obie propozycje; zaktualizowano AUTH, FR-07.01, kontrakt CLI, BL-102 i opis odpowiedzi OpenAPI. Bez zmiany SQL/RLS i ADR.
+
+## 2026-10-03 — adapter SQL i polityka haseł (część BL-101/103/105)
+
+- Better Auth 1.7.5 używa Drizzle w transakcji puli `oliginvest_auth`; zależności auth przeniesione do produkcyjnych, nowy adapter MIT przypięty, instalacja frozen.
+- 11 testów polityki haseł/Argon2id/TOTP PASS; publiczna lista 10000 popularnych haseł z SecLists (MIT), HIBP bez sieci w testach.
+- PostgreSQL 18: rejestracja przez adapter, PHC, ciasteczka, szyfrowanie TOTP i kodów oraz rotacja klucza PASS; RLS/pule PASS, pełne porównanie schematu ZERO DIFFERENCES.
+- Trasy niezamontowane do czasu ukończenia bramek; pending bez zmian. Nie zamknięto zadań paczki.
+
+## 2026-10-03 — wznowienie i naprawa kontroli PR
+
+- Zapisano i wypchnięto checkpoint fasady auth (`23905e9`), następnie wygenerowano klienta (`b5ef6a0`); contracts PASS.
+- Raport images z run 37111698739: glibc 2.41-12+deb13u4 / CVE-2019-1010022 ma zakres bez `fixed`. Debian również wskazuje `(unfixed)`; obecny tag Node ma niezmieniony digest `8ec5d755…`. Nie ma podstaw do deklarowania poprawionej bazy.
+- Rzeczywista odmowa skanera: brak oceny podatności Go w esbuild 0.18.20/0.25.12, dołączonych przez opcjonalne peers Better Auth (drizzle-kit/vitest). Usunięto nieużywane powiązania z produkcyjnego grafu, zachowując narzędzia deweloperskie, politykę OSV i digesty.
+- Dodano kontrolę obrazu: brak narzędzi developerskich i import fasady auth. API lint/typecheck/test/build PASS; potwierdzenie obrazu przez CI oczekuje.
+
+## 2026-10-03 — fasada auth: test integracyjny i rotacja
+
+- Test na PostgreSQL sprawdza zaproszenie przypisane do adresu, rolę, zgody i obowiązkową bramkę MFA.
+- Poprawiono odwzorowanie rotacji przy pierwszym TOTP: natywny JSON Better Auth wskazuje poprzednią sesję; fasada używa podpisanego Set-Cookie, zachowuje limit absolutny i usuwa duplikat ciasteczka.
+- PASS: TOTP poprzedniego okna, odmowa powtórzenia, step-up i unieważnienie starego tokenu, wyścig kodów zapasowych (jeden sukces), blokada 5/15 min, reset hasła i unieważnienie sesji, ponowne użycie resetu, niedozwolone trasy, obcy Origin.
+- `pnpm db:test`: RLS/pule PASS, adapter i fasada PASS, schema ZERO DIFFERENCES. Trasy nadal niezamontowane; API/CLI i testy całości paczki pozostają w toku.

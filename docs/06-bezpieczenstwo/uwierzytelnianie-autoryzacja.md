@@ -22,6 +22,8 @@ Każda sesja, niezależnie od ścieżki, przechodzi przez **bramkę MFA** (`auth
 
 ### 1.1 Rejestracja z zaproszenia
 
+Wyjątek pierwszego uruchomienia (decyzja właściciela 2026-10-03, BL-102/111): lokalne `pnpm admin:create-owner --email <adres> --name <nazwa> --reason <powód>` tworzy pierwszego administratora wyłącznie w pustej bazie. Blokada transakcyjna wyklucza równoczesne utworzenie dwóch właścicieli. Hasło jest czytane z ukrytego wejścia terminala, podlega tej samej polityce i Argon2id. Operator jawnie potwierdza kontrolę adresu oraz akceptację bieżących dokumentów; zapisywane są zgody i audyt `system`. Polecenie nie tworzy sesji ani nie omija konfiguracji TOTP. Każda rejestracja HTTP nadal wymaga zaproszenia; kolejne konta powstają przez `invite`.
+
 ```mermaid
 sequenceDiagram
   autonumber

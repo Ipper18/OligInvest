@@ -5646,7 +5646,7 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Konto utworzone; e-mail weryfikacyjny wysłany; kolejny krok — konfiguracja TOTP. */
+            /** @description Konto utworzone; adres e-mail zweryfikowany przez zaproszenie; kolejny krok — konfiguracja TOTP. */
             200: {
                 headers: {
                     [name: string]: unknown;

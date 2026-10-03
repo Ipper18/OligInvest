@@ -143,7 +143,7 @@ Brama A (**[A]**) — MVP właściciela; brama B (**[B]**) — funkcje wymagane 
 | ID | Zadanie | Wymagania | Dokumenty | Zależy od | d | Status |
 |---|---|---|---|---|---|---|
 | BL-101 | **[A]** Better Auth: e-mail + hasło z Argon2id (`@node-rs/argon2`), pula `oliginvest_auth`, polityka haseł (12–128, lista 10k, słowa kontekstowe, HIBP), limity prób i opóźnienia per konto | FR-07.02, NFR-03.02 | AUTH, [ADR-004](../09-decyzje/ADR-004-postgres-better-auth-rls.md) | BL-007, BL-009, BL-031 | 3 | todo |
-| BL-102 | **[A]** Zaproszenia i rejestracja: `adminCreateInvitation`, `previewInvitation` (token we fragmencie), akceptacja regulaminu i informacji (`consent_events`), CLI pierwszego zaproszenia administratora | FR-07.01, FR-07.12 | AUTH, RODO, API | BL-101 | 3 | todo |
+| BL-102 | **[A]** Zaproszenia i rejestracja: `adminCreateInvitation`, `previewInvitation` (token we fragmencie), akceptacja regulaminu i informacji (`consent_events`), CLI pierwszego konta właściciela (`create-owner`) | FR-07.01, FR-07.12 | AUTH, RODO, API | BL-101 | 3 | todo |
 | BL-103 | **[A]** TOTP: 10 kodów zapasowych (`encrypted`), ochrona przed powtórzeniem kodu, blokada po 5 błędach, bramka MFA | FR-07.04 | AUTH | BL-101 | 3 | todo |
 | BL-104 | **[B]** Bramka regulaminu `TERMS_ACCEPTANCE_REQUIRED`, `/me/legal*`, zgoda na diagnostykę | FR-07.12 | RODO, API | BL-102 | 1,5 | todo |
 | BL-105 | **[A]** Sesje: ciasteczka `__Host-` (albo O-01), 7/30 dni, rotacja, lista sesji i wylogowanie zdalne ≤ 60 s, `Clear-Site-Data` | FR-07.05, NFR-03.03 | AUTH | BL-103, BL-030 | 2 | todo |
@@ -190,6 +190,10 @@ Brama A (**[A]**) — MVP właściciela; brama B (**[B]**) — funkcje wymagane 
 | BL-155 | **[A]** E2E ścieżek krytycznych (zaproszenie → TOTP → import XTB → portfel; bramki), axe, ręczny test VoiceOver z protokołem | NFR-10.02, NFR-06.01 | CI, A11Y | BL-148, BL-122 | 3 | todo |
 | BL-156 | **[B]** Skan produkcji (nagłówki, CSP, TLS, porty z zewnątrz) i odhaczona lista kontrolna RODO § 12 | NFR-03.06, FR-07.12 | SEC, RODO, INF | BL-116, BL-151, BL-118 | 1 | todo |
 | | **Suma etapu** | | | | **102** | |
+
+### 2.1 Postęp i odchylenia
+
+- **2026-10-03, M1-1 (BL-101/102/103/105/106/107/108/109/111/117):** przegląd wejściowy, gałąź `feat/m1-1-auth` i [roboczy PR #7](https://github.com/Ipper18/OligInvest/pull/7). Implementacja nie rozpoczęta: pierwsze zaproszenie wymaga istniejącego zapraszającego w SQL; OpenAPI i AUTH różnie opisują weryfikację e-maila. Właściciel zatwierdził obie korekty; dokumenty źródłowe zaktualizowane, szczegóły w [raporcie](m1-1-session-report.md). Statusy pozostają `todo`, estymacje bez zmian, nakład niezmierzony; nowe R-30. Kontrakty bootstrapu i opisu rejestracji uzgodnione; lista pending bez zmian.
 
 ## 3. M2 — Dane rynkowe, wskaźniki i onboarding
 
