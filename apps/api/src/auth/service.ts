@@ -482,16 +482,14 @@ export class AuthService {
     const { secretConfig } = await auth.$context;
     let valid = false;
     if (backup) {
-      const codes = z
-        .array(z.string())
-        .parse(
-          JSON.parse(
-            await symmetricDecrypt({
-              key: secretConfig,
-              data: z.string().parse(factor.backup_codes),
-            }),
-          ),
-        );
+      const codes = z.array(z.string()).parse(
+        JSON.parse(
+          await symmetricDecrypt({
+            key: secretConfig,
+            data: z.string().parse(factor.backup_codes),
+          }),
+        ),
+      );
       valid = codes.includes(code);
     } else {
       const secret = await symmetricDecrypt({

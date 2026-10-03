@@ -17,3 +17,10 @@
 - 11 testów polityki haseł/Argon2id/TOTP PASS; publiczna lista 10000 popularnych haseł z SecLists (MIT), HIBP bez sieci w testach.
 - PostgreSQL 18: rejestracja przez adapter, PHC, ciasteczka, szyfrowanie TOTP i kodów oraz rotacja klucza PASS; RLS/pule PASS, pełne porównanie schematu ZERO DIFFERENCES.
 - Trasy niezamontowane do czasu ukończenia bramek; pending bez zmian. Nie zamknięto zadań paczki.
+
+## 2026-10-03 — wznowienie i naprawa kontroli PR
+
+- Zapisano i wypchnięto checkpoint fasady auth (`23905e9`), następnie wygenerowano klienta (`b5ef6a0`); contracts PASS.
+- Raport images z run 37111698739: glibc 2.41-12+deb13u4 / CVE-2019-1010022 ma zakres bez `fixed`. Debian również wskazuje `(unfixed)`; obecny tag Node ma niezmieniony digest `8ec5d755…`. Nie ma podstaw do deklarowania poprawionej bazy.
+- Rzeczywista odmowa skanera: brak oceny podatności Go w esbuild 0.18.20/0.25.12, dołączonych przez opcjonalne peers Better Auth (drizzle-kit/vitest). Usunięto nieużywane powiązania z produkcyjnego grafu, zachowując narzędzia deweloperskie, politykę OSV i digesty.
+- Dodano kontrolę obrazu: brak narzędzi developerskich i import fasady auth. API lint/typecheck/test/build PASS; potwierdzenie obrazu przez CI oczekuje.

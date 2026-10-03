@@ -187,3 +187,5 @@ Pełne budżety i strategia ładowania: `docs/04-frontend/wydajnosc.md` (Krok 4)
 | CrowdSec: LAPI na VPS zamiast w domu (Krok 5) | Brak dodatkowego przepływu VPS → dom; agent w domu wysyła alerty połączeniem wychodzącym ([ADR-011](../09-decyzje/ADR-011-topologia-wdrozenia.md)). |
 | Kopie zapasowe: pgBackRest + restic/rest-server (Krok 5) | Cel RPO ≤ 1 h dla bazy (NFR-09.03) wymaga archiwizacji WAL, a nie tylko nocnego `pg_dump`. |
 | Doprecyzowania | Argon2id zamiast domyślnego scrypt w Better Auth; SheetJS CE z CDN dla XLS GPW; jsonschema jako kontrakt dla Pythona; brak dostępu `analytics` do internetu i danych użytkowników. |
+
+M1-1: `.pnpmfile.cjs` usuwa z metadanych Better Auth 1.7.5 wyłącznie opcjonalne peer dependencies `drizzle-kit`, `vitest`, `next`, `react`, `react-dom`. API używa eksportów serwera i adaptera SQL; nie korzysta z generatorów, narzędzi testowych ani integracji frontendowych Better Auth. Własne narzędzia workspace pozostają dostępne. Zapobiega to włączaniu starych binariów esbuild/Go do obrazu API przez `pnpm deploy --prod`; test obrazu sprawdza ich brak i import fasady auth. Bez wyjątków OSV i bez osłabienia strictPeerDependencies.

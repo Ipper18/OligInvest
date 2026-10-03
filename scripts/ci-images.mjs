@@ -182,6 +182,19 @@ try {
     );
   }
   console.log("All nine image USERs and secret mounts PASS");
+  compose(
+    [
+      "run",
+      "--rm",
+      "--no-deps",
+      "api",
+      "node",
+      "--input-type=module",
+      "-e",
+      "import assert from 'node:assert/strict'; import {readdirSync} from 'node:fs'; assert.deepEqual(readdirSync('node_modules/.pnpm').filter(n=>/^(?:@esbuild\\+|esbuild@|drizzle-kit@|vitest@|next@|react@|react-dom@)/u.test(n)),[]); await import('./dist/auth/service.js');",
+    ],
+    { log: "api-runtime-dependencies.log" },
+  );
   compose(["up", "-d", "--wait", "postgres", "valkey-queue", "valkey-cache"], {
     log: "data-start.log",
   });
