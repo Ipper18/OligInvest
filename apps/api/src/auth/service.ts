@@ -319,6 +319,24 @@ export class AuthService {
       const responseHeaders = new Headers(native.headers);
       responseHeaders.delete("content-length");
       let token = tokenBody.parse(data).token;
+      // During enrollment BA replaces the session but returns the old token in
+      // its JSON response. The signed Set-Cookie is the authoritative new token.
+      const nativeSessionCookie = native.headers
+        .getSetCookie()
+        .findLast(
+          (cookie) => cookie.startsWith(`${SESSION_COOKIE}=`) && !cookie.includes("Max-Age=0"),
+        );
+      if (nativeSessionCookie)
+        token =
+          readSignedCookie(
+            new Request(request.url, {
+              headers: {
+                cookie: nativeSessionCookie.split(";")[0] ?? "",
+              },
+            }),
+            SESSION_COOKIE,
+            this.options.configuration,
+          ) ?? undefined;
       let consent: { userId: string; diagnostics: boolean } | undefined;
       if (invitation && token) {
         const created = await findSession(tx, token);
@@ -336,8 +354,15 @@ export class AuthService {
       }
       if (verifiedUser && token) {
         const rotated = randomBytes(32).toString("base64url");
-        await tx.execute(sql`UPDATE auth.sessions SET token=${rotated},mfa_verified_at=now()
+        await tx.execute(sql`UPDATE auth.sessions SET token=${rotated},mfa_verified_at=now(),
+          created_at=COALESCE(${principal?.created_at.toISOString() ?? null}::timestamptz,created_at),
+          expires_at=LEAST(expires_at,COALESCE(${principal?.created_at.toISOString() ?? null}::timestamptz,created_at)+interval '30 days')
           WHERE token=${token} AND user_id=${verifiedUser}::uuid`);
+        const remainingCookies = responseHeaders
+          .getSetCookie()
+          .filter((cookie) => !cookie.startsWith(`${SESSION_COOKIE}=`));
+        responseHeaders.delete("set-cookie");
+        for (const cookie of remainingCookies) responseHeaders.append("set-cookie", cookie);
         responseHeaders.append(
           "set-cookie",
           sessionCookie(
@@ -371,7 +396,9 @@ export class AuthService {
           const resultBody =
             path === "/sign-in/email"
               ? { user: publicSession(active).user }
-              : publicSession(active);
+              : path === "/change-password"
+                ? { status: true }
+                : publicSession(active);
           return {
             response: Response.json(resultBody, { headers: responseHeaders }),
             ...(consent ? { consent } : {}),

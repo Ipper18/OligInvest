@@ -24,3 +24,10 @@
 - Raport images z run 37111698739: glibc 2.41-12+deb13u4 / CVE-2019-1010022 ma zakres bez `fixed`. Debian również wskazuje `(unfixed)`; obecny tag Node ma niezmieniony digest `8ec5d755…`. Nie ma podstaw do deklarowania poprawionej bazy.
 - Rzeczywista odmowa skanera: brak oceny podatności Go w esbuild 0.18.20/0.25.12, dołączonych przez opcjonalne peers Better Auth (drizzle-kit/vitest). Usunięto nieużywane powiązania z produkcyjnego grafu, zachowując narzędzia deweloperskie, politykę OSV i digesty.
 - Dodano kontrolę obrazu: brak narzędzi developerskich i import fasady auth. API lint/typecheck/test/build PASS; potwierdzenie obrazu przez CI oczekuje.
+
+## 2026-10-03 — fasada auth: test integracyjny i rotacja
+
+- Test na PostgreSQL sprawdza zaproszenie przypisane do adresu, rolę, zgody i obowiązkową bramkę MFA.
+- Poprawiono odwzorowanie rotacji przy pierwszym TOTP: natywny JSON Better Auth wskazuje poprzednią sesję; fasada używa podpisanego Set-Cookie, zachowuje limit absolutny i usuwa duplikat ciasteczka.
+- PASS: TOTP poprzedniego okna, odmowa powtórzenia, step-up i unieważnienie starego tokenu, wyścig kodów zapasowych (jeden sukces), blokada 5/15 min, reset hasła i unieważnienie sesji, ponowne użycie resetu, niedozwolone trasy, obcy Origin.
+- `pnpm db:test`: RLS/pule PASS, adapter i fasada PASS, schema ZERO DIFFERENCES. Trasy nadal niezamontowane; API/CLI i testy całości paczki pozostają w toku.

@@ -208,6 +208,9 @@ try {
   const { testAuthStorage } = await import("../../../apps/api/integration/storage.mjs");
   await testAuthStorage({ host, port, database: migrated, passwords });
   console.log("Better Auth PostgreSQL adapter, Argon2id, cookies and key rotation: PASS");
+  const { testAuthFacade } = await import("../../../apps/api/integration/facade.mjs");
+  await testAuthFacade({ host, port, database: migrated, passwords });
+  console.log("Auth facade invitations, MFA, replay, session rotation and password reset: PASS");
   const roleSettings = () =>
     withClient(
       migrated,
