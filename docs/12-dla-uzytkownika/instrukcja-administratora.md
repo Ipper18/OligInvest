@@ -18,7 +18,8 @@ Na serwerze: `sudo /opt/oliginvest/bin/oli-admin <polecenie> [opcje]` — skrypt
 
 | Polecenie | Skutek | Kiedy |
 |---|---|---|
-| `invite --email <adres> --role user\|pro\|admin` | tworzy zaproszenie ważne 72 h i wysyła e-mail; wypisuje link (token we fragmencie adresu) | pierwsze konto administratora; zaproszenie bez panelu |
+| `create-owner --email <adres> --name <nazwa> --reason "<powód>"` | tworzy pierwszego administratora wyłącznie w pustej bazie; hasło z ukrytego wejścia, jawne potwierdzenie adresu i bieżących dokumentów, audyt; konfiguracja TOTP nadal obowiązkowa | pierwsze konto właściciela |
+| `invite --email <adres> --role user\|pro\|admin` | tworzy zaproszenie ważne 72 h i wysyła e-mail; wypisuje link (token we fragmencie adresu) | kolejne konta; zaproszenie bez panelu |
 | `reset-2fa --email <adres> --reason "<powód>"` | wyłącza TOTP konta; przy następnym logowaniu użytkownik konfiguruje go od nowa; e-mail do użytkownika | utracony telefon i kody (po potwierdzeniu tożsamości poza aplikacją); break-glass P13 |
 | `revoke-sessions --email <adres>` | wylogowuje użytkownika ze wszystkich urządzeń (≤ 60 s) | podejrzenie przejęcia konta (P1) |
 | `revoke-all-sessions --reason "<powód>"` | wylogowuje wszystkich | incydent, odtworzenie z kopii starszej niż 1 h |
@@ -33,7 +34,7 @@ Skrypty hosta (poza CLI aplikacji): `infra/scripts/deploy.sh <wersja>` (wdrożen
 
 ## 3. Zaproszenia i konta
 
-1. Pierwsze konto administratora: `oli-admin invite --email <adres> --role admin`, rejestracja z linku, TOTP, kody zapasowe do menedżera haseł.
+1. Pierwsze konto administratora: `oli-admin create-owner --email <adres> --name <nazwa> --reason "<powód>"`, następnie logowanie i konfiguracja TOTP, kody zapasowe do menedżera haseł. Polecenie odmawia, jeśli istnieje jakiekolwiek konto; nie przyjmuje hasła w argumentach. Dotyczy wyłącznie lokalnego bootstrapu zatwierdzonego 2026-10-03; rejestracja HTTP pozostaje dostępna tylko z zaproszenia.
 2. Kolejne osoby: **/admin → Zaproszenia** (brama B M1). Zapraszaj tylko pełnoletnie osoby, które same o to prosiły; e-mail z zaproszeniem zawiera informację z art. 14 RODO.
 3. Rola `pro` daje dostęp do ciężkich analiz (Monte Carlo, optymalizacja, backtest, testy skrajne) — nadawaj świadomie, bo obciążają serwer współdzielony z Immichem.
 4. Blokada konta: **/admin → Użytkownicy** (od M5a) albo `revoke-sessions` + `revoke-pats`, z e-mailem do użytkownika (regulamin § 4 ust. 4).

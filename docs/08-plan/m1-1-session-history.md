@@ -9,3 +9,4 @@
 - Wykryto niemożność pierwszego zaproszenia w pustej bazie i niespójny opis weryfikacji e-maila.
 - W raporcie zapisano propozycję CLI `create-owner` i korekty opisu OpenAPI; dokumenty źródłowe i kod bez zmian do decyzji właściciela.
 - Żadnego zadania implementacyjnego ani kryterium wyjścia M1 nie uznano za zakończone.
+- Właściciel zatwierdził obie propozycje; zaktualizowano AUTH, FR-07.01, kontrakt CLI, BL-102 i opis odpowiedzi OpenAPI. Bez zmiany SQL/RLS i ADR.

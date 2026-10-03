@@ -200,7 +200,7 @@ paths:
           application/json:
             schema: {$ref: '#/components/schemas/AuthSignUpRequest'}
       responses:
-        '200': {description: 'Konto utworzone; e-mail weryfikacyjny wysłany; kolejny krok — konfiguracja TOTP.', content: {application/json: {schema: {$ref: '#/components/schemas/AuthSessionResponse'}}}}
+        '200': {description: 'Konto utworzone; adres e-mail zweryfikowany przez zaproszenie; kolejny krok — konfiguracja TOTP.', content: {application/json: {schema: {$ref: '#/components/schemas/AuthSessionResponse'}}}}
         '400': {$ref: '#/components/responses/BadRequest'}
         '403': {$ref: '#/components/responses/Forbidden'}
         '429': {$ref: '#/components/responses/RateLimited'}
