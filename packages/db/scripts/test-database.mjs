@@ -205,6 +205,9 @@ try {
     throw new Error("Transaction integration tests failed; inspect .git/bl007-db/transactions.log");
   }
   console.log("Role pools and transaction context integration tests: PASS");
+  const { testAuthStorage } = await import("../../../apps/api/integration/storage.mjs");
+  await testAuthStorage({ host, port, database: migrated, passwords });
+  console.log("Better Auth PostgreSQL adapter, Argon2id, cookies and key rotation: PASS");
   const roleSettings = () =>
     withClient(
       migrated,

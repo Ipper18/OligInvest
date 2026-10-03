@@ -6,7 +6,9 @@
 
 ## Stan
 
-Przeprowadzono wstępny przegląd kontraktów AUTH, SQL/RLS, OpenAPI auth/me, RBAC, CLI i zatwierdzonych spików BL-030/031. Fundamenty BL-006/007/009 oraz techniczne wyniki BL-030/031 są wykonane lokalnie; ich `w toku` nie blokuje zależności zgodnie z AGENTS §6.1. Kalibracja Argon2id na VM pozostaje zadaniem właściciela. Nie rozpoczęto kodowania ani nie usunięto operacji z `openapi-pending.json`.
+Fundamenty BL-006/007/009 oraz techniczne wyniki BL-030/031 są wykonane lokalnie; ich `w toku` nie blokuje zależności zgodnie z AGENTS §6.1. Kalibracja Argon2id na VM pozostaje zadaniem właściciela.
+
+BL-101/103/105 — etap adaptera: produkcyjna konfiguracja Better Auth z pulą `oliginvest_auth`, Argon2id i polityka haseł z listą SecLists (MIT), HIBP z fallbackiem offline, jawne ciasteczka i szyfrowanie kodów. Trasy jeszcze niezamontowane: bramki i fasada HTTP w następnym kroku. 11 testów jednostkowych PASS; rzeczywiste PostgreSQL 18: SQL adapter, PHC, ciasteczka, szyfrowanie TOTP/kodów i odszyfrowanie po rotacji klucza PASS. Pełne normatywne RLS, pule oraz porównanie migracji z SQL: ZERO DIFFERENCES. CI db obejmuje nowy test adaptera. Lista `openapi-pending.json` bez zmian do implementacji tras.
 
 ## Rozbieżności — decyzja właściciela 2026-10-03
 
@@ -21,4 +23,4 @@ Właściciel zatwierdził obie propozycje w tej sesji. AUTH, FR-07.01, instrukcj
 
 Następnie: testy kontraktów → testy → integracja Better Auth z PostgreSQL → zaproszenia/TOTP/sesje/step-up/reset → RBAC/audyt/CLI/flagi. Testy obejmą pustą bazę i wyścig bootstrapu, odmowy tras, izolację RLS oraz brak możliwości ominięcia MFA. Pełny DoD i zielone kontrole wymagane przed zamknięciem zadań.
 
-Zadania pozostają `todo`; estymacje bez zmian, nakład niezmierzony. Nowe [R-30](ryzyka.md): obchodzenie blokady pierwszego konta poza zatwierdzonym procesem. M1 pozostaje otwarty; brak nowych dowodów spełnienia bram A/B. Ten krok zmienia wyłącznie dokumentację planowania. Lokalne kontrole dokumentacji, repozytorium i `git diff --check` PASS; bieżące wyniki CI dla głowy gałęzi: [Checks PR #7](https://github.com/Ipper18/OligInvest/pull/7/checks). Zielone kontrole tego kroku nie potwierdzają implementacji M1-1.
+BL-101 jest `w toku`; pozostałe zadania niezamknięte. Estymacje bez zmian, nakład niezmierzony. [R-30](ryzyka.md): rozwiązanie zatwierdzone, test bootstrapu otwarty. M1 pozostaje otwarty; dowód części bramy A nr 5: RLS PASS. Dokumentacja i granice zależności PASS; wyniki CI głowy gałęzi: [Checks PR #7](https://github.com/Ipper18/OligInvest/pull/7/checks). Zielone kontrole adaptera nie potwierdzają całej paczki.
