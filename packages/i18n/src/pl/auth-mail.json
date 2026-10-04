@@ -1,4 +1,6 @@
 {
   "passwordResetSubject": "OligInvest — zmiana hasła",
+  "invitationSubject": "Zaproszenie do OligInvest",
+  "invitationBody": "{inviter} zaprasza Cię do OligInvest.\n\nTwój adres e-mail przetwarza {controller} wyłącznie po to, żeby wysłać to zaproszenie i umożliwić rejestrację (prawnie uzasadniony interes). Jeśli nie założysz konta, adres zostanie usunięty w ciągu 30 dni od wygaśnięcia zaproszenia. Kontakt i Twoje prawa: {privacyUrl}\n\nZaproszenie jest ważne do {expiresAt} (UTC). Link jednorazowy:\n{url}",
   "passwordResetBody": "Otrzymaliśmy prośbę o zmianę hasła do Twojego konta OligInvest.\n\nOtwórz poniższy link w ciągu 30 minut od wysłania prośby:\n{url}\n\nJeżeli nie wysłano tej prośby, zignoruj wiadomość. Hasło pozostaje bez zmian. Po zmianie hasła wszystkie sesje zostaną unieważnione. Przy ponownym logowaniu nadal wymagany jest kod TOTP."
 }

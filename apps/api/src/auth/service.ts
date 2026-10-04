@@ -1,7 +1,7 @@
 import { createHash, randomBytes } from "node:crypto";
 import { setTimeout as delay } from "node:timers/promises";
 import type { AppDatabase, DatabaseTransaction, ServiceDatabase } from "@oliginvest/db";
-import { ProblemError, requirePermission } from "@oliginvest/platform";
+import { FeatureFlags, ProblemError, requirePermission } from "@oliginvest/platform";
 import { generateRandomString, symmetricDecrypt, symmetricEncrypt } from "better-auth/crypto";
 import { sql } from "drizzle-orm";
 import { z } from "zod";
@@ -73,7 +73,16 @@ export interface AuthServiceOptions {
 }
 
 export class AuthService {
-  constructor(readonly options: AuthServiceOptions) {}
+  readonly features: FeatureFlags;
+  constructor(readonly options: AuthServiceOptions) {
+    this.features = new FeatureFlags(() =>
+      options.appDatabase.transaction(
+        { userId: null, role: "system" },
+        async (tx) =>
+          (await tx.execute(sql`SELECT key,enabled,rules FROM platform.feature_flags`)).rows,
+      ),
+    );
+  }
   async principal(request: Request): Promise<Principal | null> {
     return this.options.database.transaction(async (tx) => {
       const principal = await findSession(
@@ -234,6 +243,9 @@ export class AuthService {
         return { response: await this.listSessions(tx, requireMfa(principal)) };
       let invitation: { role: string } | undefined;
       if (path === "/sign-up/email") {
+        const count = (await tx.execute(sql`SELECT count(*)::int AS count FROM auth.users`))
+          .rows[0];
+        if (Number(count?.count) >= 10) throw new ProblemError("FORBIDDEN");
         const signup = signupInput.parse(body);
         if (
           signup.termsVersion !== CURRENT_LEGAL_VERSION ||

@@ -1,5 +1,5 @@
 import type { ServiceConfig } from "@oliginvest/config";
-import { authMailSchema } from "@oliginvest/contracts";
+import { authMailSchema, invitationMailSchema } from "@oliginvest/contracts";
 import { authMailMessages, formatMessage } from "@oliginvest/i18n";
 import nodemailer from "nodemailer";
 import { z } from "zod";
@@ -55,8 +55,12 @@ export function createAuthMailer(
   const transport = nodemailer.createTransport(mailOptions(config, mode, port));
   return {
     send: async (name: string, input: unknown) => {
-      if (name !== "auth.password-reset" || !config.SMTP_FROM) throw new Error("AUTH_MAIL_INVALID");
-      const message = passwordResetMail(input, config.PUBLIC_BASE_URL, config.SMTP_FROM);
+      if (!["auth.password-reset", "auth.invitation"].includes(name) || !config.SMTP_FROM)
+        throw new Error("AUTH_MAIL_INVALID");
+      const message =
+        name === "auth.password-reset"
+          ? passwordResetMail(input, config.PUBLIC_BASE_URL, config.SMTP_FROM)
+          : invitationMail(input, config);
       try {
         await transport.sendMail(message);
       } catch {
@@ -65,5 +69,28 @@ export function createAuthMailer(
       }
     },
     close: () => transport.close(),
+  };
+}
+
+export function invitationMail(input: unknown, config: ServiceConfig<"jobs">, now = Date.now()) {
+  const data = invitationMailSchema.parse(input);
+  if (Date.parse(data.expiresAt) <= now) throw new Error("AUTH_MAIL_EXPIRED");
+  if (!config.SMTP_FROM || !config.LEGAL_CONTROLLER_NAME)
+    throw new Error("INVITATION_MAIL_NOT_CONFIGURED");
+  const url = new URL("/rejestracja", config.PUBLIC_BASE_URL);
+  url.hash = `t=${data.token}`;
+  return {
+    from: { name: "OligInvest", address: config.SMTP_FROM },
+    to: { address: data.email, name: "" },
+    subject: authMailMessages.invitationSubject,
+    text: formatMessage(authMailMessages.invitationBody, {
+      inviter: data.inviterName,
+      controller: config.LEGAL_CONTROLLER_NAME,
+      privacyUrl: new URL("/prywatnosc", config.PUBLIC_BASE_URL).href,
+      expiresAt: data.expiresAt,
+      url: url.href,
+    }),
+    disableFileAccess: true,
+    disableUrlAccess: true,
   };
 }

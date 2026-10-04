@@ -73,6 +73,8 @@ services:
       SMTP_HOST: ${SMTP_HOST:-}
       SMTP_FROM: ${SMTP_FROM:-}
       SMTP_PORT: '587'
+      LEGAL_CONTROLLER_NAME: ${LEGAL_CONTROLLER_NAME:-}
+      LEGAL_CONTACT_EMAIL: ${LEGAL_CONTACT_EMAIL:-}
     networks: [backend, egress]
     mem_limit: 384m
     cpus: 1

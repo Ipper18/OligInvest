@@ -63,6 +63,7 @@ export const configSchemas = {
       SMTP_FROM: z.email().optional(),
       SMTP_USER: text.optional(),
       SMTP_PASSWORD: text.optional(),
+      ...legal,
       ...push,
       FINNHUB_API_KEY: text.optional(),
       TWELVEDATA_API_KEY: text.optional(),

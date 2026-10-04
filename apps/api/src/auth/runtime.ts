@@ -1,9 +1,14 @@
 import type { ServiceConfig } from "@oliginvest/config";
-import { authMailSchema, authSecurityEventSchema } from "@oliginvest/contracts";
+import {
+  authMailSchema,
+  authSecurityEventSchema,
+  invitationMailSchema,
+} from "@oliginvest/contracts";
 import { createAppDatabase, createAuthDatabase } from "@oliginvest/db";
 import type { PlatformLogger } from "@oliginvest/platform";
 import { Queue } from "bullmq";
 import { Redis } from "ioredis";
+import { Administration } from "./administration.js";
 import { AuditWriter } from "./audit.js";
 import { defaultPasswordChecks } from "./password.js";
 import { AuthService } from "./service.js";
@@ -96,6 +101,33 @@ export function createAuthRuntime(
   });
   return {
     service,
+    administration: new Administration(service, {
+      inviteMail: async (message) => {
+        await queue("notify").add("auth.invitation", invitationMailSchema.parse(message), {
+          attempts: 3,
+          backoff: { type: "exponential", delay: 1000 },
+          removeOnComplete: true,
+          removeOnFail: true,
+        });
+      },
+      flagsChanged: async () => {
+        service.features.invalidate();
+      },
+      queues: async (action, name) => {
+        const names = [
+          "ingest",
+          "import",
+          "recompute",
+          "alerts",
+          "notify",
+          "analytics",
+          "analytics-results",
+          "events",
+        ];
+        if (name && !names.includes(name)) throw new Error("Invalid queue");
+        for (const target of name ? [name] : names) await queue(target)[action]();
+      },
+    }),
     close: async () => {
       await Promise.allSettled([...queues.values()].map((value) => value.close()));
       state.disconnect();

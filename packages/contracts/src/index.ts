@@ -1,4 +1,16 @@
 import { z } from "zod";
+export const invitationMailSchema = z
+  .object({
+    email: z.email(),
+    token: z
+      .string()
+      .min(32)
+      .max(128)
+      .regex(/^[A-Za-z0-9_-]+$/u),
+    expiresAt: z.iso.datetime(),
+    inviterName: z.string().min(1).max(80),
+  })
+  .strict();
 
 export const authMailSchema = z
   .object({
