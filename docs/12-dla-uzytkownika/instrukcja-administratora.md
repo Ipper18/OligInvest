@@ -41,6 +41,18 @@ Skrypty hosta (poza CLI aplikacji): `infra/scripts/deploy.sh <wersja>` (wdrożen
 
 ## 4. Wdrożenie nowej wersji
 
+### 4.1 E-mail uwierzytelniania (BL-107)
+
+1. W panelu Brevo dodaj domenę nadawcy i adres `SMTP_FROM`. W DNS wprowadź kod Brevo, DKIM i DMARC według wartości z panelu; nie wpisuj kluczy ani rzeczywistych rekordów do repozytorium. Sprawdź także SPF domeny envelope sender w otrzymanej wiadomości — przy domyślnej infrastrukturze Brevo SPF jest zarządzany przez dostawcę. Nie dodawaj drugiego rekordu SPF ani domyślnego `include` bez instrukcji z panelu. [Instrukcja uwierzytelnienia domeny](https://help.brevo.com/hc/en-us/articles/12163873383186-Authenticate-your-domain-with-Brevo-Brevo-code-DKIM-DMARC).
+2. Ustaw `SMTP_HOST=smtp-relay.brevo.com`, `SMTP_FROM` na zweryfikowany adres oraz sekrety `SMTP_USER` i `SMTP_PASSWORD` w plikach właściciela. Produkcja używa portu 587, wymusza STARTTLS i weryfikację certyfikatu. [Konfiguracja SMTP Brevo](https://help.brevo.com/hc/en-us/articles/7924908994450-Send-transactional-emails-using-Brevo-SMTP).
+3. Przygotuj pliki runtime według INF §8.1 i odtwórz `jobs`. Brak całego kompletu SMTP pozostawia worker poczty wyłączony; częściowy komplet blokuje start. API zachowuje jednakową odpowiedź resetu niezależnie od istnienia adresu lub awarii poczty.
+4. Na środowisku właściciela poproś o reset własnego konta; sprawdź w nagłówkach wiadomości `spf=pass`, `dkim=pass`, `dmarc=pass`, termin 30 min i token wyłącznie po `#t=`. Tego testu ani zmian DNS agent nie wykonuje bez dostępu do instancji.
+5. Lokalnie: Mailpit z `compose.dev.yaml`, `SMTP_PORT` równy portowi developerskiemu, syntetyczny `SMTP_FROM` oraz syntetyczne `SMTP_USER/PASSWORD`. Poza produkcją uwierzytelnienie SMTP i TLS są wyłączone wyłącznie dla lokalnego serwera testowego; nie używaj tam rzeczywistych danych. Test automatyczny transportu korzysta z serwera nasłuchującego na loopback i nie wysyła wiadomości poza komputer.
+
+Kontrakt kolejki `notify`: `auth.password-reset` ma zamknięte pola `email`, `token`, `issuedAt` (UTC). Walidacja Zod działa u nadawcy i odbiorcy; worker odrzuca nieznany typ, dodatkowe pola i zadanie starsze niż 30 min. Zadanie jest usuwane po wysyłce albo po wyczerpaniu 3 prób. Błędy kolejki/logi nie zawierają adresów, tokenów ani odpowiedzi SMTP. API dopuszcza najwyżej jedną wiadomość resetu na adres w godzinowym oknie. Zdarzenia `two_factor_recovery_started` i `two_factor_recovered` trafiają po zatwierdzeniu transakcji do `events` (`userId`, `kind`, `occurredAt`); ich konsument i e-maile bezpieczeństwa są w BL-110.
+
+### 4.2 Procedura wydania
+
 1. Po scaleniu zmian utwórz tag `vX.Y.Z` na `main`; poczekaj na zielone zadanie `release` (obrazy, SBOM, podpisy).
 2. Na VM przez sieć administracyjną: `sudo /opt/oliginvest/bin/deploy.sh vX.Y.Z` — skrypt sprawdza podpisy, robi kopię, migruje bazę, podmienia usługi i uruchamia test dymny; przy błędzie sam wraca do poprzedniej wersji i wysyła alert.
 3. Sprawdź: `https://invest.oligi.pl/api/v1/health/ready`, sondy Uptime Kuma, brak nowych błędów w dziennym raporcie.

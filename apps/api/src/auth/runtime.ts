@@ -1,4 +1,5 @@
 import type { ServiceConfig } from "@oliginvest/config";
+import { authMailSchema, authSecurityEventSchema } from "@oliginvest/contracts";
 import { createAppDatabase, createAuthDatabase } from "@oliginvest/db";
 import type { PlatformLogger } from "@oliginvest/platform";
 import { Queue } from "bullmq";
@@ -65,9 +66,14 @@ export function createAuthRuntime(
       }),
       trustedProxies: [],
       sendReset: async (message) => {
+        await new RedisAuthState(state).limit(
+          `password-reset:${message.email.toLowerCase()}`,
+          1,
+          3600,
+        );
         await queue("notify").add(
           "auth.password-reset",
-          { ...message, issuedAt: new Date().toISOString() },
+          authMailSchema.parse({ ...message, issuedAt: new Date().toISOString() }),
           {
             attempts: 3,
             backoff: { type: "exponential", delay: 1000 },
@@ -81,7 +87,7 @@ export function createAuthRuntime(
     passwordChecks: defaultPasswordChecks(() => logger.warn({ event: "auth.hibp_unavailable" })),
     audit: new AuditWriter(appDatabase, config.AUDIT_PSEUDONYM_KEY),
     securityEvent: async (event) => {
-      await queue("events").add(event.kind, event, {
+      await queue("events").add(event.kind, authSecurityEventSchema.parse(event), {
         removeOnComplete: true,
         removeOnFail: { age: 86400 },
       });

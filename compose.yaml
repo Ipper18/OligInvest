@@ -70,6 +70,9 @@ services:
       PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:?Set public origin}
       VALKEY_QUEUE_USER: jobs
       JOBS_INSTANCE_ID: primary
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_FROM: ${SMTP_FROM:-}
+      SMTP_PORT: '587'
     networks: [backend, egress]
     mem_limit: 384m
     cpus: 1

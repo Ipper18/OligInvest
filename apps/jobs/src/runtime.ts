@@ -1,7 +1,8 @@
 import { loadConfig } from "@oliginvest/config";
 import { createLogger, type PlatformLogger } from "@oliginvest/platform";
-import { Queue } from "bullmq";
+import { Queue, Worker } from "bullmq";
 import { z } from "zod";
+import { createAuthMailer } from "./auth-mail.js";
 import { createQueueRegistry } from "./registry.js";
 
 const settingsSchema = z
@@ -25,6 +26,17 @@ export function readRuntime(env: Readonly<Record<string, string | undefined>>) {
   );
   return {
     mode,
+    mail: config.SMTP_HOST
+      ? {
+          config,
+          port: z.coerce
+            .number()
+            .int()
+            .min(1)
+            .max(65535)
+            .parse(env.SMTP_PORT ?? "587"),
+        }
+      : undefined,
     heartbeatKey: `health:jobs:${settings.JOBS_INSTANCE_ID}`,
     connection: {
       host: settings.VALKEY_QUEUE_HOST,
@@ -53,6 +65,8 @@ export async function startJobs(
   const runtime = readRuntime(env);
   const { registry, queues: definitions } = createQueueRegistry();
   const queues = definitions.map(({ name }) => openQueue(name, runtime, logger));
+  let mailer: ReturnType<typeof createAuthMailer> | undefined;
+  let mailWorker: Worker | undefined;
   let timer: ReturnType<typeof setTimeout> | undefined;
   let stopped = false;
   let heartbeat: Promise<void> = Promise.resolve();
@@ -80,16 +94,37 @@ export async function startJobs(
     } catch {
       logger.warn({ event: "jobs.heartbeat_cleanup_failed" });
     } finally {
+      await mailWorker?.close();
+      mailer?.close();
       await Promise.allSettled(queues.map((queue) => queue.close()));
     }
   };
   try {
     await Promise.all(queues.map((queue) => queue.waitUntilReady()));
+    if (runtime.mail) {
+      mailer = createAuthMailer(runtime.mail.config, runtime.mode, runtime.mail.port);
+      mailWorker = new Worker(
+        "notify",
+        async (job) => {
+          try {
+            await mailer?.send(job.name, job.data);
+          } catch {
+            logger.warn({ event: "auth.mail_delivery_failed" });
+            throw new Error("AUTH_MAIL_DELIVERY_FAILED");
+          }
+        },
+        { connection: { ...runtime.connection, maxRetriesPerRequest: null }, concurrency: 1 },
+      );
+      mailWorker.on("error", () => logger.error({ event: "jobs.mail_connection_failed" }));
+      await mailWorker.waitUntilReady();
+    }
     await pulse();
     timer = setTimeout(tick, 1000);
     logger.info({ event: "jobs.ready" });
     return { registry, queues, close };
   } catch {
+    await mailWorker?.close();
+    mailer?.close();
     await Promise.allSettled(queues.map((queue) => queue.close()));
     throw new Error("Jobs startup failed");
   }

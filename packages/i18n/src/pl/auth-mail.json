@@ -1,0 +1,4 @@
+{
+  "passwordResetSubject": "OligInvest — zmiana hasła",
+  "passwordResetBody": "Otrzymaliśmy prośbę o zmianę hasła do Twojego konta OligInvest.\n\nOtwórz poniższy link w ciągu 30 minut od wysłania prośby:\n{url}\n\nJeżeli nie wysłano tej prośby, zignoruj wiadomość. Hasło pozostaje bez zmian. Po zmianie hasła wszystkie sesje zostaną unieważnione. Przy ponownym logowaniu nadal wymagany jest kod TOTP."
+}

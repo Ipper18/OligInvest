@@ -325,6 +325,7 @@ export class AuthService {
       if (path === "/request-password-reset") delete nativeBody.redirectTo;
       const headers = new Headers(request.headers);
       headers.delete("content-length");
+      headers.set("x-forwarded-for", ip);
       const native = await auth.handler(
         new Request(`${this.options.configuration.origin}/api/auth${path}`, {
           method: request.method,

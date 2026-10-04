@@ -17,9 +17,13 @@
     "@oliginvest/platform": "workspace:*",
     "bullmq": "6.3.6",
     "ioredis": "6.0.0",
-    "zod": "4.6.5"
+    "zod": "4.6.5",
+    "@oliginvest/contracts": "workspace:*",
+    "@oliginvest/i18n": "workspace:*",
+    "nodemailer": "10.0.13"
   },
   "devDependencies": {
-    "@types/node": "24.13.5"
+    "@types/node": "24.13.5",
+    "@types/nodemailer": "8.0.2"
   }
 }

@@ -212,6 +212,9 @@ importers:
       '@oliginvest/config':
         specifier: workspace:*
         version: link:../../packages/config
+      '@oliginvest/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
       '@oliginvest/db':
         specifier: workspace:*
         version: link:../../packages/db
@@ -255,6 +258,12 @@ importers:
       '@oliginvest/config':
         specifier: workspace:*
         version: link:../../packages/config
+      '@oliginvest/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
+      '@oliginvest/i18n':
+        specifier: workspace:*
+        version: link:../../packages/i18n
       '@oliginvest/platform':
         specifier: workspace:*
         version: link:../../packages/platform
@@ -264,6 +273,9 @@ importers:
       ioredis:
         specifier: 6.0.0
         version: 6.0.0(supports-color@10.2.2)
+      nodemailer:
+        specifier: 10.0.13
+        version: 10.0.13
       zod:
         specifier: 4.6.5
         version: 4.6.5
@@ -271,6 +283,9 @@ importers:
       '@types/node':
         specifier: 24.13.5
         version: 24.13.5
+      '@types/nodemailer':
+        specifier: 8.0.2
+        version: 8.0.2
 
   apps/web:
     dependencies:
@@ -1933,6 +1948,9 @@ packages:
   '@types/node@24.13.5':
     resolution: {integrity: sha512-TXyindR+lBr22aJIdMQzCFHPHR6cR4js838mRDCSz5hOKWZvZwsXSSiXDmjRj4iJmgl+sR9O+1mkoVBSMadNug==}
 
+  '@types/nodemailer@8.0.2':
+    resolution: {integrity: sha512-c7M5ox8p0nEOfbJ2E9Qcmt8/QCu/VzsiAhzBiZbvky2PhKZDHpKB3sQHBM5MEZNkCfBOaS6S9//AGPRTNB7IaA==}
+
   '@types/pg@8.23.1':
     resolution: {integrity: sha512-fKVHpikPdg4GKks3JuLEhvwSyvwzF23hnabPy6DD8ljVbC7+6J5dQzdv4arV6jqq57djnMgs1HKBxX4P8aBI3A==}
 
@@ -2841,6 +2859,10 @@ packages:
   node-gyp-build-optional-packages@5.2.2:
     resolution: {integrity: sha512-s+w+rBWnpTMwSFbaE0UXsRlg7hU4FjekKU4eyAih5T8nJuNZT1nNsskXpxmeqSK9UzkBl6UgRlnKc8hz8IEqOw==}
     hasBin: true
+
+  nodemailer@10.0.13:
+    resolution: {integrity: sha512-SzG86OlvcW/NNhUFC6uROMwRTL4n7MswfQqC/T8mhkmnY1YVa23zUEMYi4ijSeXSl9GLz9ZeTJDUatEDuY5FeQ==}
+    engines: {node: '>=20.0.0'}
 
   obug@2.2.1:
     resolution: {integrity: sha512-XrsrhT5sybtKI6wakr2SPOlGZWWYbUXZ7a0jT8/QOeAPau+1X/bSegNe5YR75oJmEZQbKningirmGOEJCIk61Q==}
@@ -4316,6 +4338,10 @@ snapshots:
     dependencies:
       undici-types: 7.18.2
 
+  '@types/nodemailer@8.0.2':
+    dependencies:
+      '@types/node': 24.13.5
+
   '@types/pg@8.23.1':
     dependencies:
       '@types/node': 24.13.5
@@ -5058,6 +5084,8 @@ snapshots:
     dependencies:
       detect-libc: 2.1.2
     optional: true
+
+  nodemailer@10.0.13: {}
 
   obug@2.2.1: {}
 

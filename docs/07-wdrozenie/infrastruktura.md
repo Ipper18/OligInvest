@@ -338,7 +338,7 @@ Wszystkie UID/GID należy zarezerwować na VM bez kont interaktywnych. Wspierany
 |---|---|---|
 | web | PUBLIC_BASE_URL, API_INTERNAL_URL | LEGAL_CONTROLLER_NAME, LEGAL_CONTACT_EMAIL |
 | api | PUBLIC_BASE_URL, BETTER_AUTH_SECRETS, AUDIT_PSEUDONYM_KEY, DB_AUTH_PASSWORD, DB_APP_PASSWORD, VALKEY_QUEUE_API_PASSWORD, VALKEY_CACHE_API_PASSWORD | LEGAL_CONTROLLER_NAME, LEGAL_CONTACT_EMAIL, VAPID_PUBLIC_KEY, pary GOOGLE_CLIENT_ID/SECRET i GITHUB_CLIENT_ID/SECRET |
-| jobs | PUBLIC_BASE_URL, AUDIT_PSEUDONYM_KEY, DB_APP_PASSWORD, VALKEY_QUEUE_JOBS_PASSWORD, VALKEY_CACHE_JOBS_PASSWORD | SMTP_HOST/USER/PASSWORD (komplet albo brak), para VAPID_PUBLIC_KEY/PRIVATE_KEY, klucze FINNHUB/TWELVEDATA/ALPHAVANTAGE/FRED/MARKETAUX |
+| jobs | PUBLIC_BASE_URL, AUDIT_PSEUDONYM_KEY, DB_APP_PASSWORD, VALKEY_QUEUE_JOBS_PASSWORD, VALKEY_CACHE_JOBS_PASSWORD | SMTP_HOST/FROM/USER/PASSWORD (komplet albo brak), para VAPID_PUBLIC_KEY/PRIVATE_KEY, klucze FINNHUB/TWELVEDATA/ALPHAVANTAGE/FRED/MARKETAUX |
 | analytics | DB_ANALYTICS_RO_PASSWORD, VALKEY_QUEUE_ANALYTICS_PASSWORD | brak |
 
 Sekrety można lokalnie podać jako `NAME` albo `NAME_FILE`. Jednoczesne niepuste wartości są błędem (brak cichego priorytetu). Produkcja wymaga wariantu `_FILE` dla każdego podanego sekretu, również opcjonalnego. `_FILE` nie jest obsługiwane dla publicznych adresów/kluczy. Puste zmienne oznaczają brak wartości; pusty plik sekretu jest błędem. Plik: ścieżka bezwzględna, zwykły plik UTF-8 do 64 KiB; usuwa się tylko jeden końcowy LF/CRLF, zachowując pozostałe znaki. Błąd zawiera nazwę znanego klucza i kod, nigdy wartość, ścieżkę pliku ani oryginalny wyjątek I/O/Zod.

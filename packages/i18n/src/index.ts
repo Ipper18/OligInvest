@@ -1,3 +1,4 @@
+import authMail from "./pl/auth-mail.json" with { type: "json" };
 import bootstrap from "./pl/bootstrap.json" with { type: "json" };
 import common from "./pl/common.json" with { type: "json" };
 import data from "./pl/data.json" with { type: "json" };
@@ -7,6 +8,7 @@ import errors from "./pl/errors.json" with { type: "json" };
 export const messages = { ...common, bootstrap, data } as const;
 export const disclaimers = disclaimerCatalog;
 export const errorMessages = errors;
+export const authMailMessages = authMail;
 export type DisclaimerKey = keyof typeof disclaimers;
 export type ProblemCode = keyof typeof errorMessages;
 

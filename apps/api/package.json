@@ -27,7 +27,8 @@
     "@oliginvest/mod-identity": "workspace:*",
     "drizzle-orm": "0.45.2",
     "ioredis": "6.0.0",
-    "bullmq": "6.3.6"
+    "bullmq": "6.3.6",
+    "@oliginvest/contracts": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "24.13.5",

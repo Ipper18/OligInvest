@@ -51,3 +51,8 @@
 - Trasy auth i step-up zamontowane; przepływ odzyskania przechodzi przez HTTP, 403 dla każdej nowej trasy. Pending 182 → 167, klient wygenerowany, 25 testów kontraktów PASS.
 - Runtime łączy pule auth/app oraz prywatny stan Valkey. Zaufanie X-Forwarded-For ograniczone CIDR bezpośredniego proxy. Testy API (79) i ACL Linux (3) PASS.
 - Checkpointy HTTP i kontraktu osobno; walidator dopuszcza style/revert z testem, historia Git zachowana, tytuł PR zmieniony na feat(auth).
+
+### 2026-10-04 — transport resetu hasła
+- BL-107: zadanie notify z walidacją po obu stronach, fragment tokenu, wygaśnięcie 30 min, 3 próby i usunięcie sekretu z kolejki po zakończeniu; limit jednej wiadomości na adres/godzinę.
+- Jobs wysyła przez nodemailer 10.0.13 (po karencji); produkcja wymaga Brevo/587/STARTTLS. Test SMTP na loopback PASS, bez wiadomości zewnętrznych.
+- Lint/typecheck/test/build API/jobs/config/contracts/i18n PASS. SPF/DKIM/DMARC i test dostarczenia na instancji opisane dla właściciela; agent nie ma dostępu do DNS i sekretów.
