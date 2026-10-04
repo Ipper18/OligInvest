@@ -6,6 +6,7 @@ import {
   withRequestContext,
 } from "@oliginvest/platform";
 import { bodyLimit } from "hono/body-limit";
+import { type IdentityDependencies, mountIdentity } from "./auth/identity-routes.js";
 import { type AuthRouteDependencies, createAuthRouter, mountStepUp } from "./auth/routes.js";
 
 export type HealthChecks = Readonly<
@@ -30,7 +31,7 @@ export function createApp(
     checks: HealthChecks;
     logger: PlatformLogger;
     publicBaseUrl: string;
-    auth?: AuthRouteDependencies;
+    auth?: AuthRouteDependencies & Partial<Pick<IdentityDependencies, "administration">>;
   }>,
 ) {
   const app = new OpenAPIHono<AppEnv>();
@@ -132,6 +133,14 @@ export function createApp(
     name: "__Host-oliginvest.session_token",
   });
   mountStepUp(api, authDependencies);
+  mountIdentity(api, {
+    ...authDependencies,
+    administration:
+      options.auth?.administration ??
+      (() => {
+        throw new ProblemError("SERVICE_UNAVAILABLE");
+      }),
+  });
   function document() {
     const metadata = {
       openapi: "3.1.0",

@@ -4971,7 +4971,18 @@ export interface components {
             revokedAt?: components["schemas"]["Timestamp"];
             createdAt: components["schemas"]["Timestamp"];
         };
-        AdminInvitationCreated: components["schemas"]["AdminInvitation"] & {
+        AdminInvitationCreated: {
+            id: components["schemas"]["Uuid"];
+            /** Format: email */
+            email: string;
+            role: components["schemas"]["Role"];
+            invitedBy: components["schemas"]["Uuid"];
+            /** @enum {string} */
+            status: "pending" | "used" | "expired" | "revoked";
+            expiresAt: components["schemas"]["Timestamp"];
+            usedAt?: components["schemas"]["Timestamp"];
+            revokedAt?: components["schemas"]["Timestamp"];
+            createdAt: components["schemas"]["Timestamp"];
             /**
              * Format: uri
              * @description Link z tokenem we fragmencie adresu (`#t=`); pokazywany wyłącznie w tej odpowiedzi.
@@ -6138,9 +6149,12 @@ export interface operations {
                     "application/json": components["schemas"]["InvitationPreview"];
                 };
             };
-            404: components["responses"]["NotFound"];
-            422: components["responses"]["ValidationFailed"];
-            429: components["responses"]["RateLimited"];
+            400: components["responses"]["AuthError400"];
+            401: components["responses"]["AuthError401"];
+            403: components["responses"]["AuthError403"];
+            404: components["responses"]["AuthError400"];
+            422: components["responses"]["AuthError422"];
+            429: components["responses"]["AuthError429"];
         };
     };
     getMe: {
@@ -6161,7 +6175,11 @@ export interface operations {
                     "application/json": components["schemas"]["Me"];
                 };
             };
-            401: components["responses"]["Unauthenticated"];
+            400: components["responses"]["AuthError400"];
+            401: components["responses"]["AuthError401"];
+            403: components["responses"]["AuthError403"];
+            422: components["responses"]["AuthError422"];
+            429: components["responses"]["AuthError429"];
         };
     };
     updateMe: {
@@ -9827,10 +9845,12 @@ export interface operations {
                     "application/json": components["schemas"]["AdminInvitationCreated"];
                 };
             };
-            401: components["responses"]["Unauthenticated"];
-            403: components["responses"]["Forbidden"];
-            409: components["responses"]["Conflict"];
-            422: components["responses"]["ValidationFailed"];
+            400: components["responses"]["AuthError400"];
+            401: components["responses"]["AuthError401"];
+            403: components["responses"]["AuthError403"];
+            409: components["responses"]["AuthError400"];
+            422: components["responses"]["AuthError422"];
+            429: components["responses"]["AuthError429"];
         };
     };
     adminRevokeInvitation: {

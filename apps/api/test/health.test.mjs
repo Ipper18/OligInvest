@@ -153,11 +153,14 @@ test("public OpenAPI 3.1 is generated from registered Zod routes", async () => {
   const document = await response.json();
   expect(document.openapi).toBe("3.1.0");
   expect(Object.keys(document.paths).sort()).toEqual([
+    "/admin/invitations",
     "/change-password",
     "/get-session",
     "/health/live",
     "/health/ready",
+    "/invitations/preview",
     "/list-sessions",
+    "/me",
     "/me/step-up",
     "/openapi.json",
     "/request-password-reset",

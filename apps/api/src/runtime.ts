@@ -44,14 +44,18 @@ export function createRuntime(
     Object.fromEntries(Object.keys(runtimeSchema.shape).map((key) => [key, env[key] || undefined])),
   );
   let auth: Promise<ReturnType<typeof createAuthRuntime>> | undefined;
+  const getAuth = async () => {
+    auth ??= import("./auth/runtime.js").then(({ createAuthRuntime }) =>
+      createAuthRuntime(config, runtime, logger),
+    );
+    return auth;
+  };
   const app = createApp({
     auth: {
       service: async () => {
-        auth ??= import("./auth/runtime.js").then(({ createAuthRuntime }) =>
-          createAuthRuntime(config, runtime, logger),
-        );
-        return (await auth).service;
+        return (await getAuth()).service;
       },
+      administration: async () => (await getAuth()).administration,
       clientIp: requestClientIp(
         (env.API_TRUSTED_PROXY_CIDRS ?? "")
           .split(",")
