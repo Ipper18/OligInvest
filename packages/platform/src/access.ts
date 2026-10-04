@@ -34,7 +34,7 @@ export function requirePermission(role: unknown, permission: string): void {
   if (!permissionsForRole(role).includes(permission)) throw new ProblemError("FORBIDDEN");
 }
 export const featureRulesSchema = z
-  .object({ roles: z.array(roleSchema).optional(), users: z.array(z.uuid()).optional() })
+  .object({ roles: z.array(roleSchema).optional(), users: z.array(z.uuid()).max(50).optional() })
   .strict();
 export const featureFlagSchema = z
   .object({
@@ -119,4 +119,24 @@ export class FeatureFlags {
       ]),
     );
   }
+}
+
+export async function subscribeFeatureFlags(
+  flags: FeatureFlags,
+  client: {
+    subscribe: (channel: string) => Promise<unknown>;
+    on: (event: "message", listener: (channel: string, payload: string) => void) => unknown;
+  },
+) {
+  const changed = z.object({ keys: z.array(z.string().min(1).max(80)).max(100) }).strict();
+  client.on("message", (channel, payload) => {
+    if (channel !== "flags.changed" || payload.length > 10_000) return;
+    try {
+      if (changed.safeParse(JSON.parse(payload)).success) flags.invalidate();
+    } catch {
+      /* Ignore malformed pub/sub messages; the 30-second TTL still applies. */
+    }
+  });
+  await client.subscribe("flags.changed");
+  flags.invalidate();
 }

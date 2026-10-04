@@ -5,11 +5,13 @@ import { ProblemError } from "@oliginvest/platform";
 import { symmetricDecrypt } from "better-auth/crypto";
 import { sql } from "drizzle-orm";
 import { createApp } from "../dist/app.js";
+import { executeAdminCommand } from "../dist/auth/admin-commands.js";
+import { Administration } from "../dist/auth/administration.js";
 import { AuditWriter } from "../dist/auth/audit.js";
 import { createAuth } from "../dist/auth/config.js";
 import { authOperations } from "../dist/auth/routes.js";
 import { AuthService } from "../dist/auth/service.js";
-import { SESSION_COOKIE } from "../dist/auth/session.js";
+import { SESSION_COOKIE, sessionCookie } from "../dist/auth/session.js";
 import { totpCode } from "../dist/auth/totp.js";
 
 export async function testAuthFacade(settings) {
@@ -53,12 +55,27 @@ export async function testAuthFacade(settings) {
     securityEvent: async (event) => securityEvents.push(event),
   });
   const cookies = new Map();
+  const invitations = [];
+  const resets = [];
+  const queueActions = [];
+  const administration = new Administration(service, {
+    resetMail: async (message) => resets.push(message),
+    inviteMail: async (message) => invitations.push(message),
+    flagsChanged: async () => service.features.invalidate(),
+    queues: async (...args) => queueActions.push(args),
+  });
   const app = createApp({
     logger: { info() {}, warn() {}, error() {} },
     publicBaseUrl: configuration.origin,
     checks: { postgres: async () => {}, valkeyQueue: async () => {}, valkeyCache: async () => {} },
-    auth: { service: () => service, clientIp: () => "192.0.2.1" },
+    auth: {
+      service: () => service,
+      administration: () => administration,
+      clientIp: () => "192.0.2.1",
+    },
   });
+  // Test-only target proves the production module guard runs before dispatch.
+  app.get("/api/v1/analytics/synthetic-probe", (context) => context.json({ ok: true }));
   const request = (path, body, jar = cookies) =>
     new Request(`${configuration.origin}/api/auth${path}`, {
       method: body === undefined ? "GET" : "POST",
@@ -92,6 +109,17 @@ export async function testAuthFacade(settings) {
     return response;
   }
   const denied = (run, code) => assert.rejects(run, (error) => error.code === code);
+  const identity = (path, body, extra = {}) =>
+    app.request(`/api/v1${path}`, {
+      method: body === undefined ? "GET" : "POST",
+      headers: {
+        cookie: [...cookies].map(([key, value]) => `${key}=${value}`).join("; "),
+        origin: configuration.origin,
+        "content-type": "application/json",
+        ...extra,
+      },
+      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+    });
   const password = randomBytes(24).toString("hex");
   const email = `${randomUUID()}@example.test`;
   const invitationToken = randomBytes(32).toString("base64url");
@@ -150,6 +178,17 @@ export async function testAuthFacade(settings) {
     assert.equal(created.user.role, "pro");
     assert.equal(created.user.emailVerified, true);
     assert.equal(created.session.mfaVerifiedAt, null);
+    const meBeforeMfa = await identity("/me");
+    assert.equal(meBeforeMfa.status, 200);
+    assert.equal((await meBeforeMfa.json()).mfa.enrolled, false);
+    for (const [path, body] of [
+      ["/me", undefined],
+      ["/invitations/preview", { token: invitationToken }],
+      ["/admin/invitations", { email: "new@example.test", role: "user" }],
+    ]) {
+      const response = await identity(path, body, { authorization: "Bearer invalid" });
+      assert.equal(response.status, 403, path);
+    }
     await denied(() => call("/sign-up/email", signup, new Map()), "FORBIDDEN");
     await denied(() => service.requireData(request("/get-session")), "MFA_ENROLLMENT_REQUIRED");
     const setup = await (await call("/two-factor/enable", { password })).json();
@@ -181,6 +220,105 @@ export async function testAuthFacade(settings) {
       cookies.set(pair.slice(0, at), pair.slice(at + 1));
     }
     assert.equal(await service.principal(request("/get-session", undefined, beforeStepUp)), null);
+    assert.equal((await identity("/analytics/synthetic-probe")).status, 404);
+    await executeAdminCommand(administration, {
+      command: "flag",
+      key: "module.analytics",
+      action: "on",
+      role: "pro",
+      reason: "Synthetic integration test",
+    });
+    assert.equal((await identity("/analytics/synthetic-probe")).status, 200);
+    await executeAdminCommand(administration, {
+      command: "flag",
+      key: "module.analytics",
+      action: "off",
+      reason: "Synthetic integration test",
+    });
+    assert.equal((await identity("/analytics/synthetic-probe")).status, 404);
+    for (const role of ["user", "pro"]) {
+      await database.transaction((tx) =>
+        tx.execute(sql`UPDATE auth.users SET role=${role} WHERE id=${userId}::uuid`),
+      );
+      const response = await identity("/admin/invitations", {
+        email: "new@example.test",
+        role: "user",
+        sendEmail: false,
+      });
+      assert.equal(response.status, 403);
+    }
+    await database.transaction((tx) =>
+      tx.execute(sql`UPDATE auth.users SET role='admin' WHERE id=${userId}::uuid`),
+    );
+    const invitation = await identity("/admin/invitations", {
+      email: "new@example.test",
+      role: "user",
+      sendEmail: true,
+    });
+    assert.equal(invitation.status, 201);
+    const invitationBody = await invitation.json();
+    assert.equal(new URL(invitationBody.inviteUrl).search, "");
+    assert.equal(invitations.length, 1);
+    const preview = await identity("/invitations/preview", { token: invitations[0].token });
+    assert.equal(preview.status, 200);
+    assert.equal((await preview.json()).emailMasked, "n***@e***.test");
+    assert.equal((await identity("/invitations/preview", { token: "x".repeat(43) })).status, 404);
+    assert.equal(
+      (await identity("/admin/invitations", { email: "new@example.test", role: "user" })).status,
+      409,
+    );
+    const auditRows = await appDatabase.transaction(
+      { userId, role: "admin" },
+      async (tx) =>
+        (
+          await tx.execute(
+            sql`SELECT outcome,actor_ref FROM platform.audit_log WHERE action='admin.invitation.create'`,
+          )
+        ).rows,
+    );
+    assert.ok(auditRows.some((row) => row.outcome === "denied"));
+    assert.ok(auditRows.some((row) => row.outcome === "success"));
+    assert.ok(auditRows.every((row) => /^[a-f0-9]{64}$/u.test(row.actor_ref)));
+    await database.transaction((tx) =>
+      tx.execute(sql`UPDATE auth.users SET role='pro' WHERE id=${userId}::uuid`),
+    );
+    const extraToken = randomBytes(32).toString("hex");
+    await database.transaction((tx) =>
+      tx.execute(
+        sql`INSERT INTO auth.sessions (user_id,token,expires_at,ip_address) VALUES (${userId}::uuid,${extraToken},now()+interval '1 hour','192.0.2.19')`,
+      ),
+    );
+    const sessions = await (await call("/list-sessions")).json();
+    assert.equal(sessions.length, 2);
+    assert.equal(sessions.find((row) => row.token === extraToken).ipAddress, "192.0.2.0/24");
+    const foreignToken = await database.transaction(
+      async (tx) =>
+        (await tx.execute(sql`SELECT token FROM auth.sessions WHERE user_id=${ownerId}::uuid`))
+          .rows[0].token,
+    );
+    await denied(() => call("/revoke-session", { token: foreignToken }), "FORBIDDEN");
+    await call("/revoke-session", { token: extraToken });
+    assert.equal((await (await call("/list-sessions")).json()).length, 1);
+    for (const [createdDays, expiryHours] of [
+      [31, 1],
+      [1, -1],
+    ]) {
+      const expiredToken = randomBytes(32).toString("hex");
+      await database.transaction((tx) =>
+        tx.execute(
+          sql`INSERT INTO auth.sessions(user_id,token,created_at,expires_at) VALUES (${userId}::uuid,${expiredToken},now()-${createdDays}*interval '1 day',now()+${expiryHours}*interval '1 hour')`,
+        ),
+      );
+      const signed = sessionCookie(expiredToken, configuration, true)
+        .split(";")[0]
+        .slice(SESSION_COOKIE.length + 1);
+      assert.equal(
+        await service.principal(
+          request("/get-session", undefined, new Map([[SESSION_COOKIE, signed]])),
+        ),
+        null,
+      );
+    }
     await denied(() => service.stepUp(request("/step-up", {}), current), "UNAUTHENTICATED");
     await database.transaction((tx) =>
       tx.execute(
@@ -239,6 +377,11 @@ export async function testAuthFacade(settings) {
     await denied(
       () => service.requireAdmin(request("/get-session"), "admin:users", true),
       "STEP_UP_REQUIRED",
+    );
+    assert.equal(
+      (await identity("/admin/invitations", { email: "backup-denied@example.test", role: "user" }))
+        .status,
+      403,
     );
     await database.transaction((tx) =>
       tx.execute(
@@ -362,11 +505,122 @@ export async function testAuthFacade(settings) {
         ),
       "FORBIDDEN",
     );
+    const cli = (input) =>
+      executeAdminCommand(administration, { reason: "Synthetic integration test", ...input });
+    await denied(() => cli({ command: "unknown" }), "VALIDATION_FAILED");
+    await denied(
+      () => cli({ command: "revoke-all-sessions", password: "not-allowed" }),
+      "VALIDATION_FAILED",
+    );
+    const cliInvite = await cli({ command: "invite", email: "cli@example.test", role: "pro" });
+    assert.match(new URL(cliInvite.inviteUrl).hash, /^#t=/u);
+    await cli({ command: "flag", key: "module.analytics", action: "on", role: "pro" });
+    assert.equal(await service.features.enabled("module.analytics", { userId, role: "pro" }), true);
+    assert.equal(
+      await service.features.enabled("module.analytics", { userId, role: "user" }),
+      false,
+    );
+    await cli({ command: "flag", key: "module.analytics", action: "off" });
+    assert.equal(
+      await service.features.enabled("module.analytics", { userId, role: "pro" }),
+      false,
+    );
+    await denied(
+      () => cli({ command: "flag", key: "module.identity", action: "off" }),
+      "FORBIDDEN",
+    );
+    await cli({ command: "queues", action: "pause", queue: "notify" });
+    await cli({ command: "queues", action: "resume", queue: "notify" });
+    assert.deepEqual(queueActions, [
+      ["pause", "notify"],
+      ["resume", "notify"],
+    ]);
+    await database.transaction((tx) =>
+      tx.execute(
+        sql`INSERT INTO auth.api_keys(reference_id,key) VALUES (${userId}::uuid,${randomBytes(32).toString("hex")}),(${ownerId}::uuid,${randomBytes(32).toString("hex")})`,
+      ),
+    );
+    await cli({ command: "revoke-pats", email });
+    assert.equal(
+      (
+        await database.transaction((tx) =>
+          tx.execute(sql`SELECT enabled FROM auth.api_keys WHERE reference_id=${userId}::uuid`),
+        )
+      ).rows[0].enabled,
+      false,
+    );
+    await cli({ command: "revoke-all-pats" });
+    assert.ok(
+      (
+        await database.transaction((tx) => tx.execute(sql`SELECT enabled FROM auth.api_keys`))
+      ).rows.every((row) => !row.enabled),
+    );
+    await database.transaction((tx) =>
+      tx.execute(
+        sql`INSERT INTO auth.sessions(user_id,token,expires_at) VALUES (${userId}::uuid,${randomBytes(32).toString("hex")},now()+interval '1 hour')`,
+      ),
+    );
+    await cli({ command: "revoke-sessions", email });
+    assert.equal(
+      (
+        await database.transaction((tx) =>
+          tx.execute(sql`SELECT id FROM auth.sessions WHERE user_id=${userId}::uuid`),
+        )
+      ).rows.length,
+      0,
+    );
+    await cli({ command: "revoke-all-sessions" });
+    await cli({ command: "reset-2fa", email });
+    assert.equal(resets.length, 1);
+    assert.equal(
+      (
+        await database.transaction((tx) =>
+          tx.execute(sql`SELECT two_factor_enabled FROM auth.users WHERE id=${userId}::uuid`),
+        )
+      ).rows[0].two_factor_enabled,
+      false,
+    );
+    assert.equal(
+      (
+        await database.transaction((tx) =>
+          tx.execute(sql`SELECT id FROM auth.two_factors WHERE user_id=${userId}::uuid`),
+        )
+      ).rows.length,
+      0,
+    );
+    const cliAudit = (
+      await appDatabase.transaction({ userId: ownerId, role: "admin" }, (tx) =>
+        tx.execute(
+          sql`SELECT action,actor_type,after FROM platform.audit_log WHERE action LIKE 'cli.%'`,
+        ),
+      )
+    ).rows;
+    for (const command of [
+      "invite",
+      "flag",
+      "queues",
+      "revoke-pats",
+      "revoke-all-pats",
+      "revoke-sessions",
+      "revoke-all-sessions",
+      "reset-2fa",
+    ])
+      assert.ok(
+        cliAudit.some(
+          (row) =>
+            row.action === `cli.${command}` &&
+            row.actor_type === "system" &&
+            row.after.reason === "Synthetic integration test",
+        ),
+        command,
+      );
     assert.deepEqual(events, []);
   } finally {
     if (ownerId)
       await appDatabase.transaction({ userId: ownerId, role: "admin" }, (tx) =>
-        tx.execute(sql`DELETE FROM identity.invitations WHERE invited_by=${ownerId}::uuid`),
+        tx.execute(
+          sql`DELETE FROM identity.invitations WHERE invited_by=${ownerId}::uuid OR invited_by=${userId ?? ownerId}::uuid`,
+        ),
       );
     for (const id of [userId, ownerId].filter(Boolean))
       await database.transaction((tx) =>

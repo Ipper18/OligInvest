@@ -4,10 +4,12 @@ import { loadConfig } from "@oliginvest/config";
 import { createAppDatabase, createAuthDatabase } from "@oliginvest/db";
 import { createLogger, ProblemError } from "@oliginvest/platform";
 import { z } from "zod";
+import { executeAdminCommand } from "./auth/admin-commands.js";
 import { AuditWriter } from "./auth/audit.js";
 import { createOwner } from "./auth/bootstrap.js";
 import { CURRENT_LEGAL_VERSION } from "./auth/inputs.js";
 import { defaultPasswordChecks } from "./auth/password.js";
+import { createAuthRuntime } from "./auth/runtime.js";
 
 async function hiddenPassword(): Promise<string> {
   const input = process.stdin;
@@ -75,24 +77,76 @@ async function main(): Promise<void> {
           email: { type: "string" },
           name: { type: "string" },
           reason: { type: "string" },
+          role: { type: "string" },
+          user: { type: "string" },
+          queue: { type: "string" },
+          outcome: { type: "string" },
         },
       });
-      if (args.positionals.length !== 1 || args.positionals[0] !== "create-owner")
-        throw new Error("INVALID_COMMAND");
-      z.object({
-        email: z.email(),
-        name: z.string().min(1).max(80),
-        reason: z.string().min(5).max(500),
-      })
-        .strict()
-        .parse(args.values);
-      if (!process.stdin.isTTY || !process.stdout.isTTY) throw new Error("TTY_REQUIRED");
+      if (args.positionals[0] === "create-owner") {
+        if (args.positionals.length !== 1) throw new Error("INVALID_COMMAND");
+        z.object({
+          email: z.email(),
+          name: z.string().min(1).max(80),
+          reason: z.string().min(5).max(500),
+        })
+          .strict()
+          .parse(args.values);
+        if (!process.stdin.isTTY || !process.stdout.isTTY) throw new Error("TTY_REQUIRED");
+      }
     } catch (error) {
       await audit.record(
         { userId: null, role: "system" },
         { action: "cli.invalid", outcome: "denied" },
       );
       throw error;
+    }
+    if (args.positionals[0] !== "create-owner") {
+      const command = args.positionals[0];
+      const expected =
+        command === "flag" ? 3 : ["queues", "maintenance-audit"].includes(command ?? "") ? 2 : 1;
+      const input = {
+        ...args.values,
+        command: args.positionals.length === expected ? command : "invalid",
+        ...(command === "flag"
+          ? { key: args.positionals[1], action: args.positionals[2] }
+          : ["queues", "maintenance-audit"].includes(command ?? "")
+            ? { action: args.positionals[1] }
+            : {}),
+      };
+      const runtime = createAuthRuntime(
+        config,
+        {
+          DB_HOST: connection.host,
+          DB_PORT: connection.port,
+          DB_NAME: connection.database,
+          DB_SSL: connection.ssl ? "true" : "false",
+          VALKEY_QUEUE_HOST: z.string().min(1).parse(process.env.VALKEY_QUEUE_HOST),
+          VALKEY_QUEUE_PORT: z.coerce
+            .number()
+            .int()
+            .min(1)
+            .max(65535)
+            .parse(process.env.VALKEY_QUEUE_PORT),
+          VALKEY_QUEUE_USER: z.string().min(1).parse(process.env.VALKEY_QUEUE_USER),
+          VALKEY_CACHE_HOST: z.string().min(1).parse(process.env.VALKEY_CACHE_HOST),
+          VALKEY_CACHE_PORT: z.coerce
+            .number()
+            .int()
+            .min(1)
+            .max(65535)
+            .parse(process.env.VALKEY_CACHE_PORT),
+          VALKEY_CACHE_USER: z.string().min(1).parse(process.env.VALKEY_CACHE_USER),
+        },
+        createLogger(),
+      );
+      try {
+        const result = await executeAdminCommand(runtime.administration, input);
+        process.stdout.write(result.inviteUrl ? `${result.inviteUrl}\n` : "Polecenie wykonane.\n");
+      } finally {
+        await runtime.close();
+      }
+      return;
     }
     await audit.record(
       { userId: null, role: "system" },

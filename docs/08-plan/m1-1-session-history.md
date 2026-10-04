@@ -56,3 +56,11 @@
 - BL-107: zadanie notify z walidacją po obu stronach, fragment tokenu, wygaśnięcie 30 min, 3 próby i usunięcie sekretu z kolejki po zakończeniu; limit jednej wiadomości na adres/godzinę.
 - Jobs wysyła przez nodemailer 10.0.13 (po karencji); produkcja wymaga Brevo/587/STARTTLS. Test SMTP na loopback PASS, bez wiadomości zewnętrznych.
 - Lint/typecheck/test/build API/jobs/config/contracts/i18n PASS. SPF/DKIM/DMARC i test dostarczenia na instancji opisane dla właściciela; agent nie ma dostępu do DNS i sekretów.
+
+### 2026-10-04 — zaproszenia, sesje, RBAC, CLI i flagi
+- Osobne checkpointy zaproszeń (1746f03) i tożsamości (9a0fd75), wypchnięte; CI 9a0fd75 całe zielone. Pending 167 → 164, klient zgodny.
+- Sesje: przybliżone IP, zakaz odwołania cudzej sesji; RBAC user/pro → 403, admin + TOTP → zapis audytu. Backup nadal nie otwiera admina.
+- CLI administracyjne: walidacja, audyt zamiaru/wyniku, powód, zaproszenia, reset 2FA + powiadomienie, odwołania sesji/PAT, kolejki i flagi. Testy rzeczywistego SQL PASS.
+- Flagi API/jobs z cache 30 s i flags.changed; test dwóch procesów na Valkey PASS. Skrypt maintenance z audytem i przywróceniem stanu Caddy — 4 testy Linux PASS.
+- Poprawione własne odwzorowania: rehash hasła także przed wyzwaniem MFA, ograniczenie ciała zaproszenia wewnątrz audytu i identyfikator żądania. Dokumentacja operatora uzupełniona.
+- Bramy M1 pozostają otwarte; czynności na VM/DNS należą do właściciela. Estymacje bez zmian, nakład niezmierzony, bez nowych decyzji ADR.

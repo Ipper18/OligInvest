@@ -41,7 +41,15 @@
     "ci:unit": "pnpm turbo run test --output-logs=new-only",
     "ci:build": "node scripts/ci-build.mjs",
     "ci:e2e": "node scripts/ci-e2e.mjs",
-    "ci:deps-audit": "python scripts/deps-audit.py"
+    "ci:deps-audit": "python scripts/deps-audit.py",
+    "admin:invite": "pnpm --filter @oliginvest/api exec node dist/admin-cli.js invite",
+    "admin:reset-2fa": "pnpm --filter @oliginvest/api exec node dist/admin-cli.js reset-2fa",
+    "admin:revoke-sessions": "pnpm --filter @oliginvest/api exec node dist/admin-cli.js revoke-sessions",
+    "admin:revoke-all-sessions": "pnpm --filter @oliginvest/api exec node dist/admin-cli.js revoke-all-sessions",
+    "admin:revoke-pats": "pnpm --filter @oliginvest/api exec node dist/admin-cli.js revoke-pats",
+    "admin:revoke-all-pats": "pnpm --filter @oliginvest/api exec node dist/admin-cli.js revoke-all-pats",
+    "admin:queues": "pnpm --filter @oliginvest/api exec node dist/admin-cli.js queues",
+    "admin:flag": "pnpm --filter @oliginvest/api exec node dist/admin-cli.js flag"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.14",

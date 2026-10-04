@@ -6,6 +6,7 @@ import { generateRandomString, symmetricDecrypt, symmetricEncrypt } from "better
 import { sql } from "drizzle-orm";
 import { z } from "zod";
 import type { AuditWriter } from "./audit.js";
+import { approximateIp } from "./client-ip.js";
 import { type Auth, type AuthConfiguration, createAuth } from "./config.js";
 import { authInputs, CURRENT_LEGAL_VERSION, signupInput } from "./inputs.js";
 import {
@@ -124,6 +125,7 @@ export class AuthService {
     };
   }
   async requireData(request: Request, stepUp = false): Promise<Principal> {
+    if (request.headers.has("authorization")) throw new ProblemError("FORBIDDEN");
     const principal = requireMfa(await this.principal(request));
     if ((await this.legal(principal)).termsAcceptanceRequired)
       throw new ProblemError("TERMS_ACCEPTANCE_REQUIRED");
@@ -234,6 +236,12 @@ export class AuthService {
       if (principal && sensitivePaths.has(path)) {
         requireMfa(principal);
         requireStepUp(principal);
+      }
+      if (principal && path === "/revoke-session") {
+        const own = await tx.execute(
+          sql`SELECT id FROM auth.sessions WHERE token=${z.string().parse(body.token)} AND user_id=${principal.user_id}::uuid`,
+        );
+        if (!own.rows.length) throw new ProblemError("FORBIDDEN");
       }
       if (principal && path === "/two-factor/enable" && principal.two_factor_enabled)
         requireFactorReplacement(principal);
@@ -361,6 +369,18 @@ export class AuthService {
         };
       }
       const data: unknown = await native.json();
+      if (path === "/sign-in/email") {
+        // A successful password check can return an MFA challenge without a session.
+        const account = (
+          await tx.execute(
+            sql`SELECT a.id,a.password FROM auth.accounts a JOIN auth.users u ON u.id=a.user_id WHERE u.email=${body.email} AND a.provider_id='credential'`,
+          )
+        ).rows[0];
+        if (account && needsRehash(z.string().parse(account.password)))
+          await tx.execute(
+            sql`UPDATE auth.accounts SET password=${await hashPassword(z.string().parse(body.password))} WHERE id=${account.id}::uuid`,
+          );
+      }
       const responseHeaders = new Headers(native.headers);
       responseHeaders.delete("content-length");
       let token = tokenBody.parse(data).token;
@@ -462,17 +482,6 @@ export class AuthService {
         if (active) {
           await tx.execute(sql`DELETE FROM auth.sessions WHERE user_id=${active.user_id}::uuid AND id IN
             (SELECT id FROM auth.sessions WHERE user_id=${active.user_id}::uuid ORDER BY created_at DESC,id DESC OFFSET 10)`);
-          if (path === "/sign-in/email") {
-            const account = (
-              await tx.execute(
-                sql`SELECT password FROM auth.accounts WHERE user_id=${active.user_id}::uuid AND provider_id='credential'`,
-              )
-            ).rows[0];
-            if (account && needsRehash(z.string().parse(account.password)))
-              await tx.execute(
-                sql`UPDATE auth.accounts SET password=${await hashPassword(z.string().parse(body.password))} WHERE user_id=${active.user_id}::uuid AND provider_id='credential'`,
-              );
-          }
           const resultBody =
             path === "/sign-in/email"
               ? { user: publicSession(active).user }
@@ -645,7 +654,9 @@ export class AuthService {
         token: row.token,
         createdAt: new Date(String(row.created_at)).toISOString(),
         expiresAt: new Date(String(row.expires_at)).toISOString(),
-        ...(row.ip_address ? { ipAddress: row.ip_address } : {}),
+        ...(row.ip_address && approximateIp(String(row.ip_address))
+          ? { ipAddress: approximateIp(String(row.ip_address)) }
+          : {}),
         ...(row.user_agent ? { userAgent: row.user_agent } : {}),
       })),
     );

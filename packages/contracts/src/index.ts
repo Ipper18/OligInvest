@@ -1,4 +1,7 @@
 import { z } from "zod";
+export const twoFactorResetMailSchema = z
+  .object({ email: z.email(), issuedAt: z.iso.datetime() })
+  .strict();
 export const invitationMailSchema = z
   .object({
     email: z.email(),

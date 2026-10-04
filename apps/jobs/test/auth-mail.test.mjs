@@ -1,7 +1,13 @@
 import { once } from "node:events";
 import { createServer } from "node:net";
 import { expect, test } from "vitest";
-import { createAuthMailer, mailOptions, passwordResetMail } from "../dist/auth-mail.js";
+import {
+  createAuthMailer,
+  invitationMail,
+  mailOptions,
+  passwordResetMail,
+  twoFactorResetMail,
+} from "../dist/auth-mail.js";
 
 const config = {
   SMTP_HOST: "smtp-relay.brevo.com",
@@ -15,6 +21,25 @@ const message = {
   token: "synthetic-reset-token",
   issuedAt: new Date().toISOString(),
 };
+
+test("invitation carries the fragment token and controller notice; break-glass mail has no secrets", () => {
+  const data = {
+    email: message.email,
+    token: "a".repeat(43),
+    expiresAt: new Date(Date.now() + 3600000).toISOString(),
+    inviterName: "Synthetic Inviter",
+  };
+  const settings = { ...config, LEGAL_CONTROLLER_NAME: "Synthetic Controller" };
+  const mail = invitationMail(data, settings);
+  expect(mail.text).toContain(`/rejestracja#t=${data.token}`);
+  expect(mail.text).toContain(settings.LEGAL_CONTROLLER_NAME);
+  expect(() => invitationMail(data, settings, Date.parse(data.expiresAt))).toThrow();
+  expect(() => invitationMail(data, config)).toThrow();
+  const reset = { email: message.email, issuedAt: message.issuedAt };
+  expect(twoFactorResetMail(reset, config).text).toContain(message.issuedAt);
+  expect(() => twoFactorResetMail({ ...reset, token: "secret" }, config)).toThrow();
+  expect(() => twoFactorResetMail(reset, config, Date.parse(reset.issuedAt) + 86400001)).toThrow();
+});
 
 test("reset token is only in the fragment, payload is strict and expired messages are rejected", () => {
   const mail = passwordResetMail(message, config.PUBLIC_BASE_URL, config.SMTP_FROM);

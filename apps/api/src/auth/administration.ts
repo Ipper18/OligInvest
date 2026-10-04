@@ -5,16 +5,23 @@ import { sql } from "drizzle-orm";
 import { z } from "zod";
 import { inviteInput } from "./inputs.js";
 import type { AuthService } from "./service.js";
-import { findSession, readSignedCookie, requireStepUp, SESSION_COOKIE } from "./session.js";
+import {
+  findSession,
+  readSignedCookie,
+  requireMfa,
+  requireStepUp,
+  SESSION_COOKIE,
+} from "./session.js";
 
 export type AdminEffects = {
+  resetMail: (message: { email: string; issuedAt: string }) => Promise<void>;
   inviteMail: (message: {
     email: string;
     token: string;
     expiresAt: string;
     inviterName: string;
   }) => Promise<void>;
-  flagsChanged: () => Promise<void>;
+  flagsChanged: (keys: readonly string[]) => Promise<void>;
   queues: (action: "pause" | "resume", queue?: string) => Promise<void>;
 };
 const invitationRow = z
@@ -38,6 +45,7 @@ export class Administration {
     request: Request,
     action: string,
     work: (actor: DatabaseContext, tx: DatabaseTransaction) => Promise<T>,
+    requestId?: string,
   ): Promise<T> {
     const options = this.service.options;
     let actor: DatabaseContext = { userId: null, role: "anonymous" };
@@ -53,20 +61,26 @@ export class Administration {
           readSignedCookie(request, SESSION_COOKIE, options.configuration),
         );
         if (!principal) throw new ProblemError("UNAUTHENTICATED");
+        requireMfa(principal);
         requireStepUp(principal);
         requirePermission(principal.role, "admin:users");
         if ((await this.service.legal(principal)).termsAcceptanceRequired)
           throw new ProblemError("TERMS_ACCEPTANCE_REQUIRED");
         actor = { userId: principal.user_id, role: principal.role };
-        await options.audit.record(actor, { action: `${action}.started`, outcome: "success" });
+        await options.audit.record(actor, {
+          action: `${action}.started`,
+          outcome: "success",
+          requestId,
+        });
         const result = await work(actor, tx);
-        await options.audit.record(actor, { action, outcome: "success" });
+        await options.audit.record(actor, { action, outcome: "success", requestId });
         return result;
       });
     } catch (error) {
       await options.audit.record(actor, {
         action,
         outcome: error instanceof ProblemError ? "denied" : "error",
+        requestId,
       });
       throw error;
     }

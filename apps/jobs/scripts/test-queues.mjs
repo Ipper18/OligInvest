@@ -9,6 +9,7 @@ import {
   run,
 } from "../../../scripts/dev-services.mjs";
 import { checkHealth, readRuntime, startJobs } from "../dist/index.js";
+import { testFeatureFlags } from "./test-feature-flags.mjs";
 
 const dev = await isolatedEnvironment();
 const env = applicationEnvironment(dev);
@@ -16,7 +17,8 @@ let jobs;
 let queue;
 try {
   console.log("Starting isolated Valkey from compose.dev.yaml");
-  compose(dev, ["up", "-d", "--wait", "valkey-queue"]);
+  compose(dev, ["up", "-d", "--wait", "valkey-queue", "valkey-cache"]);
+  await testFeatureFlags(env);
   jobs = await startJobs(env);
   assert.equal(jobs.queues.length, 8);
   assert.equal(await checkHealth(env), true);

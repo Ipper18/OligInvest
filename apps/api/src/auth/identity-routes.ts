@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { createRoute, type OpenAPIHono, z } from "@hono/zod-openapi";
 import { type AppEnv, ProblemError, permissionsForRole } from "@oliginvest/platform";
 import { sql } from "drizzle-orm";
+import { bodyLimit } from "hono/body-limit";
 import type { Administration } from "./administration.js";
 import { inviteInput, previewInput } from "./inputs.js";
 import { type AuthRouteDependencies, authErrors } from "./routes.js";
@@ -68,6 +69,15 @@ export type IdentityDependencies = AuthRouteDependencies & {
   administration: () => Administration | Promise<Administration>;
 };
 export function mountIdentity(api: OpenAPIHono<AppEnv>, dependencies: IdentityDependencies) {
+  api.use(
+    "/invitations/preview",
+    bodyLimit({
+      maxSize: 16_384,
+      onError: () => {
+        throw new ProblemError("BAD_REQUEST");
+      },
+    }),
+  );
   api.openapi(
     createRoute({
       method: "post",
@@ -221,13 +231,34 @@ export function mountIdentity(api: OpenAPIHono<AppEnv>, dependencies: IdentityDe
       async (actor, tx) => {
         let input: unknown;
         try {
-          input = await context.req.json();
+          // Bound streamed/chunked bodies inside the audit boundary as well.
+          const reader = context.req.raw.body?.getReader();
+          const chunks: Uint8Array[] = [];
+          let size = 0;
+          if (reader) {
+            try {
+              for (;;) {
+                const chunk = await reader.read();
+                if (chunk.done) break;
+                size += chunk.value.byteLength;
+                if (size > 16_384) {
+                  await reader.cancel();
+                  throw new Error("BODY_TOO_LARGE");
+                }
+                chunks.push(chunk.value);
+              }
+            } finally {
+              reader.releaseLock();
+            }
+          }
+          input = JSON.parse(Buffer.concat(chunks).toString("utf8"));
         } catch {
           throw new ProblemError("BAD_REQUEST");
         }
         if (!inviteInput.safeParse(input).success) throw new ProblemError("VALIDATION_FAILED");
         return admin.createInvitation(actor, tx, input);
       },
+      context.get("requestContext").requestId,
     );
     if (result.mail) {
       try {

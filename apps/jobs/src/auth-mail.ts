@@ -1,5 +1,9 @@
 import type { ServiceConfig } from "@oliginvest/config";
-import { authMailSchema, invitationMailSchema } from "@oliginvest/contracts";
+import {
+  authMailSchema,
+  invitationMailSchema,
+  twoFactorResetMailSchema,
+} from "@oliginvest/contracts";
 import { authMailMessages, formatMessage } from "@oliginvest/i18n";
 import nodemailer from "nodemailer";
 import { z } from "zod";
@@ -55,12 +59,17 @@ export function createAuthMailer(
   const transport = nodemailer.createTransport(mailOptions(config, mode, port));
   return {
     send: async (name: string, input: unknown) => {
-      if (!["auth.password-reset", "auth.invitation"].includes(name) || !config.SMTP_FROM)
+      if (
+        !["auth.password-reset", "auth.invitation", "auth.two-factor-reset"].includes(name) ||
+        !config.SMTP_FROM
+      )
         throw new Error("AUTH_MAIL_INVALID");
       const message =
         name === "auth.password-reset"
           ? passwordResetMail(input, config.PUBLIC_BASE_URL, config.SMTP_FROM)
-          : invitationMail(input, config);
+          : name === "auth.invitation"
+            ? invitationMail(input, config)
+            : twoFactorResetMail(input, config);
       try {
         await transport.sendMail(message);
       } catch {
@@ -69,6 +78,31 @@ export function createAuthMailer(
       }
     },
     close: () => transport.close(),
+  };
+}
+
+export function twoFactorResetMail(
+  input: unknown,
+  config: ServiceConfig<"jobs">,
+  now = Date.now(),
+) {
+  const data = twoFactorResetMailSchema.parse(input);
+  if (
+    Date.parse(data.issuedAt) > now ||
+    now - Date.parse(data.issuedAt) > 86400_000 ||
+    !config.SMTP_FROM
+  )
+    throw new Error("AUTH_MAIL_EXPIRED");
+  return {
+    from: { name: "OligInvest", address: config.SMTP_FROM },
+    to: { address: data.email, name: "" },
+    subject: authMailMessages.twoFactorResetSubject,
+    text: formatMessage(authMailMessages.twoFactorResetBody, {
+      issuedAt: data.issuedAt,
+      privacyUrl: new URL("/prywatnosc", config.PUBLIC_BASE_URL).href,
+    }),
+    disableFileAccess: true,
+    disableUrlAccess: true,
   };
 }
 

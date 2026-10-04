@@ -3,6 +3,7 @@ import { createLogger, type PlatformLogger } from "@oliginvest/platform";
 import { Queue, Worker } from "bullmq";
 import { z } from "zod";
 import { createAuthMailer } from "./auth-mail.js";
+import { jobFeatureFlags } from "./feature-flags.js";
 import { createQueueRegistry } from "./registry.js";
 
 const settingsSchema = z
@@ -26,6 +27,7 @@ export function readRuntime(env: Readonly<Record<string, string | undefined>>) {
   );
   return {
     mode,
+    config,
     mail: config.SMTP_HOST
       ? {
           config,
@@ -63,7 +65,10 @@ export async function startJobs(
   logger: PlatformLogger = createLogger(),
 ) {
   const runtime = readRuntime(env);
-  const { registry, queues: definitions } = createQueueRegistry();
+  const flagRuntime = jobFeatureFlags(env, runtime.config, logger);
+  const { registry, queues: definitions } = createQueueRegistry((key, subject) =>
+    flagRuntime.flags.enabled(key, subject),
+  );
   const queues = definitions.map(({ name }) => openQueue(name, runtime, logger));
   let mailer: ReturnType<typeof createAuthMailer> | undefined;
   let mailWorker: Worker | undefined;
@@ -96,6 +101,7 @@ export async function startJobs(
     } finally {
       await mailWorker?.close();
       mailer?.close();
+      await flagRuntime.close();
       await Promise.allSettled(queues.map((queue) => queue.close()));
     }
   };
@@ -125,6 +131,7 @@ export async function startJobs(
   } catch {
     await mailWorker?.close();
     mailer?.close();
+    await flagRuntime.close();
     await Promise.allSettled(queues.map((queue) => queue.close()));
     throw new Error("Jobs startup failed");
   }

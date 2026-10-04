@@ -32,6 +32,10 @@ Na serwerze: `sudo /opt/oliginvest/bin/oli-admin <polecenie> [opcje]` — skrypt
 
 Skrypty hosta (poza CLI aplikacji): `infra/scripts/deploy.sh <wersja>` (wdrożenie), `infra/scripts/maintenance.sh on|off` (tryb serwisowy w Caddy — strona 503), `infra/scripts/generate-secrets.sh` (pierwsza instalacja, rotacja).
 
+W M1-1 dostępne są polecenia do `flag` włącznie; `erasure-replay`, `recompute-all` i `terms-notify` należą do późniejszych zadań. Wszystkie polecenia wymagają `--reason` (5–500 znaków), także gdy skrócony przykład w tabeli go pomija. Flagi nie wyłączają modułów fundamentowych ani roli administratora. Selektory `--role` i `--user` działają jako alternatywa (OR); bez selektorów zmiana jest globalna. Cache trwa 30 s, a `flags.changed` unieważnia go w API i jobs po zatwierdzeniu zapisu.
+
+Instalacja wrappera na hoście: skopiuj z tego samego wydania `oli-admin`, `admin-host.py`, `host-operations.py`, `deploy.py` i `maintenance.sh` do `/opt/oliginvest/bin` (właściciel root, pliki bez prawa zapisu dla grupy/innych, skrypty `.sh` i `oli-admin` wykonywalne). Wrapper odczytuje aktywne wydanie przez `current` i konfigurację z `/etc/oliginvest`; sekretów nie przyjmuje w argumentach. `create-owner` potrzebuje terminala TTY. Tryb serwisowy: `sudo /opt/oliginvest/bin/maintenance.sh on --reason "<powód>"`, analogicznie `off`. Skrypt współdzieli blokadę wdrożenia, zapisuje zamiar i wynik w audycie, zmienia plik w trwałym wolumenie `/config` Caddy i przeładowuje konfigurację; przy błędzie przeładowania przywraca poprzedni stan. Wymaga działającego API i bazy do audytu; przy ich awarii użyj wyłącznika SNI z IR §4, zgodnie z procedurą incydentu.
+
 ## 3. Zaproszenia i konta
 
 1. Pierwsze konto administratora: `oli-admin create-owner --email <adres> --name <nazwa> --reason "<powód>"`, następnie logowanie i konfiguracja TOTP, kody zapasowe do menedżera haseł. Polecenie odmawia, jeśli istnieje jakiekolwiek konto; nie przyjmuje hasła w argumentach. Dotyczy wyłącznie lokalnego bootstrapu zatwierdzonego 2026-10-03; rejestracja HTTP pozostaje dostępna tylko z zaproszenia.
@@ -52,6 +56,8 @@ Skrypty hosta (poza CLI aplikacji): `infra/scripts/deploy.sh <wersja>` (wdrożen
 Kontrakt kolejki `notify`: `auth.password-reset` ma zamknięte pola `email`, `token`, `issuedAt` (UTC). Walidacja Zod działa u nadawcy i odbiorcy; worker odrzuca nieznany typ, dodatkowe pola i zadanie starsze niż 30 min. Zadanie jest usuwane po wysyłce albo po wyczerpaniu 3 prób. Błędy kolejki/logi nie zawierają adresów, tokenów ani odpowiedzi SMTP. API dopuszcza najwyżej jedną wiadomość resetu na adres w godzinowym oknie. Zdarzenia `two_factor_recovery_started` i `two_factor_recovered` trafiają po zatwierdzeniu transakcji do `events` (`userId`, `kind`, `occurredAt`); ich konsument i e-maile bezpieczeństwa są w BL-110.
 
 ### 4.2 Procedura wydania
+
+Kolejka `notify` obsługuje też `auth.invitation` (`email`, `token`, `expiresAt`, `inviterName`) oraz `auth.two-factor-reset` (`email`, `issuedAt`). Zaproszenie wymaga `LEGAL_CONTROLLER_NAME`, zawiera informację o administratorze danych i token wyłącznie we fragmencie. Worker odrzuca wygasłe zaproszenia oraz powiadomienia resetu 2FA starsze niż dobę. Reset 2FA usuwa sesje i poprzedni czynnik; dostęp do danych pozostaje zamknięty do konfiguracji nowego TOTP. Wysłanie zadania do kolejki nie oznacza potwierdzenia doręczenia przez SMTP.
 
 1. Po scaleniu zmian utwórz tag `vX.Y.Z` na `main`; poczekaj na zielone zadanie `release` (obrazy, SBOM, podpisy).
 2. Na VM przez sieć administracyjną: `sudo /opt/oliginvest/bin/deploy.sh vX.Y.Z` — skrypt sprawdza podpisy, robi kopię, migruje bazę, podmienia usługi i uruchamia test dymny; przy błędzie sam wraca do poprzedniej wersji i wysyła alert.

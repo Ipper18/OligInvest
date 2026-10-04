@@ -3,9 +3,10 @@ import {
   authMailSchema,
   authSecurityEventSchema,
   invitationMailSchema,
+  twoFactorResetMailSchema,
 } from "@oliginvest/contracts";
 import { createAppDatabase, createAuthDatabase } from "@oliginvest/db";
-import type { PlatformLogger } from "@oliginvest/platform";
+import { type PlatformLogger, subscribeFeatureFlags } from "@oliginvest/platform";
 import { Queue } from "bullmq";
 import { Redis } from "ioredis";
 import { Administration } from "./administration.js";
@@ -24,6 +25,9 @@ export function createAuthRuntime(
     VALKEY_QUEUE_HOST: string;
     VALKEY_QUEUE_PORT: number;
     VALKEY_QUEUE_USER: string;
+    VALKEY_CACHE_HOST: string;
+    VALKEY_CACHE_PORT: number;
+    VALKEY_CACHE_USER: string;
   },
   logger: PlatformLogger,
 ) {
@@ -46,6 +50,18 @@ export function createAuthRuntime(
     retryStrategy: () => null,
   };
   const state = new Redis({ ...connection, lazyConnect: true });
+  const cacheConnection = {
+    ...connection,
+    host: settings.VALKEY_CACHE_HOST,
+    port: settings.VALKEY_CACHE_PORT,
+    username: settings.VALKEY_CACHE_USER,
+    password: config.VALKEY_CACHE_API_PASSWORD,
+    lazyConnect: true,
+  };
+  const cache = new Redis(cacheConnection);
+  const subscriber = new Redis(cacheConnection);
+  cache.on("error", () => logger.warn({ event: "auth.flags_unavailable" }));
+  subscriber.on("error", () => logger.warn({ event: "auth.flags_subscription_unavailable" }));
   state.on("error", () => logger.error({ event: "auth.state_unavailable" }));
   const queues = new Map<string, Queue>();
   const queue = (name: string) => {
@@ -99,9 +115,24 @@ export function createAuthRuntime(
     },
     event: (event) => logger.warn({ event }),
   });
+  void subscribeFeatureFlags(service.features, subscriber).catch(() =>
+    logger.warn({ event: "auth.flags_subscription_unavailable" }),
+  );
   return {
     service,
     administration: new Administration(service, {
+      resetMail: async (message) => {
+        await queue("notify").add(
+          "auth.two-factor-reset",
+          twoFactorResetMailSchema.parse(message),
+          {
+            attempts: 3,
+            backoff: { type: "exponential", delay: 1000 },
+            removeOnComplete: true,
+            removeOnFail: true,
+          },
+        );
+      },
       inviteMail: async (message) => {
         await queue("notify").add("auth.invitation", invitationMailSchema.parse(message), {
           attempts: 3,
@@ -110,8 +141,9 @@ export function createAuthRuntime(
           removeOnFail: true,
         });
       },
-      flagsChanged: async () => {
+      flagsChanged: async (keys) => {
         service.features.invalidate();
+        await cache.publish("flags.changed", JSON.stringify({ keys }));
       },
       queues: async (action, name) => {
         const names = [
@@ -131,6 +163,8 @@ export function createAuthRuntime(
     close: async () => {
       await Promise.allSettled([...queues.values()].map((value) => value.close()));
       state.disconnect();
+      subscriber.disconnect();
+      cache.disconnect();
       await Promise.all([database.close(), appDatabase.close()]);
     },
   };

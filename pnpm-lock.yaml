@@ -261,6 +261,9 @@ importers:
       '@oliginvest/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
+      '@oliginvest/db':
+        specifier: workspace:*
+        version: link:../../packages/db
       '@oliginvest/i18n':
         specifier: workspace:*
         version: link:../../packages/i18n
@@ -270,6 +273,9 @@ importers:
       bullmq:
         specifier: 6.3.6
         version: 6.3.6(ioredis@6.0.0(supports-color@10.2.2))(pg@8.23.0)
+      drizzle-orm:
+        specifier: 0.45.2
+        version: 0.45.2(@opentelemetry/api@1.9.1)(@types/pg@8.23.1)(kysely@0.29.6)(pg@8.23.0)
       ioredis:
         specifier: 6.0.0
         version: 6.0.0(supports-color@10.2.2)

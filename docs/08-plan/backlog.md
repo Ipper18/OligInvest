@@ -142,23 +142,23 @@ Brama A (**[A]**) — MVP właściciela; brama B (**[B]**) — funkcje wymagane 
 
 | ID | Zadanie | Wymagania | Dokumenty | Zależy od | d | Status |
 |---|---|---|---|---|---|---|
-| BL-101 | **[A]** Better Auth: e-mail + hasło z Argon2id (`@node-rs/argon2`), pula `oliginvest_auth`, polityka haseł (12–128, lista 10k, słowa kontekstowe, HIBP), limity prób i opóźnienia per konto | FR-07.02, NFR-03.02 | AUTH, [ADR-004](../09-decyzje/ADR-004-postgres-better-auth-rls.md) | BL-007, BL-009, BL-031 | 3 | todo |
-| BL-102 | **[A]** Zaproszenia i rejestracja: `adminCreateInvitation`, `previewInvitation` (token we fragmencie), akceptacja regulaminu i informacji (`consent_events`), CLI pierwszego konta właściciela (`create-owner`) | FR-07.01, FR-07.12 | AUTH, RODO, API | BL-101 | 3 | todo |
-| BL-103 | **[A]** TOTP: 10 kodów zapasowych (`encrypted`), ochrona przed powtórzeniem kodu, blokada po 5 błędach, bramka MFA | FR-07.04 | AUTH | BL-101 | 3 | todo |
+| BL-101 | **[A]** Better Auth: e-mail + hasło z Argon2id (`@node-rs/argon2`), pula `oliginvest_auth`, polityka haseł (12–128, lista 10k, słowa kontekstowe, HIBP), limity prób i opóźnienia per konto | FR-07.02, NFR-03.02 | AUTH, [ADR-004](../09-decyzje/ADR-004-postgres-better-auth-rls.md) | BL-007, BL-009, BL-031 | 3 | w toku |
+| BL-102 | **[A]** Zaproszenia i rejestracja: `adminCreateInvitation`, `previewInvitation` (token we fragmencie), akceptacja regulaminu i informacji (`consent_events`), CLI pierwszego konta właściciela (`create-owner`) | FR-07.01, FR-07.12 | AUTH, RODO, API | BL-101 | 3 | w toku |
+| BL-103 | **[A]** TOTP: 10 kodów zapasowych (`encrypted`), ochrona przed powtórzeniem kodu, blokada po 5 błędach, bramka MFA | FR-07.04 | AUTH | BL-101 | 3 | w toku |
 | BL-104 | **[B]** Bramka regulaminu `TERMS_ACCEPTANCE_REQUIRED`, `/me/legal*`, zgoda na diagnostykę | FR-07.12 | RODO, API | BL-102 | 1,5 | todo |
-| BL-105 | **[A]** Sesje: ciasteczka `__Host-` (albo O-01), 7/30 dni, rotacja, lista sesji i wylogowanie zdalne ≤ 60 s, `Clear-Site-Data` | FR-07.05, NFR-03.03 | AUTH | BL-103, BL-030 | 2 | todo |
-| BL-106 | **[A]** Step-up TOTP (15 min) dla operacji wrażliwych | FR-07.04 | AUTH | BL-103 | 1 | todo |
-| BL-107 | **[A]** Reset hasła (link 30 min we fragmencie, unieważnienie sesji); e-maile systemowe przez SMTP Brevo; SPF, DKIM, DMARC | FR-07.10, NFR-11.03 | AUTH, [ADR-010](../09-decyzje/ADR-010-kanaly-powiadomien.md) | BL-101 | 2 | todo |
-| BL-108 | **[A]** RBAC: role, uprawnienia modułów wg MOD §6, testy 403; brak polityk RLS dla admina na tabelach portfela | FR-07.06, FR-08.01, NFR-03.04 | MOD, AUTH | BL-103, BL-007 | 2 | todo |
-| BL-109 | **[A]** Audyt append-only: wpis dla każdej trasy `/api/v1/admin/*` i każdego polecenia CLI; pseudonim aktora | FR-08.05, FR-08.10 | SEC, DB | BL-108 | 2 | todo |
+| BL-105 | **[A]** Sesje: ciasteczka `__Host-` (albo O-01), 7/30 dni, rotacja, lista sesji i wylogowanie zdalne ≤ 60 s, `Clear-Site-Data` | FR-07.05, NFR-03.03 | AUTH | BL-103, BL-030 | 2 | w toku |
+| BL-106 | **[A]** Step-up TOTP (15 min) dla operacji wrażliwych | FR-07.04 | AUTH | BL-103 | 1 | w toku |
+| BL-107 | **[A]** Reset hasła (link 30 min we fragmencie, unieważnienie sesji); e-maile systemowe przez SMTP Brevo; SPF, DKIM, DMARC | FR-07.10, NFR-11.03 | AUTH, [ADR-010](../09-decyzje/ADR-010-kanaly-powiadomien.md) | BL-101 | 2 | w toku |
+| BL-108 | **[A]** RBAC: role, uprawnienia modułów wg MOD §6, testy 403; brak polityk RLS dla admina na tabelach portfela | FR-07.06, FR-08.01, NFR-03.04 | MOD, AUTH | BL-103, BL-007 | 2 | w toku |
+| BL-109 | **[A]** Audyt append-only: wpis dla każdej trasy `/api/v1/admin/*` i każdego polecenia CLI; pseudonim aktora | FR-08.05, FR-08.10 | SEC, DB | BL-108 | 2 | w toku |
 | BL-110 | **[B]** Zdarzenia bezpieczeństwa i reguły anomalii: e-mail o nowym urządzeniu, seria nieudanych logowań, masowy eksport | NFR-03.10 | SEC, THR | BL-105, BL-107 | 1,5 | todo |
-| BL-111 | **[A]** Polecenia administracyjne `pnpm admin:*` z audytem: zaproszenie, reset 2FA (break-glass), wylogowanie wszystkich, tryb serwisowy, wstrzymanie kolejek, flagi | FR-08.01 | IR, ADMIN | BL-109 | 2 | todo |
+| BL-111 | **[A]** Polecenia administracyjne `pnpm admin:*` z audytem: zaproszenie, reset 2FA (break-glass), wylogowanie wszystkich, tryb serwisowy, wstrzymanie kolejek, flagi | FR-08.01 | IR, ADMIN | BL-109 | 2 | w toku |
 | BL-112 | **[B]** Powłoka `/admin` (leniwa): użytkownicy bez danych finansowych, zaproszenia, role | FR-08.01 | [ADR-006](../09-decyzje/ADR-006-panel-administratora.md), EKR | BL-108, BL-121 | 2 | todo |
 | BL-113 | **[A]** Preferencje: motyw jasny/ciemny/systemowy, paleta dla daltonistów bez przeładowania, waluta bazowa | FR-07.08, NFR-06.02 | DS, API | BL-121 | 1,5 | todo |
 | BL-114 | **[B]** RODO: eksport danych (JSON + CSV w ZIP, 24 h, step-up), usunięcie konta z 14-dniową karencją, `erasure_log` i plik poza bazą, test „wszystkie tabele z `user_id`” | FR-07.09, NFR-11.02 | RODO, DR | BL-106, BL-109 | 3 | todo |
 | BL-115 | **[B]** Zadania retencji: pliki importu, zaproszenia, eksporty, dziennik doręczeń, RUM, partycje audytu | NFR-11.02 | RODO | BL-114 | 1 | todo |
 | BL-116 | **[A]** Strony `/regulamin`, `/prywatnosc`, `/zrodla-danych` (MDX, wersja `2026-09`, pola `LEGAL_*`), stopka z disclaimerem `general` | FR-07.12, NFR-07.03, NFR-07.04 | USR, LAW | BL-121 | 1 | todo |
-| BL-117 | **[A]** Mechanizm flag: `feature_flags`, ocena z cache 30 s, `404` dla wyłączonych modułów, unieważnianie przez `flags.changed` | FR-08.04, NFR-02.02 | MOD | BL-006, BL-007 | 1,5 | todo |
+| BL-117 | **[A]** Mechanizm flag: `feature_flags`, ocena z cache 30 s, `404` dla wyłączonych modułów, unieważnianie przez `flags.changed` | FR-08.04, NFR-02.02 | MOD | BL-006, BL-007 | 1,5 | w toku |
 | BL-118 | **[B]** Umowy powierzenia: akceptacja DPA Brevo, retencja logów Brevo 1 miesiąc, zapis wersji DPA OVHcloud | NFR-11.03 | RODO | BL-107 | 0,5 | todo |
 | BL-121 | **[A]** Powłoka `(app)`: nawigacja mobilna i desktopowa, TanStack Query, klient SSE, stany ekranów, budżet powłoki ≤ 30 KB | NFR-01.02, NFR-04.02 | UI, EKR, PERF | BL-011, BL-012 | 3 | todo |
 | BL-122 | **[A]** Ekrany uwierzytelniania: logowanie, 2FA, rejestracja, konfiguracja 2FA (QR, kody), reset hasła, akceptacja regulaminu | FR-07.01, FR-07.02, FR-07.04, FR-07.10, FR-07.12 | EKR | BL-102, BL-103, BL-107, BL-121 | 3 | todo |

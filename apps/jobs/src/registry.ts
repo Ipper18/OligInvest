@@ -1,6 +1,11 @@
-import { JobsModuleRegistry, ModuleCatalog, type QueueDef } from "@oliginvest/platform";
+import {
+  type FlagEvaluator,
+  JobsModuleRegistry,
+  ModuleCatalog,
+  type QueueDef,
+} from "@oliginvest/platform";
 
-export function createQueueRegistry() {
+export function createQueueRegistry(evaluate: FlagEvaluator = () => false) {
   const definitions = [
     { id: "market", queues: [{ name: "ingest", concurrency: 2 }] },
     {
@@ -31,6 +36,7 @@ export function createQueueRegistry() {
         ...(feature ? { featureFlag: `module.${id}` } : {}),
       };
     }),
+    evaluate,
   );
   const registry = new JobsModuleRegistry(catalog);
   for (const definition of definitions)

@@ -27,3 +27,19 @@ export function requestClientIp(cidrs: readonly string[]) {
   return (context: Context<AppEnv>) =>
     resolve(getConnInfo(context).remote.address ?? "", context.req.header("x-forwarded-for"));
 }
+
+export function approximateIp(address: string): string | undefined {
+  if (isIP(address) === 4) return `${address.split(".").slice(0, 3).join(".")}.0/24`;
+  if (isIP(address) !== 6) return undefined;
+  const [left = "", right] = address.split("::");
+  const start = left ? left.split(":") : [];
+  const end = right ? right.split(":") : [];
+  const groups =
+    right === undefined
+      ? start
+      : [...start, ...Array(8 - start.length - end.length).fill("0"), ...end];
+  return `${groups
+    .slice(0, 3)
+    .map((value) => Number.parseInt(value, 16).toString(16))
+    .join(":")}::/48`;
+}

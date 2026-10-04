@@ -89,7 +89,7 @@ def acl(values, cache=False):
         key = f"VALKEY_{'CACHE' if cache else 'QUEUE'}_{service.upper()}_PASSWORD"
         digest = hashlib.sha256(values[key]).hexdigest()
         if cache:
-            keys = "~cache:* ~sse:* ~flags:* &sse:* &flags:*"
+            keys = "~cache:* ~sse:* ~flags:* &sse:* &flags:* &flags.changed"
             commands = "+ping +get +set +del +expire +pexpire +ttl +pttl +publish +subscribe +unsubscribe +client|setname +client|setinfo"
         else:
             queues = ["analytics", "analytics-results"] if service == "analytics" else ["ingest", "import", "recompute", "alerts", "notify", "analytics", "analytics-results", "events"]

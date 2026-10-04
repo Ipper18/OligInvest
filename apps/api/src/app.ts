@@ -133,6 +133,23 @@ export function createApp(
     name: "__Host-oliginvest.session_token",
   });
   mountStepUp(api, authDependencies);
+  api.use("*", async (context, next) => {
+    const module = /^\/api\/v1\/(analytics|alerts|education|quick)(?:\/|$)/u.exec(
+      context.req.path,
+    )?.[1];
+    if (module) {
+      const service = await authDependencies.service();
+      const principal = await service.requireData(context.req.raw);
+      if (
+        !(await service.features.enabled(
+          `module.${module === "quick" ? "quick-actions" : module}`,
+          { userId: principal.user_id, role: principal.role },
+        ))
+      )
+        throw new ProblemError("NOT_FOUND");
+    }
+    await next();
+  });
   mountIdentity(api, {
     ...authDependencies,
     administration:
