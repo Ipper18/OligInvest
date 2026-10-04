@@ -82,6 +82,17 @@ test("rejects missing descriptions, unknown types, and multiline PR titles", () 
   }
 });
 
+test("style and revert are valid types without bypassing subject validation", () => {
+  for (const title of ["style(db): format MFA migration metadata", "revert(auth): restore session handling", "style: format files", "revert!: restore the previous contract"]) {
+    assert.equal(checkPullRequestTitle(title), true);
+    assert.equal(checkCommit("a".repeat(40), title), true);
+  }
+  for (const title of ["style:", "revert: ", "style: format\nextra", "revert: restore\rmalformed", "styles: format", 'Revert "previous commit"']) {
+    assert.equal(checkPullRequestTitle(title), false);
+    assert.equal(checkCommit("a".repeat(40), title), false);
+  }
+});
+
 test("push events do not need a PR title, while PR events reject an empty title", () => {
   for (const [event, expectedStatus] of [["push", 0], ["pull_request", 1]]) {
     const result = spawnSync(process.execPath, [fileURLToPath(new URL("./check-repository.mjs", import.meta.url))], {

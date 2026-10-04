@@ -23,6 +23,8 @@ Fakty sprawdzone 2026-09-19 w dokumentacji GitHub: runnery hostowane przez GitHu
 
 ## 3. Zadania CI (pull request i `main`)
 
+Dozwolone typy commitów i tytułów PR: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert`. `style` oznacza formatowanie bez zmiany zachowania, a `revert` cofnięcie wcześniejszej zmiany. Znaczenie typów opisuje [CONTRIBUTING.md § 2](../../CONTRIBUTING.md).
+
 Kontrola Conventional Commits działa w istniejącym zadaniu **repository**: sprawdza tytuł PR (także po edycji — przy squash merge trafia on na main) oraz każdy commit między SHA bazy i głowy PR; przy push na main między poprzednim i nowym SHA. Wyjątków nie ma: każdy niezgodny commit blokuje CI. Jedyny historyczny wyjątek (commit `8d91754` sprzed reguły, zatwierdzony 2026-09-30 na czas PR #2) usunięto 2026-10-01 po scaleniu PR #2 i #3 squashem — na `main` trafiły wyłącznie zgodne tytuły PR.
 
 **BL-017/018/035 (2026-09-30):** aktywne workflow `contracts`, `db`, `modules`, `workers` i `web` uzupełniono o `repository` (dokumentacja i higiena repo), `lint`, `typecheck`, `unit`, sześć wariantów `build`, `deps-audit` i `e2e`. Budżety i Lighthouse pozostają krokami `web`, typy klienta w `contracts`; nie tworzymy zduplikowanych kontekstów. Ruleset pozostaje wyłączony; nazwy rozszerzamy po potwierdzeniu rzeczywistych zielonych przebiegów. Wyniki i otwarte kryteria w [raporcie M0-1](../08-plan/m0-1-session-report.md).

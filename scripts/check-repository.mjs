@@ -16,7 +16,7 @@ export function checkFixturePaths(paths) {
 
 export function checkPullRequestTitle(title) {
   return !/[\r\n]/.test(title)
-    && /^(feat|fix|docs|refactor|perf|test|build|ci|chore)(\([a-z0-9,-]+\))?!?: [^\s\r\n][^\r\n]*$/.test(title);
+    && /^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([a-z0-9,-]+\))?!?: [^\s\r\n][^\r\n]*$/.test(title);
 }
 
 function main() {
