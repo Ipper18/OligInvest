@@ -1,5 +1,10 @@
 import { z } from "@hono/zod-openapi";
-export const legalVersion = z.string().regex(/^[0-9]{4}-[0-9]{2}(-[0-9]{2})?(\.[0-9]{1,3})?$/u);
+export const legalVersion = z
+  .string()
+  .regex(/^[0-9]{4}-[0-9]{2}(-[0-9]{2})?(\.[0-9]{1,3})?$/u)
+  .openapi({
+    pattern: /^[0-9]{4}-[0-9]{2}(-[0-9]{2})?(\.[0-9]{1,3})?$/u.source.replaceAll("\\/", "/"),
+  });
 export const CURRENT_LEGAL_VERSION = "2026-09";
 export const role = z.enum(["user", "pro", "admin"]);
 export const signupInput = z
@@ -24,7 +29,13 @@ export const signinInput = z
   .strict()
   .openapi("AuthSignInRequest");
 export const totpInput = z
-  .object({ code: z.string().regex(/^\d{6}$/u), trustDevice: z.boolean().default(false) })
+  .object({
+    code: z
+      .string()
+      .regex(/^\d{6}$/u)
+      .openapi({ pattern: /^\d{6}$/u.source.replaceAll("\\/", "/") }),
+    trustDevice: z.boolean().default(false),
+  })
   .strict()
   .openapi("AuthTotpVerifyRequest");
 export const backupInput = z
@@ -49,6 +60,7 @@ export const resetRequestInput = z
     redirectTo: z
       .string()
       .regex(/^\/[^/]/u)
+      .openapi({ pattern: /^\/[^/]/u.source.replaceAll("\\/", "/") })
       .optional(),
   })
   .strict()
@@ -62,7 +74,12 @@ export const revokeInput = z
   .strict()
   .openapi("AuthRevokeSessionRequest");
 export const stepUpInput = z
-  .object({ code: z.string().regex(/^\d{6}$/u) })
+  .object({
+    code: z
+      .string()
+      .regex(/^\d{6}$/u)
+      .openapi({ pattern: /^\d{6}$/u.source.replaceAll("\\/", "/") }),
+  })
   .strict()
   .openapi("StepUpRequest");
 export const previewInput = z
@@ -71,7 +88,8 @@ export const previewInput = z
       .string()
       .min(32)
       .max(128)
-      .regex(/^[A-Za-z0-9_-]+$/u),
+      .regex(/^[A-Za-z0-9_-]+$/u)
+      .openapi({ pattern: /^[A-Za-z0-9_-]+$/u.source.replaceAll("\\/", "/") }),
   })
   .strict()
   .openapi("InvitationPreviewRequest");

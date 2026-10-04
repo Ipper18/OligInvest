@@ -1,10 +1,13 @@
 import assert from "node:assert/strict";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { createAppDatabase, createAuthDatabase } from "@oliginvest/db";
+import { ProblemError } from "@oliginvest/platform";
 import { symmetricDecrypt } from "better-auth/crypto";
 import { sql } from "drizzle-orm";
+import { createApp } from "../dist/app.js";
 import { AuditWriter } from "../dist/auth/audit.js";
 import { createAuth } from "../dist/auth/config.js";
+import { authOperations } from "../dist/auth/routes.js";
 import { AuthService } from "../dist/auth/service.js";
 import { SESSION_COOKIE } from "../dist/auth/session.js";
 import { totpCode } from "../dist/auth/totp.js";
@@ -50,6 +53,12 @@ export async function testAuthFacade(settings) {
     securityEvent: async (event) => securityEvents.push(event),
   });
   const cookies = new Map();
+  const app = createApp({
+    logger: { info() {}, warn() {}, error() {} },
+    publicBaseUrl: configuration.origin,
+    checks: { postgres: async () => {}, valkeyQueue: async () => {}, valkeyCache: async () => {} },
+    auth: { service: () => service, clientIp: () => "192.0.2.1" },
+  });
   const request = (path, body, jar = cookies) =>
     new Request(`${configuration.origin}/api/auth${path}`, {
       method: body === undefined ? "GET" : "POST",
@@ -61,7 +70,14 @@ export async function testAuthFacade(settings) {
       ...(body === undefined ? {} : { body: JSON.stringify(body) }),
     });
   async function call(path, body, jar = cookies) {
-    const response = await service.handle(request(path, body, jar), "192.0.2.1");
+    const response = await app.fetch(request(path, body, jar));
+    if (response.status >= 400) {
+      assert.match(response.headers.get("content-type"), /^application\/problem\+json/u);
+      const problem = await response.json();
+      assert.equal(problem.status, response.status);
+      assert.ok(response.headers.get("x-request-id"));
+      throw new ProblemError(problem.code);
+    }
     assert.equal(response.status, 200, path);
     for (const cookie of response.headers.getSetCookie()) {
       assert.match(cookie, /^__Host-oliginvest\./u);
@@ -82,6 +98,24 @@ export async function testAuthFacade(settings) {
   let ownerId;
   let userId;
   try {
+    // Every mounted auth operation must reject a bearer token, including public routes.
+    for (const [path] of authOperations) {
+      const raw = request(path, ["/get-session", "/list-sessions"].includes(path) ? undefined : {});
+      raw.headers.set("authorization", "Bearer synthetic-forbidden");
+      const response = await app.fetch(raw);
+      assert.equal(response.status, 403, path);
+      assert.equal((await response.json()).code, "FORBIDDEN");
+    }
+    const forbiddenStepUp = await app.request("/api/v1/me/step-up", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        authorization: "Bearer synthetic-forbidden",
+        origin: configuration.origin,
+      },
+      body: JSON.stringify({ code: "000000" }),
+    });
+    assert.equal(forbiddenStepUp.status, 403);
     ownerId = await database.transaction(async (tx) => {
       const response = await createAuth(tx, configuration).handler(
         request(

@@ -479,7 +479,7 @@ export class AuthService {
         path === "/sign-in/email"
           ? { twoFactorRedirect: true }
           : path === "/two-factor/enable"
-            ? data
+            ? z.object({ totpURI: z.string(), backupCodes: z.array(z.string()) }).parse(data)
             : path === "/two-factor/generate-backup-codes"
               ? {
                   backupCodes: z.object({ backupCodes: z.array(z.string()) }).parse(data)
