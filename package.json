@@ -9,6 +9,7 @@
     "pnpm": "12.4.2"
   },
   "scripts": {
+    "admin:create-owner": "pnpm --filter @oliginvest/api exec node dist/admin-cli.js create-owner",
     "dev": "node scripts/dev.mjs",
     "dev:test": "node scripts/dev.mjs --check",
     "queues:test": "node apps/jobs/scripts/test-queues.mjs",

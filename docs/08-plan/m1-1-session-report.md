@@ -21,6 +21,10 @@ Właściciel zatwierdził obie propozycje w tej sesji. AUTH, FR-07.01, instrukcj
 
 ## Dalsza praca i ograniczenia
 
+**Nowa rozbieżność do decyzji:** AUTH §6 dopuszcza działania wrażliwe po kodzie TOTP ≤15 min, ale §8 przewiduje odzyskanie urządzenia przez „step-up kodem zapasowym”. OpenAPI `StepUpRequest` przyjmuje tylko sześciocyfrowy TOTP, a SQL ma jedynie `mfa_verified_at` — nie rozróżnia rodzaju drugiego czynnika. Kod zapasowy użyty do logowania nie powinien przypadkowo autoryzować wszystkich mutacji administratora.
+
+Propozycja: dodać `auth.sessions.mfa_method` (`totp`/`backup`, NULL przed MFA), z migracją i testami RLS. `/me/step-up` pozostaje TOTP. Ogólne operacje wrażliwe wymagają świeżego `totp`; odzyskanie urządzenia przez `/two-factor/enable` dopuszcza świeże logowanie kodem zapasowym ≤15 min **oraz hasło**, odwołuje inne sesje i wymaga weryfikacji nowego TOTP. Doprecyzować AUTH §6/8 i OpenAPI; dodać test odmowy admina po backupie i test odzyskania urządzenia. Alternatywa: wycofać samodzielne odzyskanie urządzenia kodem zapasowym i wymagać administracyjnego resetu 2FA. Do decyzji fasada pozostaje niezamontowana.
+
 Następnie: testy kontraktów → testy → integracja Better Auth z PostgreSQL → zaproszenia/TOTP/sesje/step-up/reset → RBAC/audyt/CLI/flagi. Testy obejmą pustą bazę i wyścig bootstrapu, odmowy tras, izolację RLS oraz brak możliwości ominięcia MFA. Pełny DoD i zielone kontrole wymagane przed zamknięciem zadań.
 
 BL-101 jest `w toku`; pozostałe zadania niezamknięte. Estymacje bez zmian, nakład niezmierzony. [R-30](ryzyka.md): rozwiązanie zatwierdzone, test bootstrapu otwarty. M1 pozostaje otwarty; dowód części bramy A nr 5: RLS PASS. Dokumentacja i granice zależności PASS; wyniki CI głowy gałęzi: [Checks PR #7](https://github.com/Ipper18/OligInvest/pull/7/checks). Zielone kontrole adaptera nie potwierdzają całej paczki.

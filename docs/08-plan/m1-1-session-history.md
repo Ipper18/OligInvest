@@ -31,3 +31,10 @@
 - Poprawiono odwzorowanie rotacji przy pierwszym TOTP: natywny JSON Better Auth wskazuje poprzednią sesję; fasada używa podpisanego Set-Cookie, zachowuje limit absolutny i usuwa duplikat ciasteczka.
 - PASS: TOTP poprzedniego okna, odmowa powtórzenia, step-up i unieważnienie starego tokenu, wyścig kodów zapasowych (jeden sukces), blokada 5/15 min, reset hasła i unieważnienie sesji, ponowne użycie resetu, niedozwolone trasy, obcy Origin.
 - `pnpm db:test`: RLS/pule PASS, adapter i fasada PASS, schema ZERO DIFFERENCES. Trasy nadal niezamontowane; API/CLI i testy całości paczki pozostają w toku.
+
+## 2026-10-04 — bootstrap właściciela i fundament RBAC/flag
+
+- `pnpm admin:create-owner`: ukryte hasło tylko w TTY, potwierdzenie adresu i dokumentów, polityka haseł/Argon2id, blokada pustej bazy, brak sesji, zgody i audyt systemowy.
+- PostgreSQL PASS: równoczesny bootstrap daje dokładnie jedno konto; istniejące konto, słabe hasło, brak potwierdzenia i awaria audytu uniemożliwiają bootstrap; odczyt zgód i append-only audyt sprawdzone. `db:test` kończy się ZERO DIFFERENCES.
+- `access.ts`: macierz uprawnień MOD §6 i ewaluator flag z TTL 30 s, regułami ról/użytkowników, przełącznikiem nadrzędnym oraz unieważnianiem cache; cztery testy jednostkowe PASS. Podłączenie do API/pub-sub pozostaje otwarte.
+- API/platform lint, typecheck, test, build PASS. Checkpoint przed wdrożeniem zatwierdzonego przez właściciela rozróżnienia MFA i jednorazowego odzyskania urządzenia w ciągu 10 minut.
