@@ -38,3 +38,11 @@
 - PostgreSQL PASS: równoczesny bootstrap daje dokładnie jedno konto; istniejące konto, słabe hasło, brak potwierdzenia i awaria audytu uniemożliwiają bootstrap; odczyt zgód i append-only audyt sprawdzone. `db:test` kończy się ZERO DIFFERENCES.
 - `access.ts`: macierz uprawnień MOD §6 i ewaluator flag z TTL 30 s, regułami ról/użytkowników, przełącznikiem nadrzędnym oraz unieważnianiem cache; cztery testy jednostkowe PASS. Podłączenie do API/pub-sub pozostaje otwarte.
 - API/platform lint, typecheck, test, build PASS. Checkpoint przed wdrożeniem zatwierdzonego przez właściciela rozróżnienia MFA i jednorazowego odzyskania urządzenia w ciągu 10 minut.
+
+## 2026-10-04 — zatwierdzone odzyskanie TOTP
+
+- AUTH §6/§9 oraz OpenAPI opisują jednorazowe odzyskanie w 10 min; migracja 0003 dodaje `mfa_method`, DTO odróżnia backup od TOTP przy autoryzacji.
+- Backup + hasło zezwala tylko na wymianę czynnika; rozpoczęcie zużywa uprawnienie. W trakcie wymiany konto nadal wymaga 2FA — brak obejścia przez nowe logowanie samym hasłem.
+- Zakończenie: rotacja sesji, usunięcie pozostałych, nowy zaszyfrowany komplet backupów zwracany raz, audyt i zdarzenia bezpieczeństwa; e-mail odzyskania zgodnie z decyzją właściciela w BL-110.
+- Realny PostgreSQL PASS: granica 10 min, złe hasło, ponowne użycie uprawnienia, nowe kody i unieważnienie starych, audyt/zdarzenia oraz odmowy bramek zmiany hasła, eksportu/PAT/admina. Normatywny test uniemożliwia roli app sfałszowanie metody MFA.
+- `db:test` ZERO DIFFERENCES; API/platform lint/typecheck/test/build, klient i kontrakty PASS. Nadal 3 operacje HTTP wdrożone / 182 pending — fasada czeka na montaż i testy tras.

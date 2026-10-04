@@ -106,7 +106,8 @@ CREATE TABLE auth.sessions (
   user_agent       text,
   user_id          uuid        NOT NULL REFERENCES auth.users (id) ON DELETE CASCADE,
   impersonated_by  uuid,                 -- wtyczka admin; impersonacja WYŁĄCZONA w konfiguracji (ADR-004)
-  mfa_verified_at  timestamptz           -- pole dodatkowe OligInvest: ostatnia weryfikacja TOTP (bramka MFA, step-up)
+  mfa_verified_at  timestamptz,          -- ostatnia weryfikacja drugiego czynnika; NULL także po zużyciu uprawnienia odzyskania
+  mfa_method       text CHECK (mfa_method IN ('totp', 'backup')) -- metoda ostatniego MFA; tylko totp uprawnia do zwykłego step-upu
 );
 CREATE INDEX sessions_user_id_idx ON auth.sessions (user_id);
 

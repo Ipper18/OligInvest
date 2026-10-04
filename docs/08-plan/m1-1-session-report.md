@@ -1,30 +1,25 @@
 # M1-1 — stan bieżący
 
-**Cel:** przekazać stan API i CLI uwierzytelniania oraz zatwierdzone decyzje oraz następny krok implementacji; zamknięte kroki w [historii](m1-1-session-history.md).
+**Cel:** krótki stan implementacji API/CLI uwierzytelniania i następne kroki; dowody zamkniętych etapów w [historii](m1-1-session-history.md).
 
-**2026-10-03**, gałąź `feat/m1-1-auth` z `origin/main` (`52b3120`), [roboczy PR #7](https://github.com/Ipper18/OligInvest/pull/7). Zakres: BL-101, BL-102, BL-103, BL-105, BL-106, BL-107, BL-108, BL-109, BL-111, BL-117. Ekrany pozostają w M1-4.
+**2026-10-04**, `feat/m1-1-auth` z `origin/main` (`52b3120`), [roboczy PR #7](https://github.com/Ipper18/OligInvest/pull/7). Zakres: BL-101/102/103/105/106/107/108/109/111/117. Ekrany pozostają w M1-4. Zależności M0 wykonane lokalnie; kalibracja Argon2id na VM wymaga właściciela.
 
-## Stan
+## Wykonane etapy
 
-Fundamenty BL-006/007/009 oraz techniczne wyniki BL-030/031 są wykonane lokalnie; ich `w toku` nie blokuje zależności zgodnie z AGENTS §6.1. Kalibracja Argon2id na VM pozostaje zadaniem właściciela.
+- Adapter Better Auth 1.7.5/Drizzle na roli `oliginvest_auth`, Argon2id, lista 10k i HIBP z fallbackiem, ciasteczka `__Host-`, szyfrowanie TOTP/kodów i rotacja klucza.
+- Fasada: zaproszenie/adres/rola/zgody, bramka MFA i regulaminu, TOTP z ochroną powtórek, jednorazowe backupy, blokada 5/15 min, sesje, step-up, reset hasła. Trasy **jeszcze niezamontowane**; pending nie zmniejszano przed implementacją HTTP.
+- `pnpm admin:create-owner`: tylko pusta baza, ukryte hasło TTY, jawne potwierdzenia, brak sesji, zgody, audyt. Równoczesne uruchomienia tworzą jedno konto; awaria audytu blokuje utworzenie.
+- Fundament RBAC wg MOD §6 oraz ewaluacja flag (30 s, role/użytkownicy, nadrzędny moduł, unieważnianie). Podłączenie do API/jobs/pub-sub pozostaje otwarte.
+- Naprawione contracts (regeneracja klienta) i produkcyjny graf zależności. Źródłem odmowy images były stare binaria esbuild/Go dołączone przez opcjonalne peers Better Auth; `.pnpmfile.cjs` usuwa nieużywane powiązania, test obrazu wykrywa regresję. Glibc CVE-2019-1010022 nie ma `fixed` w Debian/OSV, aktualny tag Node ma dotychczasowy digest. Bez fikcyjnej aktualizacji ani wyjątków skanera.
 
-BL-101/103/105 — etap adaptera: produkcyjna konfiguracja Better Auth z pulą `oliginvest_auth`, Argon2id i polityka haseł z listą SecLists (MIT), HIBP z fallbackiem offline, jawne ciasteczka i szyfrowanie kodów. Trasy jeszcze niezamontowane: bramki i fasada HTTP w następnym kroku. 11 testów jednostkowych PASS; rzeczywiste PostgreSQL 18: SQL adapter, PHC, ciasteczka, szyfrowanie TOTP/kodów i odszyfrowanie po rotacji klucza PASS. Pełne normatywne RLS, pule oraz porównanie migracji z SQL: ZERO DIFFERENCES. CI db obejmuje nowy test adaptera. Lista `openapi-pending.json` bez zmian do implementacji tras.
+## Zatwierdzone decyzje
 
-## Rozbieżności — decyzja właściciela 2026-10-03
+2026-10-03: osobny bootstrap właściciela oraz weryfikacja e-maila zaproszeniem; dokumenty poprawione.
 
-1. **Pierwsze konto:** [CLI §2–3](../12-dla-uzytkownika/instrukcja-administratora.md) i BL-102 wymagają pierwszego zaproszenia administratora. [SQL](../03-dane/schema.sql) wymaga `identity.invitations.invited_by NOT NULL REFERENCES auth.users(id)`. W pustej bazie nie ma zapraszającego; test RLS zaproszeń wcześniej tworzy administratora, więc nie sprawdza pierwszego startu.
-   **Zatwierdzone rozwiązanie:** zgodnie z poleceniem właściciela dodać `pnpm admin:create-owner --email <adres> --name <nazwa> --reason <powód>`. Działa wyłącznie przy braku kont, z blokadą współbieżnych uruchomień. Hasło z ukrytego wejścia terminala, nigdy z argumentu; polityka haseł i Argon2id jak dla rejestracji. Jawne potwierdzenie kontroli adresu i akceptacji bieżących dokumentów, zapis zgód oraz audyt aktora `system`; brak pełnej sesji, TOTP nadal obowiązkowe przed dostępem do danych. `invite` służy kolejnym kontom. Uzgodnić AUTH, wymaganie FR-07.01 (wyjątek wyłącznie lokalnego bootstrapu), BL-102 i instrukcję CLI; nie tworzyć fikcyjnego użytkownika ani nie rozluźniać FK/RLS.
-2. **Weryfikacja e-maila:** [AUTH §1.1](../06-bezpieczenstwo/uwierzytelnianie-autoryzacja.md) nadaje `emailVerified = true` na podstawie zaproszenia. Odpowiedź `200` operacji `authSignUpEmail` w [OpenAPI](../02-api/openapi.yaml) mówi o wysłaniu e-maila weryfikacyjnego.
-   **Zatwierdzone rozwiązanie:** zachować AUTH; usunąć z opisu odpowiedzi obietnicę dodatkowego e-maila weryfikacyjnego. Test ma potwierdzać weryfikację przez ważne, jednorazowe zaproszenie przypisane do adresu.
+2026-10-04: `auth.sessions.mfa_method` rozróżnia TOTP i backup. Backup + hasło pozwala **raz, przez 10 min**, tylko rozpocząć wymianę TOTP. Pozostałe operacje wrażliwe i admin wymagają TOTP. Po nowym TOTP: rotacja, usunięcie innych sesji, nowe zaszyfrowane backupy. Audyt i zdarzenia odzyskania, e-mail w BL-110. AUTH §6 i §9 (faktyczna sekcja odzyskania) oraz OpenAPI ujednolicone, migracja 0003.
 
-Właściciel zatwierdził obie propozycje w tej sesji. AUTH, FR-07.01, instrukcja CLI, BL-102 i opis odpowiedzi OpenAPI zostały zaktualizowane przed kodem. Nie zmienia to decyzji ADR-004 o MFA i izolacji ról; bez nowego ADR.
+## Weryfikacja i dalsza praca
 
-## Dalsza praca i ograniczenia
+`pnpm db:test` PASS: pusty bootstrap/wyścig, role/RLS, adapter, fasada, odzyskanie 2FA, odmowa backupowi zmiany hasła/eksportu/PAT/admina, wygaśnięcie 10 min, jednorazowość, brak obejścia samym hasłem, nowe kody, audyt/zdarzenia. Schemat: ZERO DIFFERENCES. API/platform lint/typecheck/test/build oraz klient i kontrakty sprawdzane przed commitem; [CI głowy PR](https://github.com/Ipper18/OligInvest/pull/7/checks) trzeba doprowadzić do zielonego.
 
-**Nowa rozbieżność do decyzji:** AUTH §6 dopuszcza działania wrażliwe po kodzie TOTP ≤15 min, ale §8 przewiduje odzyskanie urządzenia przez „step-up kodem zapasowym”. OpenAPI `StepUpRequest` przyjmuje tylko sześciocyfrowy TOTP, a SQL ma jedynie `mfa_verified_at` — nie rozróżnia rodzaju drugiego czynnika. Kod zapasowy użyty do logowania nie powinien przypadkowo autoryzować wszystkich mutacji administratora.
-
-Propozycja: dodać `auth.sessions.mfa_method` (`totp`/`backup`, NULL przed MFA), z migracją i testami RLS. `/me/step-up` pozostaje TOTP. Ogólne operacje wrażliwe wymagają świeżego `totp`; odzyskanie urządzenia przez `/two-factor/enable` dopuszcza świeże logowanie kodem zapasowym ≤15 min **oraz hasło**, odwołuje inne sesje i wymaga weryfikacji nowego TOTP. Doprecyzować AUTH §6/8 i OpenAPI; dodać test odmowy admina po backupie i test odzyskania urządzenia. Alternatywa: wycofać samodzielne odzyskanie urządzenia kodem zapasowym i wymagać administracyjnego resetu 2FA. Do decyzji fasada pozostaje niezamontowana.
-
-Następnie: testy kontraktów → testy → integracja Better Auth z PostgreSQL → zaproszenia/TOTP/sesje/step-up/reset → RBAC/audyt/CLI/flagi. Testy obejmą pustą bazę i wyścig bootstrapu, odmowy tras, izolację RLS oraz brak możliwości ominięcia MFA. Pełny DoD i zielone kontrole wymagane przed zamknięciem zadań.
-
-BL-101 jest `w toku`; pozostałe zadania niezamknięte. Estymacje bez zmian, nakład niezmierzony. [R-30](ryzyka.md): rozwiązanie zatwierdzone, test bootstrapu otwarty. M1 pozostaje otwarty; dowód części bramy A nr 5: RLS PASS. Dokumentacja i granice zależności PASS; wyniki CI głowy gałęzi: [Checks PR #7](https://github.com/Ipper18/OligInvest/pull/7/checks). Zielone kontrole adaptera nie potwierdzają całej paczki.
+Następnie: pełne HTTP/OpenAPI i testy 403 każdej trasy, powiadomienia resetu, pozostałe CLI/admin, podłączenie RBAC/flag i Valkey, testy przeglądarek. Nie zamknięto zadań ani bram M1. Estymacje bez zmian, nakład niezmierzony; [R-30](ryzyka.md) ma test bootstrapu. DoD paczki pozostaje otwarte.

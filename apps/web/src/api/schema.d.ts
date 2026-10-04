@@ -286,7 +286,7 @@ export interface paths {
         put?: never;
         /**
          * Rozpocznij konfigurację TOTP (sekret i 10 kodów zapasowych)
-         * @description 2FA staje się aktywne dopiero po `verify-totp`. Ponowne wywołanie przy aktywnym 2FA (zmiana urządzenia) wymaga step-up.
+         * @description 2FA staje się aktywne dopiero po `verify-totp`. Zmiana urządzenia wymaga hasła i step-up TOTP albo jednorazowego uprawnienia z logowania kodem zapasowym sprzed najwyżej 10 minut. Odzyskanie nie udostępnia pozostałych operacji wrażliwych. Po rozpoczęciu wymiany wymagany jest kod nowego TOTP.
          */
         post: operations["authTwoFactorEnable"];
         delete?: never;
@@ -306,7 +306,7 @@ export interface paths {
         put?: never;
         /**
          * Zweryfikuj kod TOTP (logowanie lub zakończenie konfiguracji)
-         * @description Sukces ustawia `auth.sessions.mfa_verified_at`. Blokada po 5 błędnych kodach (NFR-03.02).
+         * @description Sukces ustawia `auth.sessions.mfa_verified_at` i `mfa_method = totp`. Blokada po 5 błędnych kodach (NFR-03.02). Przy zakończeniu wymiany urządzenia unieważnia inne sesje i zwraca nowy komplet kodów zapasowych w `backupCodes` (pokazywany raz).
          */
         post: operations["authTwoFactorVerifyTotp"];
         delete?: never;
@@ -2783,6 +2783,8 @@ export interface components {
                 mfaVerifiedAt?: components["schemas"]["Timestamp"] | null;
             };
             user: components["schemas"]["AuthUser"];
+            /** @description Tylko po zakończeniu wymiany TOTP; zastępuje wszystkie poprzednie kody, także otrzymane przy rozpoczęciu wymiany. */
+            backupCodes?: string[];
         };
         AuthStatusResponse: {
             status?: boolean;

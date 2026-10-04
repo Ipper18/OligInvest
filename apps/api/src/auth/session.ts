@@ -19,6 +19,7 @@ export const sessionRow = z
     updated_at: z.coerce.date(),
     expires_at: z.coerce.date(),
     mfa_verified_at: z.coerce.date().nullable(),
+    mfa_method: z.enum(["totp", "backup"]).nullable(),
     ip_address: z.string().nullable(),
     user_agent: z.string().nullable(),
   })
@@ -70,7 +71,7 @@ export async function findSession(
   if (!token) return null;
   const row = (
     await tx.execute(sql`SELECT s.id, s.token, s.user_id, s.created_at, s.updated_at, s.expires_at,
-    s.mfa_verified_at, s.ip_address, s.user_agent, u.role, u.email, u.name, u.email_verified, u.two_factor_enabled
+    s.mfa_verified_at, s.mfa_method, s.ip_address, s.user_agent, u.role, u.email, u.name, u.email_verified, u.two_factor_enabled
     FROM auth.sessions s JOIN auth.users u ON u.id=s.user_id
     WHERE s.token=${token} AND s.expires_at>now() AND s.created_at>now()-interval '30 days'
       AND (NOT u.banned OR (u.ban_expires IS NOT NULL AND u.ban_expires<=now()))`)
@@ -81,13 +82,26 @@ export async function findSession(
 export function requireMfa(principal: Principal | null): Principal {
   if (!principal) throw new ProblemError("UNAUTHENTICATED");
   if (!principal.two_factor_enabled) throw new ProblemError("MFA_ENROLLMENT_REQUIRED");
-  if (!principal.mfa_verified_at) throw new ProblemError("MFA_REQUIRED");
+  if (!principal.mfa_verified_at || !principal.mfa_method) throw new ProblemError("MFA_REQUIRED");
   return principal;
 }
 export function requireStepUp(principal: Principal, now = Date.now()): void {
   const verified = principal.mfa_verified_at?.getTime();
-  if (verified === undefined || verified > now || now - verified > 900_000)
+  if (
+    principal.mfa_method !== "totp" ||
+    verified === undefined ||
+    verified > now ||
+    now - verified > 900_000
+  )
     throw new ProblemError("STEP_UP_REQUIRED");
+}
+export function requireFactorReplacement(principal: Principal, now = Date.now()): void {
+  if (principal.mfa_method === "backup") {
+    const verified = principal.mfa_verified_at?.getTime();
+    if (verified !== undefined && verified <= now && now - verified < 600_000) return;
+    throw new ProblemError("STEP_UP_REQUIRED");
+  }
+  requireStepUp(principal, now);
 }
 export function publicSession(principal: Principal) {
   return {

@@ -132,7 +132,7 @@ NIST SP 800-63B-4 (wersja finalna z 2025 r.) zaleca dla AAL2 czas życia sesji n
 | Jednorazowość (ASVS V6.5.1) | ostatni zaakceptowany krok czasowy per użytkownik w `valkey-queue` (bez wypierania, AOF), klucz z TTL 120 s — ponowne użycie tego samego kodu jest odrzucane |
 | Sekret | 32 znaki losowe; w bazie zaszyfrowany XChaCha20-Poly1305 kluczem z `BETTER_AUTH_SECRETS` (koperta z numerem wersji klucza) |
 | Konfiguracja | obowiązkowa przed dostępem do danych (bramka MFA); kod QR + sekret do ręcznego wpisania; aktywacja po poprawnym kodzie |
-| Zmiana urządzenia | ponowne `two-factor/enable`: hasło + step-up (pełne ponowne uwierzytelnienie — ASVS V7.5.1), potem propozycja wylogowania innych urządzeń |
+| Zmiana urządzenia | ponowne `two-factor/enable`: hasło + step-up TOTP albo ograniczone odzyskanie z §6/§9; po weryfikacji nowego TOTP unieważnienie wszystkich pozostałych sesji i nowy komplet kodów zapasowych |
 | Wyłączenie 2FA | niemożliwe (trasa zablokowana) |
 | Kody zapasowe | 10 kodów po 10 znaków, **jawnie ustawione `storeBackupCodes: "encrypted"`** (także domyślne w zweryfikowanej 1.7.5); zużycie atomowe (warunkowy UPDATE); nowy komplet wymaga step-upu i unieważnia poprzedni; odstępstwo od haszowania — O-02 |
 | Blokada | 5 błędnych kodów → 15 min (licznik w `auth.two_factors`) + e-mail |
@@ -140,9 +140,11 @@ NIST SP 800-63B-4 (wersja finalna z 2025 r.) zaleca dla AAL2 czas życia sesji n
 
 ## 6. Step-up — świeża weryfikacja (FR-07.04, ASVS V7.5)
 
-**Działania wymagające kodu TOTP sprzed ≤ 15 min:** tworzenie tokenu PAT, eksport danych RODO i jego pobranie, usunięcie konta i rachunku, nowe kody zapasowe, zmiana urządzenia TOTP, wylogowanie innych urządzeń i zamknięcie sesji, wszystkie mutacje w panelu admina (zmiana roli, blokada, reset 2FA, zaproszenia, flagi, limity, dostawcy, eksport audytu).
+**Działania wymagające kodu TOTP sprzed ≤ 15 min:** zmiana hasła, tworzenie tokenu PAT, eksport danych RODO i jego pobranie, usunięcie konta i rachunku, nowe kody zapasowe, zwykła zmiana urządzenia TOTP, wylogowanie innych urządzeń i zamknięcie sesji, wszystkie mutacje w panelu admina (zmiana roli, blokada, reset 2FA, zaproszenia, flagi, limity, dostawcy, eksport audytu). Dostęp do panelu admina wymaga metody `totp`, także dla odczytu.
 
-Mechanizm: `POST /api/v1/me/step-up` z kodem → `auth.sessions.mfa_verified_at = now()` i **rotacja tokenu sesji** (nowe ciasteczko, stary token unieważniony). Brak świeżej weryfikacji → `403 STEP_UP_REQUIRED`; UI pokazuje okno z kodem i ponawia żądanie. Kod użyty do step-upu podlega tej samej ochronie przed powtórką i blokadzie co logowanie.
+Mechanizm: `POST /api/v1/me/step-up` z kodem TOTP → `auth.sessions.mfa_verified_at = now()`, `mfa_method = 'totp'` i **rotacja tokenu sesji** (nowe ciasteczko, stary token unieważniony). Brak świeżej weryfikacji TOTP → `403 STEP_UP_REQUIRED`; UI pokazuje okno z kodem i ponawia żądanie. Kod użyty do step-upu podlega tej samej ochronie przed powtórką i blokadzie co logowanie. Logowanie kodem zapasowym ustawia `mfa_method = 'backup'` i przechodzi bramkę MFA do zwykłych danych; nie spełnia ogólnego step-upu.
+
+**Ograniczone odzyskanie urządzenia (decyzja właściciela 2026-10-04):** po atomowym zużyciu kodu zapasowego jego sesja ma przez **10 minut** jednorazowe uprawnienie wyłącznie do `two-factor/enable`, razem z poprawnym hasłem. Rozpoczęcie wymiany zeruje `mfa_verified_at`, zużywając uprawnienie; pozostawia `mfa_method = 'backup'` jako znacznik niedokończonego odzyskania. Ponowne `enable` odmawia. Konto pozostaje z obowiązkowym 2FA przez całą wymianę (logowanie samym hasłem nie otwiera nowej konfiguracji). Po poprawnym kodzie nowego TOTP: rotacja sesji, `mfa_method = 'totp'`, usunięcie wszystkich innych sesji, wygenerowanie i zaszyfrowanie nowego kompletu kodów, pokazanie ich raz w odpowiedzi weryfikacji. Kody wydane podczas rozpoczęcia wymiany są wtedy nieważne. Rozpoczęcie i ukończenie odzyskania mają audyt oraz zdarzenie bezpieczeństwa; e-mail obsłuży BL-110. Testy zabraniają sesji `backup` eksportu, zmiany hasła, zarządzania PAT i dostępu admina.
 
 ## 7. Tokeny PAT (FR-07.07, Z-17)
 
@@ -169,7 +171,7 @@ Mechanizm: `POST /api/v1/me/step-up` z kodem → `auth.sessions.mfa_verified_at 
 | Sytuacja | Procedura |
 |---|---|
 | Zapomniane hasło | link resetu (30 min, jednorazowy, token we fragmencie adresu) → nowe hasło → logowanie z TOTP; wszystkie sesje unieważnione; e-mail z powiadomieniem |
-| Utracony telefon z TOTP | logowanie kodem zapasowym → nowe urządzenie TOTP (hasło + step-up kodem zapasowym) → odwołanie tokenów PAT z telefonu |
+| Utracony telefon z TOTP | logowanie jednorazowym kodem zapasowym → w ciągu 10 min jednokrotne rozpoczęcie wymiany urządzenia z hasłem (§6) → weryfikacja nowego TOTP, unieważnienie innych sesji i nowe kody zapasowe → odwołanie tokenów PAT z telefonu |
 | Utracone TOTP i kody zapasowe | reset 2FA przez administratora po potwierdzeniu tożsamości poza systemem (rozmowa wideo lub spotkanie — ten sam poziom, co przy zapraszaniu, ASVS V6.4.4); wpis audytu, e-mail do użytkownika, unieważnienie sesji |
 | Administrator bez dostępu | procedura „break-glass” z dostępem do serwera — [`plan-reagowania.md`](plan-reagowania.md) P13 |
 | Zmiana adresu e-mail | wyłącznie administrator po potwierdzeniu tożsamości; powiadomienie na stary i nowy adres, unieważnienie sesji (ASVS V7.5.1) |

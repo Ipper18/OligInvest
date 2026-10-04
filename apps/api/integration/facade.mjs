@@ -3,6 +3,7 @@ import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { createAppDatabase, createAuthDatabase } from "@oliginvest/db";
 import { symmetricDecrypt } from "better-auth/crypto";
 import { sql } from "drizzle-orm";
+import { AuditWriter } from "../dist/auth/audit.js";
 import { createAuth } from "../dist/auth/config.js";
 import { AuthService } from "../dist/auth/service.js";
 import { SESSION_COOKIE } from "../dist/auth/session.js";
@@ -25,6 +26,7 @@ export async function testAuthFacade(settings) {
   const failures = new Map();
   const delays = [];
   const events = [];
+  const securityEvents = [];
   const state = {
     limit: async () => {},
     failures: async (email) => failures.get(email) ?? 0,
@@ -44,6 +46,8 @@ export async function testAuthFacade(settings) {
     passwordChecks: { compromised: async () => false, unavailable: () => {} },
     wait: async (ms) => delays.push(ms),
     event: (event) => events.push(event),
+    audit: new AuditWriter(appDatabase, configuration.secrets[0].value),
+    securityEvent: async (event) => securityEvents.push(event),
   });
   const cookies = new Map();
   const request = (path, body, jar = cookies) =>
@@ -165,6 +169,124 @@ export async function testAuthFacade(settings) {
       results.filter((r) => r.status === "fulfilled").length,
       1,
       "Backup is consumed once across concurrent requests",
+    );
+    if (results[1].status === "fulfilled") {
+      cookies.clear();
+      for (const [key, value] of challenge) cookies.set(key, value);
+    }
+    assert.equal((await service.principal(request("/get-session"))).mfa_method, "backup");
+    await denied(
+      () =>
+        call("/change-password", {
+          currentPassword: password,
+          newPassword: randomBytes(24).toString("hex"),
+        }),
+      "STEP_UP_REQUIRED",
+    );
+    await denied(() => call("/two-factor/generate-backup-codes", { password }), "STEP_UP_REQUIRED");
+    for (const path of ["/api/v1/me/export", "/api/v1/me/tokens"])
+      await denied(
+        () =>
+          service.requireData(
+            new Request(`${configuration.origin}${path}`, {
+              headers: { cookie: request("/get-session").headers.get("cookie") },
+            }),
+            true,
+          ),
+        "STEP_UP_REQUIRED",
+      );
+    await database.transaction((tx) =>
+      tx.execute(sql`UPDATE auth.users SET role='admin' WHERE id=${userId}::uuid`),
+    );
+    await denied(
+      () => service.requireAdmin(request("/get-session"), "admin:users"),
+      "STEP_UP_REQUIRED",
+    );
+    await denied(
+      () => service.requireAdmin(request("/get-session"), "admin:users", true),
+      "STEP_UP_REQUIRED",
+    );
+    await database.transaction((tx) =>
+      tx.execute(
+        sql`UPDATE auth.sessions SET mfa_verified_at=now()-interval '10 minutes' WHERE user_id=${userId}::uuid`,
+      ),
+    );
+    await denied(() => call("/two-factor/enable", { password }), "STEP_UP_REQUIRED");
+    await database.transaction((tx) =>
+      tx.execute(sql`UPDATE auth.sessions SET mfa_verified_at=now() WHERE user_id=${userId}::uuid`),
+    );
+    await denied(
+      () => call("/two-factor/enable", { password: "wrong password" }),
+      "UNAUTHENTICATED",
+    );
+    const recovering = await (await call("/two-factor/enable", { password })).json();
+    await denied(() => call("/two-factor/enable", { password }), "STEP_UP_REQUIRED");
+    await denied(() => service.requireData(request("/get-session")), "MFA_REQUIRED");
+    const freshLogin = new Map();
+    assert.deepEqual(await (await call("/sign-in/email", { email, password }, freshLogin)).json(), {
+      twoFactorRedirect: true,
+    });
+    await denied(() => call("/two-factor/enable", { password }, freshLogin), "UNAUTHENTICATED");
+    const newSecret = await database.transaction(async (tx) => {
+      const { secretConfig } = await createAuth(tx, configuration).$context;
+      const row = (
+        await tx.execute(sql`SELECT secret FROM auth.two_factors WHERE user_id=${userId}::uuid`)
+      ).rows[0];
+      return symmetricDecrypt({ key: secretConfig, data: row.secret });
+    });
+    assert.notEqual(newSecret, secret);
+    // Replay state is per user, including replacement of the secret. A new clock
+    // step is required when the old TOTP was used earlier in the same 30s window.
+    const wait = Math.max(0, ((steps.get(userId) ?? 0) + 1) * 30000 - Date.now() + 50);
+    if (wait) await new Promise((resolve) => setTimeout(resolve, wait));
+    await database.transaction((tx) =>
+      tx.execute(sql`INSERT INTO auth.sessions(user_id,token,expires_at)
+      VALUES (${userId}::uuid,${randomBytes(24).toString("hex")},now()+interval '1 day')`),
+    );
+    const completed = await (
+      await call("/two-factor/verify-totp", {
+        code: totpCode(newSecret, Math.floor(Date.now() / 30000)),
+      })
+    ).json();
+    assert.equal(completed.backupCodes.length, 10);
+    assert.ok(
+      completed.backupCodes.every(
+        (code) => !setup.backupCodes.includes(code) && !recovering.backupCodes.includes(code),
+      ),
+    );
+    assert.equal((await service.principal(request("/get-session"))).mfa_method, "totp");
+    assert.equal(
+      (
+        await database.transaction((tx) =>
+          tx.execute(sql`SELECT id FROM auth.sessions WHERE user_id=${userId}::uuid`),
+        )
+      ).rows.length,
+      1,
+    );
+    assert.deepEqual(
+      securityEvents.map((event) => event.kind),
+      ["two_factor_recovery_started", "two_factor_recovered"],
+    );
+    const audits = (
+      await appDatabase.transaction({ userId, role: "admin" }, (tx) =>
+        tx.execute(
+          sql`SELECT action,outcome FROM platform.audit_log WHERE actor_user_id=${userId}::uuid AND action LIKE 'auth.two_factor.recovery.%'`,
+        ),
+      )
+    ).rows;
+    assert.deepEqual(audits.map((row) => row.action).sort(), [
+      "auth.two_factor.recovery.completed",
+      "auth.two_factor.recovery.started",
+    ]);
+    await denied(
+      () => call("/two-factor/verify-backup-code", { code: setup.backupCodes[1] }),
+      "UNAUTHENTICATED",
+    );
+    // Clear this deliberately recorded failure so the next assertion starts at 0.
+    await database.transaction((tx) =>
+      tx.execute(
+        sql`UPDATE auth.two_factors SET failed_verification_count=0 WHERE user_id=${userId}::uuid`,
+      ),
     );
     // Account lock applies also to active-session verification, not only sign-in.
     for (let i = 0; i < 5; i++)

@@ -129,9 +129,11 @@ export const authSessions = authSchema.table(
     userId: uuid("user_id").notNull(),
     impersonatedBy: uuid("impersonated_by"),
     mfaVerifiedAt: timestamp("mfa_verified_at", { withTimezone: true, mode: "string" }),
+    mfaMethod: text("mfa_method"),
   },
   (table) => [
     unique("sessions_token_key").on(table.token),
+    check("sessions_mfa_method_check", sql`${table.mfaMethod} IN ('totp', 'backup')`),
     foreignKey({
       name: "sessions_user_id_fkey",
       columns: [table.userId],

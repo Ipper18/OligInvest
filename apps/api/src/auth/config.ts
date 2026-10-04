@@ -68,7 +68,10 @@ export function createAuth(
       expiresIn: 604800,
       updateAge: 86400,
       cookieCache: { enabled: false },
-      additionalFields: { mfaVerifiedAt: { type: "date", required: false, input: false } },
+      additionalFields: {
+        mfaVerifiedAt: { type: "date", required: false, input: false },
+        mfaMethod: { type: "string", required: false, input: false },
+      },
     },
     rateLimit: { enabled: true, storage: "database", window: 60, max: 100 },
     advanced: {

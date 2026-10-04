@@ -1,10 +1,11 @@
 import { createHash, randomBytes } from "node:crypto";
 import { setTimeout as delay } from "node:timers/promises";
 import type { AppDatabase, DatabaseTransaction, ServiceDatabase } from "@oliginvest/db";
-import { ProblemError } from "@oliginvest/platform";
-import { symmetricDecrypt } from "better-auth/crypto";
+import { ProblemError, requirePermission } from "@oliginvest/platform";
+import { generateRandomString, symmetricDecrypt, symmetricEncrypt } from "better-auth/crypto";
 import { sql } from "drizzle-orm";
 import { z } from "zod";
+import type { AuditWriter } from "./audit.js";
 import { type Auth, type AuthConfiguration, createAuth } from "./config.js";
 import { authInputs, CURRENT_LEGAL_VERSION, signupInput } from "./inputs.js";
 import {
@@ -19,6 +20,7 @@ import {
   type Principal,
   publicSession,
   readSignedCookie,
+  requireFactorReplacement,
   requireMfa,
   requireStepUp,
   SESSION_COOKIE,
@@ -46,8 +48,17 @@ const sensitivePaths = new Set([
   "/revoke-session",
   "/revoke-other-sessions",
 ]);
+export type AuthSecurityEvent = {
+  userId: string;
+  kind: "two_factor_recovery_started" | "two_factor_recovered";
+  occurredAt: string;
+};
 type AuthResult =
-  | { response: Response; consent?: { userId: string; diagnostics: boolean } }
+  | {
+      response: Response;
+      consent?: { userId: string; diagnostics: boolean };
+      securityEvent?: AuthSecurityEvent;
+    }
   | { failure: ProblemError };
 export interface AuthServiceOptions {
   database: ServiceDatabase;
@@ -55,6 +66,8 @@ export interface AuthServiceOptions {
   configuration: AuthConfiguration;
   state: AuthState;
   passwordChecks: PasswordChecks;
+  audit: Pick<AuditWriter, "record">;
+  securityEvent: (event: AuthSecurityEvent) => Promise<void>;
   wait?: (milliseconds: number) => Promise<void>;
   event: (event: string) => void;
 }
@@ -106,6 +119,12 @@ export class AuthService {
     if ((await this.legal(principal)).termsAcceptanceRequired)
       throw new ProblemError("TERMS_ACCEPTANCE_REQUIRED");
     if (stepUp) requireStepUp(principal);
+    return principal;
+  }
+  async requireAdmin(request: Request, permission: string, mutation = false): Promise<Principal> {
+    const principal = await this.requireData(request, mutation);
+    requirePermission(principal.role, permission);
+    if (principal.mfa_method !== "totp") throw new ProblemError("STEP_UP_REQUIRED");
     return principal;
   }
   async recordConsents(
@@ -175,11 +194,9 @@ export class AuthService {
       if ((await this.legal(before)).termsAcceptanceRequired)
         throw new ProblemError("TERMS_ACCEPTANCE_REQUIRED");
     }
-    if (
-      before &&
-      (sensitivePaths.has(path) || (path === "/two-factor/enable" && before.two_factor_enabled))
-    )
-      requireStepUp(before);
+    if (before && sensitivePaths.has(path)) requireStepUp(before);
+    if (before && path === "/two-factor/enable" && before.two_factor_enabled)
+      requireFactorReplacement(before);
     if (path === "/sign-in/email") {
       const email = z.string().parse(body.email).toLowerCase();
       body.email = email;
@@ -205,6 +222,12 @@ export class AuthService {
         readSignedCookie(request, SESSION_COOKIE, this.options.configuration),
       );
       if (before && !principal) throw new ProblemError("UNAUTHENTICATED");
+      if (principal && sensitivePaths.has(path)) {
+        requireMfa(principal);
+        requireStepUp(principal);
+      }
+      if (principal && path === "/two-factor/enable" && principal.two_factor_enabled)
+        requireFactorReplacement(principal);
       if (path === "/get-session")
         return { response: Response.json(principal ? publicSession(principal) : null) };
       if (path === "/list-sessions")
@@ -271,9 +294,18 @@ export class AuthService {
         await tx.execute(
           sql`DELETE FROM auth.two_factors WHERE user_id=${principal.user_id}::uuid`,
         );
-        await tx.execute(
-          sql`UPDATE auth.users SET two_factor_enabled=false WHERE id=${principal.user_id}::uuid`,
-        );
+        if (principal.mfa_method === "backup")
+          await this.options.audit.record(
+            { userId: principal.user_id, role: principal.role },
+            {
+              action: "auth.two_factor.recovery.started",
+              outcome: "success",
+              resourceId: principal.user_id,
+            },
+          );
+        // Keep two_factor_enabled=true: password-only login cannot start a fresh
+        // enrollment while recovery is in progress. Native enable needs only the
+        // previous factor removed, not a disabled user.
         await tx.execute(
           sql`UPDATE auth.sessions SET mfa_verified_at=NULL WHERE user_id=${principal.user_id}::uuid`,
         );
@@ -338,6 +370,41 @@ export class AuthService {
             this.options.configuration,
           ) ?? undefined;
       let consent: { userId: string; diagnostics: boolean } | undefined;
+      let securityEvent: AuthSecurityEvent | undefined;
+      if (path === "/two-factor/enable" && principal?.mfa_method === "backup")
+        securityEvent = {
+          userId: principal.user_id,
+          kind: "two_factor_recovery_started",
+          occurredAt: new Date().toISOString(),
+        };
+      let backupCodes: string[] | undefined;
+      const replacementComplete =
+        path === "/two-factor/verify-totp" &&
+        principal?.two_factor_enabled &&
+        principal.mfa_method !== null &&
+        principal.mfa_verified_at === null;
+      if (replacementComplete && verifiedUser) {
+        backupCodes = Array.from({ length: 10 }, () =>
+          generateRandomString(10, "a-z", "0-9", "A-Z"),
+        ).map((code) => `${code.slice(0, 5)}-${code.slice(5)}`);
+        const { secretConfig } = await auth.$context;
+        const encrypted = await symmetricEncrypt({
+          key: secretConfig,
+          data: JSON.stringify(backupCodes),
+        });
+        await tx.execute(
+          sql`UPDATE auth.two_factors SET backup_codes=${encrypted} WHERE user_id=${verifiedUser}::uuid`,
+        );
+        await tx.execute(
+          sql`DELETE FROM auth.sessions WHERE user_id=${verifiedUser}::uuid AND token<>${token ?? ""}`,
+        );
+        if (principal.mfa_method === "backup")
+          securityEvent = {
+            userId: verifiedUser,
+            kind: "two_factor_recovered",
+            occurredAt: new Date().toISOString(),
+          };
+      }
       if (invitation && token) {
         const created = await findSession(tx, token);
         if (!created) throw new Error("Missing new session");
@@ -354,7 +421,7 @@ export class AuthService {
       }
       if (verifiedUser && token) {
         const rotated = randomBytes(32).toString("base64url");
-        await tx.execute(sql`UPDATE auth.sessions SET token=${rotated},mfa_verified_at=now(),
+        await tx.execute(sql`UPDATE auth.sessions SET token=${rotated},mfa_verified_at=now(),mfa_method=${path.endsWith("backup-code") ? "backup" : "totp"},
           created_at=COALESCE(${principal?.created_at.toISOString() ?? null}::timestamptz,created_at),
           expires_at=LEAST(expires_at,COALESCE(${principal?.created_at.toISOString() ?? null}::timestamptz,created_at)+interval '30 days')
           WHERE token=${token} AND user_id=${verifiedUser}::uuid`);
@@ -398,10 +465,11 @@ export class AuthService {
               ? { user: publicSession(active).user }
               : path === "/change-password"
                 ? { status: true }
-                : publicSession(active);
+                : { ...publicSession(active), ...(backupCodes ? { backupCodes } : {}) };
           return {
             response: Response.json(resultBody, { headers: responseHeaders }),
             ...(consent ? { consent } : {}),
+            ...(securityEvent ? { securityEvent } : {}),
           };
         }
       }
@@ -418,7 +486,10 @@ export class AuthService {
                     .backupCodes,
                 }
               : { status: true };
-      return { response: Response.json(resultBody, { headers: responseHeaders }) };
+      return {
+        response: Response.json(resultBody, { headers: responseHeaders }),
+        ...(securityEvent ? { securityEvent } : {}),
+      };
     });
     if (path === "/sign-in/email") {
       const email = z.string().parse(body.email);
@@ -426,6 +497,19 @@ export class AuthService {
       else await this.options.state.succeeded(email);
     }
     if ("failure" in result) throw result.failure;
+    if (result.securityEvent) {
+      if (result.securityEvent.kind === "two_factor_recovered") {
+        await this.options.audit.record(
+          { userId: result.securityEvent.userId, role: before?.role ?? "user" },
+          {
+            action: "auth.two_factor.recovery.completed",
+            outcome: "success",
+            resourceId: result.securityEvent.userId,
+          },
+        );
+      }
+      await this.options.securityEvent(result.securityEvent);
+    }
     if (result.consent) {
       try {
         await this.recordConsents(result.consent.userId, result.consent.diagnostics);
@@ -566,7 +650,7 @@ export class AuthService {
       const token = randomBytes(32).toString("base64url");
       const at = new Date();
       await tx.execute(
-        sql`UPDATE auth.sessions SET token=${token},mfa_verified_at=${at.toISOString()} WHERE id=${current.id}::uuid`,
+        sql`UPDATE auth.sessions SET token=${token},mfa_verified_at=${at.toISOString()},mfa_method='totp' WHERE id=${current.id}::uuid`,
       );
       return {
         response: Response.json(
