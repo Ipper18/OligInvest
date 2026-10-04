@@ -114,7 +114,7 @@ export const authOperations = [
   ["/revoke-other-sessions", "authRevokeOtherSessions", status, false],
 ] as const;
 export type AuthRouteDependencies = {
-  service: () => AuthService;
+  service: () => AuthService | Promise<AuthService>;
   clientIp: (context: Context<AppEnv>) => string;
 };
 export function createAuthRouter(dependencies: AuthRouteDependencies) {
@@ -168,7 +168,10 @@ export function createAuthRouter(dependencies: AuthRouteDependencies) {
     );
     router.on(method.toUpperCase(), path, async (context) => {
       const request = context.req.raw;
-      const response = await dependencies.service().handle(request, dependencies.clientIp(context));
+      const response = await (await dependencies.service()).handle(
+        request,
+        dependencies.clientIp(context),
+      );
       const body = schema.parse(await response.json());
       return Response.json(body, { status: response.status, headers: response.headers });
     });
@@ -199,7 +202,7 @@ export function mountStepUp(api: OpenAPIHono<AppEnv>, dependencies: AuthRouteDep
       },
     }),
     async (context) => {
-      const service = dependencies.service();
+      const service = await dependencies.service();
       if (context.req.header("authorization")) throw new ProblemError("FORBIDDEN");
       await service.options.state.limit(dependencies.clientIp(context), 5, 60);
       const response = await service.stepUp(context.req.raw, context.req.valid("json").code);

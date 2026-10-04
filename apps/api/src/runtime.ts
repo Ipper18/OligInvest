@@ -2,6 +2,8 @@ import { loadConfig } from "@oliginvest/config";
 import { createLogger, type PlatformLogger } from "@oliginvest/platform";
 import { z } from "zod";
 import { createApp } from "./app.js";
+import { requestClientIp } from "./auth/client-ip.js";
+import type { createAuthRuntime } from "./auth/runtime.js";
 import { checkPostgres, checkValkey } from "./probes.js";
 
 const host = z
@@ -30,13 +32,33 @@ const runtimeSchema = z
 export function createRuntime(
   env: Readonly<Record<string, string | undefined>>,
   logger: PlatformLogger = createLogger(),
-): { app: ReturnType<typeof createApp>; hostname: string; port: number } {
+): {
+  app: ReturnType<typeof createApp>;
+  hostname: string;
+  port: number;
+  close: () => Promise<void>;
+} {
   const mode = z.enum(["development", "test", "production"]).parse(env.NODE_ENV);
   const config = loadConfig("api", env, { mode });
   const runtime = runtimeSchema.parse(
     Object.fromEntries(Object.keys(runtimeSchema.shape).map((key) => [key, env[key] || undefined])),
   );
+  let auth: Promise<ReturnType<typeof createAuthRuntime>> | undefined;
   const app = createApp({
+    auth: {
+      service: async () => {
+        auth ??= import("./auth/runtime.js").then(({ createAuthRuntime }) =>
+          createAuthRuntime(config, runtime, logger),
+        );
+        return (await auth).service;
+      },
+      clientIp: requestClientIp(
+        (env.API_TRUSTED_PROXY_CIDRS ?? "")
+          .split(",")
+          .map((value) => value.trim())
+          .filter(Boolean),
+      ),
+    },
     logger,
     publicBaseUrl: config.PUBLIC_BASE_URL,
     checks: {
@@ -64,5 +86,12 @@ export function createRuntime(
         }),
     },
   });
-  return { app, hostname: runtime.API_HOST, port: runtime.API_PORT };
+  return {
+    app,
+    hostname: runtime.API_HOST,
+    port: runtime.API_PORT,
+    close: async () => {
+      await (await auth)?.close();
+    },
+  };
 }

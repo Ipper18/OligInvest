@@ -1,0 +1,99 @@
+import type { ServiceConfig } from "@oliginvest/config";
+import { createAppDatabase, createAuthDatabase } from "@oliginvest/db";
+import type { PlatformLogger } from "@oliginvest/platform";
+import { Queue } from "bullmq";
+import { Redis } from "ioredis";
+import { AuditWriter } from "./audit.js";
+import { defaultPasswordChecks } from "./password.js";
+import { AuthService } from "./service.js";
+import { RedisAuthState } from "./state.js";
+
+export function createAuthRuntime(
+  config: ServiceConfig<"api">,
+  settings: {
+    DB_HOST: string;
+    DB_PORT: number;
+    DB_NAME: string;
+    DB_SSL: "true" | "false";
+    VALKEY_QUEUE_HOST: string;
+    VALKEY_QUEUE_PORT: number;
+    VALKEY_QUEUE_USER: string;
+  },
+  logger: PlatformLogger,
+) {
+  const databaseOptions = {
+    host: settings.DB_HOST,
+    port: settings.DB_PORT,
+    database: settings.DB_NAME,
+    ssl: settings.DB_SSL === "true",
+  };
+  const database = createAuthDatabase({ ...databaseOptions, password: config.DB_AUTH_PASSWORD });
+  const appDatabase = createAppDatabase({ ...databaseOptions, password: config.DB_APP_PASSWORD });
+  const connection = {
+    host: settings.VALKEY_QUEUE_HOST,
+    port: settings.VALKEY_QUEUE_PORT,
+    username: settings.VALKEY_QUEUE_USER,
+    password: config.VALKEY_QUEUE_API_PASSWORD,
+    connectTimeout: 1500,
+    commandTimeout: 1500,
+    maxRetriesPerRequest: 0,
+    retryStrategy: () => null,
+  };
+  const state = new Redis({ ...connection, lazyConnect: true });
+  state.on("error", () => logger.error({ event: "auth.state_unavailable" }));
+  const queues = new Map<string, Queue>();
+  const queue = (name: string) => {
+    let value = queues.get(name);
+    if (!value) {
+      value = new Queue(name, { connection });
+      value.on("error", () => logger.error({ event: "auth.queue_unavailable" }));
+      queues.set(name, value);
+    }
+    return value;
+  };
+  const service = new AuthService({
+    database,
+    appDatabase,
+    configuration: {
+      origin: new URL(config.PUBLIC_BASE_URL).origin,
+      secrets: config.BETTER_AUTH_SECRETS.split(",").map((entry) => {
+        const index = entry.indexOf(":");
+        return {
+          version: Number(entry.slice(0, index).trim()),
+          value: entry.slice(index + 1).trim(),
+        };
+      }),
+      trustedProxies: [],
+      sendReset: async (message) => {
+        await queue("notify").add(
+          "auth.password-reset",
+          { ...message, issuedAt: new Date().toISOString() },
+          {
+            attempts: 3,
+            backoff: { type: "exponential", delay: 1000 },
+            removeOnComplete: true,
+            removeOnFail: true,
+          },
+        );
+      },
+    },
+    state: new RedisAuthState(state),
+    passwordChecks: defaultPasswordChecks(() => logger.warn({ event: "auth.hibp_unavailable" })),
+    audit: new AuditWriter(appDatabase, config.AUDIT_PSEUDONYM_KEY),
+    securityEvent: async (event) => {
+      await queue("events").add(event.kind, event, {
+        removeOnComplete: true,
+        removeOnFail: { age: 86400 },
+      });
+    },
+    event: (event) => logger.warn({ event }),
+  });
+  return {
+    service,
+    close: async () => {
+      await Promise.allSettled([...queues.values()].map((value) => value.close()));
+      state.disconnect();
+      await Promise.all([database.close(), appDatabase.close()]);
+    },
+  };
+}

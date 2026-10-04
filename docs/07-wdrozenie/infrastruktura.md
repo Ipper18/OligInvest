@@ -347,6 +347,8 @@ Adresy HTTP(S) nie mogą zawierać poświadczeń, zapytania ani fragmentu; PUBLI
 
 ## 9. Migracja: TLS Immicha z VPS do domu
 
+Konfiguracja API M1-1: `API_TRUSTED_PROXY_CIDRS` zawiera rozdzielone przecinkami CIDR zaufanego Caddy w sieci kontenerów (wartości instancji poza repozytorium). API ufa pojedynczemu `X-Forwarded-For` wyłącznie od takiego bezpośredniego nadawcy; Caddy nadpisuje ten nagłówek adresem klienta z PROXY protocol. Pusta lista oznacza adres połączenia TCP, bez zaufania do nagłówka. ACL `valkey-queue` udostępnia `auth:*` wyłącznie API (liczniki prób i ochrona powtórek TOTP); jobs i analytics nie otrzymują tego dostępu. Po zmianie ACL uruchom ponownie skrypt przygotowania sekretów i odtwórz kontenery zgodnie z § 8.1.
+
 Dziś Caddy na VPS kończy TLS Immicha i ma jego klucz prywatny. Cel: VPS przekazuje tylko TCP, a TLS Immicha kończy się w domu ([ADR-011](../09-decyzje/ADR-011-topologia-wdrozenia.md)). Migracja w czterech krokach; każdy ma plan wycofania. DNS się nie zmienia — ruch nadal wchodzi przez VPS.
 
 | Faza | Co | Przerwa | Wycofanie |

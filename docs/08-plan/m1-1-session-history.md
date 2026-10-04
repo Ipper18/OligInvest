@@ -46,3 +46,8 @@
 - Zakończenie: rotacja sesji, usunięcie pozostałych, nowy zaszyfrowany komplet backupów zwracany raz, audyt i zdarzenia bezpieczeństwa; e-mail odzyskania zgodnie z decyzją właściciela w BL-110.
 - Realny PostgreSQL PASS: granica 10 min, złe hasło, ponowne użycie uprawnienia, nowe kody i unieważnienie starych, audyt/zdarzenia oraz odmowy bramek zmiany hasła, eksportu/PAT/admina. Normatywny test uniemożliwia roli app sfałszowanie metody MFA.
 - `db:test` ZERO DIFFERENCES; API/platform lint/typecheck/test/build, klient i kontrakty PASS. Nadal 3 operacje HTTP wdrożone / 182 pending — fasada czeka na montaż i testy tras.
+
+### 2026-10-04 — HTTP i konfiguracja runtime
+- Trasy auth i step-up zamontowane; przepływ odzyskania przechodzi przez HTTP, 403 dla każdej nowej trasy. Pending 182 → 167, klient wygenerowany, 25 testów kontraktów PASS.
+- Runtime łączy pule auth/app oraz prywatny stan Valkey. Zaufanie X-Forwarded-For ograniczone CIDR bezpośredniego proxy. Testy API (79) i ACL Linux (3) PASS.
+- Checkpointy HTTP i kontraktu osobno; walidator dopuszcza style/revert z testem, historia Git zachowana, tytuł PR zmieniony na feat(auth).

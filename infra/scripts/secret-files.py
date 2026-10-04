@@ -94,6 +94,8 @@ def acl(values, cache=False):
         else:
             queues = ["analytics", "analytics-results"] if service == "analytics" else ["ingest", "import", "recompute", "alerts", "notify", "analytics", "analytics-results", "events"]
             keys = " ".join(f"~bull:{queue}:*" for queue in queues) + f" ~health:{service}:*"
+            if service == "api":
+                keys += " ~auth:*"
             commands = "+@read +@write +@scripting +@transaction +ping +info +client|setname +client|setinfo -flushall -flushdb -config -debug -module -acl -keys -scan -randomkey -migrate -restore -sort -sort_ro"
         lines.append(f"user {service} on #{digest} {keys} {commands}")
     return ("\n".join(lines) + "\n").encode()
