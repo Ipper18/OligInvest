@@ -113,7 +113,7 @@ aktualizacja statusów w backlog.md i — jeśli etap się kończy — lista kry
 
 ### 3.3 M0-1 — pozostałe sesje (stan 2026-09-22)
 
-Kolejność wynika z zależności w backlogu. Każdy prompt zakłada zasady z [`AGENTS.md`](../../AGENTS.md) § 6.1 (raport stanu na start, czytanie fragmentami, commit po zadaniu), więc ich nie powtarza. Model „Wysoki”; „Bardzo wysoki” tylko wtedy, gdy Codex zatrzyma się z pytaniem projektowym. Orientacyjnie: ok. 14 dni idealnych, przy dotychczasowym zużyciu mniej więcej tydzień limitu Codexa (**szacunek**, nie pomiar).
+Kolejność wynika z zależności w backlogu. Każdy prompt zakłada zasady z [`AGENTS.md`](../../AGENTS.md) § 6.1 (raport stanu na start, czytanie fragmentami, commit po zadaniu), więc ich nie powtarza. Poziom rozumowania: „Wysoki” dla nowych paczek z bezpieczeństwem, obliczeniami finansowymi lub projektowaniem; „Średni” dla kontynuacji po limicie, poprawek CI i dokumentacji; „Bardzo wysoki” tylko przy pytaniu projektowym. Kontynuację po limicie albo po automatycznym skróceniu kontekstu zaczynaj w **nowym czacie** od raportu stanu — długi wątek zużywa limit szybciej, bo każda wiadomość przenosi cały kontekst. Orientacyjnie: ok. 14 dni idealnych, przy dotychczasowym zużyciu mniej więcej tydzień limitu Codexa (**szacunek**, nie pomiar).
 
 | Sesja | Zadania | Zależy od |
 |---|---|---|
