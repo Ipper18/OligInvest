@@ -48,9 +48,11 @@ Powiązane: [`roadmapa.md`](roadmapa.md), [`backlog.md`](backlog.md), [`../06-be
 
 | **R-30** | Obejście niedziałającego pierwszego zaproszenia przez ręczne konto lub osłabienie kontroli | BL-102/111, [raport M1-1](m1-1-session-report.md) | 2 | 4 | 8 | uzgodnić kontrakt bootstrapu przed kodem; osobny test pustej bazy i współbieżności, audyt oraz obowiązkowa bramka MFA; bez fikcyjnego użytkownika i rozluźniania RLS | wymagane `invited_by` przy braku kont; obecny test zaproszeń zaczyna od utworzonego administratora | agent, właściciel | zamknięte 2026-10-05: bootstrap z blokadą transakcyjną, audytem i MFA; test pustej bazy i współbieżności PASS w CI 37326826371 |
 
+| **R-31** | Globalna blokada auth ogranicza współbieżność i może opóźniać inne konta | BL-101/102/103/105/111, przegląd M1-1 | 3 | 3 | 9 | pozostawiona decyzją właściciela 2026-10-05: transakcje auth/admin/CLI używają `730101`, także podczas Argon2 i obsługi Better Auth; limity prób ograniczają obciążenie, lecz nie usuwają kolejki; zaproszenia czekają zamiast fałszywego 409, idempotencja ma blokadę per administrator i klucz; przed zwiększeniem obciążenia pomiar i projekt węższych blokad z testami wyścigów | rosnący czas oczekiwania na advisory lock, p95 auth > 300 ms lub wyczerpanie puli | agent, właściciel, monitoring | M1, otwarte; ponowna ocena przed bramą B |
+
 ## 3. Podsumowanie
 
-30 ryzyk: **5 wysokich** (R-01, R-07, R-11, R-16, R-28), 21 średnich, 4 niskie; brak krytycznych.
+31 ryzyk: **5 wysokich** (R-01, R-07, R-11, R-16, R-28), 22 średnie, 4 niskie; brak krytycznych.
 
 | Ryzyko wysokie | Działanie przed końcem etapu |
 |---|---|

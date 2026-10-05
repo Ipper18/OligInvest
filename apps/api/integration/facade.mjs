@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
+import { setTimeout as delay } from "node:timers/promises";
 import { createAppDatabase, createAuthDatabase } from "@oliginvest/db";
 import { ProblemError } from "@oliginvest/platform";
 import { symmetricDecrypt } from "better-auth/crypto";
@@ -338,18 +339,76 @@ export async function testAuthFacade(settings) {
       await release;
     });
     await acquired;
+    const pendingInvitations = [
+      identity("/admin/invitations", invitationInput, { "Idempotency-Key": invitationKey }),
+      identity("/admin/invitations", invitationInput, { "Idempotency-Key": invitationKey }),
+      identity(
+        "/admin/invitations",
+        { ...invitationInput, email: "parallel@example.test", sendEmail: false },
+        { "Idempotency-Key": randomUUID() },
+      ),
+    ];
     try {
-      const busy = await identity("/admin/invitations", invitationInput, {
-        "Idempotency-Key": invitationKey,
-      });
-      assert.equal(busy.status, 409);
-      assert.equal(busy.headers.get("Retry-After"), "1");
-      assert.equal((await busy.json()).code, "CONFLICT");
+      const deadline = Date.now() + 5000;
+      while (true) {
+        const waiting = await database.transaction(
+          async (tx) =>
+            (
+              await tx.execute(
+                sql`SELECT count(*)::int AS count FROM pg_locks WHERE locktype='advisory' AND objid=730101 AND NOT granted`,
+              )
+            ).rows[0].count,
+        );
+        if (waiting >= 3) break;
+        assert.ok(
+          Date.now() < deadline,
+          "Invitations must wait on the unrelated global auth lock instead of returning 409",
+        );
+        await delay(10);
+      }
     } finally {
       releaseLock();
       await held;
     }
+    const concurrent = await Promise.all(pendingInvitations);
+    for (const response of concurrent) assert.equal(response.status, 201);
+    for (const response of concurrent.slice(0, 2)) {
+      assert.equal(response.headers.get("Idempotent-Replayed"), "true");
+      assert.deepEqual(await response.json(), invitationBody);
+    }
+    assert.equal(concurrent[2].headers.get("Idempotent-Replayed"), null);
     assert.equal(invitations.length, 1, "Replay must not enqueue a second email");
+    const freshKey = randomUUID();
+    const freshInput = { ...invitationInput, email: "concurrent@example.test" };
+    const fresh = await Promise.all(
+      [0, 1].map(() => identity("/admin/invitations", freshInput, { "Idempotency-Key": freshKey })),
+    );
+    assert.ok(fresh.every((response) => response.status === 201));
+    assert.equal(
+      fresh.filter((response) => response.headers.get("Idempotent-Replayed") === "true").length,
+      1,
+    );
+    assert.deepEqual(await fresh[0].json(), await fresh[1].json());
+    assert.equal(
+      invitations.length,
+      2,
+      "Concurrent creation must enqueue exactly one additional email",
+    );
+    const conflictKey = randomUUID();
+    const competing = await Promise.all(
+      ["user", "pro"].map((role) =>
+        identity(
+          "/admin/invitations",
+          { ...freshInput, email: "conflict@example.test", role, sendEmail: false },
+          { "Idempotency-Key": conflictKey },
+        ),
+      ),
+    );
+    assert.deepEqual(competing.map((response) => response.status).sort(), [201, 409]);
+    assert.equal(
+      (await competing.find((response) => response.status === 409).json()).code,
+      "IDEMPOTENCY_CONFLICT",
+    );
     const conflict = await identity(
       "/admin/invitations",
       { ...invitationInput, role: "pro" },

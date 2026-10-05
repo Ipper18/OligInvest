@@ -68,11 +68,8 @@ export class Administration {
       if (request.headers.has("authorization")) throw new ProblemError("FORBIDDEN");
       this.service.assertOrigin(request);
       return await options.database.transaction(async (tx) => {
-        if (request.headers.has("Idempotency-Key")) {
-          const lock = (await tx.execute(sql`SELECT pg_try_advisory_xact_lock(730101) AS acquired`))
-            .rows[0];
-          if (lock?.acquired !== true) throw new ProblemError("CONFLICT", { retryAfterSeconds: 1 });
-        } else await tx.execute(sql`SELECT pg_advisory_xact_lock(730101)`);
+        // Unrelated auth work must not become an idempotency conflict (R-31).
+        await tx.execute(sql`SELECT pg_advisory_xact_lock(730101)`);
         const principal = await findSession(
           tx,
           readSignedCookie(request, SESSION_COOKIE, options.configuration),
@@ -141,6 +138,8 @@ export class Administration {
     const created = await this.service.options.appDatabase.transaction(actor, async (appTx) => {
       // HTTP and CLI hold the same advisory lock across lookup and creation.
       if (key) {
+        const lockKey = JSON.stringify(["adminCreateInvitation", actor.userId, key]);
+        await appTx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${lockKey}))`);
         const cached = (
           await appTx.execute(
             sql`SELECT method,path,request_hash,response_body FROM platform.idempotency_keys WHERE key=${key} AND expires_at>now()`,

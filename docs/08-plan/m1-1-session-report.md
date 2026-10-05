@@ -14,6 +14,8 @@
 
 ## Dowody i dalsze kroki
 
+Przegląd bezpieczeństwa 2026-10-05: wdrożono cztery poprawki (sesje po `id` i `current`, porównanie wszystkich kodów zapasowych w stałym czasie, weryfikacja ciasteczek wszystkimi zachowanymi kluczami, zaproszenia bez fałszywego 409). Lokalnie API 92 testy PASS, DB/RLS i współbieżne zaproszenia PASS, schemat ZERO DIFFERENCES. Nowe CI weryfikowane po push. **R-31 otwarte:** globalna blokada `730101` pozostaje na życzenie właściciela; szereguje auth/admin/CLI i obejmuje koszt Argon2/Better Auth, więc może opóźniać inne konta. Blokada idempotencji per administrator/klucz czeka; nie usuwa globalnego ograniczenia przepustowości.
+
 [CI unit/build](https://github.com/Ipper18/OligInvest/actions/runs/37326826438), [workers](https://github.com/Ipper18/OligInvest/actions/runs/37326826457), [DB/RLS](https://github.com/Ipper18/OligInvest/actions/runs/37326826371): PASS na `6cd13f4`. Workers potwierdza start czterech aplikacji, kolejkę → worker → Mailpit, współbieżne liczniki/TOTP i unieważnienie flag dwóch procesów. DB: bootstrap i współbieżność, fasada auth, odzyskanie/sesje/RBAC/audyt/CLI; schemat ZERO DIFFERENCES. Także contracts, klient, modules, web, e2e, images, deps-audit i CodeQL zielone. 21 operacji / 164 pending (początkowo 182).
 
 Następnie: przegląd właściciela i scalenie PR; BL-107 — SPF/DKIM/DMARC oraz doręczenia Gmail/iCloud według ADR-010. Kalibracja Argon2id i instalacja skryptów na VM nadal po stronie właściciela. Bramy całego M1 otwarte; dowód backendowej części A.5 jest w CI, UI i testy docelowe pozostają w kolejnych paczkach. R-30 zamknięte testami bootstrapu. Bez nowych ryzyk, ADR, usług ani kosztów; estymacje bez zmian, nakład niezmierzony.
