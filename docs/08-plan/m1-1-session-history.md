@@ -77,3 +77,8 @@
 - Audyt HTTP zawiera IP, UA, korelację, zasób i bezpieczny stan; CLI cel i stan przed/po bez tokenów. O-01 formalnie zamknięte według zatwierdzonej decyzji.
 - Test wylicza natywne ścieżki Better Auth i odrzuca nieudostępnione; step-up obejmuje limit godzinowy. Liczniki Valkey mają atomowe TTL i odrzucają błędy transakcji.
 - Właściciel zatwierdził odtworzenie zaproszenia przez 24 h: ten sam admin/klucz/treść, token HMAC bez jawnego zapisu. OpenAPI i konwencje poprawione, klient wygenerowany; pending nadal 164.
+
+### 2026-10-05 — zamknięcie zakresu agentowego M1-1
+- Zweryfikowano zielone CI kodu 6cd13f4, w tym unit/workers, kolejkę → Mailpit, DB/RLS i zgodność schematu; poprawki jobs były już wypchnięte.
+- BL-101/102/103/105/106/108/109/111/117 gotowe; BL-107 czeka wyłącznie na DNS/doręczenia właściciela. R-30 zamknięte testami.
+- Raport nadpisany, opis PR uaktualniony; przegląd właściciela i bramy M1 nadal otwarte. Estymacje bez zmian, bez nowych ADR/ryzyk.

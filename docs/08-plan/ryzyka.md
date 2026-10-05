@@ -46,7 +46,7 @@ Powiązane: [`roadmapa.md`](roadmapa.md), [`backlog.md`](backlog.md), [`../06-be
 
 | **R-29** | Kopie w domyślnym wolumenie Dockera na SSD zamiast osobnego HDD | BL-028, [instrukcja](../07-wdrozenie/m0-3-backup-monitoring-runbook.md) | 2 | 3 | 6 | override bind przed pierwszym wdrożeniem; kontrola mountpoint i opcji wolumenów w operacjach hosta; istniejące wolumeny wymagają jawnej migracji właściciela | brak HDD lub wolumen bez oczekiwanego bindu zatrzymuje kopie i wysyła down | właściciel | M0-3, próba docelowa otwarta |
 
-| **R-30** | Obejście niedziałającego pierwszego zaproszenia przez ręczne konto lub osłabienie kontroli | BL-102/111, [raport M1-1](m1-1-session-report.md) | 2 | 4 | 8 | uzgodnić kontrakt bootstrapu przed kodem; osobny test pustej bazy i współbieżności, audyt oraz obowiązkowa bramka MFA; bez fikcyjnego użytkownika i rozluźniania RLS | wymagane `invited_by` przy braku kont; obecny test zaproszeń zaczyna od utworzonego administratora | agent, właściciel | M1-1, rozwiązanie zatwierdzone 2026-10-03; implementacja i test otwarte |
+| **R-30** | Obejście niedziałającego pierwszego zaproszenia przez ręczne konto lub osłabienie kontroli | BL-102/111, [raport M1-1](m1-1-session-report.md) | 2 | 4 | 8 | uzgodnić kontrakt bootstrapu przed kodem; osobny test pustej bazy i współbieżności, audyt oraz obowiązkowa bramka MFA; bez fikcyjnego użytkownika i rozluźniania RLS | wymagane `invited_by` przy braku kont; obecny test zaproszeń zaczyna od utworzonego administratora | agent, właściciel | zamknięte 2026-10-05: bootstrap z blokadą transakcyjną, audytem i MFA; test pustej bazy i współbieżności PASS w CI 37326826371 |
 
 ## 3. Podsumowanie
 
