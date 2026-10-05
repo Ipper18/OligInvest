@@ -6,6 +6,7 @@ import { generateRandomString, symmetricDecrypt, symmetricEncrypt } from "better
 import { sql } from "drizzle-orm";
 import { z } from "zod";
 import type { AuditWriter } from "./audit.js";
+import { matchesBackupCode } from "./backup-codes.js";
 import { approximateIp } from "./client-ip.js";
 import { type Auth, type AuthConfiguration, createAuth } from "./config.js";
 import { authInputs, CURRENT_LEGAL_VERSION, signupInput } from "./inputs.js";
@@ -644,7 +645,7 @@ export class AuthService {
           }),
         ),
       );
-      valid = codes.includes(code);
+      valid = matchesBackupCode(codes, code);
     } else {
       const secret = await symmetricDecrypt({
         key: secretConfig,
