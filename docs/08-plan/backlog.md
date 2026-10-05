@@ -193,6 +193,8 @@ Brama A (**[A]**) — MVP właściciela; brama B (**[B]**) — funkcje wymagane 
 
 ### 2.1 Postęp i odchylenia
 
+- **2026-10-05, przegląd bezpieczeństwa M1-1 (BL-102/103/105):** poprawki w osobnych commitach `a866964`, `607f649`, `9f768b9`, `f247936`: sesje po `id`/`current` bez tokenów w JSON, porównanie wszystkich backupów w stałym czasie, weryfikacja wszystkich zachowanych kluczy podpisu ciasteczek, zaproszenia oczekujące na blokadę bez fałszywego 409. Zatwierdzone kontrakty i klient uaktualnione. Lokalnie 88/88 zadań i 92 testy API PASS, DB/RLS oraz współbieżność PASS; bieżące [CI PR #7](https://github.com/Ipper18/OligInvest/pull/7/checks). Nowe R-31: przepustowość globalnej blokady `730101`. Estymacje bez zmian, nakład niezmierzony; bez nowych ADR/usług/kosztów. Statusy zadań i otwarte bramy M1 jak niżej; [raport](m1-1-session-report.md).
+
 - **2026-10-05, M1-1 (BL-101/102/103/105/106/107/108/109/111/117):** zakres API/CLI zakończony w [PR #7](https://github.com/Ipper18/OligInvest/pull/7), kod `6cd13f4`, pełne CI zielone (unit/workers/DB/RLS/contracts/images/CodeQL). BL-101/102/103/105/106/108/109/111/117 `gotowe`; BL-107 `w toku` do potwierdzenia SPF/DKIM/DMARC i doręczeń produkcyjnych przez właściciela. UI w M1-4, zdarzenia bezpieczeństwa w BL-110. Pending 182 → 164. R-30 zamknięte testami pustej bazy i współbieżności. Estymacje bez zmian, nakład niezmierzony; bez nowych ADR/ryzyk. Bramy M1 pozostają otwarte; [raport i dowody](m1-1-session-report.md).
 
 ## 3. M2 — Dane rynkowe, wskaźniki i onboarding

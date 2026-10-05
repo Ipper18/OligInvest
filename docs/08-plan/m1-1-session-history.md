@@ -82,3 +82,9 @@
 - Zweryfikowano zielone CI kodu 6cd13f4, w tym unit/workers, kolejkę → Mailpit, DB/RLS i zgodność schematu; poprawki jobs były już wypchnięte.
 - BL-101/102/103/105/106/108/109/111/117 gotowe; BL-107 czeka wyłącznie na DNS/doręczenia właściciela. R-30 zamknięte testami.
 - Raport nadpisany, opis PR uaktualniony; przegląd właściciela i bramy M1 nadal otwarte. Estymacje bez zmian, bez nowych ADR/ryzyk.
+
+### 2026-10-05 — poprawki przeglądu bezpieczeństwa M1-1
+- Osobne commity: a866964 sesje bez tokenów/id+current; 607f649 timingSafeEqual każdego kodu; 9f768b9 rotacja podpisu ciasteczek; f247936 blokady zaproszeń.
+- Lokalnie pełne 88/88 zadań PASS, API 92 testy, DB/RLS/fasada i współbieżność PASS; schemat ZERO DIFFERENCES, kontrakty/klient zgodne.
+- R-31 otwarte: globalna blokada auth 730101 szereguje także niezwiązane konta. Kontrakt sesji i oczekiwanie idempotencji zatwierdzone; brak nowych ADR/usług/kosztów.
+- Raport stanu nadpisany; bieżące CI w kontrolach PR #7. BL-107 i bramy całego M1 nadal otwarte z przyczyn opisanych w raporcie.
