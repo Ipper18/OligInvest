@@ -81,7 +81,11 @@ export function problemResponse(
     "Cache-Control": "no-store",
     "X-Request-Id": requestId,
   });
-  if (status === 429 || status === 503)
+  if (
+    status === 429 ||
+    status === 503 ||
+    (status === 409 && problem.options.retryAfterSeconds !== undefined)
+  )
     headers.set("Retry-After", String(problem.options.retryAfterSeconds ?? 1));
   return new Response(JSON.stringify(body), { status, headers });
 }

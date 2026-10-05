@@ -20,4 +20,3 @@ export function childEnvironment(env, service) {
     PYTHONUNBUFFERED: "1",
   };
 }
-

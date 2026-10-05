@@ -85,6 +85,11 @@ export class AuthService {
     );
   }
   async principal(request: Request): Promise<Principal | null> {
+    return this.options.database.transaction((tx) =>
+      findSession(tx, readSignedCookie(request, SESSION_COOKIE, this.options.configuration)),
+    );
+  }
+  async renewSession(request: Request): Promise<string | null> {
     return this.options.database.transaction(async (tx) => {
       const principal = await findSession(
         tx,
@@ -95,10 +100,23 @@ export class AuthService {
         readSignedCookie(request, "__Host-oliginvest.dont_remember", this.options.configuration) !==
           "true"
       ) {
-        await tx.execute(sql`UPDATE auth.sessions SET updated_at=now(), expires_at=LEAST(now()+interval '7 days',created_at+interval '30 days')
-          WHERE id=${principal.id}::uuid AND updated_at<now()-interval '24 hours'`);
+        const changed =
+          await tx.execute(sql`UPDATE auth.sessions SET updated_at=now(), expires_at=LEAST(now()+interval '7 days',created_at+interval '30 days')
+          WHERE id=${principal.id}::uuid AND updated_at<now()-interval '24 hours' RETURNING expires_at`);
+        if (changed.rows[0])
+          return sessionCookie(
+            principal.token,
+            this.options.configuration,
+            true,
+            Math.max(
+              0,
+              Math.floor(
+                (z.coerce.date().parse(changed.rows[0].expires_at).getTime() - Date.now()) / 1000,
+              ),
+            ),
+          );
       }
-      return principal;
+      return null;
     });
   }
   async legal(

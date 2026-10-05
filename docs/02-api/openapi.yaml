@@ -2721,7 +2721,9 @@ paths:
     post:
       operationId: adminCreateInvitation
       summary: Wystaw zaproszenie (link jednorazowy, domyślnie 72 h)
-      description: Link (token we fragmencie `#t=`) zwracany jednorazowo, np. do przekazania innym kanałem; w bazie tylko skrót SHA-256 tokenu.
+      description: Link (token we fragmencie `#t=`) zwracany przy utworzeniu. Z Idempotency-Key ten sam administrator może przez 24 h odtworzyć identyczną odpowiedź bez kolejnego e-maila; inne ciało daje IDEMPOTENCY_CONFLICT. Token jest wyprowadzany HMAC z wersjonowanego sekretu i identyfikatora zaproszenia; w bazie tylko skrót SHA-256 oraz metadane odtworzenia (bez jawnego tokenu). Decyzja właściciela 2026-10-05.
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKeyOptional"
       tags:
         - admin
       x-permission: admin:users
@@ -2739,6 +2741,8 @@ paths:
         "201":
           description: Wystawiono.
           headers:
+            Idempotent-Replayed:
+              $ref: "#/components/headers/IdempotentReplayed"
             Cache-Control:
               description: "`no-store`"
               schema:
@@ -2754,7 +2758,13 @@ paths:
         "403":
           $ref: "#/components/responses/AuthError403"
         "409":
-          $ref: "#/components/responses/AuthError400"
+          description: Konflikt żądania.
+          headers:
+            X-Request-Id: {$ref: '#/components/headers/XRequestId'}
+            Retry-After: {$ref: '#/components/headers/RetryAfter'}
+          content:
+            application/problem+json:
+              schema: {$ref: '#/components/schemas/AuthProblem'}
         "422":
           $ref: "#/components/responses/AuthError422"
         "429":

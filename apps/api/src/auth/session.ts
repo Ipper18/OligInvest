@@ -57,11 +57,12 @@ export function sessionCookie(
   token: string,
   configuration: AuthConfiguration,
   remember: boolean,
+  maximumAge = 604800,
 ): string {
   const current = configuration.secrets[0];
   if (!current) throw new Error("Missing signing secret");
   const signed = `${token}.${createHmac("sha256", current.value).update(token).digest("base64")}`;
-  return `${SESSION_COOKIE}=${encodeURIComponent(signed)}; Path=/; Secure; HttpOnly; SameSite=Lax${remember ? "; Max-Age=604800" : ""}`;
+  return `${SESSION_COOKIE}=${encodeURIComponent(signed)}; Path=/; Secure; HttpOnly; SameSite=Lax${remember ? `; Max-Age=${maximumAge}` : ""}`;
 }
 
 export async function findSession(

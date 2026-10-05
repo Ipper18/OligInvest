@@ -2115,7 +2115,7 @@ export interface paths {
         put?: never;
         /**
          * Wystaw zaproszenie (link jednorazowy, domyślnie 72 h)
-         * @description Link (token we fragmencie `#t=`) zwracany jednorazowo, np. do przekazania innym kanałem; w bazie tylko skrót SHA-256 tokenu.
+         * @description Link (token we fragmencie `#t=`) zwracany przy utworzeniu. Z Idempotency-Key ten sam administrator może przez 24 h odtworzyć identyczną odpowiedź bez kolejnego e-maila; inne ciało daje IDEMPOTENCY_CONFLICT. Token jest wyprowadzany HMAC z wersjonowanego sekretu i identyfikatora zaproszenia; w bazie tylko skrót SHA-256 oraz metadane odtworzenia (bez jawnego tokenu). Decyzja właściciela 2026-10-05.
          */
         post: operations["adminCreateInvitation"];
         delete?: never;
@@ -9824,7 +9824,9 @@ export interface operations {
     adminCreateInvitation: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKeyOptional"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -9837,6 +9839,7 @@ export interface operations {
             /** @description Wystawiono. */
             201: {
                 headers: {
+                    "Idempotent-Replayed": components["headers"]["IdempotentReplayed"];
                     /** @description `no-store` */
                     "Cache-Control"?: string;
                     [name: string]: unknown;
@@ -9848,7 +9851,17 @@ export interface operations {
             400: components["responses"]["AuthError400"];
             401: components["responses"]["AuthError401"];
             403: components["responses"]["AuthError403"];
-            409: components["responses"]["AuthError400"];
+            /** @description Konflikt żądania. */
+            409: {
+                headers: {
+                    "X-Request-Id": components["headers"]["XRequestId"];
+                    "Retry-After": components["headers"]["RetryAfter"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["AuthProblem"];
+                };
+            };
             422: components["responses"]["AuthError422"];
             429: components["responses"]["AuthError429"];
         };

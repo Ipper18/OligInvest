@@ -8,6 +8,7 @@ import {
 import { bodyLimit } from "hono/body-limit";
 import { type IdentityDependencies, mountIdentity } from "./auth/identity-routes.js";
 import { type AuthRouteDependencies, createAuthRouter, mountStepUp } from "./auth/routes.js";
+import { SESSION_COOKIE } from "./auth/session.js";
 
 export type HealthChecks = Readonly<
   Record<"postgres" | "valkeyQueue" | "valkeyCache", () => Promise<void>>
@@ -74,7 +75,19 @@ export function createApp(
       },
       async (requestContext) => {
         context.set("requestContext", requestContext);
+        const renewal =
+          options.auth && context.req.header("cookie")?.includes(`${SESSION_COOKIE}=`)
+            ? await (await options.auth.service()).renewSession(context.req.raw)
+            : null;
         await next();
+        if (
+          renewal &&
+          context.res.status < 400 &&
+          !context.res.headers
+            .getSetCookie()
+            .some((value) => value.startsWith(`${SESSION_COOKIE}=`))
+        )
+          context.res.headers.append("Set-Cookie", renewal);
         return context.res;
       },
     );

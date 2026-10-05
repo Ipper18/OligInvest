@@ -70,3 +70,10 @@
 - Przyczyną startup_failed był filtr usuwający DB_HOST/PORT/NAME z procesu jobs. Filtr poprawiony; Mailpit skonfigurowany lokalnie z syntetycznymi danymi.
 - Diagnostyka podaje klasę/kod i znaną nazwę zmiennej, bez message/stack/wartości; test redakcji PASS.
 - Worker nie dziedziczy limitu 1,5 s producenta dla blokujących odczytów. Pełny pnpm dev:test i kolejka → worker → Mailpit PASS; brak błędów połączenia. Lint/typecheck/test/build jobs i zależności PASS.
+
+### 2026-10-05 — końcowe testy sesji, audytu i idempotencji
+- 6b9c86d: wszystkie kontrole zielone, w tym unit/workers/images. Pełny dev:test sprawdza kolejkę → worker → Mailpit i współbieżne liczniki Valkey z TTL.
+- Sesje odnawiają termin DB i ciasteczko najwyżej raz na 24 h, nigdy ponad 30 dni; testy starej sesji i wygaśnięcia SQL PASS. Bramka modułu daje 404/200/404 po zmianach flagi.
+- Audyt HTTP zawiera IP, UA, korelację, zasób i bezpieczny stan; CLI cel i stan przed/po bez tokenów. O-01 formalnie zamknięte według zatwierdzonej decyzji.
+- Test wylicza natywne ścieżki Better Auth i odrzuca nieudostępnione; step-up obejmuje limit godzinowy. Liczniki Valkey mają atomowe TTL i odrzucają błędy transakcji.
+- Właściciel zatwierdził odtworzenie zaproszenia przez 24 h: ten sam admin/klucz/treść, token HMAC bez jawnego zapisu. OpenAPI i konwencje poprawione, klient wygenerowany; pending nadal 164.

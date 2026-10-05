@@ -173,6 +173,8 @@ try {
     await testMailpit(env.API_HOST, dev.DEV_SMTP_PORT, dev.DEV_MAILPIT_UI_PORT);
     const { testQueuedAuthMail } = await import("../apps/jobs/scripts/test-auth-mail.mjs");
     await testQueuedAuthMail(childEnvironment(env, "jobs"), dev.DEV_MAILPIT_UI_PORT);
+    const { testAuthState } = await import("../apps/api/integration/state.mjs");
+    await testAuthState(childEnvironment(env, "api"));
     console.log("pnpm dev entry point: API, web, jobs, analytics and Compose readiness PASS");
     await stop();
   }

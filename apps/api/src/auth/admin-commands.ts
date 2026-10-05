@@ -3,6 +3,7 @@ import { featureFlagSchema, featureRulesSchema, ProblemError } from "@oliginvest
 import { sql } from "drizzle-orm";
 import { z } from "zod";
 import type { Administration } from "./administration.js";
+import type { AuditState } from "./audit.js";
 
 const reason = z.string().min(5).max(500);
 const email = z.email().transform((value) => value.toLowerCase());
@@ -80,6 +81,10 @@ export async function executeAdminCommand(
   });
   try {
     let invitation: Awaited<ReturnType<Administration["createInvitation"]>> | undefined;
+    let resourceId: string | undefined;
+    let resourceType: string | undefined;
+    let before: AuditState | null = null;
+    let after: AuditState | undefined;
     await options.database.transaction(async (tx) => {
       await tx.execute(sql`SELECT pg_advisory_xact_lock(730101)`);
       const target =
@@ -90,6 +95,37 @@ export async function executeAdminCommand(
       if ("email" in data && data.command !== "invite" && !target)
         throw new ProblemError("NOT_FOUND");
       const userId = target ? z.uuid().parse(target.id) : undefined;
+      resourceId = userId;
+      resourceType = userId ? "user" : undefined;
+      if (data.command === "reset-2fa") {
+        const current = (
+          await tx.execute(sql`SELECT two_factor_enabled FROM auth.users WHERE id=${userId}::uuid`)
+        ).rows[0];
+        before = { twoFactorEnabled: z.boolean().parse(current?.two_factor_enabled) };
+        after = { twoFactorEnabled: false };
+      }
+      if (
+        ["revoke-sessions", "revoke-all-sessions", "revoke-pats", "revoke-all-pats"].includes(
+          data.command,
+        )
+      ) {
+        const sessions = data.command.includes("sessions");
+        const count = sessions
+          ? (
+              await tx.execute(
+                sql`SELECT count(*)::int AS count FROM auth.sessions WHERE (${userId ?? null}::uuid IS NULL OR user_id=${userId ?? null}::uuid)`,
+              )
+            ).rows[0]?.count
+          : (
+              await tx.execute(
+                sql`SELECT count(*)::int AS count FROM auth.api_keys WHERE enabled=true AND (${userId ?? null}::text IS NULL OR reference_id=${userId ?? null})`,
+              )
+            ).rows[0]?.count;
+        before = { count: z.number().parse(count) };
+        after = { count: 0 };
+        resourceType = sessions ? "sessions" : "api_keys";
+        resourceId = userId ?? "all";
+      }
       if (data.command === "invite") {
         const inviter = (
           await tx.execute(
@@ -102,6 +138,14 @@ export async function executeAdminCommand(
           tx,
           { email: data.email, role: data.role },
         );
+        resourceType = "invitation";
+        resourceId = invitation.value.id;
+        after = {
+          email: invitation.value.email,
+          role: invitation.value.role,
+          status: "pending",
+          expiresAt: invitation.value.expiresAt,
+        };
       } else if (data.command === "reset-2fa") {
         await tx.execute(sql`DELETE FROM auth.sessions WHERE user_id=${userId}::uuid`);
         await tx.execute(sql`DELETE FROM auth.two_factors WHERE user_id=${userId}::uuid`);
@@ -138,13 +182,36 @@ export async function executeAdminCommand(
           ...(data.role ? { roles: [data.role] } : {}),
           ...(selected ? { users: [selected.id] } : {}),
         });
+        resourceType = "feature_flag";
+        resourceId = data.key;
+        after = { enabled: data.action === "on", ...rules };
+        const previous = await options.appDatabase.transaction(
+          system,
+          async (appTx) =>
+            (
+              await appTx.execute(
+                sql`SELECT enabled,rules FROM platform.feature_flags WHERE key=${data.key}`,
+              )
+            ).rows[0],
+        );
+        before = previous
+          ? {
+              enabled: z.boolean().parse(previous.enabled),
+              ...featureRulesSchema.parse(previous.rules),
+            }
+          : null;
         await options.appDatabase.transaction(system, (appTx) =>
           appTx.execute(sql`INSERT INTO platform.feature_flags(key,description,enabled,rules,updated_by) VALUES (${data.key},${data.key},${data.action === "on"},${JSON.stringify(rules)}::jsonb,NULL)
           ON CONFLICT (key) DO UPDATE SET enabled=EXCLUDED.enabled,rules=EXCLUDED.rules,updated_by=NULL,updated_at=now()`),
         );
       }
     });
-    if (data.command === "queues") await admin.effects.queues(data.action, data.queue);
+    if (data.command === "queues") {
+      resourceType = "queue";
+      resourceId = data.queue ?? "all";
+      after = { status: data.action === "pause" ? "paused" : "running" };
+      await admin.effects.queues(data.action, data.queue);
+    }
     if (data.command === "reset-2fa")
       await admin.effects.resetMail({ email: data.email, issuedAt: new Date().toISOString() });
     if (data.command === "flag") await admin.effects.flagsChanged([data.key]);
@@ -155,7 +222,15 @@ export async function executeAdminCommand(
         options.event("auth.invitation_delivery_failed");
       }
     }
-    await options.audit.record(system, { action, outcome: "success", reason: data.reason });
+    await options.audit.record(system, {
+      action,
+      outcome: "success",
+      reason: data.reason,
+      resourceId,
+      resourceType,
+      before,
+      after,
+    });
     return invitation ? { inviteUrl: invitation.value.inviteUrl } : {};
   } catch (error) {
     await options.audit.record(system, {

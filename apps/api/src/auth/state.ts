@@ -16,8 +16,14 @@ export class RedisAuthState implements AuthState {
   async limit(subject: string, maximum: number, seconds: number): Promise<void> {
     const window = Math.floor(Date.now() / (seconds * 1000));
     const key = `auth:limit:${digest(subject)}:${seconds}:${window}`;
-    const count = await this.redis.incr(key);
-    if (count === 1) await this.redis.expire(key, seconds * 2);
+    const result = await this.redis
+      .multi()
+      .incr(key)
+      .expire(key, seconds * 2)
+      .exec();
+    if (!result || result.some(([error]) => error) || typeof result[0]?.[1] !== "number")
+      throw new Error("AUTH_STATE_UNAVAILABLE");
+    const count = result[0][1];
     if (count > maximum) throw new ProblemError("RATE_LIMITED", { retryAfterSeconds: seconds });
   }
   async failures(email: string): Promise<number> {
@@ -25,7 +31,8 @@ export class RedisAuthState implements AuthState {
   }
   async failed(email: string): Promise<void> {
     const key = `auth:failures:${digest(email)}`;
-    await this.redis.multi().incr(key).expire(key, 3600).exec();
+    const result = await this.redis.multi().incr(key).expire(key, 3600).exec();
+    if (!result || result.some(([error]) => error)) throw new Error("AUTH_STATE_UNAVAILABLE");
   }
   async succeeded(email: string): Promise<void> {
     await this.redis.del(`auth:failures:${digest(email)}`);

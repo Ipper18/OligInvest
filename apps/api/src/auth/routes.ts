@@ -205,6 +205,7 @@ export function mountStepUp(api: OpenAPIHono<AppEnv>, dependencies: AuthRouteDep
       const service = await dependencies.service();
       if (context.req.header("authorization")) throw new ProblemError("FORBIDDEN");
       await service.options.state.limit(dependencies.clientIp(context), 5, 60);
+      await service.options.state.limit(dependencies.clientIp(context), 20, 3600);
       const response = await service.stepUp(context.req.raw, context.req.valid("json").code);
       for (const cookie of response.headers.getSetCookie())
         context.header("Set-Cookie", cookie, { append: true });

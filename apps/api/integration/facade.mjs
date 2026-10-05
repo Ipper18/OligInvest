@@ -126,6 +126,25 @@ export async function testAuthFacade(settings) {
   let ownerId;
   let userId;
   try {
+    const nativePaths = await database.transaction(async (tx) => {
+      const native = createAuth(tx, configuration);
+      await native.$context;
+      return [
+        ...new Set(
+          Object.values(native.api)
+            .map((endpoint) => endpoint.path)
+            .filter(Boolean),
+        ),
+      ];
+    });
+    const exposed = new Set(authOperations.map(([path]) => path));
+    assert.ok(nativePaths.includes("/two-factor/disable"));
+    for (const path of nativePaths.filter((path) => !exposed.has(path))) {
+      const concrete = path.replace(/:[a-zA-Z]+/gu, "synthetic");
+      const response = await app.fetch(request(concrete, {}));
+      assert.equal(response.status, 403, `Native route must be blocked: ${path}`);
+    }
+
     // Every mounted auth operation must reject a bearer token, including public routes.
     for (const [path] of authOperations) {
       const raw = request(path, ["/get-session", "/list-sessions"].includes(path) ? undefined : {});
@@ -221,6 +240,33 @@ export async function testAuthFacade(settings) {
     }
     assert.equal(await service.principal(request("/get-session", undefined, beforeStepUp)), null);
     assert.equal((await identity("/analytics/synthetic-probe")).status, 404);
+    // Renew both the database deadline and the browser cookie at most daily.
+    await database.transaction((tx) =>
+      tx.execute(
+        // INSERT an aged fixture: UPDATE correctly overwrites updated_at via the DB trigger.
+        sql`WITH old AS (DELETE FROM auth.sessions WHERE user_id=${userId}::uuid RETURNING *) INSERT INTO auth.sessions(id,user_id,token,created_at,updated_at,expires_at,mfa_verified_at,mfa_method) SELECT id,user_id,token,now()-interval '29 days',now()-interval '2 days',now()+interval '2 hours',mfa_verified_at,mfa_method FROM old`,
+      ),
+    );
+    const renewed = await call("/get-session");
+    const renewedCookie = renewed.headers
+      .getSetCookie()
+      .find((value) => value.startsWith(`${SESSION_COOKIE}=`));
+    assert.ok(renewedCookie);
+    const maximumAge = Number(/Max-Age=(\d+)/u.exec(renewedCookie)[1]);
+    assert.ok(
+      maximumAge > 86000 && maximumAge <= 86400,
+      "Renewal must respect the absolute 30-day deadline",
+    );
+    assert.equal(
+      (await call("/get-session")).headers.getSetCookie().length,
+      0,
+      "No repeated renewal before 24 hours",
+    );
+    await database.transaction((tx) =>
+      tx.execute(
+        sql`UPDATE auth.sessions SET created_at=now(),updated_at=now(),expires_at=now()+interval '7 days' WHERE user_id=${userId}::uuid`,
+      ),
+    );
     await executeAdminCommand(administration, {
       command: "flag",
       key: "module.analytics",
@@ -250,15 +296,100 @@ export async function testAuthFacade(settings) {
     await database.transaction((tx) =>
       tx.execute(sql`UPDATE auth.users SET role='admin' WHERE id=${userId}::uuid`),
     );
-    const invitation = await identity("/admin/invitations", {
+    const invitationKey = randomUUID();
+    const invitationInput = {
       email: "new@example.test",
       role: "user",
       sendEmail: true,
+    };
+    const invitation = await identity("/admin/invitations", invitationInput, {
+      "Idempotency-Key": invitationKey,
     });
     assert.equal(invitation.status, 201);
     const invitationBody = await invitation.json();
     assert.equal(new URL(invitationBody.inviteUrl).search, "");
     assert.equal(invitations.length, 1);
+    const repeat = await identity("/admin/invitations", invitationInput, {
+      "Idempotency-Key": invitationKey,
+    });
+    assert.equal(repeat.status, 201);
+    assert.equal(repeat.headers.get("Idempotent-Replayed"), "true");
+    assert.deepEqual(await repeat.json(), invitationBody);
+    let releaseLock;
+    let acquiredLock;
+    const acquired = new Promise((resolve) => {
+      acquiredLock = resolve;
+    });
+    const release = new Promise((resolve) => {
+      releaseLock = resolve;
+    });
+    const held = database.transaction(async (tx) => {
+      await tx.execute(sql`SELECT pg_advisory_xact_lock(730101)`);
+      acquiredLock();
+      await release;
+    });
+    await acquired;
+    try {
+      const busy = await identity("/admin/invitations", invitationInput, {
+        "Idempotency-Key": invitationKey,
+      });
+      assert.equal(busy.status, 409);
+      assert.equal(busy.headers.get("Retry-After"), "1");
+      assert.equal((await busy.json()).code, "CONFLICT");
+    } finally {
+      releaseLock();
+      await held;
+    }
+    assert.equal(invitations.length, 1, "Replay must not enqueue a second email");
+    const conflict = await identity(
+      "/admin/invitations",
+      { ...invitationInput, role: "pro" },
+      { "Idempotency-Key": invitationKey },
+    );
+    assert.equal(conflict.status, 409);
+    assert.equal((await conflict.json()).code, "IDEMPOTENCY_CONFLICT");
+    const persisted = await appDatabase.transaction(
+      { userId, role: "admin" },
+      async (tx) =>
+        (
+          await tx.execute(
+            sql`SELECT response_body FROM platform.idempotency_keys WHERE key=${invitationKey}`,
+          )
+        ).rows[0],
+    );
+    assert.ok(!JSON.stringify(persisted).includes(invitations[0].token));
+    assert.equal(
+      await appDatabase.transaction(
+        { userId: ownerId, role: "admin" },
+        async (tx) =>
+          (
+            await tx.execute(
+              sql`SELECT key FROM platform.idempotency_keys WHERE key=${invitationKey}`,
+            )
+          ).rows.length,
+      ),
+      0,
+    );
+    const separate = await database.transaction(async (tx) => {
+      await tx.execute(sql`SELECT pg_advisory_xact_lock(730101)`);
+      return administration.createInvitation(
+        { userId: ownerId, role: "admin" },
+        tx,
+        { email: "separate@example.test", role: "user", sendEmail: false },
+        invitationKey,
+      );
+    });
+    assert.notEqual(separate.value.id, invitationBody.id);
+    await appDatabase.transaction({ userId, role: "admin" }, (tx) =>
+      tx.execute(
+        sql`UPDATE platform.idempotency_keys SET expires_at=now()-interval '1 second' WHERE key=${invitationKey}`,
+      ),
+    );
+    const expiredReplay = await identity("/admin/invitations", invitationInput, {
+      "Idempotency-Key": invitationKey,
+    });
+    assert.equal(expiredReplay.status, 409);
+    assert.equal(expiredReplay.headers.get("Idempotent-Replayed"), null);
     const preview = await identity("/invitations/preview", { token: invitations[0].token });
     assert.equal(preview.status, 200);
     assert.equal((await preview.json()).emailMasked, "n***@e***.test");
@@ -272,13 +403,20 @@ export async function testAuthFacade(settings) {
       async (tx) =>
         (
           await tx.execute(
-            sql`SELECT outcome,actor_ref FROM platform.audit_log WHERE action='admin.invitation.create'`,
+            sql`SELECT outcome,actor_ref,resource_id,resource_type,request_id,ip,after FROM platform.audit_log WHERE action='admin.invitation.create'`,
           )
         ).rows,
     );
     assert.ok(auditRows.some((row) => row.outcome === "denied"));
     assert.ok(auditRows.some((row) => row.outcome === "success"));
     assert.ok(auditRows.every((row) => /^[a-f0-9]{64}$/u.test(row.actor_ref)));
+    const createdAudit = auditRows.find((row) => row.outcome === "success");
+    assert.equal(createdAudit.resource_id, invitationBody.id);
+    assert.equal(createdAudit.resource_type, "invitation");
+    assert.equal(createdAudit.after.email, "new@example.test");
+    assert.equal(createdAudit.ip, "192.0.2.1");
+    assert.ok(createdAudit.request_id);
+    assert.ok(!JSON.stringify(auditRows).includes(invitations[0].token));
     await database.transaction((tx) =>
       tx.execute(sql`UPDATE auth.users SET role='pro' WHERE id=${userId}::uuid`),
     );

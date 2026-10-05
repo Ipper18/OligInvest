@@ -8,6 +8,12 @@ import { inviteInput, previewInput } from "./inputs.js";
 import { type AuthRouteDependencies, authErrors } from "./routes.js";
 
 const timestamp = z.string().datetime();
+const idempotencyKey = z
+  .string()
+  .min(16)
+  .max(64)
+  .regex(/^[A-Za-z0-9_-]+$/u)
+  .openapi({ pattern: "^[A-Za-z0-9_-]+$" });
 export const preferencesSchema = z
   .object({
     baseCurrency: z.enum(["PLN"]),
@@ -210,14 +216,25 @@ export function mountIdentity(api: OpenAPIHono<AppEnv>, dependencies: IdentityDe
       tags: ["admin"],
       security: [{ sessionCookie: [] }],
       request: {
+        headers: z.object({ "Idempotency-Key": idempotencyKey.optional() }).strict(),
         body: { required: true, content: { "application/json": { schema: inviteInput } } },
       },
       responses: {
         ...authErrors,
-        409: authErrors[400]!,
+        409: {
+          ...authErrors[400],
+          description: "Konflikt żądania.",
+          headers: {
+            ...authErrors[400]?.headers,
+            "Retry-After": { schema: { type: "integer", minimum: 1 } },
+          },
+        },
         201: {
           description: "Wystawiono zaproszenie.",
-          headers: { "Cache-Control": { schema: { type: "string" } } },
+          headers: {
+            "Cache-Control": { schema: { type: "string" } },
+            "Idempotent-Replayed": { schema: { type: "string", enum: ["true"] } },
+          },
           content: { "application/json": { schema: createdSchema } },
         },
       },
@@ -256,9 +273,23 @@ export function mountIdentity(api: OpenAPIHono<AppEnv>, dependencies: IdentityDe
           throw new ProblemError("BAD_REQUEST");
         }
         if (!inviteInput.safeParse(input).success) throw new ProblemError("VALIDATION_FAILED");
-        return admin.createInvitation(actor, tx, input);
+        const key = context.req.header("Idempotency-Key");
+        if (key !== undefined && !idempotencyKey.safeParse(key).success)
+          throw new ProblemError("BAD_REQUEST");
+        return admin.createInvitation(actor, tx, input, key);
       },
-      context.get("requestContext").requestId,
+      { requestId: context.get("requestContext").requestId, ip: dependencies.clientIp(context) },
+      (result) => ({
+        resourceType: "invitation",
+        resourceId: result.value.id,
+        before: null,
+        after: {
+          email: result.value.email,
+          role: result.value.role,
+          status: result.value.status,
+          expiresAt: result.value.expiresAt,
+        },
+      }),
     );
     if (result.mail) {
       try {
@@ -267,6 +298,7 @@ export function mountIdentity(api: OpenAPIHono<AppEnv>, dependencies: IdentityDe
         admin.service.options.event("auth.invitation_delivery_failed");
       }
     }
+    if (result.replayed) context.header("Idempotent-Replayed", "true");
     return context.json(createdSchema.parse(result.value), 201);
   });
 }
