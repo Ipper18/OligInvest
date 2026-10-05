@@ -47,10 +47,13 @@ export function readSignedCookie(
   if (dot < 1) return null;
   const token = value.slice(0, dot);
   const provided = Buffer.from(value.slice(dot + 1));
-  const current = configuration.secrets[0];
-  if (!current) throw new Error("Missing signing secret");
-  const expected = Buffer.from(createHmac("sha256", current.value).update(token).digest("base64"));
-  return expected.length === provided.length && timingSafeEqual(expected, provided) ? token : null;
+  if (!configuration.secrets.length) throw new Error("Missing signing secret");
+  let valid = 0;
+  for (const secret of configuration.secrets) {
+    const expected = Buffer.from(createHmac("sha256", secret.value).update(token).digest("base64"));
+    valid |= Number(expected.length === provided.length && timingSafeEqual(expected, provided));
+  }
+  return valid !== 0 ? token : null;
 }
 
 export function sessionCookie(

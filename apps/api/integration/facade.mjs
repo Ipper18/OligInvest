@@ -227,6 +227,15 @@ export async function testAuthFacade(settings) {
       "Enrollment must mark the replacement session verified",
     );
     assert.notEqual(cookies.get(SESSION_COOKIE), oldCookie);
+    const beforeKeyRotation = cookies.get(SESSION_COOKIE);
+    configuration.secrets.unshift({ version: 2, value: randomBytes(32).toString("hex") });
+    assert.equal((await (await call("/get-session")).json()).session.id, verified.session.id);
+    assert.equal((await service.requireData(request("/get-session"))).user_id, userId);
+    assert.equal(
+      cookies.get(SESSION_COOKIE),
+      beforeKeyRotation,
+      "Old signature remains valid without signing in again",
+    );
     assert.equal((await service.requireData(request("/get-session"))).user_id, userId);
     await denied(() => call("/two-factor/verify-totp", { code: previous }), "UNAUTHENTICATED");
     const current = totpCode(secret, Math.floor(Date.now() / 30000));
