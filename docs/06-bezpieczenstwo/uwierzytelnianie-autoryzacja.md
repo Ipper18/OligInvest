@@ -97,6 +97,8 @@ Posiadanie linku wysłanego na adres z zaproszenia dowodzi kontroli nad skrzynk�
 
 ### 4.1 Przedrostek `__Host-`
 
+Lista sesji zwraca publiczne `id` i obowiązkowe `current` (sesja bieżącego żądania), nigdy token. Zdalne odwołanie przyjmuje `id`; serwer sprawdza `id` razem z `user_id` właściciela, a token dla Better Auth ustala wyłącznie wewnętrznie. Token sesji jest przekazywany przeglądarce tylko w podpisanym ciasteczku `HttpOnly`, nigdy w JSON (zatwierdzona korekta kontraktu BL-105, 2026-10-05).
+
 Przedrostek `__Host-` gwarantuje, że ciasteczka nie ustawi ani nie nadpisze sąsiednia subdomena `oligi.pl` (np. przejęty Immich) — bez niego możliwe jest „podrzucenie” ciasteczka sesji atakującego. Better Auth automatycznie dokleja `__Secure-` przy włączonym `useSecureCookies`, dlatego stosujemy poniższą konfigurację. Spike dla 1.7.5 potwierdził ją w trzech przeglądarkach; właściciel zatwierdził ją 2026-10-02 dla BL-105.
 
 ```ts

@@ -3728,20 +3728,20 @@ components:
     AuthSessionInfo:
       type: object
       additionalProperties: false
-      required: [id, createdAt, expiresAt]
+      required: [id, current, createdAt, expiresAt]
       properties:
         id: {$ref: '#/components/schemas/Uuid'}
+        current: {type: boolean, description: 'Czy jest to sesja bieżącego żądania.'}
         createdAt: {$ref: '#/components/schemas/Timestamp'}
         expiresAt: {$ref: '#/components/schemas/Timestamp'}
         ipAddress: {type: string}
         userAgent: {type: string}
-        token: {type: string, description: 'Identyfikator sesji wymagany przez `/revoke-session`.'}
     AuthRevokeSessionRequest:
       type: object
       additionalProperties: false
-      required: [token]
+      required: [id]
       properties:
-        token: {type: string, maxLength: 256}
+        id: {$ref: '#/components/schemas/Uuid'}
 
     # ── identity ──
     InvitationPreview:

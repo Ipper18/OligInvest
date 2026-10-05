@@ -2847,15 +2847,15 @@ export interface components {
         };
         AuthSessionInfo: {
             id: components["schemas"]["Uuid"];
+            /** @description Czy jest to sesja bieżącego żądania. */
+            current: boolean;
             createdAt: components["schemas"]["Timestamp"];
             expiresAt: components["schemas"]["Timestamp"];
             ipAddress?: string;
             userAgent?: string;
-            /** @description Identyfikator sesji wymagany przez `/revoke-session`. */
-            token?: string;
         };
         AuthRevokeSessionRequest: {
-            token: string;
+            id: components["schemas"]["Uuid"];
         };
         InvitationPreview: {
             /** @example a***@e***.pl */

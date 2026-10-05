@@ -70,7 +70,7 @@ export const resetPasswordInput = z
   .strict()
   .openapi("AuthResetPasswordRequest");
 export const revokeInput = z
-  .object({ token: z.string().max(256) })
+  .object({ id: z.string().uuid() })
   .strict()
   .openapi("AuthRevokeSessionRequest");
 export const stepUpInput = z

@@ -421,22 +421,46 @@ export async function testAuthFacade(settings) {
       tx.execute(sql`UPDATE auth.users SET role='pro' WHERE id=${userId}::uuid`),
     );
     const extraToken = randomBytes(32).toString("hex");
-    await database.transaction((tx) =>
-      tx.execute(
-        sql`INSERT INTO auth.sessions (user_id,token,expires_at,ip_address) VALUES (${userId}::uuid,${extraToken},now()+interval '1 hour','192.0.2.19')`,
-      ),
+    const extraId = await database.transaction(
+      async (tx) =>
+        (
+          await tx.execute(
+            sql`INSERT INTO auth.sessions (user_id,token,expires_at,ip_address) VALUES (${userId}::uuid,${extraToken},now()+interval '1 hour','192.0.2.19') RETURNING id`,
+          )
+        ).rows[0].id,
     );
     const sessions = await (await call("/list-sessions")).json();
     assert.equal(sessions.length, 2);
-    assert.equal(sessions.find((row) => row.token === extraToken).ipAddress, "192.0.2.0/24");
-    const foreignToken = await database.transaction(
-      async (tx) =>
-        (await tx.execute(sql`SELECT token FROM auth.sessions WHERE user_id=${ownerId}::uuid`))
-          .rows[0].token,
+    assert.equal(sessions.find((row) => row.id === extraId).ipAddress, "192.0.2.0/24");
+    assert.equal(sessions.find((row) => row.id === extraId).current, false);
+    assert.equal(sessions.filter((row) => row.current).length, 1);
+    assert.equal(
+      sessions.find((row) => row.current).id,
+      (await service.principal(request("/get-session"))).id,
     );
-    await denied(() => call("/revoke-session", { token: foreignToken }), "FORBIDDEN");
-    await call("/revoke-session", { token: extraToken });
+    assert.ok(sessions.every((row) => !Object.hasOwn(row, "token")));
+    const storedTokens = await database.transaction(
+      async (tx) => (await tx.execute(sql`SELECT token FROM auth.sessions`)).rows,
+    );
+    for (const { token } of storedTokens) assert.ok(!JSON.stringify(sessions).includes(token));
+    const foreignId = await database.transaction(
+      async (tx) =>
+        (await tx.execute(sql`SELECT id FROM auth.sessions WHERE user_id=${ownerId}::uuid`)).rows[0]
+          .id,
+    );
+    await denied(() => call("/revoke-session", { token: extraToken }), "BAD_REQUEST");
+    await denied(() => call("/revoke-session", { id: foreignId }), "FORBIDDEN");
+    await denied(() => call("/revoke-session", { id: randomUUID() }), "FORBIDDEN");
+    await call("/revoke-session", { id: extraId });
     assert.equal((await (await call("/list-sessions")).json()).length, 1);
+    assert.equal(
+      await database.transaction(
+        async (tx) =>
+          (await tx.execute(sql`SELECT id FROM auth.sessions WHERE id=${foreignId}::uuid`)).rows
+            .length,
+      ),
+      1,
+    );
     for (const [createdDays, expiryHours] of [
       [31, 1],
       [1, -1],

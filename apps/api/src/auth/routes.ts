@@ -50,11 +50,11 @@ const backups = z.object({ backupCodes: codes }).strict().openapi("AuthBackupCod
 const sessionInfo = z
   .object({
     id: uuid,
+    current: z.boolean(),
     createdAt: timestamp,
     expiresAt: timestamp,
     ipAddress: z.string().optional(),
     userAgent: z.string().optional(),
-    token: z.string().optional(),
   })
   .strict()
   .openapi("AuthSessionInfo");

@@ -257,9 +257,12 @@ export class AuthService {
       }
       if (principal && path === "/revoke-session") {
         const own = await tx.execute(
-          sql`SELECT id FROM auth.sessions WHERE token=${z.string().parse(body.token)} AND user_id=${principal.user_id}::uuid`,
+          sql`SELECT token FROM auth.sessions WHERE id=${z.uuid().parse(body.id)}::uuid AND user_id=${principal.user_id}::uuid`,
         );
         if (!own.rows.length) throw new ProblemError("FORBIDDEN");
+        // The native handler needs a token; it never crosses the public JSON boundary.
+        body.token = z.string().parse(own.rows[0]?.token);
+        delete body.id;
       }
       if (principal && path === "/two-factor/enable" && principal.two_factor_enabled)
         requireFactorReplacement(principal);
@@ -663,13 +666,13 @@ export class AuthService {
   }
   private async listSessions(tx: DatabaseTransaction, principal: Principal): Promise<Response> {
     const rows = (
-      await tx.execute(sql`SELECT id,token,created_at,expires_at,ip_address,user_agent FROM auth.sessions
+      await tx.execute(sql`SELECT id,created_at,expires_at,ip_address,user_agent FROM auth.sessions
       WHERE user_id=${principal.user_id}::uuid AND expires_at>now() AND created_at>now()-interval '30 days' ORDER BY created_at DESC,id DESC`)
     ).rows;
     return Response.json(
       rows.map((row) => ({
         id: row.id,
-        token: row.token,
+        current: row.id === principal.id,
         createdAt: new Date(String(row.created_at)).toISOString(),
         expiresAt: new Date(String(row.expires_at)).toISOString(),
         ...(row.ip_address && approximateIp(String(row.ip_address))
