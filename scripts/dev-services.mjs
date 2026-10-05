@@ -110,6 +110,13 @@ export function applicationEnvironment(dev) {
     VALKEY_CACHE_API_PASSWORD: dev.DEV_VALKEY_CACHE_PASSWORD,
     VALKEY_CACHE_JOBS_PASSWORD: dev.DEV_VALKEY_CACHE_PASSWORD,
     JOBS_INSTANCE_ID: "development",
+    SMTP_HOST: host,
+    SMTP_PORT: dev.DEV_SMTP_PORT || "1025",
+    SMTP_FROM: "sender@example.test",
+    SMTP_USER: "synthetic-mailpit",
+    SMTP_PASSWORD: "synthetic-mailpit",
+    LEGAL_CONTROLLER_NAME: "Administrator testowy",
+    LEGAL_CONTACT_EMAIL: "privacy@example.test",
     ANALYTICS_INSTANCE_ID: "development",
   };
 }

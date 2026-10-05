@@ -2,7 +2,7 @@
 
 **Cel:** przekazać stan API/CLI uwierzytelniania; dowody etapów w [historii](m1-1-session-history.md).
 
-**2026-10-04**, `feat/m1-1-auth`, [roboczy PR #7](https://github.com/Ipper18/OligInvest/pull/7). Zakres BL-101/102/103/105/106/107/108/109/111/117; UI w M1-4.
+**2026-10-05**, `feat/m1-1-auth`, [roboczy PR #7](https://github.com/Ipper18/OligInvest/pull/7). Zakres BL-101/102/103/105/106/107/108/109/111/117; UI w M1-4.
 
 ## Implementacja
 

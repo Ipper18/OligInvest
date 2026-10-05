@@ -59,7 +59,7 @@ export const configSchemas = {
       DB_APP_PASSWORD: text,
       VALKEY_QUEUE_JOBS_PASSWORD: text,
       VALKEY_CACHE_JOBS_PASSWORD: text,
-      SMTP_HOST: z.hostname().optional(),
+      SMTP_HOST: z.union([z.hostname(), z.ipv4(), z.ipv6()]).optional(),
       SMTP_FROM: z.email().optional(),
       SMTP_USER: text.optional(),
       SMTP_PASSWORD: text.optional(),

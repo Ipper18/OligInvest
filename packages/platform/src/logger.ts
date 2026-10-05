@@ -23,6 +23,13 @@ const entrySchema = z
       .max(80)
       .optional(),
     email: z.email().optional(),
+    error_class: z
+      .enum(["ConfigError", "ZodError", "TypeError", "Error", "UnknownError"])
+      .optional(),
+    config_key: z
+      .string()
+      .regex(/^[A-Z][A-Z0-9_]{0,79}$/u)
+      .optional(),
   })
   .strict();
 export type LogEntry = z.input<typeof entrySchema>;

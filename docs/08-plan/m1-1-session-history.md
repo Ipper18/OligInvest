@@ -64,3 +64,9 @@
 - Flagi API/jobs z cache 30 s i flags.changed; test dwóch procesów na Valkey PASS. Skrypt maintenance z audytem i przywróceniem stanu Caddy — 4 testy Linux PASS.
 - Poprawione własne odwzorowania: rehash hasła także przed wyzwaniem MFA, ograniczenie ciała zaproszenia wewnątrz audytu i identyfikator żądania. Dokumentacja operatora uzupełniona.
 - Bramy M1 pozostają otwarte; czynności na VM/DNS należą do właściciela. Estymacje bez zmian, nakład niezmierzony, bez nowych decyzji ADR.
+
+### 2026-10-05 — naprawa unit i workers na 9de4c65
+- Import modułu jobs nie ładuje transportu SMTP ani runtime bazy; test regresji bez zwiększania limitu 5 s.
+- Przyczyną startup_failed był filtr usuwający DB_HOST/PORT/NAME z procesu jobs. Filtr poprawiony; Mailpit skonfigurowany lokalnie z syntetycznymi danymi.
+- Diagnostyka podaje klasę/kod i znaną nazwę zmiennej, bez message/stack/wartości; test redakcji PASS.
+- Worker nie dziedziczy limitu 1,5 s producenta dla blokujących odczytów. Pełny pnpm dev:test i kolejka → worker → Mailpit PASS; brak błędów połączenia. Lint/typecheck/test/build jobs i zależności PASS.

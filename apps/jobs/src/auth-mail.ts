@@ -1,3 +1,4 @@
+import { isIP } from "node:net";
 import type { ServiceConfig } from "@oliginvest/config";
 import {
   authMailSchema,
@@ -16,6 +17,15 @@ export function mailOptions(
   if (!config.SMTP_HOST || !config.SMTP_USER || !config.SMTP_PASSWORD || !config.SMTP_FROM)
     throw new Error("SMTP_NOT_CONFIGURED");
   if (mode === "production" && (config.SMTP_HOST !== "smtp-relay.brevo.com" || port !== 587))
+    throw new Error("SMTP_NOT_ALLOWED");
+  if (
+    mode !== "production" &&
+    !(
+      config.SMTP_HOST === "localhost" ||
+      config.SMTP_HOST === "::1" ||
+      (isIP(config.SMTP_HOST) === 4 && config.SMTP_HOST.startsWith("127."))
+    )
+  )
     throw new Error("SMTP_NOT_ALLOWED");
   return {
     host: config.SMTP_HOST,

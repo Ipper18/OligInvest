@@ -10,11 +10,24 @@ export function jobFeatureFlags(
   config: ServiceConfig<"jobs">,
   logger: PlatformLogger,
 ) {
+  const schema = z
+    .object({
+      DB_HOST: z.string().min(1),
+      DB_PORT: z.coerce.number().int().min(1).max(65535),
+      DB_NAME: z.string().min(1),
+      VALKEY_CACHE_HOST: z.string().min(1),
+      VALKEY_CACHE_PORT: z.coerce.number().int().min(1).max(65535),
+      VALKEY_CACHE_USER: z.string().min(1),
+    })
+    .strict();
+  const settings = schema.parse(
+    Object.fromEntries(Object.keys(schema.shape).map((key) => [key, env[key]])),
+  );
   // Pool creation is lazy: foundations can start while the data plane is unavailable.
   const database = createAppDatabase({
-    host: z.string().min(1).parse(env.DB_HOST),
-    port: z.coerce.number().int().min(1).max(65535).parse(env.DB_PORT),
-    database: z.string().min(1).parse(env.DB_NAME),
+    host: settings.DB_HOST,
+    port: settings.DB_PORT,
+    database: settings.DB_NAME,
     ssl: env.DB_SSL === "true",
     password: config.DB_APP_PASSWORD,
   });
@@ -26,9 +39,9 @@ export function jobFeatureFlags(
     ),
   );
   const subscriber = new Redis({
-    host: z.string().min(1).parse(env.VALKEY_CACHE_HOST),
-    port: z.coerce.number().int().min(1).max(65535).parse(env.VALKEY_CACHE_PORT),
-    username: z.string().min(1).parse(env.VALKEY_CACHE_USER),
+    host: settings.VALKEY_CACHE_HOST,
+    port: settings.VALKEY_CACHE_PORT,
+    username: settings.VALKEY_CACHE_USER,
     password: config.VALKEY_CACHE_JOBS_PASSWORD,
     lazyConnect: true,
     maxRetriesPerRequest: 0,

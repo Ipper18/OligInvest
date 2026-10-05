@@ -2,8 +2,7 @@ import { loadConfig } from "@oliginvest/config";
 import { createLogger, type PlatformLogger } from "@oliginvest/platform";
 import { Queue, Worker } from "bullmq";
 import { z } from "zod";
-import { createAuthMailer } from "./auth-mail.js";
-import { jobFeatureFlags } from "./feature-flags.js";
+import type { createAuthMailer } from "./auth-mail.js";
 import { createQueueRegistry } from "./registry.js";
 
 const settingsSchema = z
@@ -65,6 +64,7 @@ export async function startJobs(
   logger: PlatformLogger = createLogger(),
 ) {
   const runtime = readRuntime(env);
+  const { jobFeatureFlags } = await import("./feature-flags.js");
   const flagRuntime = jobFeatureFlags(env, runtime.config, logger);
   const { registry, queues: definitions } = createQueueRegistry((key, subject) =>
     flagRuntime.flags.enabled(key, subject),
@@ -108,7 +108,11 @@ export async function startJobs(
   try {
     await Promise.all(queues.map((queue) => queue.waitUntilReady()));
     if (runtime.mail) {
+      const { createAuthMailer } = await import("./auth-mail.js");
       mailer = createAuthMailer(runtime.mail.config, runtime.mode, runtime.mail.port);
+      // The worker uses blocking reads; the producer's 1.5 s command deadline
+      // would time them out while the queue is idle.
+      const { commandTimeout: _producerTimeout, ...workerConnection } = runtime.connection;
       mailWorker = new Worker(
         "notify",
         async (job) => {
@@ -119,7 +123,7 @@ export async function startJobs(
             throw new Error("AUTH_MAIL_DELIVERY_FAILED");
           }
         },
-        { connection: { ...runtime.connection, maxRetriesPerRequest: null }, concurrency: 1 },
+        { connection: { ...workerConnection, maxRetriesPerRequest: null }, concurrency: 1 },
       );
       mailWorker.on("error", () => logger.error({ event: "jobs.mail_connection_failed" }));
       await mailWorker.waitUntilReady();
@@ -128,12 +132,12 @@ export async function startJobs(
     timer = setTimeout(tick, 1000);
     logger.info({ event: "jobs.ready" });
     return { registry, queues, close };
-  } catch {
+  } catch (error) {
     await mailWorker?.close();
     mailer?.close();
     await flagRuntime.close();
     await Promise.allSettled(queues.map((queue) => queue.close()));
-    throw new Error("Jobs startup failed");
+    throw error;
   }
 }
 
