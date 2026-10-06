@@ -31,7 +31,18 @@ test("CLI validates actual commit ranges and independently blocks invalid PR tit
     const good = git(["rev-parse", "HEAD"]);
     git(["commit", "--allow-empty", "-m", "Invalid subject"]);
     const bad = git(["rev-parse", "HEAD"]);
-    for (const [head, title, status] of [[good, "ci: valid PR", 0], [bad, "ci: valid PR", 1], [good, "Invalid PR title", 1]]) {
+    // GitHub "Update branch" adds a merge commit with a fixed subject; squash merge never lands it on main.
+    git(["checkout", "--quiet", "-b", "side", base]);
+    git(["commit", "--allow-empty", "-m", "fix(repo): side change"]);
+    git(["checkout", "--quiet", "--detach", good]);
+    git(["merge", "--quiet", "--no-ff", "--no-edit", "side"]);
+    const merged = git(["rev-parse", "HEAD"]);
+    git(["checkout", "--quiet", "--detach", "side"]);
+    git(["commit", "--allow-empty", "-m", "Invalid side subject"]);
+    git(["checkout", "--quiet", "--detach", merged]);
+    git(["merge", "--quiet", "--no-ff", "--no-edit", "HEAD@{1}"]);
+    const mergedBad = git(["rev-parse", "HEAD"]);
+    for (const [head, title, status] of [[good, "ci: valid PR", 0], [bad, "ci: valid PR", 1], [good, "Invalid PR title", 1], [merged, "ci: valid PR", 0], [mergedBad, "ci: valid PR", 1]]) {
       const result = spawnSync(process.execPath, [script], {
         cwd: directory,
         env: { ...process.env, COMMIT_BASE_REF: base, COMMIT_HEAD_REF: head, GITHUB_EVENT_NAME: "pull_request", PR_TITLE: title },

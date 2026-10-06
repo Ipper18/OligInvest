@@ -27,7 +27,7 @@ function main() {
     if (![base, head].every((value) => /^[a-f0-9]{40}$/.test(value ?? ""))) {
       throw new Error("Commit range must use full Git SHAs");
     }
-    const commits = execFileSync("git", ["log", "--format=%H%x00%s", `${base}..${head}`], { encoding: "utf8" }).trimEnd().split("\n").filter(Boolean);
+    const commits = execFileSync("git", ["log", "--no-merges", "--format=%H%x00%s", `${base}..${head}`], { encoding: "utf8" }).trimEnd().split("\n").filter(Boolean);
     invalidCommits = commits.some((entry) => {
       const separator = entry.indexOf("\0");
       return separator < 0 || !checkCommit(entry.slice(0, separator), entry.slice(separator + 1));
