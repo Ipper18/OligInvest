@@ -171,8 +171,8 @@ Brama A (**[A]**) — MVP właściciela; brama B (**[B]**) — funkcje wymagane 
 | BL-134 | **[A]** Adapter Yahoo (`yahoo-finance2`): notowania opóźnione GPW/USA, EOD USA, indeksy; degradacja do trybu „tylko EOD” | FR-01.02, FR-02.03, NFR-09.02 | SRC, CACHE | BL-131 | 2 | todo |
 | BL-135 | **[A]** Katalog instrumentów i mapowanie symboli (ISIN, ticker brokera, MIC); wyszukiwarka < 300 ms p95 z wyszukiwaniem u dostawcy w tle | FR-01.01 | DB, API | BL-133, BL-134 | 2 | todo |
 | BL-136 | **[A]** Kalendarz sesji i rozliczeń (XWAR, XNYS, XNAS) z wpisami admina; wyliczanie `settle_date` (USA T+1, UE T+2, od 11.10.2027 T+1) | FR-02.07 | OBL, LAW | BL-135 | 1,5 | todo |
-| BL-137 | **[A]** Karta instrumentu: `getInstrument`, `getQuotes`, `getMarketDataStatus`, status i wiek danych | FR-01.02, FR-01.15 | EKR, API | BL-135, BL-121 | 2 | todo |
-| BL-138 | **[A]** Wykres świecowy: `getInstrumentChart` z decymacją ≤ 3 000 punktów (1W/1M), leniwy wrapper Lightweight Charts, tabela alternatywna, atrybucja TradingView | FR-01.03, NFR-01.04, NFR-06.01 | [ADR-009](../09-decyzje/ADR-009-wykresy.md), PERF, LAW | BL-137 | 3 | todo |
+| BL-137 | **[A]** API karty instrumentu (M1-2): `getInstrument`, `getQuotes`, `getMarketDataStatus`, metadane statusu i wieku danych, testy kontraktowe; ekran w BL-157 | FR-01.02, FR-01.15 | API, CACHE | BL-135 | 1 | todo |
+| BL-138 | **[A]** API wykresu (M1-2): `getInstrumentChart`, serie OHLCV jako ciągi dziesiętne, agregacja 1W/1M i decymacja ≤ 3 000 punktów, testy kontraktowe; UI w BL-158 | FR-01.03, NFR-01.04 | API, [ADR-009](../09-decyzje/ADR-009-wykresy.md), PERF | BL-137 | 1,5 | todo |
 | BL-139 | **[A]** Minimalna kontrola jakości EOD przy zapisie: integralność OHLC, duplikaty, skoki bez zdarzenia korporacyjnego | NFR-08.04 | OBL | BL-133 | 1,5 | todo |
 | BL-141 | **[A]** `packages/core`: `Money`, `Quantity`, `Price`, `FxRate` (decimal.js, precyzja 34, zaokrąglenia), formatowanie pl-PL | NFR-08.01, NFR-04.04 | OBL, [ADR-014](../09-decyzje/ADR-014-pieniadze-waluty-czas.md) | BL-015 | 2 | w toku |
 | BL-142 | **[A]** `packages/core`: model operacji, partie FIFO (sprzedaż częściowa, split, przeniesienie), P/L zrealizowany ekonomiczny i podatkowy (`settle_date`, NBP D-1; marża przewalutowania osobno jako `fxCosts`, ustawienia `tax_date_basis` i `tax_include_fx_fee`) — wektor A | FR-02.07, FR-03.05, NFR-08.02 | OBL, VEC | BL-141 | 4 | w toku |
@@ -186,9 +186,11 @@ Brama A (**[A]**) — MVP właściciela; brama B (**[B]**) — funkcje wymagane 
 | BL-151 | **[B]** CrowdSec: agent w VM (Caddy, SSH), LAPI i bouncer nftables na VPS, test blokady ≤ 60 s | NFR-03.11 | INF, [ADR-011](../09-decyzje/ADR-011-topologia-wdrozenia.md) | BL-025 | 1,5 | todo |
 | BL-152 | **[A]** Monitoring: 13 sond Uptime Kuma, health-checki usług, `/internal/metrics`, dzienny raport błędów | NFR-09.01, NFR-09.04 | MON | BL-029, BL-146 | 2 | todo |
 | BL-153 | **[B]** Pierwszy test odtworzenia (B i D) z protokołem; automatyczny test miesięczny | NFR-09.03 | DR | BL-028, BL-114 | 1,5 | todo |
-| BL-154 | **[A]** Lighthouse blokujący w CI dla tras MVP, raport JS per trasa, poprawki wydajności | NFR-01.01, NFR-01.02, NFR-01.03, NFR-01.05 | PERF, CI | BL-147, BL-138 | 2 | todo |
+| BL-154 | **[A]** Lighthouse blokujący w CI dla tras MVP, raport JS per trasa, poprawki wydajności | NFR-01.01, NFR-01.02, NFR-01.03, NFR-01.05 | PERF, CI | BL-147, BL-158 | 2 | todo |
 | BL-155 | **[A]** E2E ścieżek krytycznych (zaproszenie → TOTP → import XTB → portfel; bramki), axe, ręczny test VoiceOver z protokołem | NFR-10.02, NFR-06.01 | CI, A11Y | BL-148, BL-122 | 3 | todo |
 | BL-156 | **[B]** Skan produkcji (nagłówki, CSP, TLS, porty z zewnątrz) i odhaczona lista kontrolna RODO § 12 | NFR-03.06, FR-07.12 | SEC, RODO, INF | BL-116, BL-151, BL-118 | 1 | todo |
+| BL-157 | **[A]** Ekran karty instrumentu (M1-4, część wydzielona z BL-137): kurs, zmiana, wolumen, status i wiek danych, atrybucja, integracja z powłoką i SSE | FR-01.02, FR-01.15 | EKR, API, LAW | BL-121, BL-137 | 1 | todo |
+| BL-158 | **[A]** UI wykresu (M1-4, część wydzielona z BL-138): leniwy wrapper Lightweight Charts, tabela alternatywna, atrybucja TradingView; konwersja ciągów OHLCV do liczb wyłącznie przy rysowaniu canvas, bez obliczeń na tych liczbach | FR-01.03, NFR-01.04, NFR-06.01 | API, [ADR-009](../09-decyzje/ADR-009-wykresy.md), PERF, LAW | BL-121, BL-138, BL-157 | 1,5 | todo |
 | | **Suma etapu** | | | | **102** | |
 
 ### 2.1 Postęp i odchylenia

@@ -97,8 +97,8 @@ Kolumna „Dokumenty” pokazuje do trzech dokumentów projektowych, które najc
 | ID | Wymaganie (skrót) | P | Dokumenty | Zadania | Etap | Status |
 |---|---|---|---|---|---|---|
 | FR-01.01 | Wyszukiwarka instrumentów po tickerze, nazwie i ISIN (akcje i ETF z GPW i … | P0 | [openapi.yaml](../02-api/openapi.yaml), [mapa-ekranow](../04-frontend/mapa-ekranow.md) | BL-135 | M1 | ✅ |
-| FR-01.02 | Karta instrumentu: ostatni kurs, zmiana dzienna (kwotowo i %), wolumen … | P0 | [openapi.yaml](../02-api/openapi.yaml), [mapa-ekranow](../04-frontend/mapa-ekranow.md), [ADR-005](../09-decyzje/ADR-005-strategia-danych-rynkowych.md) | BL-134, BL-137 | M1 | ✅ |
-| FR-01.03 | Wykres świecowy OHLC z wolumenem: interwały 1D/1W/1M z historii EOD (≥ 10 … | P0 | [ADR-009](../09-decyzje/ADR-009-wykresy.md), [openapi.yaml](../02-api/openapi.yaml), [mapa-ekranow](../04-frontend/mapa-ekranow.md) (+1) | BL-133, BL-138 | M1 | ✅ |
+| FR-01.02 | Karta instrumentu: ostatni kurs, zmiana dzienna (kwotowo i %), wolumen … | P0 | [openapi.yaml](../02-api/openapi.yaml), [mapa-ekranow](../04-frontend/mapa-ekranow.md), [ADR-005](../09-decyzje/ADR-005-strategia-danych-rynkowych.md) | BL-134, BL-137, BL-157 | M1 | ✅ |
+| FR-01.03 | Wykres świecowy OHLC z wolumenem: interwały 1D/1W/1M z historii EOD (≥ 10 … | P0 | [ADR-009](../09-decyzje/ADR-009-wykresy.md), [openapi.yaml](../02-api/openapi.yaml), [mapa-ekranow](../04-frontend/mapa-ekranow.md) (+1) | BL-133, BL-138, BL-158 | M1 | ✅ |
 | FR-01.04 | Interwały intraday (15 min, 1 h) z danych opóźnionych — dla instrumentów, dla … | P2 | [ADR-005](../09-decyzje/ADR-005-strategia-danych-rynkowych.md), [openapi.yaml](../02-api/openapi.yaml), [mapa-ekranow](../04-frontend/mapa-ekranow.md) (+1) | BL-516 | M5a | ✅ |
 | FR-01.05 | Wskaźniki techniczne: SMA, EMA, wstęgi Bollingera (nakładki), RSI, MACD, ATR … | P1 | [openapi.yaml](../02-api/openapi.yaml), [obliczenia-finansowe](../03-dane/obliczenia-finansowe.md), [mapa-ekranow](../04-frontend/mapa-ekranow.md) (+2) | BL-201, BL-202 | M2 | ✅ |
 | FR-01.06 | Volume Profile w wersji przybliżonej z barów dziennych, jawnie oznaczony jako … | P3 | [ADR-009](../09-decyzje/ADR-009-wykresy.md), [openapi.yaml](../02-api/openapi.yaml), [mapa-ekranow](../04-frontend/mapa-ekranow.md) | BL-701 | Później | ✅ |
@@ -110,7 +110,7 @@ Kolumna „Dokumenty” pokazuje do trzech dokumentów projektowych, które najc
 | FR-01.12 | Kalendarz: wyniki spółek (USA z dostawcy; GPW — wpisy admina) i dane makro … | P2 | [openapi.yaml](../02-api/openapi.yaml), [mapa-ekranow](../04-frontend/mapa-ekranow.md) | BL-515 | M5a | ✅ |
 | FR-01.13 | Newsy dla instrumentu i rynku z „tonem” artykułów (GDELT) i opcjonalnym … | P3 | [openapi.yaml](../02-api/openapi.yaml), [mapa-ekranow](../04-frontend/mapa-ekranow.md) | BL-702 | Później | ✅ |
 | FR-01.14 | Kursy walut NBP (tabela A — bieżące i historyczne) i ceny złota NBP … | P0 | [openapi.yaml](../02-api/openapi.yaml), [mapa-ekranow](../04-frontend/mapa-ekranow.md), [ADR-005](../09-decyzje/ADR-005-strategia-danych-rynkowych.md) (+1) | BL-132, BL-214 | M1, M2 | ✅ |
-| FR-01.15 | Status danych: każdy widok z danymi rynkowymi pokazuje wiek danych, źródło i … | P0 | [openapi.yaml](../02-api/openapi.yaml), [mapa-ekranow](../04-frontend/mapa-ekranow.md), [ADR-005](../09-decyzje/ADR-005-strategia-danych-rynkowych.md) (+7) | BL-137 | M1 | ✅ |
+| FR-01.15 | Status danych: każdy widok z danymi rynkowymi pokazuje wiek danych, źródło i … | P0 | [openapi.yaml](../02-api/openapi.yaml), [mapa-ekranow](../04-frontend/mapa-ekranow.md), [ADR-005](../09-decyzje/ADR-005-strategia-danych-rynkowych.md) (+7) | BL-137, BL-157 | M1 | ✅ |
 
 ### FR-02 Portfel — stan obecny (§3.1.2)
 
@@ -234,7 +234,7 @@ Kolumna „Dokumenty” pokazuje do trzech dokumentów projektowych, które najc
 | NFR-01.01 | LCP < 2,0 s, INP < 200 ms, CLS < 0,1 (75. percentyl) na profilu mobilnym (4G … | P0 | [wydajnosc](../04-frontend/wydajnosc.md), [openapi.yaml](../02-api/openapi.yaml), [wizja-produktu](../00-przeglad/wizja-produktu.md) (+3) | BL-124, BL-154, BL-507, BL-606 | M1, M5a, M6 | ✅ |
 | NFR-01.02 | Initial JS pierwszego wczytania trasy < 200 KB gzip; budżety per trasa w … | P0 | [wydajnosc](../04-frontend/wydajnosc.md), [ADR-009](../09-decyzje/ADR-009-wykresy.md), [stack-technologiczny](../01-architektura/stack-technologiczny.md) (+1) | BL-011, BL-016, BL-033, BL-121, BL-154 | M0, M1 | ✅ |
 | NFR-01.03 | Code splitting per moduł: biblioteki wykresów, onboarding, panel admina i … | P0 | [wydajnosc](../04-frontend/wydajnosc.md), [ADR-006](../09-decyzje/ADR-006-panel-administratora.md), [ADR-009](../09-decyzje/ADR-009-wykresy.md) (+1) | BL-016, BL-154 | M0, M1 | ✅ |
-| NFR-01.04 | Wykresy na canvas; serwer decymuje serie do ≤ 3 000 punktów; listy i tabele > … | P0 | [openapi.yaml](../02-api/openapi.yaml), [wydajnosc](../04-frontend/wydajnosc.md), [ADR-009](../09-decyzje/ADR-009-wykresy.md) | BL-138 | M1 | ✅ |
+| NFR-01.04 | Wykresy na canvas; serwer decymuje serie do ≤ 3 000 punktów; listy i tabele > … | P0 | [openapi.yaml](../02-api/openapi.yaml), [wydajnosc](../04-frontend/wydajnosc.md), [ADR-009](../09-decyzje/ADR-009-wykresy.md) | BL-138, BL-158 | M1 | ✅ |
 | NFR-01.05 | Ścieżka żądania użytkownika nie zawiera wywołań zewnętrznych API; odczyty p95 … | P0 | [wydajnosc](../04-frontend/wydajnosc.md), [ADR-003](../09-decyzje/ADR-003-hybryda-obliczen-i-kolejki.md), [monitoring](../07-wdrozenie/monitoring.md) | BL-131, BL-154, BL-607 | M1, M6 | ✅ |
 | NFR-01.06 | Aktualizacje przez SSE docierają < 2 s od zapisu nowych danych. | P1 | [openapi.yaml](../02-api/openapi.yaml), [realtime](../02-api/realtime.md), [wydajnosc](../04-frontend/wydajnosc.md) (+2) | BL-125, BL-212 | M1, M2 | ✅ |
 | NFR-01.07 | Ciężkie obliczenia wykonywane asynchronicznie z postępem, limitem czasu i … | P1 | [openapi.yaml](../02-api/openapi.yaml), [wydajnosc](../04-frontend/wydajnosc.md), [ADR-003](../09-decyzje/ADR-003-hybryda-obliczen-i-kolejki.md) | BL-311, BL-312 | M3 | ✅ |
@@ -292,7 +292,7 @@ Kolumna „Dokumenty” pokazuje do trzech dokumentów projektowych, które najc
 
 | ID | Wymaganie (skrót) | P | Dokumenty | Zadania | Etap | Status |
 |---|---|---|---|---|---|---|
-| NFR-06.01 | WCAG 2.1 AA: kontrast, obsługa klawiatury, widoczny focus, etykiety, role … | P0 | [dostepnosc](../04-frontend/dostepnosc.md), [system-projektowy](../04-frontend/system-projektowy.md), [ADR-009](../09-decyzje/ADR-009-wykresy.md) | BL-018, BL-138, BL-155, BL-605 | M0, M1, M6 | ✅ |
+| NFR-06.01 | WCAG 2.1 AA: kontrast, obsługa klawiatury, widoczny focus, etykiety, role … | P0 | [dostepnosc](../04-frontend/dostepnosc.md), [system-projektowy](../04-frontend/system-projektowy.md), [ADR-009](../09-decyzje/ADR-009-wykresy.md) | BL-018, BL-155, BL-158, BL-605 | M0, M1, M6 | ✅ |
 | NFR-06.02 | Zysk/strata komunikowane nie tylko kolorem (znak, ikona ▲▼, tekst); paleta … | P0 | [dostepnosc](../04-frontend/dostepnosc.md), [system-projektowy](../04-frontend/system-projektowy.md), [architektura-ui](../04-frontend/architektura-ui.md) | BL-113, BL-605 | M1, M6 | ✅ |
 | NFR-06.03 | Prosty język w treściach edukacyjnych; liczby i daty formatowane wg locale … | P1 | [dostepnosc](../04-frontend/dostepnosc.md), [system-projektowy](../04-frontend/system-projektowy.md), [instrukcja](../12-dla-uzytkownika/instrukcja.md) (+1) | BL-203, BL-512 | M2, M5a | ✅ |
 

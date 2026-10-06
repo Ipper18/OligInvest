@@ -94,9 +94,9 @@ aktualizacja statusów w backlog.md i — jeśli etap się kończy — lista kry
 | M0-2 | 018 (dokończenie), 020–023, 030, 031 | obrazy, wydanie, skrypty; BL-018: testy na obrazach po BL-020–BL-023; spiki Better Auth w lokalnym Compose |
 | M0-3 | 024–029 | Codex przygotowuje konfiguracje i instrukcje krok po kroku; wykonuje właściciel; wartości `<…>` tylko na serwerach |
 | M1-1 | 101–103, 105–109, 111, 117 | uwierzytelnianie i autoryzacja; testy RLS i 403 dla każdej trasy |
-| M1-2 | 131–139, 125 | dane rynkowe i SSE; testy kontraktowe na zapisanych próbkach, bez sieci w CI |
+| M1-2 | 131–139, 125 | dane rynkowe i hub SSE; BL-137/138 wyłącznie API i testy kontraktowe, serie OHLCV jako ciągi; próbki syntetyczne lub anonimizowane, bez sieci w CI; UI i klient SSE w M1-4 |
 | M1-3 | 141–149 | `core` i portfel; wektory A, F, G; import XTB na syntetycznych fixtures. **BL-141–BL-143 zrealizowane w PR `feat/m1-core-engine` (Claude Code, [#3](https://github.com/Ipper18/OligInvest/pull/3); tam też rdzeń BL-301 i BL-305–BL-308 dla M3-1)** — sesja Codexa zaczyna od **BL-144**; API rdzenia: [`m1-core-session-report.md`](m1-core-session-report.md) § „Dla Codexa” |
-| M1-4 | 113, 116, 121, 122, 147, 148, 152, 154, 155 | ekrany i budżety; brama A — raport z kryteriami |
+| M1-4 | 113, 116, 121, 122, 147, 148, 152, 154, 155, 157, 158 | ekrany i budżety; BL-121 pozostaje tutaj; BL-157/158: karta instrumentu i leniwy wykres wydzielone z BL-137/138, tabela i atrybucje, konwersja OHLCV do liczb tylko do rysowania canvas; brama A — raport z kryteriami |
 | M1-5 | 104, 110, 112, 114, 115, 118, 123, 124, 151, 153, 156 | brama B; zadania 118, 151, 153, 156 wykonuje właściciel według instrukcji |
 | M2-1 | 201–204, 209, 213, 216 | wskaźniki, wyjaśnienia, jakość danych |
 | M2-2 | 205–208, 210–212, 214, 215 | watchlisty, indeksy, alokacja, mBank, preferencje |
