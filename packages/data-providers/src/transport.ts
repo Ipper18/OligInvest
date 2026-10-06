@@ -16,6 +16,7 @@ const HOSTS = new Set([
   "query1.finance.yahoo.com",
   "query2.finance.yahoo.com",
   "fc.yahoo.com",
+  "finance.yahoo.com",
 ]);
 export function createProviderFetch(
   userAgent: string,

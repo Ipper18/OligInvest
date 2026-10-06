@@ -113,8 +113,8 @@ export type DataMeta = z.infer<typeof dataMetaSchema>;
 export type Capability = "eodBars" | "intradayQuote" | "fxRate" | "symbolSearch";
 export interface ProviderMeta {
   id: DataMeta["source"];
-  capabilities: Capability[];
-  markets: string[];
+  capabilities: readonly Capability[];
+  markets: readonly string[];
   quota: { perMinute?: number; perDay?: number };
   delayMinutes: number;
   license: string;
