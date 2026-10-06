@@ -109,7 +109,7 @@ Budżety są konfigurowalne w panelu admina (feature flag + liczby), a zużycie 
 - **Zdarzenia:** nowy dzień sesyjny (czyści L1/L2 intraday), publikacja NBP, korekta/split (`SPLITS` Alpha Vantage lub ręcznie) → przeliczenie `adjustment_factor` w `market.bars_daily` i cache `b:*`.
 - **Ręcznie:** przycisk „Odśwież” (user: 1/min per instrument) i „Wymuś ponowne pobranie” (admin).
 - **Polityka cen skorygowanych:** przechowujemy *surowe* OHLCV + osobne współczynniki korekt; wykresy używają cen skorygowanych, a wyceny i P/L — surowych cen i realnych przepływów (TWR/XIRR nie mogą korzystać z cen skorygowanych wstecz). Szczegóły w `obliczenia-finansowe.md`.
-- **Kontrola jakości (skill `data-scrub`):** przy każdym batchu: luki w kalendarzu sesji, duplikaty timestampów, zera w wolumenie przy zmianie ceny, skoki > 40 % bez splitu → wpis do `data_quality_issues` i oznaczenie serii jako „do weryfikacji” w UI.
+- **Kontrola jakości:** przy każdym batchu kontrole z `obliczenia-finansowe.md` § 14. Skok `|r| > 25 %` bez zdarzenia korporacyjnego tego dnia → wpis `BLOCK` do `data_quality_issues`. `BLOCK` wyklucza serię wyłącznie z analiz FR-04; notowania, wycena i wykres nadal pokazują dane ze znacznikiem „do weryfikacji” (`staleReason = data_quality_hold`). Administrator potwierdza skok albo oznacza split; samo odświeżenie danych nie rozwiązuje zgłoszenia.
 - **Retencja:** intraday 5-minutowe bary — 90 dni (potem agregacja do dziennych); newsy — 90 dni; logi kwot — 30 dni.
 
 ## 7. Konsekwencje dla wydajności (NFR-01)

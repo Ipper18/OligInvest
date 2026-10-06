@@ -477,7 +477,7 @@ Pytania do właściciela rozstrzygnięte domyślnie (do zmiany decyzją w ADR): 
 
 ## 14. Jakość danych jako warunek obliczeń (NFR-08.04, skill `data-scrub`)
 
-Każda seria EOD przechodzi przy zapisie kontrole; wynik trafia do `market.data_quality_issues`, a seria z problemem `BLOCK` nie jest używana w analizach FR-04 (UI pokazuje powód):
+Każda seria EOD przechodzi przy zapisie kontrole; wynik trafia do `market.data_quality_issues`. `BLOCK` wyklucza serię wyłącznie z analiz FR-04. Notowania, wycena i wykres nadal pokazują dane ze znacznikiem „do weryfikacji” (`staleReason = data_quality_hold`); administrator potwierdza skok albo oznacza split. Samo odświeżenie danych nie rozwiązuje zgłoszenia (decyzja właściciela 2026-10-06).
 
 | Kontrola | Warunek | Ważność |
 |---|---|---|
