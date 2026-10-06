@@ -15,6 +15,7 @@
 }
 
 {$PUBLIC_BASE_URL} {
+ import /config/maintenance*.caddy
  tls {
   protocols tls1.3
   issuer acme {
@@ -38,6 +39,7 @@
  reverse_proxy /api/* api:3000 {
   # P-09: replace every client-supplied correlation ID.
   header_up X-Request-Id {http.request.uuid}
+  header_up X-Forwarded-For {client_ip}
   flush_interval -1
   lb_try_duration 30s
   transport http {

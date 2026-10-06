@@ -10,6 +10,7 @@ import {
   assertContract,
   assertPending,
   generateDocument,
+  operations,
   pendingOperations,
   readBasePending,
 } from "../scripts/openapi-contract.mjs";
@@ -22,7 +23,29 @@ const pending = JSON.parse(readFileSync(join(root, "apps/api/openapi-pending.jso
 test("Zod document matches all implemented operations and pending is the exact remainder", () => {
   assertContract(source, generated);
   assertPending(source, generated, pending, pending);
-  expect(Object.keys(generated.paths)).toHaveLength(3);
+  expect([...operations(generated).keys()].sort()).toEqual([
+    "adminCreateInvitation",
+    "authChangePassword",
+    "authGetSession",
+    "authListSessions",
+    "authRequestPasswordReset",
+    "authResetPassword",
+    "authRevokeOtherSessions",
+    "authRevokeSession",
+    "authSignInEmail",
+    "authSignOut",
+    "authSignUpEmail",
+    "authTwoFactorEnable",
+    "authTwoFactorGenerateBackupCodes",
+    "authTwoFactorVerifyBackupCode",
+    "authTwoFactorVerifyTotp",
+    "getHealthLive",
+    "getHealthReady",
+    "getMe",
+    "getOpenApiDocument",
+    "previewInvitation",
+    "verifyStepUp",
+  ]);
 });
 
 test.each([
@@ -223,7 +246,11 @@ test("Git baseline reads the base branch, fails closed and bootstraps only a pre
     mkdirSync(join(cwd, "docs/02-api"), { recursive: true });
     save("docs/02-api/openapi.yaml", stringify(source));
     commit();
-    expect(readBasePending(cwd, "HEAD")).toEqual(pending);
+    expect(readBasePending(cwd, "HEAD")).toEqual(
+      [...operations(source).keys()]
+        .filter((id) => !["getHealthLive", "getHealthReady", "getOpenApiDocument"].includes(id))
+        .sort(),
+    );
     expect(() => readBasePending(cwd, "missing-ref")).toThrow();
     mkdirSync(join(cwd, "apps/api/src"), { recursive: true });
     save("apps/api/src/app.ts", "// fixture");

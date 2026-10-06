@@ -5,7 +5,7 @@ import { createRuntime } from "./runtime.js";
 
 const logger = createLogger();
 try {
-  const { app, hostname, port } = createRuntime(process.env, logger);
+  const { app, hostname, port, close } = createRuntime(process.env, logger);
   const server = serve({ fetch: app.fetch, hostname, port });
   server.on("error", () => {
     logger.error({ event: "api.server.failed", code: "INTERNAL" });
@@ -16,7 +16,10 @@ try {
       if (server instanceof Server) server.closeAllConnections();
     }, 5000);
     deadline.unref();
-    server.close(() => clearTimeout(deadline));
+    server.close(() => {
+      clearTimeout(deadline);
+      void close().catch(() => logger.error({ event: "api.shutdown.failed" }));
+    });
   };
   process.once("SIGINT", shutdown);
   process.once("SIGTERM", shutdown);

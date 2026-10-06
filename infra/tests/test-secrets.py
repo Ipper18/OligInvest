@@ -13,6 +13,13 @@ spec.loader.exec_module(module)
 
 
 class SecretTests(unittest.TestCase):
+    def test_auth_state_is_private_to_api(self):
+        values = {f"VALKEY_QUEUE_{name}_PASSWORD": b"synthetic-secret" for name in ["API", "JOBS", "ANALYTICS"]}
+        lines = module.acl(values).decode().splitlines()
+        self.assertIn("~auth:*", next(line for line in lines if line.startswith("user api ")))
+        for service in ["jobs", "analytics"]:
+            self.assertNotIn("~auth:*", next(line for line in lines if line.startswith(f"user {service} ")))
+
     def test_matrix_is_strict(self):
         text = module.INF.read_text()
         self.assertEqual(len(module.matrix(text)), 9)

@@ -94,6 +94,9 @@ DO $$ BEGIN
   BEGIN PERFORM 1 FROM auth.accounts; RAISE EXCEPTION 'APP READS auth.accounts';
   EXCEPTION WHEN insufficient_privilege THEN RAISE NOTICE 'OK: app has no access to auth schema';
   END;
+  BEGIN UPDATE auth.sessions SET mfa_method = 'totp'; RAISE EXCEPTION 'APP CAN FORGE MFA METHOD';
+  EXCEPTION WHEN insufficient_privilege THEN RAISE NOTICE 'OK: app cannot forge MFA method';
+  END;
 END $$;
 
 \echo '== audit log is append-only =='

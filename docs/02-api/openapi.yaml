@@ -200,10 +200,13 @@ paths:
           application/json:
             schema: {$ref: '#/components/schemas/AuthSignUpRequest'}
       responses:
-        '200': {description: 'Konto utworzone; e-mail weryfikacyjny wysłany; kolejny krok — konfiguracja TOTP.', content: {application/json: {schema: {$ref: '#/components/schemas/AuthSessionResponse'}}}}
-        '400': {$ref: '#/components/responses/BadRequest'}
-        '403': {$ref: '#/components/responses/Forbidden'}
-        '429': {$ref: '#/components/responses/RateLimited'}
+        '200': {description: 'Konto utworzone; adres e-mail zweryfikowany przez zaproszenie; kolejny krok — konfiguracja TOTP.', content: {application/json: {schema: {$ref: '#/components/schemas/AuthSessionResponse'}}}}
+        '400': {$ref: '#/components/responses/AuthError400'}
+        '401': {$ref: '#/components/responses/AuthError401'}
+        '403': {$ref: '#/components/responses/AuthError403'}
+        '422': {$ref: '#/components/responses/AuthError422'}
+        '429': {$ref: '#/components/responses/AuthError429'}
+
   /sign-in/email:
     servers: [{url: 'https://{host}/api/auth', variables: {host: {default: invest.oligi.pl}}}]
     post:
@@ -220,8 +223,12 @@ paths:
             schema: {$ref: '#/components/schemas/AuthSignInRequest'}
       responses:
         '200': {description: 'Pierwszy składnik poprawny.', content: {application/json: {schema: {$ref: '#/components/schemas/AuthSignInResponse'}}}}
-        '401': {$ref: '#/components/responses/Unauthenticated'}
-        '429': {$ref: '#/components/responses/RateLimited'}
+        '400': {$ref: '#/components/responses/AuthError400'}
+        '401': {$ref: '#/components/responses/AuthError401'}
+        '403': {$ref: '#/components/responses/AuthError403'}
+        '422': {$ref: '#/components/responses/AuthError422'}
+        '429': {$ref: '#/components/responses/AuthError429'}
+
   /sign-in/social:
     servers: [{url: 'https://{host}/api/auth', variables: {host: {default: invest.oligi.pl}}}]
     post:
@@ -248,9 +255,19 @@ paths:
       summary: Wylogowanie bieżącej sesji
       tags: [auth]
       x-requirements: [FR-07.05]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, properties: {}, additionalProperties: false}
       responses:
         '200': {description: 'Sesja unieważniona; przeglądarka czyści dane strony.', headers: {Clear-Site-Data: {$ref: '#/components/headers/ClearSiteData'}}, content: {application/json: {schema: {$ref: '#/components/schemas/AuthStatusResponse'}}}}
-        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '400': {$ref: '#/components/responses/AuthError400'}
+        '401': {$ref: '#/components/responses/AuthError401'}
+        '403': {$ref: '#/components/responses/AuthError403'}
+        '422': {$ref: '#/components/responses/AuthError422'}
+        '429': {$ref: '#/components/responses/AuthError429'}
+
   /get-session:
     servers: [{url: 'https://{host}/api/auth', variables: {host: {default: invest.oligi.pl}}}]
     get:
@@ -260,7 +277,12 @@ paths:
       x-requirements: [FR-07.04]
       responses:
         '200': {description: 'Sesja lub `null`.', content: {application/json: {schema: {oneOf: [{$ref: '#/components/schemas/AuthSessionResponse'}, {type: 'null'}]}}}}
-        '429': {$ref: '#/components/responses/RateLimited'}
+        '400': {$ref: '#/components/responses/AuthError400'}
+        '401': {$ref: '#/components/responses/AuthError401'}
+        '403': {$ref: '#/components/responses/AuthError403'}
+        '422': {$ref: '#/components/responses/AuthError422'}
+        '429': {$ref: '#/components/responses/AuthError429'}
+
   /request-password-reset:
     servers: [{url: 'https://{host}/api/auth', variables: {host: {default: invest.oligi.pl}}}]
     post:
@@ -279,7 +301,12 @@ paths:
             schema: {$ref: '#/components/schemas/AuthPasswordResetRequest'}
       responses:
         '200': {description: 'Przyjęto.', content: {application/json: {schema: {$ref: '#/components/schemas/AuthStatusResponse'}}}}
-        '429': {$ref: '#/components/responses/RateLimited'}
+        '400': {$ref: '#/components/responses/AuthError400'}
+        '401': {$ref: '#/components/responses/AuthError401'}
+        '403': {$ref: '#/components/responses/AuthError403'}
+        '422': {$ref: '#/components/responses/AuthError422'}
+        '429': {$ref: '#/components/responses/AuthError429'}
+
   /reset-password:
     servers: [{url: 'https://{host}/api/auth', variables: {host: {default: invest.oligi.pl}}}]
     post:
@@ -295,8 +322,12 @@ paths:
             schema: {$ref: '#/components/schemas/AuthResetPasswordRequest'}
       responses:
         '200': {description: 'Hasło zmienione; wymagane ponowne logowanie z TOTP.', content: {application/json: {schema: {$ref: '#/components/schemas/AuthStatusResponse'}}}}
-        '400': {$ref: '#/components/responses/BadRequest'}
-        '429': {$ref: '#/components/responses/RateLimited'}
+        '400': {$ref: '#/components/responses/AuthError400'}
+        '401': {$ref: '#/components/responses/AuthError401'}
+        '403': {$ref: '#/components/responses/AuthError403'}
+        '422': {$ref: '#/components/responses/AuthError422'}
+        '429': {$ref: '#/components/responses/AuthError429'}
+
   /change-password:
     servers: [{url: 'https://{host}/api/auth', variables: {host: {default: invest.oligi.pl}}}]
     post:
@@ -311,14 +342,18 @@ paths:
             schema: {$ref: '#/components/schemas/AuthChangePasswordRequest'}
       responses:
         '200': {description: 'Hasło zmienione.', content: {application/json: {schema: {$ref: '#/components/schemas/AuthStatusResponse'}}}}
-        '400': {$ref: '#/components/responses/BadRequest'}
-        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '400': {$ref: '#/components/responses/AuthError400'}
+        '401': {$ref: '#/components/responses/AuthError401'}
+        '403': {$ref: '#/components/responses/AuthError403'}
+        '422': {$ref: '#/components/responses/AuthError422'}
+        '429': {$ref: '#/components/responses/AuthError429'}
+
   /two-factor/enable:
     servers: [{url: 'https://{host}/api/auth', variables: {host: {default: invest.oligi.pl}}}]
     post:
       operationId: authTwoFactorEnable
       summary: Rozpocznij konfigurację TOTP (sekret i 10 kodów zapasowych)
-      description: 2FA staje się aktywne dopiero po `verify-totp`. Ponowne wywołanie przy aktywnym 2FA (zmiana urządzenia) wymaga step-up.
+      description: 2FA staje się aktywne dopiero po `verify-totp`. Zmiana urządzenia wymaga hasła i step-up TOTP albo jednorazowego uprawnienia z logowania kodem zapasowym sprzed najwyżej 10 minut. Odzyskanie nie udostępnia pozostałych operacji wrażliwych. Po rozpoczęciu wymiany wymagany jest kod nowego TOTP.
       tags: [auth]
       x-requirements: [FR-07.04]
       requestBody:
@@ -328,14 +363,18 @@ paths:
             schema: {$ref: '#/components/schemas/AuthPasswordConfirm'}
       responses:
         '200': {description: 'URI `otpauth://` do kodu QR i kody zapasowe (pokazywane jednorazowo).', headers: {Cache-Control: {description: '`no-store`', schema: {type: string}}}, content: {application/json: {schema: {$ref: '#/components/schemas/AuthTwoFactorEnableResponse'}}}}
-        '400': {$ref: '#/components/responses/BadRequest'}
-        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '400': {$ref: '#/components/responses/AuthError400'}
+        '401': {$ref: '#/components/responses/AuthError401'}
+        '403': {$ref: '#/components/responses/AuthError403'}
+        '422': {$ref: '#/components/responses/AuthError422'}
+        '429': {$ref: '#/components/responses/AuthError429'}
+
   /two-factor/verify-totp:
     servers: [{url: 'https://{host}/api/auth', variables: {host: {default: invest.oligi.pl}}}]
     post:
       operationId: authTwoFactorVerifyTotp
       summary: Zweryfikuj kod TOTP (logowanie lub zakończenie konfiguracji)
-      description: Sukces ustawia `auth.sessions.mfa_verified_at`. Blokada po 5 błędnych kodach (NFR-03.02).
+      description: Sukces ustawia `auth.sessions.mfa_verified_at` i `mfa_method = totp`. Blokada po 5 błędnych kodach (NFR-03.02). Przy zakończeniu wymiany urządzenia unieważnia inne sesje i zwraca nowy komplet kodów zapasowych w `backupCodes` (pokazywany raz).
       tags: [auth]
       x-requirements: [FR-07.04, NFR-03.02]
       requestBody:
@@ -345,8 +384,12 @@ paths:
             schema: {$ref: '#/components/schemas/AuthTotpVerifyRequest'}
       responses:
         '200': {description: 'Drugi składnik poprawny.', content: {application/json: {schema: {$ref: '#/components/schemas/AuthSessionResponse'}}}}
-        '401': {$ref: '#/components/responses/Unauthenticated'}
-        '429': {$ref: '#/components/responses/RateLimited'}
+        '400': {$ref: '#/components/responses/AuthError400'}
+        '401': {$ref: '#/components/responses/AuthError401'}
+        '403': {$ref: '#/components/responses/AuthError403'}
+        '422': {$ref: '#/components/responses/AuthError422'}
+        '429': {$ref: '#/components/responses/AuthError429'}
+
   /two-factor/verify-backup-code:
     servers: [{url: 'https://{host}/api/auth', variables: {host: {default: invest.oligi.pl}}}]
     post:
@@ -361,8 +404,12 @@ paths:
             schema: {$ref: '#/components/schemas/AuthBackupCodeVerifyRequest'}
       responses:
         '200': {description: 'Drugi składnik poprawny; kod zużyty.', content: {application/json: {schema: {$ref: '#/components/schemas/AuthSessionResponse'}}}}
-        '401': {$ref: '#/components/responses/Unauthenticated'}
-        '429': {$ref: '#/components/responses/RateLimited'}
+        '400': {$ref: '#/components/responses/AuthError400'}
+        '401': {$ref: '#/components/responses/AuthError401'}
+        '403': {$ref: '#/components/responses/AuthError403'}
+        '422': {$ref: '#/components/responses/AuthError422'}
+        '429': {$ref: '#/components/responses/AuthError429'}
+
   /two-factor/generate-backup-codes:
     servers: [{url: 'https://{host}/api/auth', variables: {host: {default: invest.oligi.pl}}}]
     post:
@@ -378,8 +425,12 @@ paths:
             schema: {$ref: '#/components/schemas/AuthPasswordConfirm'}
       responses:
         '200': {description: 'Nowe kody (pokazywane jednorazowo).', content: {application/json: {schema: {$ref: '#/components/schemas/AuthBackupCodesResponse'}}}}
-        '401': {$ref: '#/components/responses/Unauthenticated'}
-        '403': {$ref: '#/components/responses/Forbidden'}
+        '400': {$ref: '#/components/responses/AuthError400'}
+        '401': {$ref: '#/components/responses/AuthError401'}
+        '403': {$ref: '#/components/responses/AuthError403'}
+        '422': {$ref: '#/components/responses/AuthError422'}
+        '429': {$ref: '#/components/responses/AuthError429'}
+
   /list-sessions:
     servers: [{url: 'https://{host}/api/auth', variables: {host: {default: invest.oligi.pl}}}]
     get:
@@ -389,7 +440,12 @@ paths:
       x-requirements: [FR-07.05]
       responses:
         '200': {description: 'Sesje użytkownika.', content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/AuthSessionInfo'}}}}}
-        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '400': {$ref: '#/components/responses/AuthError400'}
+        '401': {$ref: '#/components/responses/AuthError401'}
+        '403': {$ref: '#/components/responses/AuthError403'}
+        '422': {$ref: '#/components/responses/AuthError422'}
+        '429': {$ref: '#/components/responses/AuthError429'}
+
   /revoke-session:
     servers: [{url: 'https://{host}/api/auth', variables: {host: {default: invest.oligi.pl}}}]
     post:
@@ -406,8 +462,12 @@ paths:
             schema: {$ref: '#/components/schemas/AuthRevokeSessionRequest'}
       responses:
         '200': {description: 'Sesja unieważniona (skutek ≤ 60 s na wszystkich instancjach).', content: {application/json: {schema: {$ref: '#/components/schemas/AuthStatusResponse'}}}}
-        '401': {$ref: '#/components/responses/Unauthenticated'}
-        '403': {$ref: '#/components/responses/Forbidden'}
+        '400': {$ref: '#/components/responses/AuthError400'}
+        '401': {$ref: '#/components/responses/AuthError401'}
+        '403': {$ref: '#/components/responses/AuthError403'}
+        '422': {$ref: '#/components/responses/AuthError422'}
+        '429': {$ref: '#/components/responses/AuthError429'}
+
   /revoke-other-sessions:
     servers: [{url: 'https://{host}/api/auth', variables: {host: {default: invest.oligi.pl}}}]
     post:
@@ -417,12 +477,21 @@ paths:
       tags: [auth]
       x-step-up: true
       x-requirements: [FR-07.05]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, properties: {}, additionalProperties: false}
       responses:
         '200': {description: 'Pozostałe sesje unieważnione.', content: {application/json: {schema: {$ref: '#/components/schemas/AuthStatusResponse'}}}}
-        '401': {$ref: '#/components/responses/Unauthenticated'}
-        '403': {$ref: '#/components/responses/Forbidden'}
 
   # ───────────────────────────── identity (/api/v1) ─────────────────────────────
+        '400': {$ref: '#/components/responses/AuthError400'}
+        '401': {$ref: '#/components/responses/AuthError401'}
+        '403': {$ref: '#/components/responses/AuthError403'}
+        '422': {$ref: '#/components/responses/AuthError422'}
+        '429': {$ref: '#/components/responses/AuthError429'}
+
   /invitations/preview:
     post:
       operationId: previewInvitation
@@ -431,29 +500,69 @@ paths:
         Link z e-maila ma token we fragmencie adresu (`/rejestracja#t=…`), więc token nie trafia do logów serwera ani do
         nagłówka `Referer` (ASVS V14.2.1); strona przekazuje go w treści żądania. Nieważne, wygasłe, użyte i nieistniejące
         zaproszenie dają ten sam `404`. Limit 10 / min / IP.
-      tags: [identity]
+      tags:
+        - identity
       security: []
-      x-requirements: [FR-07.01]
+      x-requirements:
+        - FR-07.01
       requestBody:
         required: true
         content:
           application/json:
-            schema: {$ref: '#/components/schemas/InvitationPreviewRequest'}
+            schema:
+              $ref: "#/components/schemas/InvitationPreviewRequest"
       responses:
-        '200': {description: 'Zaproszenie ważne.', headers: {Cache-Control: {description: '`no-store`', schema: {type: string}}}, content: {application/json: {schema: {$ref: '#/components/schemas/InvitationPreview'}}}}
-        '404': {$ref: '#/components/responses/NotFound'}
-        '422': {$ref: '#/components/responses/ValidationFailed'}
-        '429': {$ref: '#/components/responses/RateLimited'}
+        "200":
+          description: Zaproszenie ważne.
+          headers:
+            Cache-Control:
+              description: "`no-store`"
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InvitationPreview"
+        "400":
+          $ref: "#/components/responses/AuthError400"
+        "401":
+          $ref: "#/components/responses/AuthError401"
+        "403":
+          $ref: "#/components/responses/AuthError403"
+        "404":
+          $ref: "#/components/responses/AuthError400"
+        "422":
+          $ref: "#/components/responses/AuthError422"
+        "429":
+          $ref: "#/components/responses/AuthError429"
   /me:
     get:
       operationId: getMe
       summary: Profil, rola, stan MFA, uprawnienia i efektywne flagi
       description: Dostępne także przed konfiguracją TOTP (bramka MFA) — klient kieruje wtedy do konfiguracji.
-      tags: [identity]
-      x-requirements: [FR-07.04, FR-07.06, FR-08.04]
+      tags:
+        - identity
+      x-requirements:
+        - FR-07.04
+        - FR-07.06
+        - FR-08.04
       responses:
-        '200': {description: 'Dane bieżącego użytkownika.', content: {application/json: {schema: {$ref: '#/components/schemas/Me'}}}}
-        '401': {$ref: '#/components/responses/Unauthenticated'}
+        "200":
+          description: Dane bieżącego użytkownika.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Me"
+        "400":
+          $ref: "#/components/responses/AuthError400"
+        "401":
+          $ref: "#/components/responses/AuthError401"
+        "403":
+          $ref: "#/components/responses/AuthError403"
+        "422":
+          $ref: "#/components/responses/AuthError422"
+        "429":
+          $ref: "#/components/responses/AuthError429"
     patch:
       operationId: updateMe
       summary: Zmień nazwę wyświetlaną
@@ -555,9 +664,12 @@ paths:
             schema: {$ref: '#/components/schemas/StepUpRequest'}
       responses:
         '200': {description: 'Zweryfikowano.', content: {application/json: {schema: {$ref: '#/components/schemas/StepUpResult'}}}}
-        '401': {$ref: '#/components/responses/Unauthenticated'}
-        '422': {$ref: '#/components/responses/ValidationFailed'}
-        '429': {$ref: '#/components/responses/RateLimited'}
+        '400': {$ref: '#/components/responses/AuthError400'}
+        '401': {$ref: '#/components/responses/AuthError401'}
+        '403': {$ref: '#/components/responses/AuthError403'}
+        '422': {$ref: '#/components/responses/AuthError422'}
+        '429': {$ref: '#/components/responses/AuthError429'}
+
   /me/tokens:
     get:
       operationId: listPersonalAccessTokens
@@ -2609,22 +2721,54 @@ paths:
     post:
       operationId: adminCreateInvitation
       summary: Wystaw zaproszenie (link jednorazowy, domyślnie 72 h)
-      description: Link (token we fragmencie `#t=`) zwracany jednorazowo, np. do przekazania innym kanałem; w bazie tylko skrót SHA-256 tokenu.
-      tags: [admin]
+      description: Link (token we fragmencie `#t=`) zwracany przy utworzeniu. Z Idempotency-Key ten sam administrator może przez 24 h odtworzyć identyczną odpowiedź bez kolejnego e-maila; inne ciało daje IDEMPOTENCY_CONFLICT. Token jest wyprowadzany HMAC z wersjonowanego sekretu i identyfikatora zaproszenia; w bazie tylko skrót SHA-256 oraz metadane odtworzenia (bez jawnego tokenu). Decyzja właściciela 2026-10-05.
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKeyOptional"
+      tags:
+        - admin
       x-permission: admin:users
       x-step-up: true
-      x-requirements: [FR-07.01, FR-08.01]
+      x-requirements:
+        - FR-07.01
+        - FR-08.01
       requestBody:
         required: true
         content:
           application/json:
-            schema: {$ref: '#/components/schemas/AdminInvitationInput'}
+            schema:
+              $ref: "#/components/schemas/AdminInvitationInput"
       responses:
-        '201': {description: 'Wystawiono.', headers: {Cache-Control: {description: '`no-store`', schema: {type: string}}}, content: {application/json: {schema: {$ref: '#/components/schemas/AdminInvitationCreated'}}}}
-        '401': {$ref: '#/components/responses/Unauthenticated'}
-        '403': {$ref: '#/components/responses/Forbidden'}
-        '409': {$ref: '#/components/responses/Conflict'}
-        '422': {$ref: '#/components/responses/ValidationFailed'}
+        "201":
+          description: Wystawiono.
+          headers:
+            Idempotent-Replayed:
+              $ref: "#/components/headers/IdempotentReplayed"
+            Cache-Control:
+              description: "`no-store`"
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminInvitationCreated"
+        "400":
+          $ref: "#/components/responses/AuthError400"
+        "401":
+          $ref: "#/components/responses/AuthError401"
+        "403":
+          $ref: "#/components/responses/AuthError403"
+        "409":
+          description: Konflikt żądania.
+          headers:
+            X-Request-Id: {$ref: '#/components/headers/XRequestId'}
+            Retry-After: {$ref: '#/components/headers/RetryAfter'}
+          content:
+            application/problem+json:
+              schema: {$ref: '#/components/schemas/AuthProblem'}
+        "422":
+          $ref: "#/components/responses/AuthError422"
+        "429":
+          $ref: "#/components/responses/AuthError429"
   /admin/invitations/{invitationId}:
     delete:
       operationId: adminRevokeInvitation
@@ -3176,12 +3320,73 @@ components:
       schema: {type: string, maxLength: 64}
 
   responses:
+    AuthError400:
+      description: Błąd żądania; pole code rozróżnia przyczynę.
+      headers:
+        X-Request-Id:
+          schema:
+            type: string
+            maxLength: 64
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/AuthProblem"
+    AuthError401:
+      description: Błąd żądania; pole code rozróżnia przyczynę.
+      headers:
+        X-Request-Id:
+          schema:
+            type: string
+            maxLength: 64
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/AuthProblem"
+    AuthError403:
+      description: Błąd żądania; pole code rozróżnia przyczynę.
+      headers:
+        X-Request-Id:
+          schema:
+            type: string
+            maxLength: 64
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/AuthProblem"
+    AuthError422:
+      description: Błąd żądania; pole code rozróżnia przyczynę.
+      headers:
+        X-Request-Id:
+          schema:
+            type: string
+            maxLength: 64
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/AuthProblem"
+    AuthError429:
+      description: Błąd żądania; pole code rozróżnia przyczynę.
+      headers:
+        X-Request-Id:
+          schema:
+            type: string
+            maxLength: 64
+        Retry-After:
+          schema:
+            type: integer
+            minimum: 1
+        RateLimit:
+          schema:
+            type: string
+        RateLimit-Policy:
+          schema:
+            type: string
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/AuthProblem"
     NotModified:
       description: Treść bez zmian (`If-None-Match`).
-    BadRequest:
-      description: Niepoprawna składnia żądania.
-      headers: {X-Request-Id: {$ref: '#/components/headers/XRequestId'}}
-      content: {application/problem+json: {schema: {$ref: '#/components/schemas/Problem'}, example: {type: 'https://invest.oligi.pl/problems/bad-request', title: 'Niepoprawne żądanie', status: 400, code: BAD_REQUEST, instance: req_01J8Z3Q6X4}}}
     Unauthenticated:
       description: Brak, wygasła lub unieważniona sesja albo token PAT.
       headers: {X-Request-Id: {$ref: '#/components/headers/XRequestId'}}
@@ -3349,9 +3554,54 @@ components:
               value: {type: number, minimum: 0}
               rating: {type: string, enum: [good, needs-improvement, poor]}
 
+    AuthProblem:
+      type: object
+      description: Problem Details uwierzytelniania; bez rozszerzeń domeny instrumentów i importów.
+      required:
+        - type
+        - title
+        - status
+        - code
+      properties:
+        type:
+          type: string
+          format: uri
+        title:
+          type: string
+          description: Krótki opis po polsku.
+        status:
+          type: integer
+          minimum: 400
+          maximum: 599
+        code:
+          $ref: "#/components/schemas/ProblemCode"
+        detail:
+          type: string
+        instance:
+          type: string
+          description: Identyfikator żądania (`X-Request-Id`).
+        errors:
+          type: array
+          items:
+            type: object
+            required:
+              - path
+              - code
+              - message
+            properties:
+              path:
+                type: string
+              code:
+                type: string
+              message:
+                type: string
+            additionalProperties: false
+      additionalProperties: false
+
     # ── auth (Better Auth) ──
     AuthSignUpRequest:
       type: object
+      additionalProperties: false
       description: 'Pola akceptacji obsługuje warstwa api wokół trasy Better Auth (zapis w identity.consent_events); nie są kolumnami auth.users.'
       required: [name, email, password, invitationToken, acceptTerms, termsVersion, privacyNoticeVersion]
       properties:
@@ -3359,12 +3609,13 @@ components:
         email: {type: string, format: email}
         password: {type: string, minLength: 12, maxLength: 128}
         invitationToken: {type: string, minLength: 32, maxLength: 128}
-        acceptTerms: {type: boolean, const: true, description: 'Akceptacja regulaminu (warunek zawarcia umowy o świadczenie usług drogą elektroniczną).'}
+        acceptTerms: {type: boolean, enum: [true], description: 'Akceptacja regulaminu (warunek zawarcia umowy o świadczenie usług drogą elektroniczną).'}
         termsVersion: {$ref: '#/components/schemas/LegalDocumentVersion'}
         privacyNoticeVersion: {$ref: '#/components/schemas/LegalDocumentVersion'}
         diagnosticsConsent: {type: boolean, default: false, description: 'Opcjonalna zgoda na pomiary wydajności (RUM); pole domyślnie niezaznaczone.'}
     AuthSignInRequest:
       type: object
+      additionalProperties: false
       required: [email, password]
       properties:
         email: {type: string, format: email}
@@ -3372,6 +3623,7 @@ components:
         rememberMe: {type: boolean, default: true}
     AuthSignInResponse:
       type: object
+      additionalProperties: false
       properties:
         twoFactorRedirect: {type: boolean, description: '`true` — wymagany drugi składnik (`/two-factor/verify-totp`).'}
         user: {$ref: '#/components/schemas/AuthUser'}
@@ -3389,6 +3641,7 @@ components:
         redirect: {type: boolean}
     AuthUser:
       type: object
+      additionalProperties: false
       required: [id, email, name, role, twoFactorEnabled]
       properties:
         id: {$ref: '#/components/schemas/Uuid'}
@@ -3399,35 +3652,42 @@ components:
         twoFactorEnabled: {type: boolean}
     AuthSessionResponse:
       type: object
+      additionalProperties: false
       required: [session, user]
       properties:
         session:
           type: object
+          additionalProperties: false
           required: [id, expiresAt]
           properties:
             id: {$ref: '#/components/schemas/Uuid'}
             expiresAt: {$ref: '#/components/schemas/Timestamp'}
-            mfaVerifiedAt: {oneOf: [{$ref: '#/components/schemas/Timestamp'}, {type: 'null'}]}
+            mfaVerifiedAt: {type: [string, 'null'], format: date-time}
         user: {$ref: '#/components/schemas/AuthUser'}
+        backupCodes: {type: array, minItems: 10, maxItems: 10, items: {type: string}, description: 'Tylko po zakończeniu wymiany TOTP; zastępuje wszystkie poprzednie kody, także otrzymane przy rozpoczęciu wymiany.'}
     AuthStatusResponse:
       type: object
+      additionalProperties: false
       properties:
         status: {type: boolean}
         message: {type: string}
     AuthPasswordResetRequest:
       type: object
+      additionalProperties: false
       required: [email]
       properties:
         email: {type: string, format: email}
         redirectTo: {type: string, pattern: '^/[^/]', description: 'Ścieżka formularza nowego hasła w `web`.'}
     AuthResetPasswordRequest:
       type: object
+      additionalProperties: false
       required: [newPassword, token]
       properties:
         newPassword: {type: string, minLength: 12, maxLength: 128}
         token: {type: string, maxLength: 256}
     AuthChangePasswordRequest:
       type: object
+      additionalProperties: false
       required: [currentPassword, newPassword]
       properties:
         currentPassword: {type: string, maxLength: 128}
@@ -3435,90 +3695,148 @@ components:
         revokeOtherSessions: {type: boolean, default: true}
     AuthPasswordConfirm:
       type: object
+      additionalProperties: false
       required: [password]
       properties:
         password: {type: string, maxLength: 128}
     AuthTwoFactorEnableResponse:
       type: object
+      additionalProperties: false
       required: [totpURI, backupCodes]
       properties:
         totpURI: {type: string, pattern: '^otpauth://totp/'}
         backupCodes: {type: array, minItems: 10, maxItems: 10, items: {type: string}}
     AuthBackupCodesResponse:
       type: object
+      additionalProperties: false
       required: [backupCodes]
       properties:
         backupCodes: {type: array, minItems: 10, maxItems: 10, items: {type: string}}
     AuthTotpVerifyRequest:
       type: object
+      additionalProperties: false
       required: [code]
       properties:
         code: {type: string, pattern: '^\d{6}$'}
         trustDevice: {type: boolean, default: false, description: 'Domyślnie wyłączone — każde logowanie wymaga TOTP.'}
     AuthBackupCodeVerifyRequest:
       type: object
+      additionalProperties: false
       required: [code]
       properties:
         code: {type: string, minLength: 8, maxLength: 16}
     AuthSessionInfo:
       type: object
-      required: [id, createdAt, expiresAt]
+      additionalProperties: false
+      required: [id, current, createdAt, expiresAt]
       properties:
         id: {$ref: '#/components/schemas/Uuid'}
+        current: {type: boolean, description: 'Czy jest to sesja bieżącego żądania.'}
         createdAt: {$ref: '#/components/schemas/Timestamp'}
         expiresAt: {$ref: '#/components/schemas/Timestamp'}
         ipAddress: {type: string}
         userAgent: {type: string}
-        token: {type: string, description: 'Identyfikator sesji wymagany przez `/revoke-session`.'}
     AuthRevokeSessionRequest:
       type: object
-      required: [token]
+      additionalProperties: false
+      required: [id]
       properties:
-        token: {type: string, maxLength: 256}
+        id: {$ref: '#/components/schemas/Uuid'}
 
     # ── identity ──
     InvitationPreview:
       type: object
-      required: [emailMasked, role, expiresAt]
+      required:
+        - emailMasked
+        - role
+        - expiresAt
       properties:
-        emailMasked: {type: string, example: 'a***@e***.pl'}
-        role: {$ref: '#/components/schemas/Role'}
-        expiresAt: {$ref: '#/components/schemas/Timestamp'}
+        emailMasked:
+          type: string
+          example: a***@e***.pl
+        role:
+          $ref: "#/components/schemas/Role"
+        expiresAt:
+          $ref: "#/components/schemas/Timestamp"
+      additionalProperties: false
     Me:
       type: object
-      required: [id, email, name, role, mfa, legal, permissions, features, preferences]
+      required:
+        - id
+        - email
+        - name
+        - role
+        - mfa
+        - legal
+        - permissions
+        - features
+        - preferences
       properties:
-        id: {$ref: '#/components/schemas/Uuid'}
-        email: {type: string, format: email}
-        name: {type: string}
-        emailVerified: {type: boolean}
-        role: {$ref: '#/components/schemas/Role'}
+        id:
+          $ref: "#/components/schemas/Uuid"
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+        emailVerified:
+          type: boolean
+        role:
+          $ref: "#/components/schemas/Role"
         mfa:
           type: object
-          required: [enrolled]
+          required:
+            - enrolled
           properties:
-            enrolled: {type: boolean}
-            sessionVerifiedAt: {$ref: '#/components/schemas/Timestamp'}
-            stepUpValidUntil: {$ref: '#/components/schemas/Timestamp'}
+            enrolled:
+              type: boolean
+            sessionVerifiedAt:
+              $ref: "#/components/schemas/Timestamp"
+            stepUpValidUntil:
+              $ref: "#/components/schemas/Timestamp"
+          additionalProperties: false
         legal:
           type: object
-          required: [termsAcceptanceRequired, diagnosticsConsent]
+          required:
+            - termsAcceptanceRequired
+            - diagnosticsConsent
           properties:
-            termsAcceptanceRequired: {type: boolean}
-            diagnosticsConsent: {type: boolean}
-        permissions: {type: array, items: {type: string}, example: ['portfolio:read', 'analytics:run:light']}
+            termsAcceptanceRequired:
+              type: boolean
+            diagnosticsConsent:
+              type: boolean
+          additionalProperties: false
+        permissions:
+          type: array
+          items:
+            type: string
+          example:
+            - portfolio:read
+            - analytics:run:light
         features:
           type: object
           description: Efektywne flagi dla użytkownika (klucz → włączona).
-          additionalProperties: {type: boolean}
-          example: {module.analytics: true, module.analytics.backtest: false}
-        preferences: {$ref: '#/components/schemas/Preferences'}
-        deletionScheduledFor: {$ref: '#/components/schemas/Timestamp'}
+          additionalProperties:
+            type: boolean
+          example:
+            module.analytics: true
+            module.analytics.backtest: false
+        preferences:
+          $ref: "#/components/schemas/Preferences"
+        deletionScheduledFor:
+          $ref: "#/components/schemas/Timestamp"
+      additionalProperties: false
     InvitationPreviewRequest:
       type: object
-      required: [token]
+      required:
+        - token
       properties:
-        token: {type: string, minLength: 32, maxLength: 128, pattern: '^[A-Za-z0-9_-]+$'}
+        token:
+          type: string
+          minLength: 32
+          maxLength: 128
+          pattern: ^[A-Za-z0-9_-]+$
+      additionalProperties: false
     LegalDocumentVersion: {type: string, pattern: '^[0-9]{4}-[0-9]{2}(-[0-9]{2})?(\.[0-9]{1,3})?$', example: '2026-09'}
     ConsentPurpose: {type: string, enum: [diagnostics], description: 'Rozszerzalne. diagnostics = pomiary wydajności (RUM) wysyłane z przeglądarki.'}
     LegalStatus:
@@ -3572,17 +3890,61 @@ components:
         name: {type: string, minLength: 1, maxLength: 80}
     Preferences:
       type: object
-      required: [baseCurrency, costBasisMethod, plView, taxDateBasis, taxIncludeFxFee, timezone, locale, theme, plPalette]
+      required:
+        - baseCurrency
+        - costBasisMethod
+        - plView
+        - taxDateBasis
+        - taxIncludeFxFee
+        - timezone
+        - locale
+        - theme
+        - plPalette
       properties:
-        baseCurrency: {type: string, enum: [PLN], description: 'W MVP wyłącznie PLN (ADR-014).'}
-        costBasisMethod: {type: string, enum: [fifo, average]}
-        plView: {type: string, enum: [economic, tax]}
-        taxDateBasis: {type: string, enum: [settlement, trade], description: 'Dzień przychodu i kosztu w widoku podatkowym: dzień rozliczenia (domyślnie) albo zawarcia (tylko do porównań).'}
-        taxIncludeFxFee: {type: boolean, description: 'Czy wliczać marżę przewalutowania brokera do kosztu w widoku podatkowym (domyślnie false — pokazywana osobno jako fxCosts).'}
-        timezone: {type: string, example: Europe/Warsaw}
-        locale: {type: string, enum: [pl-PL, en-US]}
-        theme: {type: string, enum: [system, light, dark]}
-        plPalette: {type: string, enum: [default, colorblind]}
+        baseCurrency:
+          type: string
+          enum:
+            - PLN
+          description: W MVP wyłącznie PLN (ADR-014).
+        costBasisMethod:
+          type: string
+          enum:
+            - fifo
+            - average
+        plView:
+          type: string
+          enum:
+            - economic
+            - tax
+        taxDateBasis:
+          type: string
+          enum:
+            - settlement
+            - trade
+          description: "Dzień przychodu i kosztu w widoku podatkowym: dzień rozliczenia (domyślnie) albo zawarcia (tylko do porównań)."
+        taxIncludeFxFee:
+          type: boolean
+          description: Czy wliczać marżę przewalutowania brokera do kosztu w widoku podatkowym (domyślnie false — pokazywana osobno jako fxCosts).
+        timezone:
+          type: string
+          example: Europe/Warsaw
+        locale:
+          type: string
+          enum:
+            - pl-PL
+            - en-US
+        theme:
+          type: string
+          enum:
+            - system
+            - light
+            - dark
+        plPalette:
+          type: string
+          enum:
+            - default
+            - colorblind
+      additionalProperties: false
     PreferencesPatch:
       type: object
       minProperties: 1
@@ -3597,11 +3959,13 @@ components:
         plPalette: {type: string, enum: [default, colorblind]}
     StepUpRequest:
       type: object
+      additionalProperties: false
       required: [code]
       properties:
         code: {type: string, pattern: '^\d{6}$'}
     StepUpResult:
       type: object
+      additionalProperties: false
       required: [validUntil]
       properties:
         validUntil: {$ref: '#/components/schemas/Timestamp'}
@@ -5733,12 +6097,24 @@ components:
       then: {required: [banReason]}
     AdminInvitationInput:
       type: object
-      required: [email, role]
+      required:
+        - email
+        - role
       properties:
-        email: {type: string, format: email}
-        role: {$ref: '#/components/schemas/Role'}
-        expiresInHours: {type: integer, minimum: 1, maximum: 168, default: 72}
-        sendEmail: {type: boolean, default: true}
+        email:
+          type: string
+          format: email
+        role:
+          $ref: "#/components/schemas/Role"
+        expiresInHours:
+          type: integer
+          minimum: 1
+          maximum: 168
+          default: 72
+        sendEmail:
+          type: boolean
+          default: true
+      additionalProperties: false
     AdminInvitation:
       type: object
       required: [id, email, role, invitedBy, status, expiresAt, createdAt]
@@ -5753,12 +6129,46 @@ components:
         revokedAt: {$ref: '#/components/schemas/Timestamp'}
         createdAt: {$ref: '#/components/schemas/Timestamp'}
     AdminInvitationCreated:
-      allOf:
-        - {$ref: '#/components/schemas/AdminInvitation'}
-        - type: object
-          required: [inviteUrl]
-          properties:
-            inviteUrl: {type: string, format: uri, description: 'Link z tokenem we fragmencie adresu (`#t=`); pokazywany wyłącznie w tej odpowiedzi.'}
+      type: object
+      required:
+        - id
+        - email
+        - role
+        - invitedBy
+        - status
+        - expiresAt
+        - createdAt
+        - inviteUrl
+      properties:
+        id:
+          $ref: "#/components/schemas/Uuid"
+        email:
+          type: string
+          format: email
+        role:
+          $ref: "#/components/schemas/Role"
+        invitedBy:
+          $ref: "#/components/schemas/Uuid"
+        status:
+          type: string
+          enum:
+            - pending
+            - used
+            - expired
+            - revoked
+        expiresAt:
+          $ref: "#/components/schemas/Timestamp"
+        usedAt:
+          $ref: "#/components/schemas/Timestamp"
+        revokedAt:
+          $ref: "#/components/schemas/Timestamp"
+        createdAt:
+          $ref: "#/components/schemas/Timestamp"
+        inviteUrl:
+          type: string
+          format: uri
+          description: Link z tokenem we fragmencie adresu (`#t=`); pokazywany wyłącznie w tej odpowiedzi.
+      additionalProperties: false
     AdminInvitationPage:
       type: object
       required: [data, page]

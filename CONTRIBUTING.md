@@ -21,6 +21,8 @@ Format: `<typ>(<zakres>): <opis w trybie rozkazującym po angielsku>`; zakres = 
 | `feat` | nowa funkcja |
 | `fix` | poprawka błędu (także bezpieczeństwa) |
 | `docs` | wyłącznie dokumentacja |
+| `style` | formatowanie bez zmiany zachowania kodu |
+| `revert` | cofnięcie wcześniejszej zmiany |
 | `refactor`, `perf`, `test` | zmiana bez nowej funkcji, wydajność, testy |
 | `build`, `ci`, `chore` | budowanie, CI, porządki i zależności |
 

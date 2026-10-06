@@ -13,6 +13,7 @@ import {
   repository,
   run,
 } from "./dev-services.mjs";
+import { childEnvironment } from "./dev-environment.mjs";
 import { testMailpit } from "./test-mailpit.mjs";
 
 const checking = process.argv[2] === "--check";
@@ -21,28 +22,6 @@ const children = [];
 let stopping = false;
 let dev;
 
-function childEnvironment(env, service) {
-  const system = Object.fromEntries(
-    Object.entries(process.env).filter(([key]) =>
-      /^(PATH|PATHEXT|SYSTEMROOT|WINDIR|COMSPEC|TEMP|TMP|HOME|USERPROFILE|LOCALAPPDATA)$/iu.test(
-        key,
-      ),
-    ),
-  );
-  const allowed = {
-    api: /^(NODE_ENV|PUBLIC_BASE_URL|API_HOST|API_PORT|DB_HOST|DB_PORT|DB_NAME|DB_SSL|DB_APP_PASSWORD|DB_AUTH_PASSWORD|BETTER_AUTH_SECRETS|AUDIT_PSEUDONYM_KEY|VALKEY_(QUEUE|CACHE)_(HOST|PORT|USER|API_PASSWORD))$/u,
-    jobs: /^(NODE_ENV|PUBLIC_BASE_URL|AUDIT_PSEUDONYM_KEY|DB_APP_PASSWORD|JOBS_INSTANCE_ID|VALKEY_(QUEUE|CACHE)_(HOST|PORT|USER|JOBS_PASSWORD))$/u,
-    analytics:
-      /^(NODE_ENV|ANALYTICS_INSTANCE_ID|DB_ANALYTICS_RO_PASSWORD|VALKEY_QUEUE_(HOST|PORT|USER|ANALYTICS_PASSWORD))$/u,
-    web: /^(NODE_ENV|PUBLIC_BASE_URL|API_INTERNAL_URL)$/u,
-  }[service];
-  return {
-    ...system,
-    ...Object.fromEntries(Object.entries(env).filter(([key]) => allowed.test(key))),
-    NEXT_TELEMETRY_DISABLED: "1",
-    PYTHONUNBUFFERED: "1",
-  };
-}
 
 function start(command, args, env, service) {
   const child = spawn(command, args, {
@@ -192,6 +171,10 @@ try {
     const host = env.API_HOST.includes(":") ? `[${env.API_HOST}]` : env.API_HOST;
     assert.equal((await fetch(`http://${host}:${dev.DEV_MAILPIT_UI_PORT}/livez`)).status, 200);
     await testMailpit(env.API_HOST, dev.DEV_SMTP_PORT, dev.DEV_MAILPIT_UI_PORT);
+    const { testQueuedAuthMail } = await import("../apps/jobs/scripts/test-auth-mail.mjs");
+    await testQueuedAuthMail(childEnvironment(env, "jobs"), dev.DEV_MAILPIT_UI_PORT);
+    const { testAuthState } = await import("../apps/api/integration/state.mjs");
+    await testAuthState(childEnvironment(env, "api"));
     console.log("pnpm dev entry point: API, web, jobs, analytics and Compose readiness PASS");
     await stop();
   }

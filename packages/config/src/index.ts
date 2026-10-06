@@ -59,9 +59,11 @@ export const configSchemas = {
       DB_APP_PASSWORD: text,
       VALKEY_QUEUE_JOBS_PASSWORD: text,
       VALKEY_CACHE_JOBS_PASSWORD: text,
-      SMTP_HOST: z.hostname().optional(),
+      SMTP_HOST: z.union([z.hostname(), z.ipv4(), z.ipv6()]).optional(),
+      SMTP_FROM: z.email().optional(),
       SMTP_USER: text.optional(),
       SMTP_PASSWORD: text.optional(),
+      ...legal,
       ...push,
       FINNHUB_API_KEY: text.optional(),
       TWELVEDATA_API_KEY: text.optional(),
@@ -112,7 +114,7 @@ const SECRET_KEYS = new Set([
 const GROUPS = [
   ["GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET"],
   ["GITHUB_CLIENT_ID", "GITHUB_CLIENT_SECRET"],
-  ["SMTP_HOST", "SMTP_USER", "SMTP_PASSWORD"],
+  ["SMTP_HOST", "SMTP_FROM", "SMTP_USER", "SMTP_PASSWORD"],
   ["VAPID_PUBLIC_KEY", "VAPID_PRIVATE_KEY"],
 ];
 function readSecretFile(path: string): string {

@@ -31,7 +31,18 @@ test("CLI validates actual commit ranges and independently blocks invalid PR tit
     const good = git(["rev-parse", "HEAD"]);
     git(["commit", "--allow-empty", "-m", "Invalid subject"]);
     const bad = git(["rev-parse", "HEAD"]);
-    for (const [head, title, status] of [[good, "ci: valid PR", 0], [bad, "ci: valid PR", 1], [good, "Invalid PR title", 1]]) {
+    // GitHub "Update branch" adds a merge commit with a fixed subject; squash merge never lands it on main.
+    git(["checkout", "--quiet", "-b", "side", base]);
+    git(["commit", "--allow-empty", "-m", "fix(repo): side change"]);
+    git(["checkout", "--quiet", "--detach", good]);
+    git(["merge", "--quiet", "--no-ff", "--no-edit", "side"]);
+    const merged = git(["rev-parse", "HEAD"]);
+    git(["checkout", "--quiet", "--detach", "side"]);
+    git(["commit", "--allow-empty", "-m", "Invalid side subject"]);
+    git(["checkout", "--quiet", "--detach", merged]);
+    git(["merge", "--quiet", "--no-ff", "--no-edit", "HEAD@{1}"]);
+    const mergedBad = git(["rev-parse", "HEAD"]);
+    for (const [head, title, status] of [[good, "ci: valid PR", 0], [bad, "ci: valid PR", 1], [good, "Invalid PR title", 1], [merged, "ci: valid PR", 0], [mergedBad, "ci: valid PR", 1]]) {
       const result = spawnSync(process.execPath, [script], {
         cwd: directory,
         env: { ...process.env, COMMIT_BASE_REF: base, COMMIT_HEAD_REF: head, GITHUB_EVENT_NAME: "pull_request", PR_TITLE: title },
@@ -79,6 +90,17 @@ test("accepts Conventional Commit titles, including scoped breaking changes", ()
 test("rejects missing descriptions, unknown types, and multiline PR titles", () => {
   for (const title of ["", "Fix code", "unknown: add code", "feat: ", "feat: add code\nrun commands", "feat: add code\n"]) {
     assert.equal(checkPullRequestTitle(title), false);
+  }
+});
+
+test("style and revert are valid types without bypassing subject validation", () => {
+  for (const title of ["style(db): format MFA migration metadata", "revert(auth): restore session handling", "style: format files", "revert!: restore the previous contract"]) {
+    assert.equal(checkPullRequestTitle(title), true);
+    assert.equal(checkCommit("a".repeat(40), title), true);
+  }
+  for (const title of ["style:", "revert: ", "style: format\nextra", "revert: restore\rmalformed", "styles: format", 'Revert "previous commit"']) {
+    assert.equal(checkPullRequestTitle(title), false);
+    assert.equal(checkCommit("a".repeat(40), title), false);
   }
 });
 

@@ -1,0 +1,2 @@
+ALTER TABLE "auth"."sessions" ADD COLUMN "mfa_method" text;--> statement-breakpoint
+ALTER TABLE "auth"."sessions" ADD CONSTRAINT "sessions_mfa_method_check" CHECK ("auth"."sessions"."mfa_method" IN ('totp', 'backup'));

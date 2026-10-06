@@ -21,3 +21,4 @@ jobs:
       - run: sudo python3 infra/tests/test-host-config.py
       - run: sudo python3 infra/tests/test-deploy.py
       - run: sudo python3 infra/tests/test-host-operations.py
+      - run: sudo python3 infra/tests/test-admin-host.py

@@ -5,6 +5,10 @@ import {
   ProblemError,
   withRequestContext,
 } from "@oliginvest/platform";
+import { bodyLimit } from "hono/body-limit";
+import { type IdentityDependencies, mountIdentity } from "./auth/identity-routes.js";
+import { type AuthRouteDependencies, createAuthRouter, mountStepUp } from "./auth/routes.js";
+import { SESSION_COOKIE } from "./auth/session.js";
 
 export type HealthChecks = Readonly<
   Record<"postgres" | "valkeyQueue" | "valkeyCache", () => Promise<void>>
@@ -28,6 +32,7 @@ export function createApp(
     checks: HealthChecks;
     logger: PlatformLogger;
     publicBaseUrl: string;
+    auth?: AuthRouteDependencies & Partial<Pick<IdentityDependencies, "administration">>;
   }>,
 ) {
   const app = new OpenAPIHono<AppEnv>();
@@ -70,7 +75,19 @@ export function createApp(
       },
       async (requestContext) => {
         context.set("requestContext", requestContext);
+        const renewal =
+          options.auth && context.req.header("cookie")?.includes(`${SESSION_COOKIE}=`)
+            ? await (await options.auth.service()).renewSession(context.req.raw)
+            : null;
         await next();
+        if (
+          renewal &&
+          context.res.status < 400 &&
+          !context.res.headers
+            .getSetCookie()
+            .some((value) => value.startsWith(`${SESSION_COOKIE}=`))
+        )
+          context.res.headers.append("Set-Cookie", renewal);
         return context.res;
       },
     );
@@ -89,7 +106,95 @@ export function createApp(
     throw new ProblemError("NOT_FOUND");
   });
 
-  const api = new OpenAPIHono<AppEnv>();
+  const authDependencies = options.auth ?? {
+    service: () => {
+      throw new ProblemError("SERVICE_UNAVAILABLE");
+    },
+    clientIp: () => "unknown",
+  };
+  app.use(
+    "/api/auth/*",
+    bodyLimit({
+      maxSize: 16_384,
+      onError: () => {
+        throw new ProblemError("BAD_REQUEST");
+      },
+    }),
+  );
+  app.use(
+    "/api/v1/me/*",
+    bodyLimit({
+      maxSize: 16_384,
+      onError: () => {
+        throw new ProblemError("BAD_REQUEST");
+      },
+    }),
+  );
+  const auth = createAuthRouter(authDependencies);
+  app.route("/api/auth", auth);
+  app.all("/api/auth/*", () => {
+    throw new ProblemError("FORBIDDEN");
+  });
+  const api = new OpenAPIHono<AppEnv>({
+    defaultHook: (result) => {
+      if (!result.success) throw new ProblemError("BAD_REQUEST");
+    },
+  });
+  api.openAPIRegistry.registerComponent("securitySchemes", "sessionCookie", {
+    type: "apiKey",
+    in: "cookie",
+    name: "__Host-oliginvest.session_token",
+  });
+  mountStepUp(api, authDependencies);
+  api.use("*", async (context, next) => {
+    const module = /^\/api\/v1\/(analytics|alerts|education|quick)(?:\/|$)/u.exec(
+      context.req.path,
+    )?.[1];
+    if (module) {
+      const service = await authDependencies.service();
+      const principal = await service.requireData(context.req.raw);
+      if (
+        !(await service.features.enabled(
+          `module.${module === "quick" ? "quick-actions" : module}`,
+          { userId: principal.user_id, role: principal.role },
+        ))
+      )
+        throw new ProblemError("NOT_FOUND");
+    }
+    await next();
+  });
+  mountIdentity(api, {
+    ...authDependencies,
+    administration:
+      options.auth?.administration ??
+      (() => {
+        throw new ProblemError("SERVICE_UNAVAILABLE");
+      }),
+  });
+  function document() {
+    const metadata = {
+      openapi: "3.1.0",
+      info: { title: "OligInvest API", version: "1.0.0-draft.1" },
+    };
+    const result = api.getOpenAPI31Document({ ...metadata, servers: [{ url: "/api/v1" }] });
+    const authDocument = auth.getOpenAPI31Document(metadata);
+    return {
+      ...result,
+      paths: {
+        ...result.paths,
+        ...Object.fromEntries(
+          Object.entries(authDocument.paths ?? {}).map(([path, operation]) => [
+            path,
+            { ...operation, servers: [{ url: "/api/auth" }] },
+          ]),
+        ),
+      },
+      components: {
+        ...result.components,
+        schemas: { ...result.components?.schemas, ...authDocument.components?.schemas },
+      },
+    };
+  }
   api.openapi(
     createRoute({
       method: "get",
@@ -136,16 +241,7 @@ export function createApp(
         },
       },
     }),
-    (context) =>
-      context.json(
-        documentSchema.parse(
-          api.getOpenAPI31Document({
-            openapi: "3.1.0",
-            info: { title: "OligInvest API", version: "1.0.0-draft.1" },
-            servers: [{ url: "/api/v1" }],
-          }),
-        ),
-      ),
+    (context) => context.json(documentSchema.parse(document())),
   );
   app.route("/api/v1", api);
   return app;

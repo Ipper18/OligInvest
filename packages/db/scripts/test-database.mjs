@@ -140,23 +140,6 @@ try {
       journal.rows,
     );
   });
-  psql(
-    migrated,
-    await readFile(resolve(repository, "packages/db/test/consent-version.sql"), "utf8"),
-  );
-  console.log("Consent version CHECK: dotted suffix accepted, x suffix rejected");
-  // Audit bootstrap before the reference can supply any missing global role grants.
-  const rlsOutput = psql(
-    migrated,
-    await readFile(resolve(repository, "docs/03-dane/testy-rls.sql"), "utf8"),
-  );
-  await writeFile(resolve(output, "rls.log"), rlsOutput);
-  assert.ok(rlsOutput.includes("ALL RLS SMOKE TESTS PASSED"), "RLS scenarios did not finish");
-  psql(
-    migrated,
-    await readFile(resolve(repository, "packages/db/test/security-catalog.sql"), "utf8"),
-  );
-  console.log("Normative RLS scenarios and full security catalog audit: PASS");
   const passwords = {
     app: randomBytes(32).toString("hex"),
     auth: randomBytes(32).toString("hex"),
@@ -180,6 +163,26 @@ try {
       throw new Error("Cannot provision synthetic role passwords");
     }
   });
+  const { testOwnerBootstrap } = await import("../../../apps/api/integration/bootstrap.mjs");
+  await testOwnerBootstrap({ host, port, database: migrated, passwords });
+  console.log("Owner CLI empty database, concurrent bootstrap, consent and audit: PASS");
+  psql(
+    migrated,
+    await readFile(resolve(repository, "packages/db/test/consent-version.sql"), "utf8"),
+  );
+  console.log("Consent version CHECK: dotted suffix accepted, x suffix rejected");
+  // Audit bootstrap before the reference can supply any missing global role grants.
+  const rlsOutput = psql(
+    migrated,
+    await readFile(resolve(repository, "docs/03-dane/testy-rls.sql"), "utf8"),
+  );
+  await writeFile(resolve(output, "rls.log"), rlsOutput);
+  assert.ok(rlsOutput.includes("ALL RLS SMOKE TESTS PASSED"), "RLS scenarios did not finish");
+  psql(
+    migrated,
+    await readFile(resolve(repository, "packages/db/test/security-catalog.sql"), "utf8"),
+  );
+  console.log("Normative RLS scenarios and full security catalog audit: PASS");
   const integration = spawnSync(
     process.execPath,
     [
@@ -205,6 +208,12 @@ try {
     throw new Error("Transaction integration tests failed; inspect .git/bl007-db/transactions.log");
   }
   console.log("Role pools and transaction context integration tests: PASS");
+  const { testAuthStorage } = await import("../../../apps/api/integration/storage.mjs");
+  await testAuthStorage({ host, port, database: migrated, passwords });
+  console.log("Better Auth PostgreSQL adapter, Argon2id, cookies and key rotation: PASS");
+  const { testAuthFacade } = await import("../../../apps/api/integration/facade.mjs");
+  await testAuthFacade({ host, port, database: migrated, passwords });
+  console.log("Auth facade invitations, MFA, replay, session rotation and password reset: PASS");
   const roleSettings = () =>
     withClient(
       migrated,

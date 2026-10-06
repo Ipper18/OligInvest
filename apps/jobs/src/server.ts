@@ -1,5 +1,6 @@
 import { createLogger } from "@oliginvest/platform";
 import { startJobs } from "./runtime.js";
+import { startupFailure } from "./startup-failure.js";
 
 const logger = createLogger();
 try {
@@ -22,7 +23,7 @@ try {
   process.once("SIGINT", shutdown);
   process.once("SIGTERM", shutdown);
   process.once("disconnect", shutdown);
-} catch {
-  logger.error({ event: "jobs.startup_failed" });
+} catch (error) {
+  logger.error(startupFailure(error));
   process.exitCode = 1;
 }

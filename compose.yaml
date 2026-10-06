@@ -47,6 +47,7 @@ services:
       NODE_ENV: production
       PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:?Set public origin}
       API_HOST: '::'
+      API_TRUSTED_PROXY_CIDRS: ${API_TRUSTED_PROXY_CIDRS:-}
       API_PORT: '3000'
       VALKEY_QUEUE_USER: api
       VALKEY_CACHE_HOST: valkey-cache
@@ -69,6 +70,14 @@ services:
       PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:?Set public origin}
       VALKEY_QUEUE_USER: jobs
       JOBS_INSTANCE_ID: primary
+      VALKEY_CACHE_HOST: valkey-cache
+      VALKEY_CACHE_PORT: '6379'
+      VALKEY_CACHE_USER: jobs
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_FROM: ${SMTP_FROM:-}
+      SMTP_PORT: '587'
+      LEGAL_CONTROLLER_NAME: ${LEGAL_CONTROLLER_NAME:-}
+      LEGAL_CONTACT_EMAIL: ${LEGAL_CONTACT_EMAIL:-}
     networks: [backend, egress]
     mem_limit: 384m
     cpus: 1

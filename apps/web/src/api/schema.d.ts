@@ -286,7 +286,7 @@ export interface paths {
         put?: never;
         /**
          * Rozpocznij konfigurację TOTP (sekret i 10 kodów zapasowych)
-         * @description 2FA staje się aktywne dopiero po `verify-totp`. Ponowne wywołanie przy aktywnym 2FA (zmiana urządzenia) wymaga step-up.
+         * @description 2FA staje się aktywne dopiero po `verify-totp`. Zmiana urządzenia wymaga hasła i step-up TOTP albo jednorazowego uprawnienia z logowania kodem zapasowym sprzed najwyżej 10 minut. Odzyskanie nie udostępnia pozostałych operacji wrażliwych. Po rozpoczęciu wymiany wymagany jest kod nowego TOTP.
          */
         post: operations["authTwoFactorEnable"];
         delete?: never;
@@ -306,7 +306,7 @@ export interface paths {
         put?: never;
         /**
          * Zweryfikuj kod TOTP (logowanie lub zakończenie konfiguracji)
-         * @description Sukces ustawia `auth.sessions.mfa_verified_at`. Blokada po 5 błędnych kodach (NFR-03.02).
+         * @description Sukces ustawia `auth.sessions.mfa_verified_at` i `mfa_method = totp`. Blokada po 5 błędnych kodach (NFR-03.02). Przy zakończeniu wymiany urządzenia unieważnia inne sesje i zwraca nowy komplet kodów zapasowych w `backupCodes` (pokazywany raz).
          */
         post: operations["authTwoFactorVerifyTotp"];
         delete?: never;
@@ -2115,7 +2115,7 @@ export interface paths {
         put?: never;
         /**
          * Wystaw zaproszenie (link jednorazowy, domyślnie 72 h)
-         * @description Link (token we fragmencie `#t=`) zwracany jednorazowo, np. do przekazania innym kanałem; w bazie tylko skrót SHA-256 tokenu.
+         * @description Link (token we fragmencie `#t=`) zwracany przy utworzeniu. Z Idempotency-Key ten sam administrator może przez 24 h odtworzyć identyczną odpowiedź bez kolejnego e-maila; inne ciało daje IDEMPOTENCY_CONFLICT. Token jest wyprowadzany HMAC z wersjonowanego sekretu i identyfikatora zaproszenia; w bazie tylko skrót SHA-256 oraz metadane odtworzenia (bez jawnego tokenu). Decyzja właściciela 2026-10-05.
          */
         post: operations["adminCreateInvitation"];
         delete?: never;
@@ -2724,6 +2724,23 @@ export interface components {
                 rating: "good" | "needs-improvement" | "poor";
             }[];
         };
+        /** @description Problem Details uwierzytelniania; bez rozszerzeń domeny instrumentów i importów. */
+        AuthProblem: {
+            /** Format: uri */
+            type: string;
+            /** @description Krótki opis po polsku. */
+            title: string;
+            status: number;
+            code: components["schemas"]["ProblemCode"];
+            detail?: string;
+            /** @description Identyfikator żądania (`X-Request-Id`). */
+            instance?: string;
+            errors?: {
+                path: string;
+                code: string;
+                message: string;
+            }[];
+        };
         /** @description Pola akceptacji obsługuje warstwa api wokół trasy Better Auth (zapis w identity.consent_events); nie są kolumnami auth.users. */
         AuthSignUpRequest: {
             name: string;
@@ -2733,7 +2750,7 @@ export interface components {
             invitationToken: string;
             /**
              * @description Akceptacja regulaminu (warunek zawarcia umowy o świadczenie usług drogą elektroniczną).
-             * @constant
+             * @enum {boolean}
              */
             acceptTerms: true;
             termsVersion: components["schemas"]["LegalDocumentVersion"];
@@ -2780,9 +2797,12 @@ export interface components {
             session: {
                 id: components["schemas"]["Uuid"];
                 expiresAt: components["schemas"]["Timestamp"];
-                mfaVerifiedAt?: components["schemas"]["Timestamp"] | null;
+                /** Format: date-time */
+                mfaVerifiedAt?: string | null;
             };
             user: components["schemas"]["AuthUser"];
+            /** @description Tylko po zakończeniu wymiany TOTP; zastępuje wszystkie poprzednie kody, także otrzymane przy rozpoczęciu wymiany. */
+            backupCodes?: string[];
         };
         AuthStatusResponse: {
             status?: boolean;
@@ -2827,15 +2847,15 @@ export interface components {
         };
         AuthSessionInfo: {
             id: components["schemas"]["Uuid"];
+            /** @description Czy jest to sesja bieżącego żądania. */
+            current: boolean;
             createdAt: components["schemas"]["Timestamp"];
             expiresAt: components["schemas"]["Timestamp"];
             ipAddress?: string;
             userAgent?: string;
-            /** @description Identyfikator sesji wymagany przez `/revoke-session`. */
-            token?: string;
         };
         AuthRevokeSessionRequest: {
-            token: string;
+            id: components["schemas"]["Uuid"];
         };
         InvitationPreview: {
             /** @example a***@e***.pl */
@@ -4951,7 +4971,18 @@ export interface components {
             revokedAt?: components["schemas"]["Timestamp"];
             createdAt: components["schemas"]["Timestamp"];
         };
-        AdminInvitationCreated: components["schemas"]["AdminInvitation"] & {
+        AdminInvitationCreated: {
+            id: components["schemas"]["Uuid"];
+            /** Format: email */
+            email: string;
+            role: components["schemas"]["Role"];
+            invitedBy: components["schemas"]["Uuid"];
+            /** @enum {string} */
+            status: "pending" | "used" | "expired" | "revoked";
+            expiresAt: components["schemas"]["Timestamp"];
+            usedAt?: components["schemas"]["Timestamp"];
+            revokedAt?: components["schemas"]["Timestamp"];
+            createdAt: components["schemas"]["Timestamp"];
             /**
              * Format: uri
              * @description Link z tokenem we fragmencie adresu (`#t=`); pokazywany wyłącznie w tej odpowiedzi.
@@ -5225,31 +5256,65 @@ export interface components {
         };
     };
     responses: {
+        /** @description Błąd żądania; pole code rozróżnia przyczynę. */
+        AuthError400: {
+            headers: {
+                "X-Request-Id"?: string;
+                [name: string]: unknown;
+            };
+            content: {
+                "application/problem+json": components["schemas"]["AuthProblem"];
+            };
+        };
+        /** @description Błąd żądania; pole code rozróżnia przyczynę. */
+        AuthError401: {
+            headers: {
+                "X-Request-Id"?: string;
+                [name: string]: unknown;
+            };
+            content: {
+                "application/problem+json": components["schemas"]["AuthProblem"];
+            };
+        };
+        /** @description Błąd żądania; pole code rozróżnia przyczynę. */
+        AuthError403: {
+            headers: {
+                "X-Request-Id"?: string;
+                [name: string]: unknown;
+            };
+            content: {
+                "application/problem+json": components["schemas"]["AuthProblem"];
+            };
+        };
+        /** @description Błąd żądania; pole code rozróżnia przyczynę. */
+        AuthError422: {
+            headers: {
+                "X-Request-Id"?: string;
+                [name: string]: unknown;
+            };
+            content: {
+                "application/problem+json": components["schemas"]["AuthProblem"];
+            };
+        };
+        /** @description Błąd żądania; pole code rozróżnia przyczynę. */
+        AuthError429: {
+            headers: {
+                "X-Request-Id"?: string;
+                "Retry-After"?: number;
+                RateLimit?: string;
+                "RateLimit-Policy"?: string;
+                [name: string]: unknown;
+            };
+            content: {
+                "application/problem+json": components["schemas"]["AuthProblem"];
+            };
+        };
         /** @description Treść bez zmian (`If-None-Match`). */
         NotModified: {
             headers: {
                 [name: string]: unknown;
             };
             content?: never;
-        };
-        /** @description Niepoprawna składnia żądania. */
-        BadRequest: {
-            headers: {
-                "X-Request-Id": components["headers"]["XRequestId"];
-                [name: string]: unknown;
-            };
-            content: {
-                /**
-                 * @example {
-                 *       "type": "https://invest.oligi.pl/problems/bad-request",
-                 *       "title": "Niepoprawne żądanie",
-                 *       "status": 400,
-                 *       "code": "BAD_REQUEST",
-                 *       "instance": "req_01J8Z3Q6X4"
-                 *     }
-                 */
-                "application/problem+json": components["schemas"]["Problem"];
-            };
         };
         /** @description Brak, wygasła lub unieważniona sesja albo token PAT. */
         Unauthenticated: {
@@ -5646,7 +5711,7 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Konto utworzone; e-mail weryfikacyjny wysłany; kolejny krok — konfiguracja TOTP. */
+            /** @description Konto utworzone; adres e-mail zweryfikowany przez zaproszenie; kolejny krok — konfiguracja TOTP. */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -5655,9 +5720,11 @@ export interface operations {
                     "application/json": components["schemas"]["AuthSessionResponse"];
                 };
             };
-            400: components["responses"]["BadRequest"];
-            403: components["responses"]["Forbidden"];
-            429: components["responses"]["RateLimited"];
+            400: components["responses"]["AuthError400"];
+            401: components["responses"]["AuthError401"];
+            403: components["responses"]["AuthError403"];
+            422: components["responses"]["AuthError422"];
+            429: components["responses"]["AuthError429"];
         };
     };
     authSignInEmail: {
@@ -5682,8 +5749,11 @@ export interface operations {
                     "application/json": components["schemas"]["AuthSignInResponse"];
                 };
             };
-            401: components["responses"]["Unauthenticated"];
-            429: components["responses"]["RateLimited"];
+            400: components["responses"]["AuthError400"];
+            401: components["responses"]["AuthError401"];
+            403: components["responses"]["AuthError403"];
+            422: components["responses"]["AuthError422"];
+            429: components["responses"]["AuthError429"];
         };
     };
     authSignInSocial: {
@@ -5719,7 +5789,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": Record<string, never>;
+            };
+        };
         responses: {
             /** @description Sesja unieważniona; przeglądarka czyści dane strony. */
             200: {
@@ -5731,7 +5805,11 @@ export interface operations {
                     "application/json": components["schemas"]["AuthStatusResponse"];
                 };
             };
-            401: components["responses"]["Unauthenticated"];
+            400: components["responses"]["AuthError400"];
+            401: components["responses"]["AuthError401"];
+            403: components["responses"]["AuthError403"];
+            422: components["responses"]["AuthError422"];
+            429: components["responses"]["AuthError429"];
         };
     };
     authGetSession: {
@@ -5752,7 +5830,11 @@ export interface operations {
                     "application/json": components["schemas"]["AuthSessionResponse"] | null;
                 };
             };
-            429: components["responses"]["RateLimited"];
+            400: components["responses"]["AuthError400"];
+            401: components["responses"]["AuthError401"];
+            403: components["responses"]["AuthError403"];
+            422: components["responses"]["AuthError422"];
+            429: components["responses"]["AuthError429"];
         };
     };
     authRequestPasswordReset: {
@@ -5777,7 +5859,11 @@ export interface operations {
                     "application/json": components["schemas"]["AuthStatusResponse"];
                 };
             };
-            429: components["responses"]["RateLimited"];
+            400: components["responses"]["AuthError400"];
+            401: components["responses"]["AuthError401"];
+            403: components["responses"]["AuthError403"];
+            422: components["responses"]["AuthError422"];
+            429: components["responses"]["AuthError429"];
         };
     };
     authResetPassword: {
@@ -5802,8 +5888,11 @@ export interface operations {
                     "application/json": components["schemas"]["AuthStatusResponse"];
                 };
             };
-            400: components["responses"]["BadRequest"];
-            429: components["responses"]["RateLimited"];
+            400: components["responses"]["AuthError400"];
+            401: components["responses"]["AuthError401"];
+            403: components["responses"]["AuthError403"];
+            422: components["responses"]["AuthError422"];
+            429: components["responses"]["AuthError429"];
         };
     };
     authChangePassword: {
@@ -5828,8 +5917,11 @@ export interface operations {
                     "application/json": components["schemas"]["AuthStatusResponse"];
                 };
             };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthenticated"];
+            400: components["responses"]["AuthError400"];
+            401: components["responses"]["AuthError401"];
+            403: components["responses"]["AuthError403"];
+            422: components["responses"]["AuthError422"];
+            429: components["responses"]["AuthError429"];
         };
     };
     authTwoFactorEnable: {
@@ -5856,8 +5948,11 @@ export interface operations {
                     "application/json": components["schemas"]["AuthTwoFactorEnableResponse"];
                 };
             };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthenticated"];
+            400: components["responses"]["AuthError400"];
+            401: components["responses"]["AuthError401"];
+            403: components["responses"]["AuthError403"];
+            422: components["responses"]["AuthError422"];
+            429: components["responses"]["AuthError429"];
         };
     };
     authTwoFactorVerifyTotp: {
@@ -5882,8 +5977,11 @@ export interface operations {
                     "application/json": components["schemas"]["AuthSessionResponse"];
                 };
             };
-            401: components["responses"]["Unauthenticated"];
-            429: components["responses"]["RateLimited"];
+            400: components["responses"]["AuthError400"];
+            401: components["responses"]["AuthError401"];
+            403: components["responses"]["AuthError403"];
+            422: components["responses"]["AuthError422"];
+            429: components["responses"]["AuthError429"];
         };
     };
     authTwoFactorVerifyBackupCode: {
@@ -5908,8 +6006,11 @@ export interface operations {
                     "application/json": components["schemas"]["AuthSessionResponse"];
                 };
             };
-            401: components["responses"]["Unauthenticated"];
-            429: components["responses"]["RateLimited"];
+            400: components["responses"]["AuthError400"];
+            401: components["responses"]["AuthError401"];
+            403: components["responses"]["AuthError403"];
+            422: components["responses"]["AuthError422"];
+            429: components["responses"]["AuthError429"];
         };
     };
     authTwoFactorGenerateBackupCodes: {
@@ -5934,8 +6035,11 @@ export interface operations {
                     "application/json": components["schemas"]["AuthBackupCodesResponse"];
                 };
             };
-            401: components["responses"]["Unauthenticated"];
-            403: components["responses"]["Forbidden"];
+            400: components["responses"]["AuthError400"];
+            401: components["responses"]["AuthError401"];
+            403: components["responses"]["AuthError403"];
+            422: components["responses"]["AuthError422"];
+            429: components["responses"]["AuthError429"];
         };
     };
     authListSessions: {
@@ -5956,7 +6060,11 @@ export interface operations {
                     "application/json": components["schemas"]["AuthSessionInfo"][];
                 };
             };
-            401: components["responses"]["Unauthenticated"];
+            400: components["responses"]["AuthError400"];
+            401: components["responses"]["AuthError401"];
+            403: components["responses"]["AuthError403"];
+            422: components["responses"]["AuthError422"];
+            429: components["responses"]["AuthError429"];
         };
     };
     authRevokeSession: {
@@ -5981,8 +6089,11 @@ export interface operations {
                     "application/json": components["schemas"]["AuthStatusResponse"];
                 };
             };
-            401: components["responses"]["Unauthenticated"];
-            403: components["responses"]["Forbidden"];
+            400: components["responses"]["AuthError400"];
+            401: components["responses"]["AuthError401"];
+            403: components["responses"]["AuthError403"];
+            422: components["responses"]["AuthError422"];
+            429: components["responses"]["AuthError429"];
         };
     };
     authRevokeOtherSessions: {
@@ -5992,7 +6103,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": Record<string, never>;
+            };
+        };
         responses: {
             /** @description Pozostałe sesje unieważnione. */
             200: {
@@ -6003,8 +6118,11 @@ export interface operations {
                     "application/json": components["schemas"]["AuthStatusResponse"];
                 };
             };
-            401: components["responses"]["Unauthenticated"];
-            403: components["responses"]["Forbidden"];
+            400: components["responses"]["AuthError400"];
+            401: components["responses"]["AuthError401"];
+            403: components["responses"]["AuthError403"];
+            422: components["responses"]["AuthError422"];
+            429: components["responses"]["AuthError429"];
         };
     };
     previewInvitation: {
@@ -6031,9 +6149,12 @@ export interface operations {
                     "application/json": components["schemas"]["InvitationPreview"];
                 };
             };
-            404: components["responses"]["NotFound"];
-            422: components["responses"]["ValidationFailed"];
-            429: components["responses"]["RateLimited"];
+            400: components["responses"]["AuthError400"];
+            401: components["responses"]["AuthError401"];
+            403: components["responses"]["AuthError403"];
+            404: components["responses"]["AuthError400"];
+            422: components["responses"]["AuthError422"];
+            429: components["responses"]["AuthError429"];
         };
     };
     getMe: {
@@ -6054,7 +6175,11 @@ export interface operations {
                     "application/json": components["schemas"]["Me"];
                 };
             };
-            401: components["responses"]["Unauthenticated"];
+            400: components["responses"]["AuthError400"];
+            401: components["responses"]["AuthError401"];
+            403: components["responses"]["AuthError403"];
+            422: components["responses"]["AuthError422"];
+            429: components["responses"]["AuthError429"];
         };
     };
     updateMe: {
@@ -6232,9 +6357,11 @@ export interface operations {
                     "application/json": components["schemas"]["StepUpResult"];
                 };
             };
-            401: components["responses"]["Unauthenticated"];
-            422: components["responses"]["ValidationFailed"];
-            429: components["responses"]["RateLimited"];
+            400: components["responses"]["AuthError400"];
+            401: components["responses"]["AuthError401"];
+            403: components["responses"]["AuthError403"];
+            422: components["responses"]["AuthError422"];
+            429: components["responses"]["AuthError429"];
         };
     };
     listPersonalAccessTokens: {
@@ -9697,7 +9824,9 @@ export interface operations {
     adminCreateInvitation: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKeyOptional"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -9710,6 +9839,7 @@ export interface operations {
             /** @description Wystawiono. */
             201: {
                 headers: {
+                    "Idempotent-Replayed": components["headers"]["IdempotentReplayed"];
                     /** @description `no-store` */
                     "Cache-Control"?: string;
                     [name: string]: unknown;
@@ -9718,10 +9848,22 @@ export interface operations {
                     "application/json": components["schemas"]["AdminInvitationCreated"];
                 };
             };
-            401: components["responses"]["Unauthenticated"];
-            403: components["responses"]["Forbidden"];
-            409: components["responses"]["Conflict"];
-            422: components["responses"]["ValidationFailed"];
+            400: components["responses"]["AuthError400"];
+            401: components["responses"]["AuthError401"];
+            403: components["responses"]["AuthError403"];
+            /** @description Konflikt żądania. */
+            409: {
+                headers: {
+                    "X-Request-Id": components["headers"]["XRequestId"];
+                    "Retry-After": components["headers"]["RetryAfter"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["AuthProblem"];
+                };
+            };
+            422: components["responses"]["AuthError422"];
+            429: components["responses"]["AuthError429"];
         };
     };
     adminRevokeInvitation: {
