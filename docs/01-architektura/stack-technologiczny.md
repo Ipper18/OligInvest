@@ -61,7 +61,7 @@ Przygotowane manifesty (BL-001, 2026-09-20) używają dokładnych wersji z [inwe
 | `@types/node` | 24.13.5 | MIT | Deklaracje API Node 24 dla aplikacji serwerowych i pakietów z I/O; bez kodu runtime |
 | `@types/react`, `@types/react-dom` | 19.3.0 | MIT | Deklaracje React 19.3 dla Next.js i wspólnego UI; bez kodu runtime |
 | `@types/pg` | 8.23.1 | MIT | Deklaracje sterownika `pg` dla typowanych pul i transakcji RLS |
-| `ioredis` | 6.0.0 | MIT | Sterownik Valkey dla BullMQ 6.3 (opcjonalny peer, wymagany przez wybrany backend Redis); tylko `apps/jobs`, bez zależności Pythona; publikacja 2026-07-31, sprawdzone 2026-09-28 w [rejestrze npm](https://registry.npmjs.org/ioredis/6.0.0) |
+| `ioredis` | 6.0.0 | MIT | Sterownik Valkey dla BullMQ 6.3 (opcjonalny peer, wymagany przez wybrany backend Redis), sesji/flag w API oraz limitów i cache w `packages/data-providers` (BL-131); tylko backend, bez zależności web/Pythona. Kwoty i breaker w trwałym `valkey-queue`, cache w `valkey-cache`; stałe skrypty Lua z argumentami i kontrolą właściciela blokady. Publikacja 2026-07-31, sprawdzone 2026-09-28 w [rejestrze npm](https://registry.npmjs.org/ioredis/6.0.0) |
 | `@vitest/coverage-v8` | 5.0.1 | MIT | Provider pokrycia Vitest tej samej wersji, potrzebny do bramki pokrycia `core` |
 | `setuptools` | 84.0.0 | MIT | Backend budowania minimalnego pakietu Python (BL-002); przypięty w build-system i grupie dev, już uwzględniony w audycie; build bez izolowanego pobierania zależności |
 | `@tailwindcss/postcss` | 4.3.3 | MIT | Oficjalny adapter Tailwind 4 dla potoku CSS Next.js |

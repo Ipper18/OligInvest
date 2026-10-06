@@ -13,6 +13,14 @@ spec.loader.exec_module(module)
 
 
 class SecretTests(unittest.TestCase):
+    def test_provider_budgets_are_private_to_jobs(self):
+        values = {f"VALKEY_QUEUE_{name}_PASSWORD": b"synthetic-secret" for name in ["API", "JOBS", "ANALYTICS"]}
+        lines = module.acl(values).decode().splitlines()
+        for service in ["api", "jobs", "analytics"]:
+            line = next(line for line in lines if line.startswith(f"user {service} "))
+            self.assertEqual("~quota:*" in line, service == "jobs")
+            self.assertEqual("~breaker:*" in line, service == "jobs")
+
     def test_auth_state_is_private_to_api(self):
         values = {f"VALKEY_QUEUE_{name}_PASSWORD": b"synthetic-secret" for name in ["API", "JOBS", "ANALYTICS"]}
         lines = module.acl(values).decode().splitlines()
@@ -68,4 +76,3 @@ class SecretTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-
