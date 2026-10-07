@@ -120,6 +120,20 @@ export function createAuthRuntime(
   );
   return {
     service,
+    appDatabase,
+    cache,
+    enqueueMarketSearch: async (query: string) => {
+      const { createHash } = await import("node:crypto");
+      await queue("ingest").add(
+        "market.search",
+        { query },
+        {
+          jobId: `search-${createHash("sha256").update(query).digest("hex")}`,
+          removeOnComplete: { age: 30 * 86_400 },
+          removeOnFail: { age: 3600 },
+        },
+      );
+    },
     administration: new Administration(service, {
       resetMail: async (message) => {
         await queue("notify").add(

@@ -1,10 +1,13 @@
 import { loadConfig } from "@oliginvest/config";
 import { createLogger, type PlatformLogger } from "@oliginvest/platform";
+import { sql } from "drizzle-orm";
 import { z } from "zod";
 import { createApp } from "./app.js";
 import { requestClientIp } from "./auth/client-ip.js";
 import type { createAuthRuntime } from "./auth/runtime.js";
+import { MarketRepository } from "./modules.js";
 import { checkPostgres, checkValkey } from "./probes.js";
+import { StreamStore } from "./stream-store.js";
 
 const host = z
   .string()
@@ -50,7 +53,41 @@ export function createRuntime(
     );
     return auth;
   };
+  let market: MarketRepository | undefined;
+  let stream: StreamStore | undefined;
   const app = createApp({
+    stream: {
+      origin: new URL(config.PUBLIC_BASE_URL).origin,
+      authorize: async (request) => {
+        const principal = await (await getAuth()).service.requireData(request);
+        return { userId: principal.user_id, sessionId: principal.id };
+      },
+      store: async () => {
+        stream ??= new StreamStore((await getAuth()).cache);
+        return stream;
+      },
+      ownedInstruments: async (owner) =>
+        (await getAuth()).appDatabase.transaction(
+          { userId: owner.userId, role: "user" },
+          async (tx) =>
+            (
+              await tx.execute(
+                sql`SELECT instrument_id::text FROM market.watchlist_items UNION SELECT instrument_id::text FROM portfolio.positions_daily p WHERE quantity>0 AND valuation_date=(SELECT max(valuation_date) FROM portfolio.positions_daily WHERE account_id=p.account_id)`,
+              )
+            ).rows.map((row) => String(row.instrument_id)),
+        ),
+    },
+    market: {
+      repository: async () => {
+        market ??= new MarketRepository((await getAuth()).appDatabase);
+        return market;
+      },
+      authorize: async (request) => {
+        const principal = await (await getAuth()).service.requireData(request);
+        return { userId: principal.user_id, role: principal.role };
+      },
+      searchInBackground: async (query) => (await getAuth()).enqueueMarketSearch(query),
+    },
     auth: {
       service: async () => {
         return (await getAuth()).service;

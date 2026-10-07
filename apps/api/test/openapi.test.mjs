@@ -39,11 +39,17 @@ test("Zod document matches all implemented operations and pending is the exact r
     "authTwoFactorGenerateBackupCodes",
     "authTwoFactorVerifyBackupCode",
     "authTwoFactorVerifyTotp",
+    "getFxRates",
     "getHealthLive",
     "getHealthReady",
+    "getInstrument",
+    "getInstrumentChart",
+    "getMarketDataStatus",
     "getMe",
     "getOpenApiDocument",
+    "getQuotes",
     "previewInvitation",
+    "searchInstruments",
     "verifyStepUp",
   ]);
 });

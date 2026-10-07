@@ -9,6 +9,8 @@ import { bodyLimit } from "hono/body-limit";
 import { type IdentityDependencies, mountIdentity } from "./auth/identity-routes.js";
 import { type AuthRouteDependencies, createAuthRouter, mountStepUp } from "./auth/routes.js";
 import { SESSION_COOKIE } from "./auth/session.js";
+import { type MarketDependencies, mountMarket } from "./modules.js";
+import { mountStream, type StreamDependencies } from "./stream-routes.js";
 
 export type HealthChecks = Readonly<
   Record<"postgres" | "valkeyQueue" | "valkeyCache", () => Promise<void>>
@@ -33,6 +35,8 @@ export function createApp(
     logger: PlatformLogger;
     publicBaseUrl: string;
     auth?: AuthRouteDependencies & Partial<Pick<IdentityDependencies, "administration">>;
+    market?: MarketDependencies;
+    stream?: StreamDependencies;
   }>,
 ) {
   const app = new OpenAPIHono<AppEnv>();
@@ -94,7 +98,7 @@ export function createApp(
     response.headers.set("X-Content-Type-Options", "nosniff");
     response.headers.set("Referrer-Policy", "no-referrer");
     response.headers.set("Cross-Origin-Resource-Policy", "same-origin");
-    response.headers.set("Cache-Control", "no-store");
+    if (!response.headers.has("Cache-Control")) response.headers.set("Cache-Control", "no-store");
     context.res = response;
     return response;
   });
@@ -171,6 +175,19 @@ export function createApp(
         throw new ProblemError("SERVICE_UNAVAILABLE");
       }),
   });
+  mountMarket(
+    api,
+    options.market ?? {
+      authorize: async (request) => {
+        const principal = await (await authDependencies.service()).requireData(request);
+        return { userId: principal.user_id, role: principal.role };
+      },
+      repository: () => {
+        throw new ProblemError("SERVICE_UNAVAILABLE");
+      },
+      searchInBackground: async () => {},
+    },
+  );
   function document() {
     const metadata = {
       openapi: "3.1.0",
@@ -242,6 +259,19 @@ export function createApp(
       },
     }),
     (context) => context.json(documentSchema.parse(document())),
+  );
+  mountStream(
+    api,
+    options.stream ?? {
+      origin: options.publicBaseUrl,
+      authorize: async () => {
+        throw new ProblemError("UNAUTHENTICATED");
+      },
+      store: async () => {
+        throw new ProblemError("SERVICE_UNAVAILABLE");
+      },
+      ownedInstruments: async () => [],
+    },
   );
   app.route("/api/v1", api);
   return app;

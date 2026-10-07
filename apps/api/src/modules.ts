@@ -7,3 +7,9 @@ export {
   authUsers,
   authVerifications,
 } from "@oliginvest/mod-identity/server";
+export {
+  type MarketDependencies,
+  MarketRepository,
+  marketError,
+  mountMarket,
+} from "@oliginvest/mod-market/server";
