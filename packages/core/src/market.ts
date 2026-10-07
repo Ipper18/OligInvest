@@ -10,6 +10,45 @@ export interface MarketBar {
   volume: string;
   adjustmentFactor?: string;
 }
+/** §14: a hold affects analysis eligibility, never the availability of raw prices. */
+export function inspectMarketBar(
+  bar: MarketBar,
+  previousClose: string | null,
+  hasAction: boolean,
+): string[] {
+  const issues: string[] = [];
+  const close = toDecimal(bar.close);
+  const open = bar.open === null ? null : toDecimal(bar.open);
+  const low = bar.low === null ? null : toDecimal(bar.low);
+  const high = bar.high === null ? null : toDecimal(bar.high);
+  if (
+    toDecimal(bar.volume).isNegative() ||
+    (low && (low.gt(close) || (open && low.gt(open)))) ||
+    (high && (high.lt(close) || (open && high.lt(open)))) ||
+    (low && high && low.gt(high))
+  )
+    issues.push("ohlc_integrity");
+  if (
+    !hasAction &&
+    previousClose !== null &&
+    !toDecimal(previousClose).isZero() &&
+    close.div(toDecimal(previousClose)).minus("1").abs().gt("0.25")
+  )
+    issues.push("jump_without_action");
+  return issues;
+}
+export function marketPriceChange(
+  price: string,
+  previous: string,
+): { change: string; changeRatio?: number } {
+  const change = toDecimal(price).minus(toDecimal(previous));
+  return {
+    change: change.toFixed(),
+    ...(!toDecimal(previous).isZero()
+      ? { changeRatio: change.div(toDecimal(previous)).toNumber() }
+      : {}),
+  };
+}
 function mergeBars(bars: readonly MarketBar[]): MarketBar {
   const first = bars[0];
   const last = bars.at(-1);

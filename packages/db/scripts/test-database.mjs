@@ -214,6 +214,9 @@ try {
   const { testAuthFacade } = await import("../../../apps/api/integration/facade.mjs");
   await testAuthFacade({ host, port, database: migrated, passwords });
   console.log("Auth facade invitations, MFA, replay, session rotation and password reset: PASS");
+  const { testMarketStorage } = await import("../../../apps/api/integration/market.mjs");
+  await testMarketStorage({ host, port, database: migrated, passwords });
+  console.log("Market API, Decimal OHLCV, cursor/ETag, quality hold and catalog latency: PASS");
   const roleSettings = () =>
     withClient(
       migrated,
