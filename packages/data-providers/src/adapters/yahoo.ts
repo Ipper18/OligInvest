@@ -1,4 +1,4 @@
-import { addDays, Decimal } from "@oliginvest/core";
+import { addDays, marketPriceChange } from "@oliginvest/core";
 import YahooFinance from "yahoo-finance2";
 import { z } from "zod";
 import {
@@ -129,9 +129,7 @@ export class YahooProvider implements DataProvider {
             time: data.regularMarketTime,
           });
         if (fields.currency !== item.currency) throw new ProviderError("provider_error");
-        const change = fields.prevClose
-          ? new Decimal(fields.price).minus(fields.prevClose).toFixed()
-          : undefined;
+        const change = fields.prevClose ? marketPriceChange(fields.price, fields.prevClose) : {};
         output.push(
           quoteSchema.parse({
             instrumentId: item.id,
@@ -139,7 +137,7 @@ export class YahooProvider implements DataProvider {
             currency: fields.currency,
             ...(fields.prevClose ? { prevClose: fields.prevClose } : {}),
             ...(fields.volume ? { volume: fields.volume } : {}),
-            ...(change ? { change } : {}),
+            ...change,
             meta: {
               source: "yahoo",
               asOf: new Date(Number(fields.time) * 1000).toISOString(),

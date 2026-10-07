@@ -13,6 +13,8 @@
     "health": "node dist/healthcheck.js"
   },
   "dependencies": {
+    "@oliginvest/mod-market": "workspace:*",
+    "@oliginvest/data-providers": "workspace:*",
     "@oliginvest/config": "workspace:*",
     "@oliginvest/platform": "workspace:*",
     "bullmq": "6.3.6",

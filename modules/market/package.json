@@ -32,6 +32,7 @@
     }
   },
   "dependencies": {
+    "ioredis": "6.0.0",
     "drizzle-orm": "0.45.2",
     "@oliginvest/mod-identity": "workspace:*",
     "@oliginvest/data-providers": "workspace:*",

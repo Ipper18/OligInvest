@@ -1,7 +1,7 @@
 import { z } from "zod";
 
-export const decimalText = z.string().regex(/^-?\d{1,14}(\.\d{1,10})?$/u);
-export const currencySchema = z.string().regex(/^[A-Z]{3}$/u);
+export const decimalText = z.string().regex(/^-?\d{1,14}(\.\d{1,10})?$/);
+export const currencySchema = z.string().regex(/^[A-Z]{3}$/);
 export const sourceSchema = z.enum([
   "gpw",
   "gpw_manual",
@@ -85,11 +85,11 @@ export const symbolSchema = z
   .object({
     symbol: z.string().min(1).max(64),
     name: z.string().min(1).max(256),
-    mic: z.string().regex(/^[A-Z0-9]{4}$/u),
+    mic: z.string().regex(/^[A-Z0-9]{4}$/),
     currency: currencySchema,
     isin: z
       .string()
-      .regex(/^[A-Z]{2}[A-Z0-9]{9}\d$/u)
+      .regex(/^[A-Z]{2}[A-Z0-9]{9}\d$/)
       .optional(),
     type: z.enum([
       "stock",

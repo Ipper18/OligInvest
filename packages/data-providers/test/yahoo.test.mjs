@@ -1,5 +1,6 @@
 import { expect, test, vi } from "vitest";
 import { YahooProvider } from "../dist/adapters/index.js";
+import { createProviderFetch } from "../dist/index.js";
 
 const id = "0192f0c4-7b1e-7c3a-9f00-3d2a1b4c5d6e";
 const period = { timezone: "EDT", start: 1791207000, end: 1791230400, gmtoffset: -14400 };
@@ -46,12 +47,15 @@ test("real Yahoo SDK with synthetic HTTP preserves original decimal price", asyn
     if (url.includes("/chart/SYNTH")) return new Response(fixture());
     throw new Error("Unexpected synthetic URL");
   });
-  const provider = new YahooProvider(network, async () => ({
-    id,
-    symbol: "SYNTH",
-    currency: "USD",
-    mic: "XNAS",
-  }));
+  const provider = new YahooProvider(
+    createProviderFetch("OligInvest/0.0.0 (+https://invest.oligi.pl)", network),
+    async () => ({
+      id,
+      symbol: "SYNTH",
+      currency: "USD",
+      mic: "XNAS",
+    }),
+  );
   const result = await provider.getEodBars(id, { from: "2026-10-05", to: "2026-10-05" });
   expect(result).toHaveLength(1);
   expect(result[0]).toMatchObject({
@@ -59,6 +63,14 @@ test("real Yahoo SDK with synthetic HTTP preserves original decimal price", asyn
     currency: "USD",
     meta: { source: "yahoo", delayMinutes: 0, stale: false },
   });
+  expect(network.mock.calls.length).toBeGreaterThan(0);
+  for (const [input, options] of network.mock.calls) {
+    expect(["finance.yahoo.com", "query1.finance.yahoo.com", "query2.finance.yahoo.com"]).toContain(
+      new URL(String(input)).hostname,
+    );
+    expect(options.headers["User-Agent"]).toBe("OligInvest/0.0.0 (+https://invest.oligi.pl)");
+    expect(options.redirect).toBe("error");
+  }
 });
 test("Yahoo outage fails the adapter without substituting a made-up price", async () => {
   const provider = new YahooProvider(

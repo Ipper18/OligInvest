@@ -221,6 +221,9 @@ importers:
       '@oliginvest/mod-identity':
         specifier: workspace:*
         version: link:../../modules/identity
+      '@oliginvest/mod-market':
+        specifier: workspace:*
+        version: link:../../modules/market
       '@oliginvest/platform':
         specifier: workspace:*
         version: link:../../packages/platform
@@ -261,12 +264,18 @@ importers:
       '@oliginvest/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
+      '@oliginvest/data-providers':
+        specifier: workspace:*
+        version: link:../../packages/data-providers
       '@oliginvest/db':
         specifier: workspace:*
         version: link:../../packages/db
       '@oliginvest/i18n':
         specifier: workspace:*
         version: link:../../packages/i18n
+      '@oliginvest/mod-market':
+        specifier: workspace:*
+        version: link:../../modules/market
       '@oliginvest/platform':
         specifier: workspace:*
         version: link:../../packages/platform
@@ -430,6 +439,9 @@ importers:
       hono:
         specifier: 4.13.8
         version: 4.13.8
+      ioredis:
+        specifier: 6.0.0
+        version: 6.0.0(supports-color@10.2.2)
       zod:
         specifier: 4.6.5
         version: 4.6.5

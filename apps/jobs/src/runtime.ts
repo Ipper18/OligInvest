@@ -72,6 +72,7 @@ export async function startJobs(
   const queues = definitions.map(({ name }) => openQueue(name, runtime, logger));
   let mailer: ReturnType<typeof createAuthMailer> | undefined;
   let mailWorker: Worker | undefined;
+  let marketWorker: { close(): Promise<void> } | undefined;
   let timer: ReturnType<typeof setTimeout> | undefined;
   let stopped = false;
   let heartbeat: Promise<void> = Promise.resolve();
@@ -100,6 +101,7 @@ export async function startJobs(
       logger.warn({ event: "jobs.heartbeat_cleanup_failed" });
     } finally {
       await mailWorker?.close();
+      await marketWorker?.close();
       mailer?.close();
       await flagRuntime.close();
       await Promise.allSettled(queues.map((queue) => queue.close()));
@@ -107,6 +109,14 @@ export async function startJobs(
   };
   try {
     await Promise.all(queues.map((queue) => queue.waitUntilReady()));
+    const { startMarketWorker } = await import("./market-runtime.js");
+    marketWorker = await startMarketWorker({
+      database: flagRuntime.database,
+      cache: flagRuntime.cache,
+      queue: healthQueue,
+      connection: runtime.connection,
+      logger,
+    });
     if (runtime.mail) {
       const { createAuthMailer } = await import("./auth-mail.js");
       mailer = createAuthMailer(runtime.mail.config, runtime.mode, runtime.mail.port);
@@ -134,6 +144,8 @@ export async function startJobs(
     return { registry, queues, close };
   } catch (error) {
     await mailWorker?.close();
+    await marketWorker?.close();
+    flagRuntime.cache.disconnect();
     mailer?.close();
     await flagRuntime.close();
     await Promise.allSettled(queues.map((queue) => queue.close()));
