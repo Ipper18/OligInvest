@@ -9,6 +9,7 @@ import {
   run,
 } from "../../../scripts/dev-services.mjs";
 import { checkHealth, readRuntime, startJobs } from "../dist/index.js";
+import { marketSchedules } from "../dist/modules.js";
 import { testFeatureFlags } from "./test-feature-flags.mjs";
 import { testProviderLimits } from "./test-provider-limits.mjs";
 
@@ -23,6 +24,20 @@ try {
   await testProviderLimits(env);
   jobs = await startJobs(env);
   assert.equal(jobs.queues.length, 8);
+  const ingest = jobs.queues.find((q) => q.name === "ingest");
+  const before = await ingest.getJobSchedulers();
+  assert.equal(before.length, marketSchedules.length);
+  for (const schedule of marketSchedules) {
+    const item = before.find((item) => item.key === schedule.job);
+    assert.equal(item.pattern, schedule.cron);
+    assert.equal(item.tz, schedule.tz);
+    await ingest.upsertJobScheduler(
+      schedule.job,
+      { pattern: schedule.cron, tz: schedule.tz },
+      { name: schedule.job, data: {} },
+    );
+  }
+  assert.equal((await ingest.getJobSchedulers()).length, marketSchedules.length);
   assert.equal(await checkHealth(env), true);
   const runtime = readRuntime(env);
   const client = await jobs.queues[0].getBackend().client;

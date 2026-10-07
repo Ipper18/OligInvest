@@ -93,6 +93,10 @@ Klucze w `valkey-cache`: `q:{instrumentId}` (quote), `b:{instrumentId}:{yyyy}` (
 
 Dobowy plan (czas CET), realizowany przez BullMQ z priorytetami:
 
+Implementacja harmonogramów M1-2 używa `Europe/Warsaw` (czas lokalny, z CET/CEST), stabilnych identyfikatorów `market.fx`, `market.gpw`, `market.quotes` i `market.us-eod` oraz `upsertJobScheduler`, więc restart nie mnoży zadań. Data zaplanowanego uruchomienia jest zapisywana w payloadzie przed pierwszą próbą i pozostaje ta sama przy ponowieniach. Intraday filtruje obserwowane instrumenty według `trading_calendar`: daty, strefy, otwarcia i zamknięcia; brak wpisu kalendarza oznacza brak zapytania do dostawcy. Harmonogram wymaga uzupełnionego kalendarza i jawnych mapowań symboli. Test PostgreSQL obejmuje święta oraz różne daty zmiany czasu w USA i Europie.
+
+NBP ma do 11 prób co 10 min, kończonych o 14:00 czasu lokalnego (spóźnione zadanie nie pobiera już danych). Frankfurter uruchamia się po trzeciej awarii NBP; brak tabeli (`404`, np. święto) zachowuje ostatni kurs NBP i nie uruchamia ECB. USA pomija dni bez sesji, a zwykły batch pobiera pięć ostatnich sesji. GPW zachowuje trwały znacznik pojedynczego żądania archiwum na datę; awaria po wysłaniu żądania wymaga ręcznego uzupełnienia danych, bez automatycznego ponowienia pobierania tej daty.
+
 1. 06:00 — kalendarze (earnings USA z Alpha Vantage: 1 zapytanie; makro FRED: ≤ 5).
 2. 12:20 — NBP tabela A + złoto (2 zapytania) → przeliczenie wycen w PLN.
 3. 09:00–17:05 co 5 min — intraday GPW (Yahoo, 1 zapytanie na partię ≤ 50 symboli).

@@ -87,14 +87,14 @@ export async function testMarketStorage(settings) {
     assert.equal((await get(`instruments/${id}/chart?maxPoints=3001`)).status, 422);
     assert.equal((await get(`instruments/${randomUUID()}`)).status, 404);
     const first = await (await get("instruments?q=SYNMARKET&limit=1")).json();
-    assert.equal(first.items.length, 1);
-    assert.ok(first.nextCursor);
+    assert.equal(first.data.length, 1);
+    assert.ok(first.page.nextCursor);
     const second = await (
-      await get(`instruments?q=SYNMARKET&limit=1&cursor=${first.nextCursor}`)
+      await get(`instruments?q=SYNMARKET&limit=1&cursor=${first.page.nextCursor}`)
     ).json();
-    assert.equal(second.items.length, 1);
-    assert.notEqual(first.items[0].id, second.items[0].id);
-    assert.equal((await get(`instruments?q=changed&cursor=${first.nextCursor}`)).status, 422);
+    assert.equal(second.data.length, 1);
+    assert.notEqual(first.data[0].id, second.data[0].id);
+    assert.equal((await get(`instruments?q=changed&cursor=${first.page.nextCursor}`)).status, 422);
     assert.ok(searches >= 2);
     await repository.saveBars([
       bar("2026-10-06", "125.00000001"),

@@ -1,5 +1,5 @@
 import { addDays } from "@oliginvest/core";
-import { createProviderFetch, ProviderLimits } from "@oliginvest/data-providers";
+import { createProviderFetch, ProviderError, ProviderLimits } from "@oliginvest/data-providers";
 import {
   FrankfurterProvider,
   fetchGpw,
@@ -58,13 +58,24 @@ export function createMarketJobs(options: {
         );
         return;
       case "market.fx": {
+        const clock = new Intl.DateTimeFormat("en-GB", {
+          timeZone: "Europe/Warsaw",
+          hour: "2-digit",
+          minute: "2-digit",
+          hourCycle: "h23",
+        }).format(now());
+        if (payload.scheduledAt && (date < repository.today() || clock > "14:00")) return;
         const from = payload.from ?? date,
           to = payload.to ?? date;
         try {
           for (const range of nbpRanges(from, to))
             await store.saveFx(await nbp.getTable(range.from, range.to));
         } catch (error) {
-          if (failures >= 2)
+          if (error instanceof ProviderError && error.reason === "no_data") {
+            if (payload.scheduledAt && clock >= "14:00") return;
+            throw error;
+          }
+          if (failures === 2)
             for (const currency of ["USD", "EUR"])
               await store.saveFx(await ecb.getFxRate(currency, "PLN", date));
           throw error;
@@ -89,7 +100,7 @@ export function createMarketJobs(options: {
         return;
       }
       case "market.quotes": {
-        const ids = await options.observed();
+        const ids = await store.activeIds(await options.observed(), now().toISOString());
         if (!ids.length) return;
         const quotes = await limits.singleFlight("yahoo-quotes", () =>
           yahoo.getIntradayQuotes(ids),
@@ -120,9 +131,11 @@ export function createMarketJobs(options: {
           payload.instrumentId ? [payload.instrumentId] : await options.observed(),
         )) {
           const instrument = await repository.resolve(id);
+          if (!payload.from && !(await store.sessionDates(instrument.mic, date, date)).length)
+            continue;
           const from = payload.from ?? (await store.correctionStart(instrument.mic, date));
           await repository.saveBars(
-            await limits.singleFlight(`bars:${id}`, () =>
+            await limits.singleFlight(`bars:${id}:${from}:${payload.to ?? date}`, () =>
               yahoo.getEodBars(id, { from, to: payload.to ?? date }),
             ),
           );

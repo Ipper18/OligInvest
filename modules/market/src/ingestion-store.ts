@@ -101,6 +101,18 @@ export class IngestionStore {
       ).rows.map((row) => String(row.id)),
     );
   }
+  async activeIds(ids: string[], asOf: string) {
+    return this.repository.database.transaction(system, async (tx) =>
+      (
+        await tx.execute(sql`
+      SELECT i.id::text FROM market.instruments i JOIN market.trading_calendar c ON c.mic=i.mic
+      AND c.session_date=(${asOf}::timestamptz AT TIME ZONE c.timezone)::date
+      WHERE i.id=ANY(${sql.param(ids)}::uuid[]) AND i.is_active AND c.is_open
+      AND (${asOf}::timestamptz AT TIME ZONE c.timezone)::time BETWEEN c.open_time AND c.close_time
+    `)
+      ).rows.map((row) => z.uuid().parse(row.id)),
+    );
+  }
   async correctionStart(mic: string, date: string) {
     const dates = await this.sessionDates(mic, addDays(date, -31), date);
     return dates.slice(-5)[0] ?? date;

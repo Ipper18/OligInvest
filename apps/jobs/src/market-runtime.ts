@@ -43,7 +43,7 @@ export async function startMarketWorker(options: {
         "+inf",
       );
       for (const id of connections) {
-        const raw = await options.cache.get(`sse:connection:${id}`);
+        const raw = await options.cache.get(`sse:connection:${userId}:${id}`);
         if (!raw) continue;
         const parsed = z
           .object({
@@ -101,6 +101,16 @@ export async function startMarketWorker(options: {
     "ingest",
     async (job, token) => {
       try {
+        if (job.repeatJobKey && !job.data.scheduledAt) {
+          const scheduled = new Date(job.opts.prevMillis ?? job.timestamp);
+          const date = new Intl.DateTimeFormat("en-CA", {
+            timeZone: "Europe/Warsaw",
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+          }).format(scheduled);
+          await job.updateData({ ...job.data, date, scheduledAt: scheduled.toISOString() });
+        }
         await market.dispatch(job.name, job.data, job.attemptsMade);
       } catch (error) {
         if (error instanceof ProviderError && error.reason === "provider_quota") {

@@ -132,6 +132,7 @@ export const fxResponseSchema = object({
 }).openapi("FxRatesResponse");
 export const marketJobSchema = z
   .object({
+    scheduledAt: z.iso.datetime().optional(),
     date: z.iso.date().optional(),
     from: z.iso.date().optional(),
     to: z.iso.date().optional(),

@@ -117,6 +117,8 @@ BL-007: pakiet db deklaruje także istniejące `zod@4.6.5` do walidacji konfigur
 
 ## 6. Analityka (`apps/analytics`, Python)
 
+M1-2: moduł `market` korzysta z już przypiętego `ioredis` 6.0.0 (MIT) do trwałych limitów pobierania oraz publikacji notowań w `jobs`; nie dodaje nowej biblioteki do przeglądarki. `api` i `jobs` zależą od publicznych eksportów modułu `market`.
+
 | Element | Wybór | Wersja | Licencja | Uzasadnienie | Odrzucone |
 |---|---|---|---|---|---|
 | Backtesting | **vectorbt** | 1.1 (wymaga pandas ≥ 3.0.3, numpy ≥ 2.4.6) | Apache-2.0 + **Commons Clause** (zakaz sprzedaży oprogramowania, którego wartość wynika z vectorbt) | Wektorowe backtesty wielu wariantów, walk-forward; baza wiedzy w skillu `vectorbt-reference`. Ograniczenie licencyjne opisane w [`../10-ograniczenia.md`](../10-ograniczenia.md) (L-41; nie dotyczy użytku prywatnego). | backtesting.py (AGPL), nautilus_trader (silnik live, zbyt ciężki). |

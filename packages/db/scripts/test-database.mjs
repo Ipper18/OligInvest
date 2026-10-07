@@ -217,6 +217,13 @@ try {
   const { testMarketStorage } = await import("../../../apps/api/integration/market.mjs");
   await testMarketStorage({ host, port, database: migrated, passwords });
   console.log("Market API, Decimal OHLCV, cursor/ETag, quality hold and catalog latency: PASS");
+  const { testMarketScheduleStorage } = await import(
+    "../../../modules/market/integration/schedules.mjs"
+  );
+  await testMarketScheduleStorage({ host, port, database: migrated, passwords });
+  console.log(
+    "Market schedules: observed-only sessions, holiday, missing calendar and US/Europe DST mismatch PASS",
+  );
   const roleSettings = () =>
     withClient(
       migrated,
