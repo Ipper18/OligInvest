@@ -13,6 +13,14 @@ spec.loader.exec_module(module)
 
 
 class SecretTests(unittest.TestCase):
+    def test_cache_sse_commands_are_explicit(self):
+        values = {f"VALKEY_CACHE_{name}_PASSWORD": b"synthetic-secret" for name in ["API", "JOBS"]}
+        for line in module.acl(values, cache=True).decode().splitlines()[1:]:
+            for command in ["+xadd", "+xrange", "+xrevrange", "+xtrim", "+zadd", "+zrem", "+zcard", "+zrangebyscore", "+zremrangebyscore"]:
+                self.assertIn(command, line.split())
+            self.assertNotIn("+@all", line)
+            self.assertNotIn("+@write", line)
+
     def test_provider_budgets_are_private_to_jobs(self):
         values = {f"VALKEY_QUEUE_{name}_PASSWORD": b"synthetic-secret" for name in ["API", "JOBS", "ANALYTICS"]}
         lines = module.acl(values).decode().splitlines()

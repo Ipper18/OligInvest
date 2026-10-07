@@ -114,6 +114,9 @@ export function createAuthRuntime(
       });
     },
     event: (event) => logger.warn({ event }),
+    sessionsChanged: async () => {
+      await cache.publish("sse:auth", JSON.stringify({ v: 1 }));
+    },
   });
   void subscribeFeatureFlags(service.features, subscriber).catch(() =>
     logger.warn({ event: "auth.flags_subscription_unavailable" }),

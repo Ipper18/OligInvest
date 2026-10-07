@@ -21,7 +21,7 @@ export class StreamStore {
       CLAIM,
       2,
       `sse:connections:${owner.userId}`,
-      `sse:connection:${id}`,
+      `sse:connection:${owner.userId}:${id}`,
       this.now(),
       this.now() + 3600000,
       id,
@@ -31,12 +31,34 @@ export class StreamStore {
     return id;
   }
   async release(owner: StreamOwner, id: string) {
+    try {
+      await this.instruments(owner, id);
+    } catch {
+      return;
+    }
     await this.redis.zrem(`sse:connections:${owner.userId}`, id);
-    await this.redis.del(`sse:connection:${id}`);
+    await this.redis.del(`sse:connection:${owner.userId}:${id}`);
   }
   async instruments(owner: StreamOwner, id: string) {
-    const raw = await this.redis.get(`sse:connection:${id}`);
-    const value = connectionSchema.safeParse(raw ? JSON.parse(raw) : null);
+    const raw = await this.redis.get(`sse:connection:${owner.userId}:${id}`);
+    let input: unknown;
+    try {
+      input = raw ? JSON.parse(raw) : null;
+    } catch {
+      throw new ProblemError("NOT_FOUND");
+    }
+    // Redis Lua encodes an empty array as {}; normalize only that exact empty value.
+    if (
+      input &&
+      typeof input === "object" &&
+      "instruments" in input &&
+      input.instruments &&
+      typeof input.instruments === "object" &&
+      !Array.isArray(input.instruments) &&
+      Object.keys(input.instruments).length === 0
+    )
+      input.instruments = [];
+    const value = connectionSchema.safeParse(input);
     if (
       !value.success ||
       value.data.userId !== owner.userId ||
@@ -52,7 +74,7 @@ export class StreamStore {
       (await this.redis.eval(
         UPDATE,
         1,
-        `sse:connection:${id}`,
+        `sse:connection:${owner.userId}:${id}`,
         owner.userId,
         owner.sessionId,
         JSON.stringify(ids),
@@ -89,7 +111,12 @@ export class StreamStore {
     if (valid && (await this.redis.xrange(key, last, last)).length)
       return { resumed: true, cursor: last };
     const latest = await this.redis.xrevrange(key, "+", "-", "COUNT", 1);
-    return { resumed: false, cursor: latest[0]?.[0] ?? `${this.now()}-0` };
+    return { resumed: false, cursor: latest[0]?.[0] ?? "0-0" };
+  }
+  async hasGap(userId: string, cursor: string) {
+    return (
+      cursor !== "0-0" && (await this.redis.xrange(`sse:${userId}`, cursor, cursor)).length === 0
+    );
   }
   async read(userId: string, cursor: string) {
     const rows = await this.redis.xrange(`sse:${userId}`, `(${cursor}`, "+", "COUNT", 500);

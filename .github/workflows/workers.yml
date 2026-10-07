@@ -41,7 +41,9 @@ jobs:
           uv sync --project apps/analytics --frozen --no-install-project --no-build --no-python-downloads
           uv sync --project apps/analytics --frozen --no-build-isolation --no-python-downloads
       - name: Check worker packages
-        run: pnpm turbo run lint typecheck test build --filter=@oliginvest/jobs --filter=@oliginvest/analytics --filter=@oliginvest/platform --output-logs=new-only
+        run: pnpm turbo run lint typecheck test build --filter=@oliginvest/jobs --filter=@oliginvest/api --filter=@oliginvest/analytics --filter=@oliginvest/platform --output-logs=new-only
+      - name: Test SSE isolation and replay against real Valkey
+        run: node apps/api/scripts/test-stream.mjs
       - name: Test Node and Python against real Valkey
         run: pnpm queues:test
       - name: Test synthetic seed against real PostgreSQL

@@ -95,6 +95,9 @@ export const realtimeSchemas = {
   }),
   resync: object({ ...version, reason: z.enum(["gap", "server_restart"]) }),
 } as const;
+export const realtimeJsonSchemas = Object.fromEntries(
+  Object.entries(realtimeSchemas).map(([name, schema]) => [name, z.toJSONSchema(schema)]),
+);
 export const persistentEventSchema = object({
   event: z.enum([
     "portfolio.valuation.updated",

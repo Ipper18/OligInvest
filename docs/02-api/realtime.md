@@ -130,6 +130,10 @@ UI pokazuje dyskretny wskaźnik „aktualizacje co minutę” zamiast „na żyw
 
 ## 9. Testy
 
+Implementacja M1-2: `apps/api/src/stream-routes.ts` i `stream-store.ts`; schematy Zod oraz JSON Schema w `packages/contracts/src/realtime.ts`. Połączenia mają klucze `sse:connection:{userId}:{connectionId}` i są sprawdzane także względem `sessionId`. Utrata klucza replay podczas połączenia wywołuje `resync`. Kolejne wyceny są łączone w oknie 2 s z sumą identyfikatorów rachunków i zachowaniem kolejności identyfikatorów replay. Publikacja następuje po zatwierdzeniu transakcji; powiadomienie o odwołaniu sesji nie zawiera jej tokenu.
+
+`node apps/api/scripts/test-stream.mjs` uruchamia izolowany Valkey z produkcyjną listą ACL i syntetycznym uwierzytelnianiem: sprawdza izolację użytkowników/sesji, replay, luki, limity, Origin, filtrowanie i łączenie notowań, heartbeat, odwołanie oraz zwalnianie połączeń. Test działa w workflow `workers`. Rzeczywistą bramkę MFA i sesje sprawdzają testy auth/PostgreSQL. Klient EventSource, odpytywanie i testy UI pozostają w BL-121 (M1-4); pomiar p95 w przeglądarce w BL-212.
+
 | Test | Poziom | Kryterium |
 |---|---|---|
 | Schematy `data` każdego zdarzenia | kontraktowy (Vitest) | walidacja Zod dla przykładów z tego dokumentu |

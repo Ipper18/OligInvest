@@ -48,8 +48,10 @@ test("Zod document matches all implemented operations and pending is the exact r
     "getMe",
     "getOpenApiDocument",
     "getQuotes",
+    "openEventStream",
     "previewInvitation",
     "searchInstruments",
+    "setStreamInstruments",
     "verifyStepUp",
   ]);
 });

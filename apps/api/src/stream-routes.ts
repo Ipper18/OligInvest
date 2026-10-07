@@ -10,8 +10,10 @@ export interface StreamDependencies {
   authorize(request: Request): Promise<StreamOwner>;
   ownedInstruments(owner: StreamOwner): Promise<string[]>;
   origin: string;
+  now?: () => number;
 }
 export function mountStream(api: OpenAPIHono<AppEnv>, dependencies: StreamDependencies) {
+  const now = dependencies.now ?? Date.now;
   const object = <S extends z.ZodRawShape>(shape: S) =>
     z.object(shape).strict().openapi({ additionalProperties: true });
   api.openapi(
@@ -62,17 +64,9 @@ export function mountStream(api: OpenAPIHono<AppEnv>, dependencies: StreamDepend
       operationId: "openEventStream",
       tags: ["platform"],
       security: [{ sessionCookie: [] }],
-      request: {
-        headers: z
-          .object({
-            "Last-Event-ID": z
-              .string()
-              .max(64)
-              .optional()
-              .openapi({ param: { name: "Last-Event-ID", in: "header" } }),
-          })
-          .strict(),
-      },
+      parameters: [
+        { name: "Last-Event-ID", in: "header", schema: { type: "string", maxLength: 64 } },
+      ],
       responses: {
         200: {
           description: "Strumień zdarzeń.",
@@ -86,12 +80,19 @@ export function mountStream(api: OpenAPIHono<AppEnv>, dependencies: StreamDepend
           headers: {
             ...marketError.headers,
             "Retry-After": { schema: { type: "integer", minimum: 1 } },
+            RateLimit: { schema: { type: "string" } },
+            "RateLimit-Policy": { schema: { type: "string" } },
           },
         },
       },
     }),
     async (c) => {
       const owner = await dependencies.authorize(c.req.raw);
+      const headers = z
+        .object({ last: z.string().max(64).optional() })
+        .strict()
+        .safeParse({ last: c.req.header("last-event-id") });
+      if (!headers.success) throw new ProblemError("BAD_REQUEST");
       const store = await dependencies.store();
       const id = await store.claim(owner);
       let resume: Awaited<ReturnType<StreamStore["resume"]>>;
@@ -103,11 +104,13 @@ export function mountStream(api: OpenAPIHono<AppEnv>, dependencies: StreamDepend
       }
       c.header("Cache-Control", "no-store");
       c.header("X-Accel-Buffering", "no");
-      return streamSSE(c, async (stream) => {
+      const response = streamSSE(c, async (stream) => {
         const subscriber = store.redis.duplicate({ lazyConnect: true });
         let closed = false,
           recheck = false,
           flags: string[] | undefined;
+        let allowed = new Set<string>();
+        let extra = new Set<string>();
         const pending = new Map<
           string,
           z.infer<(typeof realtimeSchemas)["market.quotes.updated"]>["quotes"][number]
@@ -143,7 +146,10 @@ export function mountStream(api: OpenAPIHono<AppEnv>, dependencies: StreamDepend
               const parsed = realtimeSchemas["market.quotes.updated"].safeParse(JSON.parse(text));
               if (parsed.success)
                 for (const quote of parsed.data.quotes) {
-                  if (pending.size < 200 || pending.has(quote.instrumentId))
+                  if (
+                    (allowed.has(quote.instrumentId) || extra.has(quote.instrumentId)) &&
+                    (pending.size < 200 || pending.has(quote.instrumentId))
+                  )
                     pending.set(quote.instrumentId, quote);
                 }
             }
@@ -157,13 +163,20 @@ export function mountStream(api: OpenAPIHono<AppEnv>, dependencies: StreamDepend
           eventId?: string,
         ) => {
           const parsed = realtimeSchemas[event].parse(data);
-          await stream.writeSSE({
-            event,
-            data: JSON.stringify(parsed),
-            ...(eventId ? { id: eventId } : {}),
-          });
+          const deadline = setTimeout(() => stream.abort(), 5000);
+          try {
+            await stream.writeSSE({
+              event,
+              data: JSON.stringify(parsed),
+              ...(eventId ? { id: eventId } : {}),
+            });
+          } finally {
+            clearTimeout(deadline);
+          }
         };
         try {
+          allowed = new Set(await dependencies.ownedInstruments(owner));
+          extra = new Set(await store.instruments(owner, id));
           await subscriber.subscribe("sse:quotes", "flags.changed", "sse:auth");
           await stream.write("retry: 5000\n\n");
           await send("ready", {
@@ -175,11 +188,12 @@ export function mountStream(api: OpenAPIHono<AppEnv>, dependencies: StreamDepend
           if (c.req.header("last-event-id") && !resume.resumed)
             await send("resync", { v: 1, reason: "gap" });
           let cursor = resume.cursor,
-            heartbeat = Date.now(),
+            heartbeat = now(),
             lastQuote = 0;
-          let allowed = new Set(await dependencies.ownedInstruments(owner));
+          const durable: Awaited<ReturnType<StreamStore["read"]>> = [];
+          let nextValuation = 0;
           while (!closed) {
-            if (recheck || Date.now() - heartbeat >= 25000) {
+            if (recheck || now() - heartbeat >= 25000) {
               recheck = false;
               try {
                 const current = await dependencies.authorize(c.req.raw);
@@ -190,26 +204,60 @@ export function mountStream(api: OpenAPIHono<AppEnv>, dependencies: StreamDepend
                 break;
               }
               allowed = new Set(await dependencies.ownedInstruments(owner));
-              heartbeat = Date.now();
+              heartbeat = now();
               await send("ping", { ts: new Date().toISOString() });
             }
-            for (const event of await store.read(owner.userId, cursor)) {
-              await send(event.event, event.data, event.id);
-              cursor = event.id;
+            if (await store.hasGap(owner.userId, cursor)) {
+              await send("resync", { v: 1, reason: "gap" });
+              durable.length = 0;
+              cursor = (await store.resume(owner.userId, undefined)).cursor;
+            }
+            if (durable.length < 500) {
+              const events = await store.read(owner.userId, cursor);
+              durable.push(...events);
+              cursor = events.at(-1)?.id ?? cursor;
+            }
+            while (durable.length) {
+              let event = durable[0];
+              if (!event) break;
+              if (event.event === "portfolio.valuation.updated") {
+                if (now() < nextValuation) break;
+                const accounts = new Set<string>();
+                const firstTime = Number(event.id.split("-")[0]);
+                do {
+                  const value = realtimeSchemas["portfolio.valuation.updated"].parse(event.data);
+                  for (const account of value.accountIds) accounts.add(account);
+                  durable.shift();
+                  const next = durable[0];
+                  if (
+                    !next ||
+                    next.event !== event.event ||
+                    Number(next.id.split("-")[0]) - firstTime >= 2000
+                  )
+                    break;
+                  event = next;
+                } while (durable.length);
+                const value = realtimeSchemas["portfolio.valuation.updated"].parse(event.data);
+                await send(event.event, { ...value, accountIds: [...accounts] }, event.id);
+                nextValuation = now() + 2000;
+              } else {
+                durable.shift();
+                await send(event.event, event.data, event.id);
+              }
             }
             if (flags) {
               await send("flags.changed", { v: 1, keys: flags });
               flags = undefined;
             }
-            if (pending.size && Date.now() - lastQuote >= 5000) {
-              const extra = new Set(await store.instruments(owner, id));
+            extra = new Set(await store.instruments(owner, id));
+            if (pending.size && now() - lastQuote >= 5000) {
               const quotes = [...pending.values()].filter(
                 (q) => allowed.has(q.instrumentId) || extra.has(q.instrumentId),
               );
               pending.clear();
               if (quotes.length) {
                 await send("market.quotes.updated", { v: 1, quotes });
-                lastQuote = Date.now();
+                lastQuote = now();
               }
             }
             await stream.sleep(250);
@@ -222,6 +270,8 @@ export function mountStream(api: OpenAPIHono<AppEnv>, dependencies: StreamDepend
           await store.release(owner, id).catch(() => {});
         }
       });
+      response.headers.set("Cache-Control", "no-store");
+      return response;
     },
   );
 }

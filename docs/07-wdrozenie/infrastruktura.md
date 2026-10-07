@@ -260,6 +260,8 @@ Fragment `security_headers` ustawia nagłówki z [`../06-bezpieczenstwo/kontrole
 - **PostgreSQL:** `password_encryption = scram-sha-256`; `pg_hba` dopuszcza tylko sieci Dockera i konkretne role do konkretnej bazy; `log_min_duration_statement = 500ms` z `log_parameter_max_length = 0` (bez wartości parametrów w logach); `archive_mode = on`, `archive_command` przez pgBackRest, `archive_timeout = 300s` ([`backup-dr.md`](backup-dr.md)); role wg [`../03-dane/schema.sql`](../03-dane/schema.sql) § 0.
 - **Valkey:** ACL z osobnym użytkownikiem dla `api`, `jobs` i `analytics` (tylko potrzebne polecenia i prefiksy kluczy), użytkownik `default` wyłączony, polecenia administracyjne (`FLUSHALL`, `CONFIG`, `DEBUG`, `MODULE`) zablokowane; `valkey-queue`: `maxmemory-policy noeviction`, AOF co 1 s; `valkey-cache`: `allkeys-lru`, bez trwałości.
 
+M1-2: ACL cache dodaje jawnie `INFO` (sprawdzenie gotowości klienta), `XADD`, `XRANGE`, `XREVRANGE`, `XTRIM` oraz `ZADD`, `ZREM`, `ZCARD`, `ZRANGEBYSCORE`, `ZREMRANGEBYSCORE` dla replay i limitów SSE; prefiksy pozostają ograniczone, bez kategorii `+@write`/`+@all`. Przed wdrożeniem właściciel ponownie uruchamia istniejący skrypt przygotowania sekretów i odtwarza kontenery z nowym ACL według §8.1. Test SSE sprawdza tę samą listę uprawnień na izolowanym Valkey.
+
 ## 7. DNS, certyfikaty i poczta
 
 | Rekord | Wartość | Po co |
