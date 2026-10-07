@@ -106,8 +106,12 @@ export class MarketRepository {
         to_char(coalesce(q.fetched_at,b.ingested_at),'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS "fetchedAt",
         b.session_date::text AS "sessionDate", q.instrument_id IS NULL AS eod,
         EXISTS(SELECT 1 FROM market.data_quality_issues d WHERE d.instrument_id=i.id AND d.status='open' AND d.severity='BLOCK') AS hold
-        FROM market.instruments i LEFT JOIN market.quotes_latest q ON q.instrument_id=i.id
+        FROM market.instruments i
         LEFT JOIN LATERAL (SELECT * FROM market.bars_daily WHERE instrument_id=i.id ORDER BY session_date DESC LIMIT 1) b ON true
+        LEFT JOIN market.quotes_latest q ON q.instrument_id=i.id
+          AND (b.session_date IS NULL
+            OR (q.as_of AT TIME ZONE CASE WHEN i.mic='XWAR' THEN 'Europe/Warsaw' ELSE 'America/New_York' END)::date>b.session_date
+            OR ((q.as_of AT TIME ZONE CASE WHEN i.mic='XWAR' THEN 'Europe/Warsaw' ELSE 'America/New_York' END)::date=b.session_date AND q.fetched_at>b.ingested_at))
         WHERE i.id=ANY(${sql.param(ids)}::uuid[]) AND coalesce(q.price,b.close) IS NOT NULL`)
       ).rows;
       return rows.map(({ asOf, delay, source, eod, hold, ...row }) => {

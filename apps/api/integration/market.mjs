@@ -96,6 +96,33 @@ export async function testMarketStorage(settings) {
     assert.notEqual(first.data[0].id, second.data[0].id);
     assert.equal((await get(`instruments?q=changed&cursor=${first.page.nextCursor}`)).status, 422);
     assert.ok(searches >= 2);
+    await database.transaction(context, (tx) =>
+      repository.saveQuote(tx, {
+        instrumentId: id,
+        price: "99",
+        currency: "PLN",
+        meta: { source: "yahoo", asOf: "2026-10-04T12:00:00Z", delayMinutes: 15, stale: false },
+        fetchedAt: "2026-10-04T12:00:00Z",
+      }),
+    );
+    const fallback = (await repository.quotes(context, [id]))[0];
+    assert.equal(fallback.price, "125.00000001", "A failed intraday feed must not hide newer EOD");
+    assert.equal(fallback.meta.source, "gpw");
+    assert.equal(fallback.meta.stale, true);
+    await database.transaction(context, (tx) =>
+      repository.saveQuote(tx, {
+        instrumentId: id,
+        price: "124",
+        currency: "PLN",
+        meta: { source: "yahoo", asOf: "2026-10-06T10:00:00Z", delayMinutes: 15, stale: false },
+        fetchedAt: "2026-10-06T10:00:00Z",
+      }),
+    );
+    assert.equal(
+      (await repository.quotes(context, [id]))[0].price,
+      "125.00000001",
+      "Published EOD also supersedes an earlier quote from the same session",
+    );
     await repository.saveBars([
       bar("2026-10-06", "125.00000001"),
       bar("2026-10-06", "125.00000001"),

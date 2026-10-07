@@ -50,9 +50,11 @@ Powiązane: [`roadmapa.md`](roadmapa.md), [`backlog.md`](backlog.md), [`../06-be
 
 | **R-31** | Globalna blokada auth ogranicza współbieżność i może opóźniać inne konta | BL-101/102/103/105/111, przegląd M1-1 | 3 | 3 | 9 | pozostawiona decyzją właściciela 2026-10-05: transakcje auth/admin/CLI używają `730101`, także podczas Argon2 i obsługi Better Auth; limity prób ograniczają obciążenie, lecz nie usuwają kolejki; zaproszenia czekają zamiast fałszywego 409, idempotencja ma blokadę per administrator i klucz; przed zwiększeniem obciążenia pomiar i projekt węższych blokad z testami wyścigów | rosnący czas oczekiwania na advisory lock, p95 auth > 300 ms lub wyczerpanie puli | agent, właściciel, monitoring | M1, otwarte; ponowna ocena przed bramą B |
 
+| **R-32** | Licencja zależności pośredniej poza dozwoloną listą | M1-2: yahoo-finance2 → @deno/shim-deno → which → isexe 3.1.5 / BlueOak-1.0.0 | 2 | 3 | 6 | audyt licencji blokuje; decyzja właściciela przed dopuszczeniem konkretnej wersji, bez globalnego rozszerzenia listy i bez wyłączania kontroli | BLOCK deps-audit po uzupełnieniu metadanych SheetJS | agent, właściciel | 2026-10-07: otwarte, decyzja wymagana |
+
 ## 3. Podsumowanie
 
-31 ryzyk: **5 wysokich** (R-01, R-07, R-11, R-16, R-28), 22 średnie, 4 niskie; brak krytycznych.
+32 ryzyk: **5 wysokich** (R-01, R-07, R-11, R-16, R-28), 23 średnie, 4 niskie; brak krytycznych.
 
 | Ryzyko wysokie | Działanie przed końcem etapu |
 |---|---|

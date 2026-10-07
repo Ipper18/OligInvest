@@ -12,7 +12,8 @@ export async function testMarketScheduleStorage(settings) {
     database: settings.database,
     password: settings.passwords.app,
   });
-  const store = new IngestionStore(new MarketRepository(db));
+  const repository = new MarketRepository(db);
+  const store = new IngestionStore(repository);
   const us = randomUUID(),
     pl = randomUUID();
   const context = { userId: null, role: "system" };
@@ -46,6 +47,26 @@ export async function testMarketScheduleStorage(settings) {
     assert.deepEqual(await store.activeIds([us, pl], "2026-03-17T14:00:00Z"), []);
     assert.deepEqual(await store.activeIds([], "2026-03-16T14:00:00Z"), []);
     assert.deepEqual(await store.activeIds([us], "2026-03-18T14:00:00Z"), []);
+    // Explicit admin calendar rows are authoritative, including settlement-only closures.
+    await db.transaction(context, async (tx) => {
+      for (const mic of ["XWAR", "XNYS", "XNAS"])
+        for (const date of [
+          "2027-10-08",
+          "2027-10-09",
+          "2027-10-10",
+          "2027-10-11",
+          "2027-10-12",
+          "2027-10-13",
+        ])
+          await tx.execute(sql`INSERT INTO market.trading_calendar(mic,session_date,is_open,timezone,notes)
+            VALUES(${mic},${date}::date,${!["2027-10-09", "2027-10-10"].includes(date)},${mic === "XWAR" ? "Europe/Warsaw" : "America/New_York"},${date === "2027-10-11" && mic !== "XWAR" ? "[settlement:closed]" : null})
+            ON CONFLICT(mic,session_date) DO UPDATE SET is_open=EXCLUDED.is_open,notes=EXCLUDED.notes`);
+    });
+    assert.equal(await repository.settlement("XWAR", "2027-10-08"), "2027-10-12");
+    assert.equal(await repository.settlement("XWAR", "2027-10-11"), "2027-10-12");
+    for (const mic of ["XNYS", "XNAS"])
+      assert.equal(await repository.settlement(mic, "2027-10-08"), "2027-10-12");
+    await assert.rejects(repository.settlement("XWAR", "2027-10-13"));
   } finally {
     await db.transaction(context, (tx) =>
       tx.execute(sql`DELETE FROM market.instruments WHERE id=ANY(${sql.param([us, pl])}::uuid[])`),

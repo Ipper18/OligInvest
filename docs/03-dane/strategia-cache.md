@@ -108,6 +108,8 @@ NBP ma do 11 prób co 10 min, kończonych o 14:00 czasu lokalnego (spóźnione z
 
 Budżety są konfigurowalne w panelu admina (feature flag + liczby), a zużycie widoczne na dashboardzie „status integracji”.
 
+Notowanie intraday nie zasłania nowszej sesji EOD; dla tej samej sesji opublikowane później EOD zastępuje wcześniejszy odczyt intraday. Zapas zachowuje źródło i datę oraz flagę `stale` (test integracyjny API).
+
 ## 6. Invalidacja i jakość danych
 
 - **Zdarzenia:** nowy dzień sesyjny (czyści L1/L2 intraday), publikacja NBP, korekta/split (`SPLITS` Alpha Vantage lub ręcznie) → przeliczenie `adjustment_factor` w `market.bars_daily` i cache `b:*`.
