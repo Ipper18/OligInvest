@@ -65,7 +65,7 @@ export function mountStream(api: OpenAPIHono<AppEnv>, dependencies: StreamDepend
       request: {
         headers: z
           .object({
-            "last-event-id": z
+            "Last-Event-ID": z
               .string()
               .max(64)
               .optional()

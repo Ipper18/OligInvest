@@ -3,8 +3,10 @@ import { dataMetaSchema, decimalText, quoteSchema } from "@oliginvest/data-provi
 // Responses allow future additive fields in OpenAPI; actual outbound payloads are validated strictly.
 export const object = <T extends z.ZodRawShape>(shape: T) =>
   z.object(shape).strict().openapi({ additionalProperties: true });
-export const metaSchema = dataMetaSchema.openapi("DataMeta", { additionalProperties: true });
-export const apiQuoteSchema = quoteSchema
+// Provider schemas may be created before the OpenAPI extension initializes.
+export const metaSchema = object(dataMetaSchema.shape).openapi("DataMeta");
+export const apiQuoteSchema = z
+  .object(quoteSchema.shape)
   .omit({ fetchedAt: true })
   .extend({ meta: metaSchema })
   .strict()
