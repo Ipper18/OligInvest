@@ -9,12 +9,16 @@ Stan na **2026-09-18**. Wersje pochodzą z `npm view`, PyPI JSON API, GitHub Rel
 Nowa zależność runtime trafia do projektu tylko, jeśli spełnia **wszystkie** warunki:
 
 1. Nie da się tego sensownie zrobić standardem platformy (Web API, Node, PostgreSQL, CSS) w < 1 dniu pracy i < 200 linii.
-2. Licencja: MIT, Apache-2.0, BSD, ISC, MPL-2.0, MIT-0, PostgreSQL; LGPL tylko jako biblioteka bez modyfikacji; **bez AGPL/GPL w kodzie aplikacji** (dopuszczalne jako osobne usługi infrastrukturalne).
+2. Licencja: MIT, Apache-2.0, BSD, ISC, MPL-2.0, BlueOak-1.0.0, MIT-0, PostgreSQL; LGPL tylko jako biblioteka bez modyfikacji; **bez AGPL/GPL w kodzie aplikacji** (dopuszczalne jako osobne usługi infrastrukturalne).
 3. Aktywne utrzymanie (release lub commit ≤ 6 miesięcy) albo świadomie zaakceptowane ryzyko opisane w tym dokumencie.
 4. Wpływ na bundle przeglądarki mieści się w budżecie trasy (`04-frontend/wydajnosc.md`).
 5. Wpis w tym dokumencie (lub w ADR) z uzasadnieniem.
 
 BL-017 (2026-09-30): Next.js **16.3.6** zastępuje 16.3.5 ze względu na [GHSA-vcvr-r3jv-pc5j](https://github.com/vercel/next.js/security/advisories/GHSA-vcvr-r3jv-pc5j), CVSS 9,5. Poprawka opublikowana w npm 2026-09-22 16:19 UTC, po karencji; bez wyjątku OSV i bez zmiany linii stosu. OligInvest nie używa `next/og`, jednak próg audytu obowiązuje niezależnie od osiągalności. OSV Scanner **2.6.0** i Syft **1.52.0** (Apache-2.0) to istniejące wybory stosu, przypięte w skrypcie instalacji CI z SHA-256 oficjalnych artefaktów GitHub Releases (sprawdzone 2026-09-30); nie trafiają do runtime aplikacji.
+
+Decyzja właściciela 2026-10-08: BlueOak-1.0.0 dopuszczona ogólnie w polityce i audycie licencji, bez wyjątków per pakiet; kontrole podatności i pokrycia SBOM pozostają obowiązkowe. Rozbudowane zależności runtime yahoo-finance2 4.0.2 pozostają bez zmian w M1-2; osobna ocena w BL-159 (R-33).
+
+BL-017 (2026-10-08): Next.js **16.3.8** zastępuje 16.3.6; [GHSA-cjq9-62q9-8jv4](https://github.com/vercel/next.js/security/advisories/GHSA-cjq9-62q9-8jv4), CVSS 8,3, poprawka wskazana przez OSV. Wydanie npm 2026-09-30 16:07 UTC, poza karencją; aktualizacja w tej samej linii bez overrides i wyjątków OSV. Frozen install, testy/build web i pełny audyt zależności PASS. Graf Yahoo bez zmian.
 
 ## 2. Runtime i platforma
 
@@ -61,7 +65,7 @@ Przygotowane manifesty (BL-001, 2026-09-20) używają dokładnych wersji z [inwe
 | `@types/node` | 24.13.5 | MIT | Deklaracje API Node 24 dla aplikacji serwerowych i pakietów z I/O; bez kodu runtime |
 | `@types/react`, `@types/react-dom` | 19.3.0 | MIT | Deklaracje React 19.3 dla Next.js i wspólnego UI; bez kodu runtime |
 | `@types/pg` | 8.23.1 | MIT | Deklaracje sterownika `pg` dla typowanych pul i transakcji RLS |
-| `ioredis` | 6.0.0 | MIT | Sterownik Valkey dla BullMQ 6.3 (opcjonalny peer, wymagany przez wybrany backend Redis); tylko `apps/jobs`, bez zależności Pythona; publikacja 2026-07-31, sprawdzone 2026-09-28 w [rejestrze npm](https://registry.npmjs.org/ioredis/6.0.0) |
+| `ioredis` | 6.0.0 | MIT | Sterownik Valkey dla BullMQ 6.3 (opcjonalny peer, wymagany przez wybrany backend Redis), sesji/flag w API oraz limitów i cache w `packages/data-providers` (BL-131); tylko backend, bez zależności web/Pythona. Kwoty i breaker w trwałym `valkey-queue`, cache w `valkey-cache`; stałe skrypty Lua z argumentami i kontrolą właściciela blokady. Publikacja 2026-07-31, sprawdzone 2026-09-28 w [rejestrze npm](https://registry.npmjs.org/ioredis/6.0.0) |
 | `@vitest/coverage-v8` | 5.0.1 | MIT | Provider pokrycia Vitest tej samej wersji, potrzebny do bramki pokrycia `core` |
 | `setuptools` | 84.0.0 | MIT | Backend budowania minimalnego pakietu Python (BL-002); przypięty w build-system i grupie dev, już uwzględniony w audycie; build bez izolowanego pobierania zależności |
 | `@tailwindcss/postcss` | 4.3.3 | MIT | Oficjalny adapter Tailwind 4 dla potoku CSS Next.js |
@@ -117,6 +121,8 @@ BL-007: pakiet db deklaruje także istniejące `zod@4.6.5` do walidacji konfigur
 
 ## 6. Analityka (`apps/analytics`, Python)
 
+M1-2: moduł `market` korzysta z już przypiętego `ioredis` 6.0.0 (MIT) do trwałych limitów pobierania oraz publikacji notowań w `jobs`; nie dodaje nowej biblioteki do przeglądarki. `api` i `jobs` zależą od publicznych eksportów modułu `market`.
+
 | Element | Wybór | Wersja | Licencja | Uzasadnienie | Odrzucone |
 |---|---|---|---|---|---|
 | Backtesting | **vectorbt** | 1.1 (wymaga pandas ≥ 3.0.3, numpy ≥ 2.4.6) | Apache-2.0 + **Commons Clause** (zakaz sprzedaży oprogramowania, którego wartość wynika z vectorbt) | Wektorowe backtesty wielu wariantów, walk-forward; baza wiedzy w skillu `vectorbt-reference`. Ograniczenie licencyjne opisane w [`../10-ograniczenia.md`](../10-ograniczenia.md) (L-41; nie dotyczy użytku prywatnego). | backtesting.py (AGPL), nautilus_trader (silnik live, zbyt ciężki). |
@@ -132,7 +138,7 @@ BL-007: pakiet db deklaruje także istniejące `zod@4.6.5` do walidacji konfigur
 
 BL-017, przegląd licencji 2026-09-30: właściciel zatwierdził **Python-2.0 wyłącznie dla argparse**, **PSF-2.0 dla typing-extensions** i **CC-BY-4.0 dla caniuse-lite**. Pozostała allowlista z §1 i SEC §4.4 bez rozszerzeń. LGPL w istniejących psycopg/psycopg-binary i pakietach @img/sharp-* dotyczy niezmodyfikowanych bibliotek: natywne libvips są linkowane dynamicznie, opcjonalny wariant WASM występuje w lockfile, ale nie jest używany przez aplikację. Nie jest to ogólna zgoda na LGPL w innych pakietach; zmiana sposobu dystrybucji wymaga ponownego przeglądu.
 
-Syft tworzy CycloneDX ze **wszystkich pakietów obu lockfile**, także wariantów platformowych; wzbogaca licencje z rejestrów, a kontrola porównuje pokrycie z pełnym wynikiem OSV. Uzupełnienia niepełnych metadanych są przypisane do konkretnych wersji: bullmq 3.2.2 MIT i pathspec 1.1.1 MPL-2.0 (klasyfikatory PyPI), colorama 0.4.6 BSD-3-Clause oraz mypy-extensions 1.1.0 MIT (LICENSE w zainstalowanym wheel), python-dateutil 2.9.0.post0 Apache-2.0 OR BSD-3-Clause (LICENSE w wheel). Nazwy „MIT License” i „Apache 2.0” są normalizowane do SPDX. Źródła: [PyPI bullmq](https://pypi.org/project/bullmq/3.2.2/), [pathspec](https://pypi.org/project/pathspec/1.1.1/), [colorama](https://pypi.org/project/colorama/0.4.6/), [mypy-extensions](https://pypi.org/project/mypy-extensions/1.1.0/), [python-dateutil](https://pypi.org/project/python-dateutil/2.9.0.post0/). Własny prywatny workspace oliginvest-analytics nie podlega allowliście zależności (ADR-013). Inna nieznana licencja lub brak pakietu w SBOM blokuje audyt.
+Syft tworzy CycloneDX ze **wszystkich pakietów obu lockfile**, także wariantów platformowych; wzbogaca licencje z rejestrów, a kontrola porównuje pokrycie z pełnym wynikiem OSV. Uzupełnienia niepełnych metadanych są przypisane do konkretnych wersji: bullmq 3.2.2 MIT i pathspec 1.1.1 MPL-2.0 (klasyfikatory PyPI), colorama 0.4.6 BSD-3-Clause oraz mypy-extensions 1.1.0 MIT (LICENSE w zainstalowanym wheel), python-dateutil 2.9.0.post0 Apache-2.0 OR BSD-3-Clause (LICENSE w wheel). Nazwy „MIT License” i „Apache 2.0” są normalizowane do SPDX. Źródła: [PyPI bullmq](https://pypi.org/project/bullmq/3.2.2/), [pathspec](https://pypi.org/project/pathspec/1.1.1/), [colorama](https://pypi.org/project/colorama/0.4.6/), [mypy-extensions](https://pypi.org/project/mypy-extensions/1.1.0/), [python-dateutil](https://pypi.org/project/python-dateutil/2.9.0.post0/). Własny prywatny workspace oliginvest-analytics nie podlega allowliście zależności (ADR-013). Inna nieznana licencja lub brak pakietu w SBOM blokuje audyt. M1-2 (2026-10-07): wersja i licencja SheetJS CE 0.20.3 są odczytywane z `package.json` i `LICENSE` oficjalnego tarballa CDN, po sprawdzeniu SHA-512 z lockfile. Syft zapisuje URL jako wersję — audyt uzupełnia CycloneDX do `xlsx@0.20.3`, Apache-2.0. Dla tego konkretnego artefaktu zakresy dwóch starych zgłoszeń npm są uzupełniane według advisories producenta: [CVE-2023-30533](https://cdn.sheetjs.com/advisories/CVE-2023-30533) poprawione od 0.19.3 oraz [CVE-2024-22363](https://cdn.sheetjs.com/advisories/CVE-2024-22363) od 0.20.2. Surowe wyniki OSV pozostają w raporcie; zmiana wersji, źródła, hasha lub zakresu wymaga ponownego przeglądu. Nowe zgłoszenia nadal blokują; bez wyjątków OSV.
 
 
 | Element | Wybór | Wersja | Licencja | Uzasadnienie | Odrzucone |

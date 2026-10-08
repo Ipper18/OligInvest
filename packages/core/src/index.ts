@@ -10,6 +10,7 @@ export * from "./format.js";
 export * from "./fx.js";
 export * from "./indicators.js";
 export * from "./ledger.js";
+export * from "./market.js";
 export * from "./money.js";
 export * from "./rebalance.js";
 export * from "./returns.js";

@@ -55,6 +55,8 @@ export function jobFeatureFlags(
   );
   return {
     flags,
+    database,
+    cache: subscriber.duplicate({ lazyConnect: true }),
     close: async () => {
       subscriber.disconnect();
       await database.close();

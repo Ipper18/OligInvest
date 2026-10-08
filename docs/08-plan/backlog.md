@@ -164,16 +164,16 @@ Brama A (**[A]**) — MVP właściciela; brama B (**[B]**) — funkcje wymagane 
 | BL-122 | **[A]** Ekrany uwierzytelniania: logowanie, 2FA, rejestracja, konfiguracja 2FA (QR, kody), reset hasła, akceptacja regulaminu | FR-07.01, FR-07.02, FR-07.04, FR-07.10, FR-07.12 | EKR | BL-102, BL-103, BL-107, BL-121 | 3 | todo |
 | BL-123 | **[B]** Ustawienia: bezpieczeństwo (hasło, 2FA, sesje), prywatność (zgody, historia), dane (eksport, usunięcie), preferencje | FR-07.05, FR-07.08, FR-07.09, FR-07.12 | EKR | BL-113, BL-114, BL-122 | 2 | todo |
 | BL-124 | **[B]** RUM za zgodą: `web-vitals` → `reportWebVitals`, zapis bez identyfikatora osoby | NFR-01.01, FR-07.12, NFR-11.01 | PERF, RODO | BL-104, BL-121 | 1 | todo |
-| BL-125 | **[A]** Hub SSE: `GET /api/v1/stream`, strumień `sse:{userId}` z odtwarzaniem, pub/sub notowań, heartbeat, limit strumieni, zapas w postaci odpytywania | FR-02.03, NFR-01.06, NFR-03.05 | RT, [ADR-007](../09-decyzje/ADR-007-sse-zamiast-websocket.md) | BL-006, BL-013 | 3 | todo |
-| BL-131 | **[A]** `packages/data-providers`: port `DataProvider`, rejestr, token bucket, circuit breaker, metadane `source/asOf/delayMinutes/stale`, cache L1/L2 z kluczami per użytkownik | NFR-02.04, NFR-05.02, NFR-03.05, NFR-01.05 | CACHE | BL-006 | 3 | todo |
-| BL-132 | **[A]** Adaptery NBP (tabela A, limit 93 dni) i Frankfurter (zapas), zadanie dzienne kursów | FR-01.14 | SRC, CACHE | BL-131 | 1,5 | todo |
-| BL-133 | **[A]** Adapter archiwum GPW (XLS przez SheetJS CE z CDN, identyfikujący User-Agent, 1 żądanie na sesję), test kontraktowy, backfill historii | FR-01.03, NFR-05.02 | IMP, [ADR-005](../09-decyzje/ADR-005-strategia-danych-rynkowych.md) | BL-131 | 3 | todo |
-| BL-134 | **[A]** Adapter Yahoo (`yahoo-finance2`): notowania opóźnione GPW/USA, EOD USA, indeksy; degradacja do trybu „tylko EOD” | FR-01.02, FR-02.03, NFR-09.02 | SRC, CACHE | BL-131 | 2 | todo |
-| BL-135 | **[A]** Katalog instrumentów i mapowanie symboli (ISIN, ticker brokera, MIC); wyszukiwarka < 300 ms p95 z wyszukiwaniem u dostawcy w tle | FR-01.01 | DB, API | BL-133, BL-134 | 2 | todo |
-| BL-136 | **[A]** Kalendarz sesji i rozliczeń (XWAR, XNYS, XNAS) z wpisami admina; wyliczanie `settle_date` (USA T+1, UE T+2, od 11.10.2027 T+1) | FR-02.07 | OBL, LAW | BL-135 | 1,5 | todo |
-| BL-137 | **[A]** Karta instrumentu: `getInstrument`, `getQuotes`, `getMarketDataStatus`, status i wiek danych | FR-01.02, FR-01.15 | EKR, API | BL-135, BL-121 | 2 | todo |
-| BL-138 | **[A]** Wykres świecowy: `getInstrumentChart` z decymacją ≤ 3 000 punktów (1W/1M), leniwy wrapper Lightweight Charts, tabela alternatywna, atrybucja TradingView | FR-01.03, NFR-01.04, NFR-06.01 | [ADR-009](../09-decyzje/ADR-009-wykresy.md), PERF, LAW | BL-137 | 3 | todo |
-| BL-139 | **[A]** Minimalna kontrola jakości EOD przy zapisie: integralność OHLC, duplikaty, skoki bez zdarzenia korporacyjnego | NFR-08.04 | OBL | BL-133 | 1,5 | todo |
+| BL-125 | **[A]** Hub SSE: `GET /api/v1/stream`, strumień `sse:{userId}` z odtwarzaniem, pub/sub notowań, heartbeat, limit strumieni, zapas w postaci odpytywania | FR-02.03, NFR-01.06, NFR-03.05 | RT, [ADR-007](../09-decyzje/ADR-007-sse-zamiast-websocket.md) | BL-006, BL-013 | 3 | w toku |
+| BL-131 | **[A]** `packages/data-providers`: port `DataProvider`, rejestr, token bucket, circuit breaker, metadane `source/asOf/delayMinutes/stale`, cache L1/L2 z kluczami per użytkownik | NFR-02.04, NFR-05.02, NFR-03.05, NFR-01.05 | CACHE | BL-006 | 3 | w toku |
+| BL-132 | **[A]** Adaptery NBP (tabela A, limit 93 dni) i Frankfurter (zapas), zadanie dzienne kursów | FR-01.14 | SRC, CACHE | BL-131 | 1,5 | w toku |
+| BL-133 | **[A]** Adapter archiwum GPW (XLS przez SheetJS CE z CDN, identyfikujący User-Agent, 1 żądanie na sesję), test kontraktowy, backfill historii | FR-01.03, NFR-05.02 | IMP, [ADR-005](../09-decyzje/ADR-005-strategia-danych-rynkowych.md) | BL-131 | 3 | w toku |
+| BL-134 | **[A]** Adapter Yahoo (`yahoo-finance2`): notowania opóźnione GPW/USA, EOD USA, indeksy; degradacja do trybu „tylko EOD” | FR-01.02, FR-02.03, NFR-09.02 | SRC, CACHE | BL-131 | 2 | w toku |
+| BL-135 | **[A]** Katalog instrumentów i mapowanie symboli (ISIN, ticker brokera, MIC); wyszukiwarka < 300 ms p95 z wyszukiwaniem u dostawcy w tle | FR-01.01 | DB, API | BL-133, BL-134 | 2 | w toku |
+| BL-136 | **[A]** Kalendarz sesji i rozliczeń (XWAR, XNYS, XNAS) z wpisami admina; wyliczanie `settle_date` (USA T+1, UE T+2, od 11.10.2027 T+1) | FR-02.07 | OBL, LAW | BL-135 | 1,5 | w toku |
+| BL-137 | **[A]** API karty instrumentu (M1-2): `getInstrument`, `getQuotes`, `getMarketDataStatus`, metadane statusu i wieku danych, testy kontraktowe; ekran w BL-157 | FR-01.02, FR-01.15 | API, CACHE | BL-135 | 1 | w toku |
+| BL-138 | **[A]** API wykresu (M1-2): `getInstrumentChart`, serie OHLCV jako ciągi dziesiętne, agregacja 1W/1M i decymacja ≤ 3 000 punktów, testy kontraktowe; UI w BL-158 | FR-01.03, NFR-01.04 | API, [ADR-009](../09-decyzje/ADR-009-wykresy.md), PERF | BL-137 | 1,5 | w toku |
+| BL-139 | **[A]** Minimalna kontrola jakości EOD przy zapisie: integralność OHLC, duplikaty, skoki bez zdarzenia korporacyjnego | NFR-08.04 | OBL | BL-133 | 1,5 | w toku |
 | BL-141 | **[A]** `packages/core`: `Money`, `Quantity`, `Price`, `FxRate` (decimal.js, precyzja 34, zaokrąglenia), formatowanie pl-PL | NFR-08.01, NFR-04.04 | OBL, [ADR-014](../09-decyzje/ADR-014-pieniadze-waluty-czas.md) | BL-015 | 2 | w toku |
 | BL-142 | **[A]** `packages/core`: model operacji, partie FIFO (sprzedaż częściowa, split, przeniesienie), P/L zrealizowany ekonomiczny i podatkowy (`settle_date`, NBP D-1; marża przewalutowania osobno jako `fxCosts`, ustawienia `tax_date_basis` i `tax_include_fx_fee`) — wektor A | FR-02.07, FR-03.05, NFR-08.02 | OBL, VEC | BL-141 | 4 | w toku |
 | BL-143 | **[A]** `packages/core`: pozycje, gotówka per waluta, wycena, P/L niezrealizowany, wynik dnia — wektory F i G | FR-02.02, FR-02.04, FR-02.09 | OBL, VEC | BL-142 | 2 | w toku |
@@ -186,9 +186,12 @@ Brama A (**[A]**) — MVP właściciela; brama B (**[B]**) — funkcje wymagane 
 | BL-151 | **[B]** CrowdSec: agent w VM (Caddy, SSH), LAPI i bouncer nftables na VPS, test blokady ≤ 60 s | NFR-03.11 | INF, [ADR-011](../09-decyzje/ADR-011-topologia-wdrozenia.md) | BL-025 | 1,5 | todo |
 | BL-152 | **[A]** Monitoring: 13 sond Uptime Kuma, health-checki usług, `/internal/metrics`, dzienny raport błędów | NFR-09.01, NFR-09.04 | MON | BL-029, BL-146 | 2 | todo |
 | BL-153 | **[B]** Pierwszy test odtworzenia (B i D) z protokołem; automatyczny test miesięczny | NFR-09.03 | DR | BL-028, BL-114 | 1,5 | todo |
-| BL-154 | **[A]** Lighthouse blokujący w CI dla tras MVP, raport JS per trasa, poprawki wydajności | NFR-01.01, NFR-01.02, NFR-01.03, NFR-01.05 | PERF, CI | BL-147, BL-138 | 2 | todo |
+| BL-154 | **[A]** Lighthouse blokujący w CI dla tras MVP, raport JS per trasa, poprawki wydajności | NFR-01.01, NFR-01.02, NFR-01.03, NFR-01.05 | PERF, CI | BL-147, BL-158 | 2 | todo |
 | BL-155 | **[A]** E2E ścieżek krytycznych (zaproszenie → TOTP → import XTB → portfel; bramki), axe, ręczny test VoiceOver z protokołem | NFR-10.02, NFR-06.01 | CI, A11Y | BL-148, BL-122 | 3 | todo |
 | BL-156 | **[B]** Skan produkcji (nagłówki, CSP, TLS, porty z zewnątrz) i odhaczona lista kontrolna RODO § 12 | NFR-03.06, FR-07.12 | SEC, RODO, INF | BL-116, BL-151, BL-118 | 1 | todo |
+| BL-157 | **[A]** Ekran karty instrumentu (M1-4, część wydzielona z BL-137): kurs, zmiana, wolumen, status i wiek danych, atrybucja, integracja z powłoką i SSE | FR-01.02, FR-01.15 | EKR, API, LAW | BL-121, BL-137 | 1 | todo |
+| BL-158 | **[A]** UI wykresu (M1-4, część wydzielona z BL-138): leniwy wrapper Lightweight Charts, tabela alternatywna, atrybucja TradingView; konwersja ciągów OHLCV do liczb wyłącznie przy rysowaniu canvas, bez obliczeń na tych liczbach | FR-01.03, NFR-01.04, NFR-06.01 | API, [ADR-009](../09-decyzje/ADR-009-wykresy.md), PERF, LAW | BL-121, BL-138, BL-157 | 1,5 | todo |
+| BL-159 | **[A]** Ocena zależności Yahoo po M1-2 (R-33): cienki własny adapter endpointów chart/quote na naszym transporcie albo wersja bez MCP SDK; porównanie obecnego i proponowanego grafu (liczba unikalnych pakietów produkcyjnych jobs, bez devDependencies), kosztu utrzymania (cookies/crumb, zmiany schematów, testy kontraktowe, retry/limity) i zgodności z warunkami Yahoo. Wynik: udokumentowana decyzja i zakres ewentualnej migracji; bez zmiany runtime w M1-2, bez obchodzenia blokad | NFR-02.04, NFR-03.05, NFR-05.02, NFR-07.04 | STACK, SRC, CACHE, LAW, RISK | BL-134 | 1 | todo |
 | | **Suma etapu** | | | | **102** | |
 
 ### 2.1 Postęp i odchylenia
@@ -350,14 +353,18 @@ Poza planem etapów; estymacja orientacyjna. Przed startem każde zadanie przech
 | Etap | Zadania | Suma (d) | Uwagi |
 |---|---|---|---|
 | M0 Szkielet i infrastruktura | 35 | 51 |  |
-| M1 MVP | 47 | 102 | brama A 85,5 d, brama B 16,5 d |
+| M1 MVP | 48 | 103 | brama A 86,5 d, brama B 16,5 d |
 | M2 Dane rynkowe, wskaźniki, onboarding | 16 | 29,5 |  |
 | M3 Wyniki historyczne i scenariusze | 19 | 38,5 |  |
 | M4 Alerty, PWA i Skróty | 12 | 23,5 |  |
 | M5a Admin, edukacja, rynek | 15 | 27 |  |
 | M5b Analizy zaawansowane, OAuth, offline | 16 | 38,5 |  |
 | M6 Hardening i dostępność | 12 | 17 |  |
-| **Razem M0–M6** | **172** | **327** | bez narzutu przeglądu (ok. +30 %) |
+| **Razem M0–M6** | **173** | **328** | bez narzutu przeglądu (ok. +30 %) |
 | Później | 8 | 18,5 | poza planem |
 
 **Pokrycie wymagań:** każde z 151 wymagań FR/NFR z [`../00-przeglad/wymagania.md`](../00-przeglad/wymagania.md) ma co najmniej jedno zadanie (sprawdzone skryptem 2026-09-19: brak wymagań bez zadania, brak zależności wstecz między etapami, M3 i M4 niezależne). Pełna macierz wymaganie → dokument → zadanie: [`../00-przeglad/macierz-pokrycia.md`](../00-przeglad/macierz-pokrycia.md).
+
+- **2026-10-07, M1-2 (BL-125, BL-131–139):** implementacja backendu oraz testy jednostkowe, kontraktowe, PostgreSQL/RLS i Valkey wykonane lokalnie; status `w toku` do wspólnego DoD i zielonego CI. UI/klient SSE pozostają w M1-4 zgodnie z podziałem paczek. Poprawiono sharp i metadane CDN SheetJS; pełny audyt ujawnił blokadę licencji isexe 3.1.5 (BlueOak-1.0.0), wymagającą decyzji właściciela. Estymacje bez zmian; odchylenia nakładu nie wyliczano bez ewidencji. [Stan i kryteria](m1-2-session-report.md).
+
+- **2026-10-08, M1-2:** ogólne dopuszczenie BlueOak-1.0.0 decyzją właściciela; R-32 zamknięte. R-33 i BL-159 (1 d, M1 po M1-2) dokumentują ocenę grafu Yahoo bez zmiany runtime teraz. Nowe zgłoszenie Next.js usunięte aktualizacją do 16.3.8 poza karencją; pełny lokalny deps-audit PASS. Statusy paczki do zielonego CI i wspólnego DoD pozostają `w toku`; estymacje wykonanych zadań bez zmian.

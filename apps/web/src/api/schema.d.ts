@@ -2634,6 +2634,8 @@ export interface components {
             amount: components["schemas"]["MoneyAmount"];
             currency: components["schemas"]["CurrencyCode"];
         };
+        /** @description Kolumna OHLCV wyrównana do osi t; ciągi dziesiętne zgodnie z ADR-014, null oznacza brak wartości. Konwersja do liczb tylko przy rysowaniu canvas, bez obliczeń na tych liczbach. */
+        DecimalSeries: (components["schemas"]["DecimalString"] | null)[];
         /** @description Kolumna liczb wyrównana do osi `t`; `null` = brak wartości (np. rozgrzewka wskaźnika, dzień bez sesji). */
         NumberSeries: (number | null)[];
         /** @description Czas uniksowy w sekundach (UTC); dla danych dziennych — północ UTC dnia sesji. */
@@ -3161,24 +3163,24 @@ export interface components {
          *         1758153600
          *       ],
          *       "o": [
-         *         58.1,
-         *         58.6
+         *         "58.1",
+         *         "58.6"
          *       ],
          *       "h": [
-         *         58.9,
-         *         58.8
+         *         "58.9",
+         *         "58.8"
          *       ],
          *       "l": [
-         *         57.8,
-         *         58.1
+         *         "57.8",
+         *         "58.1"
          *       ],
          *       "c": [
-         *         58.62,
-         *         58.34
+         *         "58.62",
+         *         "58.34"
          *       ],
          *       "v": [
-         *         1843210,
-         *         1520344
+         *         "1843210",
+         *         "1520344"
          *       ],
          *       "decimated": false,
          *       "meta": {
@@ -3195,11 +3197,11 @@ export interface components {
             adjusted: boolean;
             currency: components["schemas"]["CurrencyCode"];
             t: components["schemas"]["TimeAxis"];
-            o: components["schemas"]["NumberSeries"];
-            h: components["schemas"]["NumberSeries"];
-            l: components["schemas"]["NumberSeries"];
-            c: components["schemas"]["NumberSeries"];
-            v: components["schemas"]["NumberSeries"];
+            o: components["schemas"]["DecimalSeries"];
+            h: components["schemas"]["DecimalSeries"];
+            l: components["schemas"]["DecimalSeries"];
+            c: components["schemas"]["DecimalSeries"];
+            v: components["schemas"]["DecimalSeries"];
             /** @description `true`, gdy serię zagregowano do `maxPoints` (OHLC łączone, wolumen sumowany). */
             decimated: boolean;
             corporateActions?: {

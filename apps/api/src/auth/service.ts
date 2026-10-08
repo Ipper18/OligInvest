@@ -70,6 +70,7 @@ export interface AuthServiceOptions {
   passwordChecks: PasswordChecks;
   audit: Pick<AuditWriter, "record">;
   securityEvent: (event: AuthSecurityEvent) => Promise<void>;
+  sessionsChanged?: () => Promise<void>;
   wait?: (milliseconds: number) => Promise<void>;
   event: (event: string) => void;
 }
@@ -567,6 +568,21 @@ export class AuthService {
       } catch {
         this.options.event("auth.reset_delivery_failed");
       }
+    }
+    if (
+      result.response.ok &&
+      [
+        "/sign-out",
+        "/revoke-session",
+        "/revoke-other-sessions",
+        "/change-password",
+        "/reset-password",
+        "/two-factor/verify-backup-code",
+      ].includes(path)
+    ) {
+      await this.options
+        .sessionsChanged?.()
+        .catch(() => this.options.event("auth.stream_notify_failed"));
     }
     return result.response;
   }

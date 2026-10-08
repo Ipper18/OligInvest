@@ -1,5 +1,6 @@
 """BL-017: pinned scanners, complete lockfile SBOM, fail-closed policy."""
 
+import base64
 import datetime as dt
 import hashlib
 import io
@@ -30,6 +31,7 @@ ALLOWED = {
     "Unlicense",
     "MPL-2.0",
     "PostgreSQL",
+    "BlueOak-1.0.0",
 }
 # Owner decision 2026-09-30; package-specific, not a global extension.
 REVIEWED = {
@@ -45,6 +47,65 @@ METADATA = {
     ("pathspec", "1.1.1"): "MPL-2.0",
     ("python-dateutil", "2.9.0.post0"): "Apache-2.0 OR BSD-3-Clause",
 }
+SHEETJS_URL = "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
+SHEETJS_INTEGRITY = "sha512-oLDq3jw7AcLqKWH2AhCpVTZl8mf6X2YReP+Neh0SJUzV/BdZYjth94tG5toiMB1PPrYtxOCfaoUCkvtuH+3AJA=="
+# CDN advisories, verified 2026-10-07; npm's open-ended ranges describe the
+# abandoned npm distribution. Apply only to the exact verified CDN artifact.
+SHEETJS_FIXED = {
+    "GHSA-4r6h-8v6p-xvw6": "0.19.3",
+    "GHSA-5pgg-2g8v-p4x9": "0.20.2",
+}
+
+
+def sheetjs_metadata(lock, content):
+    if (
+        f"xlsx@{SHEETJS_URL}:" not in lock
+        or (f"resolution: {{integrity: {SHEETJS_INTEGRITY}, tarball: {SHEETJS_URL}}}")
+        not in lock
+    ):
+        raise ValueError("SheetJS source/integrity changed; review upstream metadata")
+    digest = "sha512-" + base64.b64encode(hashlib.sha512(content).digest()).decode()
+    if digest != SHEETJS_INTEGRITY:
+        raise ValueError("SheetJS tarball integrity mismatch")
+    with tarfile.open(fileobj=io.BytesIO(content), mode="r:gz") as archive:
+        package = json.load(archive.extractfile("package/package.json"))
+        license_text = archive.extractfile("package/LICENSE").read().decode()
+    if (package.get("name"), package.get("version")) != ("xlsx", "0.20.3"):
+        raise ValueError("SheetJS package identity mismatch")
+    if (
+        "Apache License" not in license_text
+        or "Version 2.0, January 2004" not in license_text
+    ):
+        raise ValueError("SheetJS license changed")
+    return {"name": "xlsx", "version": "0.20.3", "license": "Apache-2.0"}
+
+
+def sheetjs_fixed(package, vuln, metadata):
+    fixed = SHEETJS_FIXED.get(vuln["id"])
+    if (
+        not metadata
+        or not fixed
+        or package
+        != {"ecosystem": "npm", "name": "xlsx", "version": metadata["version"]}
+    ):
+        return False
+    affected = vuln.get("affected", [])
+    return (
+        len(affected) == 1
+        and affected[0].get("package", {}).get("name") == "xlsx"
+        and (
+            affected[0].get("package", {}).get("ecosystem") == "npm"
+            and affected[0]
+            .get("database_specific", {})
+            .get("last_known_affected_version_range")
+            == f"< {fixed}"
+            and affected[0].get("ranges")
+            == [{"events": [{"introduced": "0"}], "type": "SEMVER"}]
+            and not affected[0].get("versions")
+            and tuple(map(int, metadata["version"].split(".")))
+            >= tuple(map(int, fixed.split(".")))
+        )
+    )
 
 
 def exceptions(config, today):
@@ -75,7 +136,7 @@ def exceptions(config, today):
     return result
 
 
-def findings(document, ignored):
+def findings(document, ignored, metadata=None, corrected=None):
     if not isinstance(document.get("results"), list) or not document["results"]:
         raise ValueError("OSV report has no scan results")
     rows, packages, sources = [], set(), set()
@@ -93,6 +154,12 @@ def findings(document, ignored):
                 score = float(groups[0]["max_severity"])
                 if not math.isfinite(score) or not 0 <= score <= 10:
                     raise ValueError("Invalid OSV CVSS score")
+                if sheetjs_fixed(package, vuln, metadata):
+                    if corrected is not None:
+                        corrected.append(
+                            f"xlsx@{metadata['version']}: {vuln['id']} — poprawione od {SHEETJS_FIXED[vuln['id']]} (advisory CDN; zweryfikowany tarball)"
+                        )
+                    continue
                 aliases = {
                     vuln["id"],
                     *vuln.get("aliases", []),
@@ -156,7 +223,7 @@ def license_allowed(expression, name):
     return value
 
 
-def licenses(sbom, expected):
+def licenses(sbom, expected, metadata=None):
     if sbom.get("bomFormat") != "CycloneDX" or not sbom.get("components"):
         raise ValueError("Missing/malformed CycloneDX SBOM")
     seen, rejected, normalized = set(), [], []
@@ -165,6 +232,20 @@ def licenses(sbom, expected):
             continue  # CycloneDX may also describe the lockfiles themselves, not dependencies.
         name, version = component["name"], component["version"]
         purl = component["purl"]
+        if (
+            metadata
+            and name == "xlsx"
+            and version == SHEETJS_URL
+            and purl.startswith("pkg:npm/xlsx@")
+        ):
+            version = metadata["version"]
+            component["version"] = version
+            component["purl"] = f"pkg:npm/xlsx@{version}"
+            component.pop("cpe", None)
+            component["licenses"] = [{"license": {"id": metadata["license"]}}]
+            normalized.append(
+                f"xlsx@{version}: Apache-2.0; package.json i LICENSE tarballa CDN (SHA-512 zgodne z lockfile)"
+            )
         ecosystem = (
             "npm"
             if purl.startswith("pkg:npm/")
@@ -279,6 +360,26 @@ def main():
     ]
     failed = True
     try:
+        # Use the workspace's Node transport, as pnpm does for this CDN.
+        artifact = subprocess.run(
+            [
+                "node",
+                "--input-type=module",
+                "-e",
+                (
+                    "const r = await fetch(process.argv[1], {signal: AbortSignal.timeout(60000)});"
+                    "if (!r.ok) throw new Error(`SheetJS HTTP ${r.status}`);"
+                    "process.stdout.write(Buffer.from(await r.arrayBuffer()));"
+                ),
+                SHEETJS_URL,
+            ],
+            capture_output=True,
+            check=True,
+            timeout=70,
+        )
+        metadata = sheetjs_metadata(
+            (ROOT / "pnpm-lock.yaml").read_text(), artifact.stdout
+        )
         ignored = exceptions(
             tomllib.loads((ROOT / "osv-scanner.toml").read_text()),
             dt.datetime.now(dt.timezone.utc).date(),
@@ -310,11 +411,18 @@ def main():
                 (0, 1),
             )
             data = json.loads(target.read_text())
-            parsed, packages = findings(data, ignored)
-            if status == 1 and not parsed:
+            corrected = []
+            parsed, packages = findings(data, ignored, metadata, corrected)
+            if status == 1 and not parsed and not corrected:
                 raise ValueError("OSV returned failure without vulnerability findings")
             if label == "full":
                 rows, expected = parsed, packages
+                summary += [
+                    "## Uzupełnienia zakresów ze źródła",
+                    "",
+                    *[f"- {item}" for item in corrected],
+                    "",
+                ]
         summary += [
             "## Podatności (także moderate/low i wyjątki)",
             "",
@@ -355,7 +463,9 @@ def main():
             ],
             "deps-audit-syft.log",
         )
-        rejected, normalized = licenses(json.loads(sbom.read_text()), expected)
+        document = json.loads(sbom.read_text())
+        rejected, normalized = licenses(document, expected, metadata)
+        sbom.write_text(json.dumps(document, indent=2) + "\n", encoding="utf8")
         summary += [
             "",
             f"## Licencje i pokrycie SBOM: {len(expected)} pakietów z lockfile",

@@ -86,7 +86,7 @@ Szczegóły, licencje i uzasadnienia: [`docs/01-architektura/stack-technologiczn
 - Nie masz dostępu do serwerów ani sekretów: zadania infrastrukturalne kończ skryptem, konfiguracją i instrukcją krok po kroku dla właściciela.
 
 ### 5.8 Zależności
-- Najpierw standard platformy (Web API, Node, PostgreSQL, CSS). Nowa zależność wymaga uzasadnienia w PR i wpisu w `stack-technologiczny.md`; licencje MIT, Apache-2.0, BSD, ISC, MPL-2.0 (bez AGPL/GPL w kodzie aplikacji); aktywne utrzymanie.
+- Najpierw standard platformy (Web API, Node, PostgreSQL, CSS). Nowa zależność wymaga uzasadnienia w PR i wpisu w `stack-technologiczny.md`; licencje MIT, Apache-2.0, BSD, ISC, MPL-2.0, BlueOak-1.0.0 (bez AGPL/GPL w kodzie aplikacji); aktywne utrzymanie.
 - `pnpm-workspace.yaml`: `minimumReleaseAge: 4320`, `trustPolicy: no-downgrade`, `strictDepBuilds: true`, `blockExoticSubdeps: true`, `allowBuilds` tylko dla pakietów z uzasadnieniem. Instalacja zawsze z lockfile.
 
 ## 6. Jak pracować

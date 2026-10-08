@@ -93,6 +93,10 @@ Klucze w `valkey-cache`: `q:{instrumentId}` (quote), `b:{instrumentId}:{yyyy}` (
 
 Dobowy plan (czas CET), realizowany przez BullMQ z priorytetami:
 
+Implementacja harmonogramów M1-2 używa `Europe/Warsaw` (czas lokalny, z CET/CEST), stabilnych identyfikatorów `market.fx`, `market.gpw`, `market.quotes` i `market.us-eod` oraz `upsertJobScheduler`, więc restart nie mnoży zadań. Data zaplanowanego uruchomienia jest zapisywana w payloadzie przed pierwszą próbą i pozostaje ta sama przy ponowieniach. Intraday filtruje obserwowane instrumenty według `trading_calendar`: daty, strefy, otwarcia i zamknięcia; brak wpisu kalendarza oznacza brak zapytania do dostawcy. Harmonogram wymaga uzupełnionego kalendarza i jawnych mapowań symboli. Test PostgreSQL obejmuje święta oraz różne daty zmiany czasu w USA i Europie.
+
+NBP ma do 11 prób co 10 min, kończonych o 14:00 czasu lokalnego (spóźnione zadanie nie pobiera już danych). Frankfurter uruchamia się po trzeciej awarii NBP; brak tabeli (`404`, np. święto) zachowuje ostatni kurs NBP i nie uruchamia ECB. USA pomija dni bez sesji, a zwykły batch pobiera pięć ostatnich sesji. GPW zachowuje trwały znacznik pojedynczego żądania archiwum na datę; awaria po wysłaniu żądania wymaga ręcznego uzupełnienia danych, bez automatycznego ponowienia pobierania tej daty.
+
 1. 06:00 — kalendarze (earnings USA z Alpha Vantage: 1 zapytanie; makro FRED: ≤ 5).
 2. 12:20 — NBP tabela A + złoto (2 zapytania) → przeliczenie wycen w PLN.
 3. 09:00–17:05 co 5 min — intraday GPW (Yahoo, 1 zapytanie na partię ≤ 50 symboli).
@@ -104,12 +108,14 @@ Dobowy plan (czas CET), realizowany przez BullMQ z priorytetami:
 
 Budżety są konfigurowalne w panelu admina (feature flag + liczby), a zużycie widoczne na dashboardzie „status integracji”.
 
+Notowanie intraday nie zasłania nowszej sesji EOD; dla tej samej sesji opublikowane później EOD zastępuje wcześniejszy odczyt intraday. Zapas zachowuje źródło i datę oraz flagę `stale` (test integracyjny API).
+
 ## 6. Invalidacja i jakość danych
 
 - **Zdarzenia:** nowy dzień sesyjny (czyści L1/L2 intraday), publikacja NBP, korekta/split (`SPLITS` Alpha Vantage lub ręcznie) → przeliczenie `adjustment_factor` w `market.bars_daily` i cache `b:*`.
 - **Ręcznie:** przycisk „Odśwież” (user: 1/min per instrument) i „Wymuś ponowne pobranie” (admin).
 - **Polityka cen skorygowanych:** przechowujemy *surowe* OHLCV + osobne współczynniki korekt; wykresy używają cen skorygowanych, a wyceny i P/L — surowych cen i realnych przepływów (TWR/XIRR nie mogą korzystać z cen skorygowanych wstecz). Szczegóły w `obliczenia-finansowe.md`.
-- **Kontrola jakości (skill `data-scrub`):** przy każdym batchu: luki w kalendarzu sesji, duplikaty timestampów, zera w wolumenie przy zmianie ceny, skoki > 40 % bez splitu → wpis do `data_quality_issues` i oznaczenie serii jako „do weryfikacji” w UI.
+- **Kontrola jakości:** przy każdym batchu kontrole z `obliczenia-finansowe.md` § 14. Skok `|r| > 25 %` bez zdarzenia korporacyjnego tego dnia → wpis `BLOCK` do `data_quality_issues`. `BLOCK` wyklucza serię wyłącznie z analiz FR-04; notowania, wycena i wykres nadal pokazują dane ze znacznikiem „do weryfikacji” (`staleReason = data_quality_hold`). Administrator potwierdza skok albo oznacza split; samo odświeżenie danych nie rozwiązuje zgłoszenia.
 - **Retencja:** intraday 5-minutowe bary — 90 dni (potem agregacja do dziennych); newsy — 90 dni; logi kwot — 30 dni.
 
 ## 7. Konsekwencje dla wydajności (NFR-01)

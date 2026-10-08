@@ -114,12 +114,29 @@ export function createAuthRuntime(
       });
     },
     event: (event) => logger.warn({ event }),
+    sessionsChanged: async () => {
+      await cache.publish("sse:auth", JSON.stringify({ v: 1 }));
+    },
   });
   void subscribeFeatureFlags(service.features, subscriber).catch(() =>
     logger.warn({ event: "auth.flags_subscription_unavailable" }),
   );
   return {
     service,
+    appDatabase,
+    cache,
+    enqueueMarketSearch: async (query: string) => {
+      const { createHash } = await import("node:crypto");
+      await queue("ingest").add(
+        "market.search",
+        { query },
+        {
+          jobId: `search-${createHash("sha256").update(query).digest("hex")}`,
+          removeOnComplete: { age: 30 * 86_400 },
+          removeOnFail: { age: 3600 },
+        },
+      );
+    },
     administration: new Administration(service, {
       resetMail: async (message) => {
         await queue("notify").add(
