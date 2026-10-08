@@ -216,7 +216,7 @@ export class MarketRepository {
       ).rows;
       const actions = (
         await tx.execute(
-          sql`SELECT ex_date::text AS date,type,ratio::text FROM market.corporate_actions WHERE instrument_id=${id}::uuid AND type IN ('split','reverse_split','dividend') AND ex_date BETWEEN ${from}::date AND ${to}::date ORDER BY ex_date`,
+          sql`SELECT ex_date::text AS date,type,ratio_from AS "ratioFrom",ratio_to AS "ratioTo" FROM market.corporate_actions WHERE instrument_id=${id}::uuid AND type IN ('split','reverse_split','dividend') AND ex_date BETWEEN ${from}::date AND ${to}::date ORDER BY ex_date`,
         )
       ).rows.map(clean);
       return { currency: instrument.currency, hold: Boolean(instrument.hold), rows, actions };

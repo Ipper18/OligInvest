@@ -3208,7 +3208,8 @@ export interface components {
                 date: components["schemas"]["LocalDate"];
                 /** @enum {string} */
                 type: "split" | "reverse_split" | "dividend";
-                ratio?: components["schemas"]["DecimalString"];
+                ratioFrom?: number;
+                ratioTo?: number;
             }[];
             meta: components["schemas"]["DataMeta"];
         };
@@ -3505,8 +3506,13 @@ export interface components {
             fxRate?: components["schemas"]["DecimalString"];
             /** @enum {string} */
             fxSource?: "broker" | "implied" | "nbp_fallback" | "manual";
-            /** @description Nowe akcje za 1 dotychczasową (4:1 → "4"). */
-            splitRatio?: components["schemas"]["DecimalString"];
+            ratioFrom?: number;
+            ratioTo?: number;
+            /** @description Gotówka za ułamek po scaleniu, w walucie rachunku. */
+            cashInLieu?: components["schemas"]["Money"];
+            /** @description Deklarowany koszt przeniesionych papierów, w walucie rachunku; razem z acquiredOn. */
+            acquisitionCost?: components["schemas"]["Money"];
+            acquiredOn?: components["schemas"]["LocalDate"];
             /** @description Druga noga FX_CONVERSION. */
             counterAmount?: components["schemas"]["Money"];
             /** @example cfd_pl */
@@ -3530,7 +3536,7 @@ export interface components {
             accountId: components["schemas"]["Uuid"];
             type: components["schemas"]["TransactionType"];
             tradeDate: components["schemas"]["LocalDate"];
-        } & unknown & unknown & unknown & unknown & unknown & unknown;
+        } & unknown & unknown & unknown & unknown & unknown & unknown & unknown;
         /** @description Typ i rachunek niezmienne — zmiana wymaga usunięcia i ponownego dodania. */
         TransactionPatch: components["schemas"]["TransactionFields"] & {
             tradeDate?: components["schemas"]["LocalDate"];
@@ -3639,6 +3645,8 @@ export interface components {
             /** @enum {string} */
             action: "map_instrument" | "skip" | "include";
             instrumentId?: components["schemas"]["Uuid"];
+            /** @description Uzupełnienie danych wiersza przy include, m.in. quantity, price i priceCurrency dywidendy. Ponowna walidacja per typ. */
+            fields?: components["schemas"]["TransactionFields"];
             /**
              * @description Zapamiętaj symbol brokera → instrument dla przyszłych importów.
              * @default true
@@ -3685,6 +3693,14 @@ export interface components {
             createdAt: components["schemas"]["Timestamp"];
             updatedAt: components["schemas"]["Timestamp"];
         };
+        /** @description Pozycje wyłączone z sum kosztu i P/L z powodu nieznanego kosztu. Nie zastępujemy kosztu zerem. */
+        CostExclusions: {
+            count: number;
+            positions: {
+                accountId: components["schemas"]["Uuid"];
+                instrumentId: components["schemas"]["Uuid"];
+            }[];
+        };
         PortfolioSummary: {
             totalValue: components["schemas"]["Money"];
             marketValue: components["schemas"]["Money"];
@@ -3702,6 +3718,7 @@ export interface components {
                 totalValue: components["schemas"]["Money"];
                 totalValueBase: components["schemas"]["Money"];
             }[];
+            exclusions: components["schemas"]["CostExclusions"];
             /** @description `false`, gdy brakuje kursu lub FX dla części pozycji (wycena częściowa). */
             isComplete: boolean;
             meta: components["schemas"]["DataMeta"];
@@ -3755,28 +3772,26 @@ export interface components {
             accountId: components["schemas"]["Uuid"];
             instrument: components["schemas"]["InstrumentSummary"];
             quantity: components["schemas"]["DecimalString"];
-            /** @description Na jednostkę, wg metody użytkownika (FIFO lub średnia). */
-            averageCost?: components["schemas"]["Money"];
-            /** @description W walucie bazowej; w widoku tax — kursy NBP D−1. */
-            costBasis: components["schemas"]["Money"];
+            averageCost?: components["schemas"]["Money"] | null;
+            costBasis: components["schemas"]["Money"] | null;
             price?: components["schemas"]["DecimalString"];
             priceCurrency?: components["schemas"]["CurrencyCode"];
             /** @description W walucie instrumentu. */
             marketValue: components["schemas"]["Money"];
             marketValueBase: components["schemas"]["Money"];
             weight: number;
-            unrealizedPl: components["schemas"]["Money"];
+            unrealizedPl: components["schemas"]["Money"] | null;
             unrealizedPlRatio?: number | null;
-            unrealizedPlInstrumentCurrency?: components["schemas"]["Money"];
-            /** @description FR-02.06; priceEffect + fxEffect = unrealizedPl (± 0,01). */
-            priceEffect?: components["schemas"]["Money"];
-            fxEffect?: components["schemas"]["Money"];
+            unrealizedPlInstrumentCurrency?: components["schemas"]["Money"] | null;
+            priceEffect?: components["schemas"]["Money"] | null;
+            fxEffect?: components["schemas"]["Money"] | null;
             dayChange?: components["schemas"]["Money"];
             meta: components["schemas"]["DataMeta"];
         };
         PositionsResponse: {
             data: components["schemas"]["Position"][];
             totals: {
+                exclusions: components["schemas"]["CostExclusions"];
                 marketValueBase: components["schemas"]["Money"];
                 costBasis: components["schemas"]["Money"];
                 unrealizedPl: components["schemas"]["Money"];
@@ -3793,9 +3808,8 @@ export interface components {
             acquiredOn: components["schemas"]["LocalDate"];
             quantityOpen: components["schemas"]["DecimalString"];
             quantityRemaining: components["schemas"]["DecimalString"];
-            costTotal: components["schemas"]["Money"];
-            /** @description W PLN wg kursów NBP D−1. */
-            costTotalTax?: components["schemas"]["Money"];
+            costTotal: components["schemas"]["Money"] | null;
+            costTotalTax?: components["schemas"]["Money"] | null;
             feesTotal?: components["schemas"]["Money"];
             splitFactor: components["schemas"]["DecimalString"];
             closedOn?: components["schemas"]["LocalDate"];
@@ -3803,12 +3817,12 @@ export interface components {
                 closeTransactionId: components["schemas"]["Uuid"];
                 quantity: components["schemas"]["DecimalString"];
                 closedOn: components["schemas"]["LocalDate"];
-                costEconomic?: components["schemas"]["Money"];
+                costEconomic?: components["schemas"]["Money"] | null;
                 proceedsEconomic?: components["schemas"]["Money"];
-                realizedPlEconomic: components["schemas"]["Money"];
-                costTax?: components["schemas"]["Money"];
-                proceedsTax?: components["schemas"]["Money"];
-                realizedPlTax: components["schemas"]["Money"];
+                realizedPlEconomic: components["schemas"]["Money"] | null;
+                costTax?: components["schemas"]["Money"] | null;
+                proceedsTax?: components["schemas"]["Money"] | null;
+                realizedPlTax: components["schemas"]["Money"] | null;
             }[];
         };
         LotPage: {
@@ -5211,7 +5225,8 @@ export interface components {
             exDate: components["schemas"]["LocalDate"];
             recordDate?: components["schemas"]["LocalDate"];
             payDate?: components["schemas"]["LocalDate"];
-            ratio?: components["schemas"]["DecimalString"];
+            ratioFrom?: number;
+            ratioTo?: number;
             amount?: components["schemas"]["DecimalString"];
             currency?: components["schemas"]["CurrencyCode"];
             details?: Record<string, never>;
