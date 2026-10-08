@@ -157,6 +157,8 @@ Przeniesienie między rachunkami w różnych walutach (decyzja właściciela 202
 
 `SECURITY_TRANSFER_IN` bez odpowiadającego `_OUT` (przeniesienie spoza śledzonych rachunków; decyzja właściciela 2026-09-24): użytkownik podaje **koszt nabycia** (w walucie rachunku) i **datę nabycia** — partia dostaje ten koszt i datę (kolejność FIFO, widok podatkowy: koszt w PLN wprost albo po NBP D-1 od daty nabycia). Bez tych danych pozycja jest **wyceniana**, ale **wyłączona z P/L i z widoku podatkowego** (partia z nieznanym kosztem, data nabycia = dzień przeniesienia), z ostrzeżeniem „brak kosztu nabycia” — kod `missing_acquisition_cost` w API `packages/core`.
 
+Decyzja właściciela 2026-10-08 (M1-3): nieznany koszt i zależne pola P/L są `null` także w SQL i API. Sumy kosztu/P/L obejmują tylko pozycje ze znanym kosztem; odpowiedź zawiera liczbę i listę wyłączonych par rachunek–instrument. Wycena tych pozycji pozostaje dostępna. UI w M1-4: „koszt nieznany”.
+
 ### 3.6 Edycja operacji
 
 Każda zmiana operacji z datą `d` unieważnia i przelicza partie, pozycje i wyceny od `d` (zadanie `recompute`, [ADR-003](../09-decyzje/ADR-003-hybryda-obliczen-i-kolejki.md)).

@@ -36,9 +36,9 @@
     "ticker": "AAPL.US",
     "date": "2025-09-02",
     "qty": "12",
-    "proceeds_pln": "10023.63",
+    "proceeds_pln": "10023.35",
     "cost_pln": "11107.26",
-    "pl_pln": "-1083.63"
+    "pl_pln": "-1083.91"
    },
    {
     "ticker": "PKO.PL",
