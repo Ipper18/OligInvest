@@ -1,8 +1,8 @@
 # M1-2 — stan bieżący
 
-**Cel:** przekazać stan backendu danych rynkowych i SSE, dowody oraz blokadę zamknięcia paczki.
+**Cel:** przekazać stan backendu danych rynkowych i SSE, dowody oraz warunki zamknięcia paczki.
 
-**2026-10-07**, `feat/m1-2-market`, [PR #9](https://github.com/Ipper18/OligInvest/pull/9). BL-125 i BL-131–139: `w toku` do zielonego CI i wspólnego DoD. Poprzedni raport opisywał stan sprzed implementacji. Zakres rozstrzygnięto w dokumentacji gałęzi: UI BL-157/158 i klient SSE w M1-4; OHLCV jako ciągi, NumberSeries tylko dla wskaźników.
+**2026-10-08**, `feat/m1-2-market`, [PR #9](https://github.com/Ipper18/OligInvest/pull/9). BL-125 i BL-131–139: `w toku` do zielonego CI i wspólnego DoD. Poprzedni raport opisywał stan sprzed implementacji. Zakres rozstrzygnięto w dokumentacji gałęzi: UI BL-157/158 i klient SSE w M1-4; OHLCV jako ciągi, NumberSeries tylko dla wskaźników.
 
 ## Zrobione i dowody
 
@@ -12,16 +12,18 @@
 - BL-139: OHLC, duplikaty i skok >25%; trwały BLOCK blokuje analizy FR-04, dane pozostają z `data_quality_hold`. Testy jednostkowe i PostgreSQL PASS. Poprawiono wybór nowszego EOD przy starym intraday, także w tej samej sesji.
 - Zmienione pakiety: 46/46 PASS; po poprawce API/market 16/16 PASS. Core: 99,53% linii. OpenAPI: 29 operacji, 156 pending; klient aktualny. Schemat: ZERO DIFFERENCES; RLS i pule PASS. Dokumentacja, repozytorium i granice modułów PASS.
 
-## Audyt — diagnoza i blokada
+## Audyt — naprawy i decyzja
 
 Sharp 0.35.4 → 0.35.5 przez `pnpm update -r sharp`; frozen install PASS, bez overrides. GHSA-wq5f-xc86-pv6w zniknęło ze skanu.
 
 Syft zapisywał URL SheetJS jako wersję, nie pokrywając `xlsx@0.20.3`. Audyt weryfikuje SHA-512 tarballa CDN, odczytuje wersję i Apache-2.0, uzupełnia CycloneDX. Dwa otwarte zakresy starej dystrybucji npm uzupełnia według [CVE-2023-30533](https://cdn.sheetjs.com/advisories/CVE-2023-30533) (poprawka 0.19.3) i [CVE-2024-22363](https://cdn.sheetjs.com/advisories/CVE-2024-22363) (0.20.2), tylko dla zweryfikowanego artefaktu. Surowe wyniki zachowane; nowe zgłoszenia blokują. Dziewięć testów polityki i Ruff PASS; `osv-scanner.toml` bez zmian.
 
-Pełny audyt 666 pakietów ujawnił **isexe 3.1.5 / BlueOak-1.0.0**: Yahoo → @deno/shim-deno → which. `package.json` i `LICENSE.md` potwierdzają licencję spoza AGENTS.md §5.8. Nie dodano wyjątku. Pytanie o dopuszczenie tylko tej wersji przekazano właścicielowi; do decyzji deps-audit pozostaje BLOCK. Problem ujawniony po naprawie SBOM, nie skutek aktualizacji sharp.
+Decyzja właściciela 2026-10-08: **BlueOak-1.0.0 dopuszczona ogólnie**, w AGENTS.md §5.8, stosie i ALLOWED, bez wyjątków per pakiet. R-32 zamknięte. Dodano R-33 i BL-159 (M1 po M1-2): porównanie cienkiego adaptera chart/quote na własnym transporcie z wersją bez MCP SDK, liczby pakietów runtime, utrzymania i warunków Yahoo. Yahoo 4.0.2 i jego graf pozostają bez zmian.
+
+Nowy pełny skan wykrył GHSA-cjq9-62q9-8jv4 (Next.js, CVSS 8,3). Zaktualizowano 16.3.6 → 16.3.8, wydane 30.09 poza karencją. Frozen install, web lint/typecheck/test/build 7/7 oraz pełny audyt **PASS** (666 pakietów). Testy polityki i Ruff PASS. Bez nowego wyjątku podatności. Poprzedni kod 33d11c7 miał zielone CI aplikacji/DB/workers/web/E2E; pozostawał audyt.
 
 ## Pozostałe warunki
 
 DoD i bramy M1 A/B otwarte. A.3: backend i testy SSE są, integracja wyceny/UI w M1-3/4; A.4: limit punktów jest, budżety ekranów wymagają UI. XTB, telefon, VoiceOver i wdrożenie w kolejnych paczkach. Bez nowych usług, kosztów i zmiany statusu prawnego; przegląd FR-04 nie dotyczy tej paczki.
 
-Estymacje bez zmian; brak ewidencji odchylenia. Nowa blokada: licencja Yahoo (R-32), bez samodzielnej zmiany polityki/ADR. CI sprawdzane raz na końcu, bez czekania/pętli (§6.1); wynik w PR. Po decyzji: ewentualne dopuszczenie konkretnej wersji w audycie i stosie, ponowny deps-audit, zamknięcie DoD dopiero przy zielonych kontrolach.
+Estymacje wykonanych zadań bez zmian; brak ewidencji odchylenia. BL-159: 1 d na ocenę, poza tą paczką. R-33 pozostaje otwarte, nie blokuje M1-2 zgodnie z decyzją właściciela. Bez nowego ADR. Statusy pozostają `w toku` do potwierdzenia zielonego CI ostatniego commita i wspólnego DoD. CI sprawdzane raz na końcu, bez czekania/pętli (§6.1); wynik i pozostałe warunki w PR.

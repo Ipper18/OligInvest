@@ -18,6 +18,8 @@ BL-017 (2026-09-30): Next.js **16.3.6** zastępuje 16.3.5 ze względu na [GHSA-v
 
 Decyzja właściciela 2026-10-08: BlueOak-1.0.0 dopuszczona ogólnie w polityce i audycie licencji, bez wyjątków per pakiet; kontrole podatności i pokrycia SBOM pozostają obowiązkowe. Rozbudowane zależności runtime yahoo-finance2 4.0.2 pozostają bez zmian w M1-2; osobna ocena w BL-159 (R-33).
 
+BL-017 (2026-10-08): Next.js **16.3.8** zastępuje 16.3.6; [GHSA-cjq9-62q9-8jv4](https://github.com/vercel/next.js/security/advisories/GHSA-cjq9-62q9-8jv4), CVSS 8,3, poprawka wskazana przez OSV. Wydanie npm 2026-09-30 16:07 UTC, poza karencją; aktualizacja w tej samej linii bez overrides i wyjątków OSV. Frozen install, testy/build web i pełny audyt zależności PASS. Graf Yahoo bez zmian.
+
 ## 2. Runtime i platforma
 
 | Element | Wybór | Wersja | Licencja | Uzasadnienie | Odrzucone |
