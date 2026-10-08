@@ -24,7 +24,7 @@ Powiązane: [`mvp.md`](mvp.md) (zakres M1), [`backlog.md`](backlog.md) (zadania 
 
 ```mermaid
 flowchart LR
-  M0["M0 Szkielet i infrastruktura<br/>ok. 51 d"] --> M1["M1 MVP<br/>ok. 102 d (brama A: 86 d)"]
+  M0["M0 Szkielet i infrastruktura<br/>ok. 51 d"] --> M1["M1 MVP<br/>ok. 103 d (brama A: 87 d)"]
   M1 --> M2["M2 Dane rynkowe, wskaźniki,<br/>onboarding<br/>ok. 30 d"]
   M2 --> M3["M3 Wyniki historyczne<br/>i scenariusze (P1)<br/>ok. 39 d"]
   M2 --> M4["M4 Alerty, PWA, Skróty<br/>ok. 24 d"]
@@ -35,7 +35,7 @@ flowchart LR
   M1 -. "brama B: zaproszenie zaufanych osób" .-> U(("użytkownicy"))
 ```
 
-Sumy etapów pochodzą z [`backlog.md`](backlog.md) § 10 (po zaokrągleniu). Łącznie ok. 327 dni idealnych przed narzutem przeglądu — to skala pracy jednego doświadczonego programisty przez ponad rok; agent skraca kodowanie, ale nie przegląd, testy na urządzeniach ani prace na serwerze. Dlatego M1 ma dwie bramy (§ 3): właściciel zaczyna używać aplikacji po bramie A, zanim powstaną funkcje potrzebne dopiero do zaproszenia innych osób.
+Sumy etapów pochodzą z [`backlog.md`](backlog.md) § 10 (po zaokrągleniu). Łącznie ok. 328 dni idealnych przed narzutem przeglądu — to skala pracy jednego doświadczonego programisty przez ponad rok; agent skraca kodowanie, ale nie przegląd, testy na urządzeniach ani prace na serwerze. Dlatego M1 ma dwie bramy (§ 3): właściciel zaczyna używać aplikacji po bramie A, zanim powstaną funkcje potrzebne dopiero do zaproszenia innych osób.
 
 ## 3. Etapy
 
@@ -60,7 +60,7 @@ Sumy etapów pochodzą z [`backlog.md`](backlog.md) § 10 (po zaokrągleniu). Ł
 
 **Cel:** właściciel używa aplikacji na co dzień zamiast arkusza: import XTB, wycena portfela w PLN, P/L FIFO, wynik dnia, wykres świecowy — bezpiecznie i szybko na telefonie; potem, po spełnieniu wymogów prawnych i operacyjnych, zaproszenie zaufanych osób. Zakres szczegółowo: [`mvp.md`](mvp.md). Zadania `BL-101`–`BL-156`; w backlogu oznaczone **[A]** albo **[B]**.
 
-**Brama A — MVP właściciela** (zadania [A], ok. 86 d). Do tego czasu aplikacji używa wyłącznie właściciel (konto utworzone poleceniem CLI):
+**Brama A — MVP właściciela** (zadania [A], ok. 87 d). Do tego czasu aplikacji używa wyłącznie właściciel (konto utworzone poleceniem CLI):
 
 1. Import realnego eksportu XTB właściciela (lokalnie, plik poza repozytorium): uzgodnienie gotówki i ilości co do 0,00; P/L zrealizowany zgodny z brokerem co do 0,01 PLN albo różnice wyjaśnione w raporcie uzgodnienia (FR-02.07, NFR-08.03). Syntetyczne fixtures przechodzą w CI.
 2. Od wybrania pliku XTB do widoku portfela < 2 min (test e2e + pomiar na telefonie).

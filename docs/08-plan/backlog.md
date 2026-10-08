@@ -191,6 +191,7 @@ Brama A (**[A]**) — MVP właściciela; brama B (**[B]**) — funkcje wymagane 
 | BL-156 | **[B]** Skan produkcji (nagłówki, CSP, TLS, porty z zewnątrz) i odhaczona lista kontrolna RODO § 12 | NFR-03.06, FR-07.12 | SEC, RODO, INF | BL-116, BL-151, BL-118 | 1 | todo |
 | BL-157 | **[A]** Ekran karty instrumentu (M1-4, część wydzielona z BL-137): kurs, zmiana, wolumen, status i wiek danych, atrybucja, integracja z powłoką i SSE | FR-01.02, FR-01.15 | EKR, API, LAW | BL-121, BL-137 | 1 | todo |
 | BL-158 | **[A]** UI wykresu (M1-4, część wydzielona z BL-138): leniwy wrapper Lightweight Charts, tabela alternatywna, atrybucja TradingView; konwersja ciągów OHLCV do liczb wyłącznie przy rysowaniu canvas, bez obliczeń na tych liczbach | FR-01.03, NFR-01.04, NFR-06.01 | API, [ADR-009](../09-decyzje/ADR-009-wykresy.md), PERF, LAW | BL-121, BL-138, BL-157 | 1,5 | todo |
+| BL-159 | **[A]** Ocena zależności Yahoo po M1-2 (R-33): cienki własny adapter endpointów chart/quote na naszym transporcie albo wersja bez MCP SDK; porównanie obecnego i proponowanego grafu (liczba unikalnych pakietów produkcyjnych jobs, bez devDependencies), kosztu utrzymania (cookies/crumb, zmiany schematów, testy kontraktowe, retry/limity) i zgodności z warunkami Yahoo. Wynik: udokumentowana decyzja i zakres ewentualnej migracji; bez zmiany runtime w M1-2, bez obchodzenia blokad | NFR-02.04, NFR-03.05, NFR-05.02, NFR-07.04 | STACK, SRC, CACHE, LAW, RISK | BL-134 | 1 | todo |
 | | **Suma etapu** | | | | **102** | |
 
 ### 2.1 Postęp i odchylenia
@@ -352,14 +353,14 @@ Poza planem etapów; estymacja orientacyjna. Przed startem każde zadanie przech
 | Etap | Zadania | Suma (d) | Uwagi |
 |---|---|---|---|
 | M0 Szkielet i infrastruktura | 35 | 51 |  |
-| M1 MVP | 47 | 102 | brama A 85,5 d, brama B 16,5 d |
+| M1 MVP | 48 | 103 | brama A 86,5 d, brama B 16,5 d |
 | M2 Dane rynkowe, wskaźniki, onboarding | 16 | 29,5 |  |
 | M3 Wyniki historyczne i scenariusze | 19 | 38,5 |  |
 | M4 Alerty, PWA i Skróty | 12 | 23,5 |  |
 | M5a Admin, edukacja, rynek | 15 | 27 |  |
 | M5b Analizy zaawansowane, OAuth, offline | 16 | 38,5 |  |
 | M6 Hardening i dostępność | 12 | 17 |  |
-| **Razem M0–M6** | **172** | **327** | bez narzutu przeglądu (ok. +30 %) |
+| **Razem M0–M6** | **173** | **328** | bez narzutu przeglądu (ok. +30 %) |
 | Później | 8 | 18,5 | poza planem |
 
 **Pokrycie wymagań:** każde z 151 wymagań FR/NFR z [`../00-przeglad/wymagania.md`](../00-przeglad/wymagania.md) ma co najmniej jedno zadanie (sprawdzone skryptem 2026-09-19: brak wymagań bez zadania, brak zależności wstecz między etapami, M3 i M4 niezależne). Pełna macierz wymaganie → dokument → zadanie: [`../00-przeglad/macierz-pokrycia.md`](../00-przeglad/macierz-pokrycia.md).

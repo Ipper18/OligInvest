@@ -144,6 +144,8 @@ class PolicyTests(unittest.TestCase):
     def test_spdx_operators_and_unknown(self):
         for expression, allowed in [
             ("MIT", True),
+            ("BlueOak-1.0.0", True),
+            ("BlueOak-1.0.0 AND GPL-3.0-only", False),
             ("MIT OR GPL-3.0-only", True),
             ("MIT AND GPL-3.0-only", False),
             ("(MIT OR Apache-2.0) AND BSD-3-Clause", True),

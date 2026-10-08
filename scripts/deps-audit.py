@@ -31,6 +31,7 @@ ALLOWED = {
     "Unlicense",
     "MPL-2.0",
     "PostgreSQL",
+    "BlueOak-1.0.0",
 }
 # Owner decision 2026-09-30; package-specific, not a global extension.
 REVIEWED = {

@@ -82,7 +82,7 @@ git grep -nE '(api[_-]?key|secret|token)\s*[:=]\s*["'"'"']?[A-Za-z0-9_\-]{16,}'
 
 ## 7. Zależności i skille
 
-- Polityka zależności: [`docs/01-architektura/stack-technologiczny.md`](docs/01-architektura/stack-technologiczny.md) § 1 (standard platformy najpierw; licencje MIT, Apache-2.0, BSD, ISC, MPL-2.0; utrzymanie ≤ 6 miesięcy; wpływ na budżet JS).
+- Polityka zależności: [`docs/01-architektura/stack-technologiczny.md`](docs/01-architektura/stack-technologiczny.md) § 1 (standard platformy najpierw; licencje MIT, Apache-2.0, BSD, ISC, MPL-2.0, BlueOak-1.0.0; utrzymanie ≤ 6 miesięcy; wpływ na budżet JS).
 - Aktualizacje proponuje Renovate (opóźnienie 3 dni, bez automatycznego scalania zależności produkcyjnych); poprawki bezpieczeństwa omijają opóźnienie, ale nie przegląd.
 - **Ponowny audyt skilli** w `.claude/skills/` przy każdej ich aktualizacji ([`docs/09-decyzje/audyt-pluginow.md`](docs/09-decyzje/audyt-pluginow.md)): sprawdź datę ostatniego commita źródła, wywołania sieciowe, odczyty zmiennych środowiskowych i instalowanie zależności, a wynik dopisz do audytu:
 

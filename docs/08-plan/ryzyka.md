@@ -50,11 +50,13 @@ Powiązane: [`roadmapa.md`](roadmapa.md), [`backlog.md`](backlog.md), [`../06-be
 
 | **R-31** | Globalna blokada auth ogranicza współbieżność i może opóźniać inne konta | BL-101/102/103/105/111, przegląd M1-1 | 3 | 3 | 9 | pozostawiona decyzją właściciela 2026-10-05: transakcje auth/admin/CLI używają `730101`, także podczas Argon2 i obsługi Better Auth; limity prób ograniczają obciążenie, lecz nie usuwają kolejki; zaproszenia czekają zamiast fałszywego 409, idempotencja ma blokadę per administrator i klucz; przed zwiększeniem obciążenia pomiar i projekt węższych blokad z testami wyścigów | rosnący czas oczekiwania na advisory lock, p95 auth > 300 ms lub wyczerpanie puli | agent, właściciel, monitoring | M1, otwarte; ponowna ocena przed bramą B |
 
-| **R-32** | Licencja zależności pośredniej poza dozwoloną listą | M1-2: yahoo-finance2 → @deno/shim-deno → which → isexe 3.1.5 / BlueOak-1.0.0 | 2 | 3 | 6 | audyt licencji blokuje; decyzja właściciela przed dopuszczeniem konkretnej wersji, bez globalnego rozszerzenia listy i bez wyłączania kontroli | BLOCK deps-audit po uzupełnieniu metadanych SheetJS | agent, właściciel | 2026-10-07: otwarte, decyzja wymagana |
+| **R-32** | Licencja zależności pośredniej poza dozwoloną listą | M1-2: isexe 3.1.5 / BlueOak-1.0.0 | 2 | 3 | 6 | audyt licencji i kontrola podatności pozostają aktywne | BLOCK deps-audit po uzupełnieniu metadanych SheetJS | agent, właściciel | zamknięte 2026-10-08: właściciel dopuścił BlueOak-1.0.0 ogólnie w AGENTS.md §5.8 i audycie, bez wyjątku per pakiet |
+
+| **R-33** | Zbędne zależności runtime Yahoo zwiększają powierzchnię ataku i koszt utrzymania jobs | yahoo-finance2 4.0.2 → @modelcontextprotocol/sdk (express, cors, cross-spawn), @deno/shim-deno, fetch-mock-cache, tough-cookie-file-store | 3 | 3 | 9 | BL-159 po M1-2: porównać cienki adapter chart/quote na własnym transporcie i wersję bez MCP SDK; policzyć pakiety produkcyjne, ocenić utrzymanie i warunki Yahoo; do decyzji bez zmian zależności w M1-2, audyt i allowlista sieci pozostają aktywne | nowe podatności/zmiany grafu Yahoo lub praca nad BL-159 | agent, właściciel | M1 po M1-2, otwarte 2026-10-08 |
 
 ## 3. Podsumowanie
 
-32 ryzyk: **5 wysokich** (R-01, R-07, R-11, R-16, R-28), 23 średnie, 4 niskie; brak krytycznych.
+33 ryzyk: **5 wysokich** (R-01, R-07, R-11, R-16, R-28), 24 średnie, 4 niskie; brak krytycznych.
 
 | Ryzyko wysokie | Działanie przed końcem etapu |
 |---|---|

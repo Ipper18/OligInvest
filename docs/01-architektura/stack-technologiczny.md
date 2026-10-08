@@ -9,12 +9,14 @@ Stan na **2026-09-18**. Wersje pochodzą z `npm view`, PyPI JSON API, GitHub Rel
 Nowa zależność runtime trafia do projektu tylko, jeśli spełnia **wszystkie** warunki:
 
 1. Nie da się tego sensownie zrobić standardem platformy (Web API, Node, PostgreSQL, CSS) w < 1 dniu pracy i < 200 linii.
-2. Licencja: MIT, Apache-2.0, BSD, ISC, MPL-2.0, MIT-0, PostgreSQL; LGPL tylko jako biblioteka bez modyfikacji; **bez AGPL/GPL w kodzie aplikacji** (dopuszczalne jako osobne usługi infrastrukturalne).
+2. Licencja: MIT, Apache-2.0, BSD, ISC, MPL-2.0, BlueOak-1.0.0, MIT-0, PostgreSQL; LGPL tylko jako biblioteka bez modyfikacji; **bez AGPL/GPL w kodzie aplikacji** (dopuszczalne jako osobne usługi infrastrukturalne).
 3. Aktywne utrzymanie (release lub commit ≤ 6 miesięcy) albo świadomie zaakceptowane ryzyko opisane w tym dokumencie.
 4. Wpływ na bundle przeglądarki mieści się w budżecie trasy (`04-frontend/wydajnosc.md`).
 5. Wpis w tym dokumencie (lub w ADR) z uzasadnieniem.
 
 BL-017 (2026-09-30): Next.js **16.3.6** zastępuje 16.3.5 ze względu na [GHSA-vcvr-r3jv-pc5j](https://github.com/vercel/next.js/security/advisories/GHSA-vcvr-r3jv-pc5j), CVSS 9,5. Poprawka opublikowana w npm 2026-09-22 16:19 UTC, po karencji; bez wyjątku OSV i bez zmiany linii stosu. OligInvest nie używa `next/og`, jednak próg audytu obowiązuje niezależnie od osiągalności. OSV Scanner **2.6.0** i Syft **1.52.0** (Apache-2.0) to istniejące wybory stosu, przypięte w skrypcie instalacji CI z SHA-256 oficjalnych artefaktów GitHub Releases (sprawdzone 2026-09-30); nie trafiają do runtime aplikacji.
+
+Decyzja właściciela 2026-10-08: BlueOak-1.0.0 dopuszczona ogólnie w polityce i audycie licencji, bez wyjątków per pakiet; kontrole podatności i pokrycia SBOM pozostają obowiązkowe. Rozbudowane zależności runtime yahoo-finance2 4.0.2 pozostają bez zmian w M1-2; osobna ocena w BL-159 (R-33).
 
 ## 2. Runtime i platforma
 
