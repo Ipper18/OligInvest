@@ -9,7 +9,12 @@ import { bodyLimit } from "hono/body-limit";
 import { type IdentityDependencies, mountIdentity } from "./auth/identity-routes.js";
 import { type AuthRouteDependencies, createAuthRouter, mountStepUp } from "./auth/routes.js";
 import { SESSION_COOKIE } from "./auth/session.js";
-import { type MarketDependencies, mountMarket } from "./modules.js";
+import {
+  type MarketDependencies,
+  mountMarket,
+  mountPortfolio,
+  type PortfolioDependencies,
+} from "./modules.js";
 import { mountStream, type StreamDependencies } from "./stream-routes.js";
 
 export type HealthChecks = Readonly<
@@ -36,6 +41,7 @@ export function createApp(
     publicBaseUrl: string;
     auth?: AuthRouteDependencies & Partial<Pick<IdentityDependencies, "administration">>;
     market?: MarketDependencies;
+    portfolio?: PortfolioDependencies;
     stream?: StreamDependencies;
   }>,
 ) {
@@ -186,6 +192,19 @@ export function createApp(
         throw new ProblemError("SERVICE_UNAVAILABLE");
       },
       searchInBackground: async () => {},
+    },
+  );
+  mountPortfolio(
+    api,
+    options.portfolio ?? {
+      authorize: async (request, stepUp) => {
+        const principal = await (await authDependencies.service()).requireData(request, stepUp);
+        return { userId: principal.user_id, role: principal.role };
+      },
+      assertOrigin: async (request) => (await authDependencies.service()).assertOrigin(request),
+      repository: () => {
+        throw new ProblemError("SERVICE_UNAVAILABLE");
+      },
     },
   );
   function document() {

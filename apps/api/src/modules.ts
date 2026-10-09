@@ -13,3 +13,8 @@ export {
   marketError,
   mountMarket,
 } from "@oliginvest/mod-market/server";
+export {
+  mountPortfolio,
+  type PortfolioDependencies,
+  PortfolioRepository,
+} from "@oliginvest/mod-portfolio/server";

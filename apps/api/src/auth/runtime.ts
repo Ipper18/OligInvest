@@ -125,6 +125,19 @@ export function createAuthRuntime(
     service,
     appDatabase,
     cache,
+    enqueueRecompute: async (payload: {
+      userId: string;
+      accountIds: string[];
+      fromDate: string;
+      reason: "transactions" | "import";
+    }) => {
+      await queue("recompute").add("portfolio.recompute", payload, {
+        attempts: 3,
+        backoff: { type: "exponential", delay: 1000 },
+        removeOnComplete: true,
+        removeOnFail: { age: 86400 },
+      });
+    },
     enqueueMarketSearch: async (query: string) => {
       const { createHash } = await import("node:crypto");
       await queue("ingest").add(

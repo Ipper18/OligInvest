@@ -217,6 +217,11 @@ try {
   const { testMarketStorage } = await import("../../../apps/api/integration/market.mjs");
   await testMarketStorage({ host, port, database: migrated, passwords });
   console.log("Market API, Decimal OHLCV, cursor/ETag, quality hold and catalog latency: PASS");
+  const { testPortfolioStorage } = await import("../../../apps/api/integration/portfolio.mjs");
+  await testPortfolioStorage({ host, port, database: migrated, passwords });
+  console.log(
+    "Portfolio CRUD, owner isolation, replay concurrency, core validation and cursor: PASS",
+  );
   const { testMarketScheduleStorage } = await import(
     "../../../modules/market/integration/schedules.mjs"
   );

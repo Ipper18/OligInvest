@@ -3474,7 +3474,15 @@ export interface components {
             externalRef?: string | null;
             closedOn?: components["schemas"]["LocalDate"] | null;
         };
-        Account: components["schemas"]["AccountInput"] & {
+        Account: {
+            /** @example XTB — zwykły */
+            name: string;
+            broker: components["schemas"]["Broker"];
+            accountType: components["schemas"]["AccountType"];
+            currency: components["schemas"]["CurrencyCode"];
+            /** @description Własna etykieta (np. końcówka numeru); nie przechowujemy pełnych numerów rachunków ani haseł do brokera. */
+            externalRef?: string;
+            openedOn?: components["schemas"]["LocalDate"];
             id: components["schemas"]["Uuid"];
             closedOn?: components["schemas"]["LocalDate"];
             lastImportAt?: components["schemas"]["Timestamp"];
@@ -3520,28 +3528,107 @@ export interface components {
             relatedTransactionId?: components["schemas"]["Uuid"];
             note?: string;
         };
-        /**
-         * @description Wymagalność pól odpowiada ograniczeniom CHECK w `portfolio.transactions` (`schema.sql`).
-         * @example {
-         *       "accountId": "0192f0c4-7b1e-7c3a-9f00-3d2a1b4c5d6e",
-         *       "type": "BUY",
-         *       "tradeDate": "2026-09-18",
-         *       "instrumentId": "0192f0c4-7b1e-7c3a-9f00-3d2a1b4c5d6f",
-         *       "quantity": "10",
-         *       "price": "58.34",
-         *       "priceCurrency": "PLN"
-         *     }
-         */
-        TransactionInput: components["schemas"]["TransactionFields"] & {
+        /** @description Wymagalność pól odpowiada ograniczeniom CHECK w `portfolio.transactions` (`schema.sql`). */
+        TransactionInput: {
+            executedAt?: components["schemas"]["Timestamp"];
+            settleDate?: components["schemas"]["LocalDate"];
+            /** @description Kolejność w obrębie dnia. */
+            sequence?: number;
+            instrumentId?: components["schemas"]["Uuid"];
+            quantity?: components["schemas"]["DecimalString"];
+            price?: components["schemas"]["DecimalString"];
+            priceCurrency?: components["schemas"]["CurrencyCode"];
+            /** @description Wpływ na gotówkę ze znakiem w walucie rozliczenia (DIVIDEND = netto). Dla BUY/SELL pominięte → liczone przez serwer. */
+            amount?: components["schemas"]["Money"];
+            fee?: components["schemas"]["Money"];
+            /** @description Np. podatek u źródła dywidendy (wartość dodatnia). */
+            tax?: components["schemas"]["Money"];
+            /** @description Kurs brokera price_currency → waluta rozliczenia. */
+            fxRate?: components["schemas"]["DecimalString"];
+            /** @enum {string} */
+            fxSource?: "broker" | "implied" | "nbp_fallback" | "manual";
+            ratioFrom?: number;
+            ratioTo?: number;
+            /** @description Gotówka za ułamek po scaleniu, w walucie rachunku. */
+            cashInLieu?: components["schemas"]["Money"];
+            /** @description Deklarowany koszt przeniesionych papierów, w walucie rachunku; razem z acquiredOn. */
+            acquisitionCost?: components["schemas"]["Money"];
+            acquiredOn?: components["schemas"]["LocalDate"];
+            /** @description Druga noga FX_CONVERSION. */
+            counterAmount?: components["schemas"]["Money"];
+            /** @example cfd_pl */
+            category?: string;
+            relatedTransactionId?: components["schemas"]["Uuid"];
+            note?: string;
             accountId: components["schemas"]["Uuid"];
             type: components["schemas"]["TransactionType"];
             tradeDate: components["schemas"]["LocalDate"];
-        } & unknown & unknown & unknown & unknown & unknown & unknown & unknown;
+        } & (unknown & unknown & unknown & unknown & unknown & unknown & unknown);
         /** @description Typ i rachunek niezmienne — zmiana wymaga usunięcia i ponownego dodania. */
-        TransactionPatch: components["schemas"]["TransactionFields"] & {
+        TransactionPatch: {
+            executedAt?: components["schemas"]["Timestamp"];
+            settleDate?: components["schemas"]["LocalDate"];
+            /** @description Kolejność w obrębie dnia. */
+            sequence?: number;
+            instrumentId?: components["schemas"]["Uuid"];
+            quantity?: components["schemas"]["DecimalString"];
+            price?: components["schemas"]["DecimalString"];
+            priceCurrency?: components["schemas"]["CurrencyCode"];
+            /** @description Wpływ na gotówkę ze znakiem w walucie rozliczenia (DIVIDEND = netto). Dla BUY/SELL pominięte → liczone przez serwer. */
+            amount?: components["schemas"]["Money"];
+            fee?: components["schemas"]["Money"];
+            /** @description Np. podatek u źródła dywidendy (wartość dodatnia). */
+            tax?: components["schemas"]["Money"];
+            /** @description Kurs brokera price_currency → waluta rozliczenia. */
+            fxRate?: components["schemas"]["DecimalString"];
+            /** @enum {string} */
+            fxSource?: "broker" | "implied" | "nbp_fallback" | "manual";
+            ratioFrom?: number;
+            ratioTo?: number;
+            /** @description Gotówka za ułamek po scaleniu, w walucie rachunku. */
+            cashInLieu?: components["schemas"]["Money"];
+            /** @description Deklarowany koszt przeniesionych papierów, w walucie rachunku; razem z acquiredOn. */
+            acquisitionCost?: components["schemas"]["Money"];
+            acquiredOn?: components["schemas"]["LocalDate"];
+            /** @description Druga noga FX_CONVERSION. */
+            counterAmount?: components["schemas"]["Money"];
+            /** @example cfd_pl */
+            category?: string;
+            relatedTransactionId?: components["schemas"]["Uuid"];
+            note?: string;
             tradeDate?: components["schemas"]["LocalDate"];
         };
-        Transaction: components["schemas"]["TransactionFields"] & {
+        Transaction: {
+            executedAt?: components["schemas"]["Timestamp"];
+            settleDate?: components["schemas"]["LocalDate"];
+            /** @description Kolejność w obrębie dnia. */
+            sequence?: number;
+            instrumentId?: components["schemas"]["Uuid"];
+            quantity?: components["schemas"]["DecimalString"];
+            price?: components["schemas"]["DecimalString"];
+            priceCurrency?: components["schemas"]["CurrencyCode"];
+            /** @description Wpływ na gotówkę ze znakiem w walucie rozliczenia (DIVIDEND = netto). Dla BUY/SELL pominięte → liczone przez serwer. */
+            amount: components["schemas"]["Money"];
+            fee?: components["schemas"]["Money"];
+            /** @description Np. podatek u źródła dywidendy (wartość dodatnia). */
+            tax?: components["schemas"]["Money"];
+            /** @description Kurs brokera price_currency → waluta rozliczenia. */
+            fxRate?: components["schemas"]["DecimalString"];
+            /** @enum {string} */
+            fxSource?: "broker" | "implied" | "nbp_fallback" | "manual";
+            ratioFrom?: number;
+            ratioTo?: number;
+            /** @description Gotówka za ułamek po scaleniu, w walucie rachunku. */
+            cashInLieu?: components["schemas"]["Money"];
+            /** @description Deklarowany koszt przeniesionych papierów, w walucie rachunku; razem z acquiredOn. */
+            acquisitionCost?: components["schemas"]["Money"];
+            acquiredOn?: components["schemas"]["LocalDate"];
+            /** @description Druga noga FX_CONVERSION. */
+            counterAmount?: components["schemas"]["Money"];
+            /** @example cfd_pl */
+            category?: string;
+            relatedTransactionId?: components["schemas"]["Uuid"];
+            note?: string;
             id: components["schemas"]["Uuid"];
             accountId: components["schemas"]["Uuid"];
             type: components["schemas"]["TransactionType"];
