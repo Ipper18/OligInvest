@@ -225,6 +225,11 @@ try {
   const { testMarketScheduleStorage } = await import(
     "../../../modules/market/integration/schedules.mjs"
   );
+  const { testImportStorage } = await import("../../../apps/api/integration/imports.mjs");
+  await testImportStorage({ host, port, database: migrated, passwords });
+  console.log(
+    "XTB uploads, worker parsing, reconciliation, atomic commit, FIFO fixtures and owner isolation: PASS",
+  );
   await testMarketScheduleStorage({ host, port, database: migrated, passwords });
   console.log(
     "Market schedules: observed-only sessions, holiday, missing calendar and US/Europe DST mismatch PASS",

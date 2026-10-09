@@ -73,6 +73,7 @@ export async function startJobs(
   let mailer: ReturnType<typeof createAuthMailer> | undefined;
   let mailWorker: Worker | undefined;
   let marketWorker: { close(): Promise<void> } | undefined;
+  let portfolioWorker: { close(): Promise<void> } | undefined;
   let timer: ReturnType<typeof setTimeout> | undefined;
   let stopped = false;
   let heartbeat: Promise<void> = Promise.resolve();
@@ -101,6 +102,7 @@ export async function startJobs(
       logger.warn({ event: "jobs.heartbeat_cleanup_failed" });
     } finally {
       await mailWorker?.close();
+      await portfolioWorker?.close();
       await marketWorker?.close();
       mailer?.close();
       await flagRuntime.close();
@@ -109,6 +111,14 @@ export async function startJobs(
   };
   try {
     await Promise.all(queues.map((queue) => queue.waitUntilReady()));
+    const { startPortfolioWorker } = await import("./portfolio-runtime.js");
+    portfolioWorker = await startPortfolioWorker({
+      database: flagRuntime.database,
+      cache: flagRuntime.cache,
+      queues,
+      connection: runtime.connection,
+      logger,
+    });
     const { startMarketWorker } = await import("./market-runtime.js");
     marketWorker = await startMarketWorker({
       database: flagRuntime.database,
@@ -143,6 +153,7 @@ export async function startJobs(
     logger.info({ event: "jobs.ready" });
     return { registry, queues, close };
   } catch (error) {
+    await portfolioWorker?.close();
     await mailWorker?.close();
     await marketWorker?.close();
     flagRuntime.cache.disconnect();

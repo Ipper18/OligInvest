@@ -5,7 +5,7 @@ import { z } from "zod";
 import { createApp } from "./app.js";
 import { requestClientIp } from "./auth/client-ip.js";
 import type { createAuthRuntime } from "./auth/runtime.js";
-import { MarketRepository, PortfolioRepository } from "./modules.js";
+import { ImportRepository, MarketRepository, PortfolioRepository } from "./modules.js";
 import { checkPostgres, checkValkey } from "./probes.js";
 import { StreamStore } from "./stream-store.js";
 
@@ -58,6 +58,11 @@ export function createRuntime(
   let stream: StreamStore | undefined;
   const app = createApp({
     portfolio: {
+      imports: async () => {
+        const runtime = await getAuth();
+        portfolio ??= new PortfolioRepository(runtime.appDatabase, runtime.enqueueRecompute);
+        return new ImportRepository(portfolio, runtime.enqueueImport);
+      },
       repository: async () => {
         const runtime = await getAuth();
         portfolio ??= new PortfolioRepository(runtime.appDatabase, runtime.enqueueRecompute);

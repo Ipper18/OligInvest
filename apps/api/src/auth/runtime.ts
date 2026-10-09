@@ -125,6 +125,15 @@ export function createAuthRuntime(
     service,
     appDatabase,
     cache,
+    enqueueImport: async (payload: { userId: string; importId: string }) => {
+      await queue("import").add("import.parse", payload, {
+        jobId: `import-${payload.userId}-${payload.importId}`,
+        attempts: 3,
+        backoff: { type: "exponential", delay: 1000 },
+        removeOnComplete: true,
+        removeOnFail: { age: 86400 },
+      });
+    },
     enqueueRecompute: async (payload: {
       userId: string;
       accountIds: string[];

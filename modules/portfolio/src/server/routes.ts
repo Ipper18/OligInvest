@@ -15,12 +15,15 @@ import {
   transactionPatch,
   transactionSchema,
 } from "../contracts.js";
+import { mountImports } from "./import-routes.js";
+import type { ImportRepository } from "./imports.js";
 import { type PortfolioRepository, validationError } from "./repository.js";
 
 export interface PortfolioDependencies {
   repository(): PortfolioRepository | Promise<PortfolioRepository>;
   authorize(request: Request, stepUp?: boolean): Promise<DatabaseContext>;
   assertOrigin(request: Request): void | Promise<void>;
+  imports?(): ImportRepository | Promise<ImportRepository>;
 }
 const json = (schema: z.ZodType) => ({
   description: "Dane portfela.",
@@ -243,6 +246,7 @@ export function mountPortfolio(api: OpenAPIHono<AppEnv>, deps: PortfolioDependen
       responses: { 204: { description: "Usunięto." }, 401: marketError, 404: marketError },
     }),
   ];
+  mountImports(api, deps);
   for (const route of routes) {
     api.openAPIRegistry.registerPath(route);
     api.on(route.method, route.path.replace(/\{([^}]+)\}/g, ":$1"), async (c: Context<AppEnv>) => {
