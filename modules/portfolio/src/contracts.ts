@@ -190,7 +190,7 @@ export const recomputeJob = z
     userId: z.uuid(),
     accountIds: z.array(z.uuid()).max(20),
     fromDate: date,
-      reason: z.enum(["transactions", "import", "eod", "fx", "recompute"]),
+    reason: z.enum(["transactions", "import", "eod", "fx", "recompute"]),
   })
   .strict();
 export const importJob = z.object({ userId: z.uuid(), importId: z.uuid() }).strict();

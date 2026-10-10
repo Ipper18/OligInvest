@@ -222,7 +222,14 @@ try {
     "sse:quotes",
     JSON.stringify({ v: 1, quotes: [{ ...quote(instrumentA), price: "10.02" }] }),
   );
-  instant += 5001;
+  instant += 2001;
+  await until(() => sa.frames.filter((f) => f.includes(liveAccountA)).length === 2);
+  assert.equal(
+    sa.frames.filter((f) => f.includes("market.quotes.updated")).length,
+    1,
+    "valuation must not wait for quote throttle",
+  );
+  instant += 3000;
   await until(() => sa.frames.some((f) => f.includes("10.02")));
   assert.equal(sa.frames.filter((f) => f.includes("market.quotes.updated")).length, 2);
   const accountA = randomUUID(),

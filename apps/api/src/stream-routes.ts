@@ -111,6 +111,7 @@ export function mountStream(api: OpenAPIHono<AppEnv>, dependencies: StreamDepend
         const subscriber = store.redis.duplicate({ lazyConnect: true });
         let closed = false,
           recheck = false,
+          valuationPending = false,
           flags: string[] | undefined;
         let allowed = new Set<string>();
         let extra = new Set<string>();
@@ -152,8 +153,10 @@ export function mountStream(api: OpenAPIHono<AppEnv>, dependencies: StreamDepend
                   if (
                     (allowed.has(quote.instrumentId) || extra.has(quote.instrumentId)) &&
                     (pending.size < 200 || pending.has(quote.instrumentId))
-                  )
+                  ) {
                     pending.set(quote.instrumentId, quote);
+                    if (allowed.has(quote.instrumentId)) valuationPending = true;
+                  }
                 }
             }
           } catch {
@@ -195,6 +198,7 @@ export function mountStream(api: OpenAPIHono<AppEnv>, dependencies: StreamDepend
             lastQuote = 0;
           const durable: Awaited<ReturnType<StreamStore["read"]>> = [];
           let nextValuation = 0;
+          let nextLiveValuation = 0;
           while (!closed) {
             if (recheck || now() - heartbeat >= 25000) {
               recheck = false;
@@ -260,14 +264,18 @@ export function mountStream(api: OpenAPIHono<AppEnv>, dependencies: StreamDepend
               pending.clear();
               if (quotes.length) {
                 await send("market.quotes.updated", { v: 1, quotes });
-                if (dependencies.valuation) {
-                  const valuation = realtimeSchemas["portfolio.valuation.updated"].parse(
-                    await dependencies.valuation(owner),
-                  );
-                  await send("portfolio.valuation.updated", valuation);
-                }
                 lastQuote = now();
               }
+            }
+            // The quote feed has a five-second throttle; owner valuations have their
+            // own two-second window so they do not inherit that additional delay.
+            if (valuationPending && dependencies.valuation && now() >= nextLiveValuation) {
+              valuationPending = false;
+              const valuation = realtimeSchemas["portfolio.valuation.updated"].parse(
+                await dependencies.valuation(owner),
+              );
+              await send("portfolio.valuation.updated", valuation);
+              nextLiveValuation = now() + 2000;
             }
             await stream.sleep(250);
           }
