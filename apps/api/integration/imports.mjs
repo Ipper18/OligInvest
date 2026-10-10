@@ -48,7 +48,7 @@ export async function testImportStorage(settings) {
   const fixture = (kind) =>
     readFileSync(
       new URL(
-        `../../../docs/03-dane/fixtures/anonymized/xtb/xtb-syntetyczny-${kind}-szablon-PLN.xlsx`,
+        `../../../modules/portfolio/test/fixtures/anonymized/xtb/xtb-syntetyczny-${kind}-szablon-PLN.xlsx`,
         import.meta.url,
       ),
     );
@@ -145,6 +145,39 @@ export async function testImportStorage(settings) {
     assert.equal(replay.headers.get("Idempotent-Replayed"), "true");
     await portfolio.read(owner, async (tx) => {
       const { ledger } = await loadLedger(tx);
+      const expected = JSON.parse(
+        readFileSync(
+          new URL(
+            "../../../modules/portfolio/test/fixtures/anonymized/oczekiwane-wyniki.json",
+            import.meta.url,
+          ),
+          "utf8",
+        ),
+      ).xtb;
+      for (const p of expected.positions_end) {
+        const position = ledger.positions.find((row) => row.instrumentId === symbols[p.ticker]);
+        assert(position.quantity.eq(p.qty));
+        assert(position.cost.amount.eq(p.cost_pln));
+      }
+      for (const s of expected.realized_pl_economic) {
+        const sale = ledger.sales.find(
+          (row) => row.instrumentId === symbols[s.ticker] && row.tradeDate === s.date,
+        );
+        assert(sale.realizedPlEconomic.amount.eq(s.pl_pln));
+        assert(sale.costEconomic.amount.eq(s.cost_pln));
+        assert(sale.proceedsEconomic.amount.eq(s.proceeds_pln));
+      }
+      for (const d of expected.dividends) {
+        const dividend = ledger.dividends.find((row) => row.instrumentId === symbols[d.ticker]);
+        assert(dividend.credited.amount.eq(d.net_pln));
+        assert(
+          dividend.gross.amount
+            .mul(dividend.credited.amount)
+            .div(dividend.net.amount)
+            .toDecimalPlaces(2)
+            .eq(d.gross_pln),
+        );
+      }
       assert.equal(
         ledger.cash.find((r) => r.balance.currency === "PLN").balance.amount.toFixed(),
         "14518.27",

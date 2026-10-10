@@ -6,7 +6,7 @@ Oznaczenia wiarygodności: ✅ zweryfikowane na prawdziwym pliku, 🔶 zweryfiko
 
 Źródła wiedzy o formatach (stan 2026-09-19): [ike-terminal](https://github.com/pulos-lab/ike-terminal) (MIT; parsery XTB i mBank z opisem formatów „zweryfikowanych na eksportach 2007–2026”), [xtb-xlsx-cleaner](https://github.com/Piotr20/xtb-xlsx-cleaner), [xtb-dividend-analysis](https://github.com/darekwojciechowski/xtb-dividend-analysis), pomoc XTB i podatekgieldy.pl. Z projektów tych przejmujemy **wiedzę o formacie**, nie kod.
 
-Pliki przykładowe (syntetyczne) i oczekiwane wyniki: [`fixtures/anonymized/`](fixtures/anonymized/README.md).
+Pliki przykładowe (syntetyczne) i oczekiwane wyniki: [`modules/portfolio/test/fixtures/anonymized/`](fixtures/anonymized/README.md).
 
 ---
 
@@ -164,11 +164,11 @@ date,type,isin,ticker,mic,quantity,price,price_currency,amount,amount_currency,f
 
 | Plik | Co sprawdza |
 |---|---|
-| `fixtures/anonymized/xtb/xtb-syntetyczny-nowy-szablon-PLN.xlsx` | szablon nowy z kolumną `Ticker`, nagłówek w wierszu 5, komórki dat Excela |
-| `fixtures/anonymized/xtb/xtb-syntetyczny-stary-szablon-PLN.xlsx` | szablon stary (pusta pierwsza kolumna, nagłówek w wierszu 12), arkusze pozycji, wiersz CFD |
-| `fixtures/anonymized/mbank/mbank-syntetyczny-historia-transakcji.csv` | Windows-1250, `;`, metadane nad nagłówkiem, wiersz USA bez wartości |
-| `fixtures/anonymized/mbank/mbank-syntetyczny-historia-finansowa.csv` | klasyfikacja opisów, kwoty z przecinkiem i spacją tysięcy |
-| `fixtures/anonymized/oczekiwane-wyniki.json` | oczekiwane pozycje, gotówka, P/L, dywidendy, wiersze nieobsługiwane |
+| `modules/portfolio/test/fixtures/anonymized/xtb/xtb-syntetyczny-nowy-szablon-PLN.xlsx` | szablon nowy z kolumną `Ticker`, nagłówek w wierszu 5, komórki dat Excela |
+| `modules/portfolio/test/fixtures/anonymized/xtb/xtb-syntetyczny-stary-szablon-PLN.xlsx` | szablon stary (pusta pierwsza kolumna, nagłówek w wierszu 12), arkusze pozycji, wiersz CFD |
+| `modules/portfolio/test/fixtures/anonymized/mbank/mbank-syntetyczny-historia-transakcji.csv` | Windows-1250, `;`, metadane nad nagłówkiem, wiersz USA bez wartości |
+| `modules/portfolio/test/fixtures/anonymized/mbank/mbank-syntetyczny-historia-finansowa.csv` | klasyfikacja opisów, kwoty z przecinkiem i spacją tysięcy |
+| `modules/portfolio/test/fixtures/anonymized/oczekiwane-wyniki.json` | oczekiwane pozycje, gotówka, P/L, dywidendy, wiersze nieobsługiwane |
 
 Oba pliki XTB zawierają **te same operacje logiczne** — parser musi dać z nich identyczny wynik (test parytetu), a dla AAPL odtworzyć przykład A z `obliczenia-finansowe.md` z dodatkową powiązaną opłatą SEC 0,28 PLN: przychód 10 023,35 PLN, P/L ekonomiczny −1 083,91 PLN. Wektor A bez opłaty pozostaje bez zmian (−1 083,63 PLN). Pliki są syntetyczne; gdy właściciel dostarczy prawdziwy (zanonimizowany) eksport, dodajemy go obok i korygujemy oznaczenia ❓ w tym dokumencie.
 

@@ -7,10 +7,7 @@ import { parseXtb } from "../src/import/xtb.js";
 const accountId = "0198a000-0000-7000-8000-000000000001";
 const fixture = (kind) =>
   readFileSync(
-    new URL(
-      `../../../docs/03-dane/fixtures/anonymized/xtb/xtb-syntetyczny-${kind}-szablon-PLN.xlsx`,
-      import.meta.url,
-    ),
+    new URL(`./fixtures/anonymized/xtb/xtb-syntetyczny-${kind}-szablon-PLN.xlsx`, import.meta.url),
   );
 const parse = (bytes) => parseXtb(bytes, { id: accountId, currency: "PLN" });
 const csv = (lines) =>

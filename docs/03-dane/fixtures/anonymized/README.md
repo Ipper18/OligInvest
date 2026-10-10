@@ -4,7 +4,7 @@
 
 - Wszystkie dane są **fikcyjne** (osoby, numery rachunków, kwoty, identyfikatory). Układ plików odtwarza formaty opisane w [`../../formaty-importu.md`](../../formaty-importu.md).
 - Wygenerowano 2026-09-19 skryptem pomocniczym (poza repozytorium); oczekiwane wyniki policzono w arytmetyce dziesiętnej zgodnie z [`../../obliczenia-finansowe.md`](../../obliczenia-finansowe.md) (FIFO per rachunek, widok ekonomiczny).
-- Docelowe miejsce w kodzie: `modules/portfolio/test/fixtures/anonymized/` (przeniesienie w M1). Reguła CI z [ADR-013](../../../09-decyzje/ADR-013-repozytorium-publiczne.md): pliki `.xlsx`/`.csv` są dozwolone wyłącznie w katalogach `**/fixtures/anonymized/**`.
+- Pliki znajdują się w [`modules/portfolio/test/fixtures/anonymized/`](../../../../modules/portfolio/test/fixtures/anonymized/README.md). Lokalny anonimizator XTB i instrukcja przeglądu: [`scripts/README.md`](../../../../modules/portfolio/scripts/README.md). Reguła CI z [ADR-013](../../../09-decyzje/ADR-013-repozytorium-publiczne.md): pliki `.xlsx`/`.csv` są dozwolone wyłącznie w katalogach `**/fixtures/anonymized/**`.
 
 ## Zawartość
 
@@ -24,4 +24,4 @@
 
 ## Wierność bajtowa
 
-Pliki w tym katalogu są wyłączone z normalizacji końców linii (`.gitattributes`: `-text`), więc CSV z mBank zachowują kodowanie Windows-1250 i końce linii CRLF jak prawdziwe eksporty — parser musi obsłużyć oba warianty końców linii. Nie edytuj tych plików edytorem, który zmienia kodowanie lub końce linii; generuj je ponownie skryptem.
+Pliki w katalogu modułu są wyłączone z normalizacji końców linii (`.gitattributes`: `-text`), więc CSV z mBank zachowują kodowanie Windows-1250 i końce linii CRLF jak prawdziwe eksporty — parser musi obsłużyć oba warianty końców linii. Nie edytuj tych plików edytorem, który zmienia kodowanie lub końce linii; generuj je ponownie skryptem.
