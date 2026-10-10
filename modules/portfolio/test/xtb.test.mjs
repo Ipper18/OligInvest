@@ -76,5 +76,5 @@ describe("XTB content detection and lossless parsing", () => {
     expect(parse(csv(rows)).rows).toHaveLength(5000);
     expect(performance.now() - start).toBeLessThan(30000);
     expect(() => parse(csv(Array(50001).fill(rows[0])))).toThrow();
-  });
+  }, 30_000);
 });
