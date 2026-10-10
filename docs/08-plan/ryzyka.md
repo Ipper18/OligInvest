@@ -54,9 +54,11 @@ Powiązane: [`roadmapa.md`](roadmapa.md), [`backlog.md`](backlog.md), [`../06-be
 
 | **R-33** | Zbędne zależności runtime Yahoo zwiększają powierzchnię ataku i koszt utrzymania jobs | yahoo-finance2 4.0.2 → @modelcontextprotocol/sdk (express, cors, cross-spawn), @deno/shim-deno, fetch-mock-cache, tough-cookie-file-store | 3 | 3 | 9 | BL-159 po M1-2: porównać cienki adapter chart/quote na własnym transporcie i wersję bez MCP SDK; policzyć pakiety produkcyjne, ocenić utrzymanie i warunki Yahoo; do decyzji bez zmian zależności w M1-2, audyt i allowlista sieci pozostają aktywne | nowe podatności/zmiany grafu Yahoo lub praca nad BL-159 | agent, właściciel | M1 po M1-2, otwarte 2026-10-08 |
 
+| **R-34** | Kontrakty portfela i oczekiwane wyniki importu nie odzwierciedlają rdzenia | BL-144/145, [raport M1-3](m1-3-session-report.md): nieznany koszt, brutto dywidendy, opłata SEC | 3 | 3 | 9 | rozstrzygnięcie dokumentów przed implementacją; testy kontraktowe i integracyjne z core; nie zastępować brakującego kosztu zerem ani pomijać opłat | zapis null blokowany przez SQL/API lub rozbieżny P/L fixture | agent, właściciel | zamknięte 2026-10-10: decyzje właściciela w dokumentach, SQL/API i testy PostgreSQL potwierdzają null, brutto dywidendy oraz P/L po SEC |
+
 ## 3. Podsumowanie
 
-33 ryzyk: **5 wysokich** (R-01, R-07, R-11, R-16, R-28), 24 średnie, 4 niskie; brak krytycznych.
+34 ryzyka: **5 wysokich** (R-01, R-07, R-11, R-16, R-28), 25 średnich, 4 niskie; brak krytycznych.
 
 | Ryzyko wysokie | Działanie przed końcem etapu |
 |---|---|

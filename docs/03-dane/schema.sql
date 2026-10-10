@@ -485,13 +485,14 @@ CREATE TABLE market.corporate_actions (
   ex_date        date           NOT NULL,
   record_date    date,
   pay_date       date,
-  ratio          numeric(24,12),                             -- split 4:1 → 4; scalenie 1:10 → 0.1
   amount         numeric(20,8),
   currency       char(3),
   details        jsonb          NOT NULL DEFAULT '{}'::jsonb,
   source         text           NOT NULL,
   confirmed_by   uuid,
-  created_at     timestamptz    NOT NULL DEFAULT now()
+  created_at     timestamptz    NOT NULL DEFAULT now(),
+  ratio_from     integer,                                    -- liczby całkowite: stare → nowe akcje
+  ratio_to       integer
 );
 CREATE INDEX corporate_actions_instrument_idx ON market.corporate_actions (instrument_id, ex_date);
 
@@ -725,7 +726,6 @@ CREATE TABLE portfolio.transactions (
   tax_currency            char(3),
   fx_rate                 numeric(18,8),                     -- price_currency → cash_currency, kurs brokera
   fx_source               text           CHECK (fx_source IN ('broker', 'implied', 'nbp_fallback', 'manual')),
-  split_ratio             numeric(24,12),
   counter_amount          numeric(20,8),                     -- druga noga FX_CONVERSION
   counter_currency        char(3),
   category                text,                              -- podtyp: 'sec_fee', 'ftt', 'interest_tax', 'cfd_pl', ...
@@ -737,6 +737,11 @@ CREATE TABLE portfolio.transactions (
   note                    text,
   created_at              timestamptz    NOT NULL DEFAULT now(),
   updated_at              timestamptz    NOT NULL DEFAULT now(),
+  ratio_from              integer,
+  ratio_to                integer,
+  cash_in_lieu            numeric(20,8),                     -- waluta rachunku
+  acquisition_cost        numeric(20,8),                     -- deklarowany koszt SECURITY_TRANSFER_IN, waluta rachunku
+  acquired_on             date,
   UNIQUE (id, user_id),
   FOREIGN KEY (account_id, user_id) REFERENCES portfolio.accounts (id, user_id) ON DELETE CASCADE,
   FOREIGN KEY (related_transaction_id, user_id) REFERENCES portfolio.transactions (id, user_id) ON DELETE SET NULL (related_transaction_id),
@@ -745,7 +750,7 @@ CREATE TABLE portfolio.transactions (
     type NOT IN ('BUY', 'SELL', 'DIVIDEND', 'SPLIT', 'SECURITY_TRANSFER_IN', 'SECURITY_TRANSFER_OUT') OR instrument_id IS NOT NULL),
   CONSTRAINT tx_quantity_positive CHECK (
     type NOT IN ('BUY', 'SELL', 'SECURITY_TRANSFER_IN', 'SECURITY_TRANSFER_OUT') OR (quantity IS NOT NULL AND quantity > 0)),
-  CONSTRAINT tx_split_ratio CHECK (type <> 'SPLIT' OR (split_ratio IS NOT NULL AND split_ratio > 0)),
+  CONSTRAINT tx_split_ratio CHECK (type <> 'SPLIT' OR (ratio_from IS NOT NULL AND ratio_from > 0 AND ratio_to IS NOT NULL AND ratio_to > 0)),
   CONSTRAINT tx_fx_legs CHECK (type <> 'FX_CONVERSION' OR (counter_amount IS NOT NULL AND counter_currency IS NOT NULL))
 );
 CREATE UNIQUE INDEX transactions_external_uq ON portfolio.transactions (account_id, source, external_id) WHERE external_id IS NOT NULL;
@@ -791,7 +796,7 @@ CREATE TABLE portfolio.lots (
   acquired_on               date           NOT NULL,
   quantity_open             numeric(24,10) NOT NULL CHECK (quantity_open > 0),
   quantity_remaining        numeric(24,10) NOT NULL CHECK (quantity_remaining >= 0),
-  cost_total                numeric(20,8)  NOT NULL,         -- widok ekonomiczny, waluta rachunku
+  cost_total                numeric(20,8),         -- widok ekonomiczny, waluta rachunku
   cost_currency             char(3)        NOT NULL,
   cost_total_instrument_ccy numeric(20,8),
   cost_total_tax_pln        numeric(20,8),                    -- widok podatkowy (NBP D-1)
@@ -800,6 +805,7 @@ CREATE TABLE portfolio.lots (
   split_factor              numeric(24,12) NOT NULL DEFAULT 1,
   closed_on                 date,
   computed_at               timestamptz    NOT NULL DEFAULT now(),
+  transfer_rate             jsonb,                          -- pełny FxRate z datą, źródłem i parą walut
   UNIQUE (id, user_id),
   FOREIGN KEY (account_id, user_id) REFERENCES portfolio.accounts (id, user_id) ON DELETE CASCADE,
   FOREIGN KEY (open_transaction_id, user_id) REFERENCES portfolio.transactions (id, user_id) ON DELETE CASCADE
@@ -812,9 +818,9 @@ CREATE TABLE portfolio.lot_consumptions (
   lot_id                uuid           NOT NULL,
   close_transaction_id  uuid           NOT NULL,
   quantity              numeric(24,10) NOT NULL CHECK (quantity > 0),
-  cost_economic         numeric(20,8)  NOT NULL,
+  cost_economic         numeric(20,8),
   proceeds_economic     numeric(20,8)  NOT NULL,
-  realized_pl_economic  numeric(20,8)  NOT NULL,
+  realized_pl_economic  numeric(20,8),
   cost_tax_pln          numeric(20,8),
   proceeds_tax_pln      numeric(20,8),
   realized_pl_tax_pln   numeric(20,8),
@@ -831,7 +837,7 @@ CREATE TABLE portfolio.positions_daily (
   instrument_id         uuid           NOT NULL REFERENCES market.instruments (id),
   valuation_date        date           NOT NULL,
   quantity              numeric(24,10) NOT NULL,
-  cost_basis            numeric(20,8)  NOT NULL,             -- waluta rachunku
+  cost_basis            numeric(20,8),             -- waluta rachunku
   price                 numeric(20,8),
   price_currency        char(3),
   price_as_of           timestamptz,

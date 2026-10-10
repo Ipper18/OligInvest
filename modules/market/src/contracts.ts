@@ -92,7 +92,8 @@ export const chartSchema = object({
       object({
         date: z.string().date(),
         type: z.enum(["split", "reverse_split", "dividend"]),
-        ratio: decimalText.optional(),
+        ratioFrom: z.number().int().min(1).max(2147483647).optional(),
+        ratioTo: z.number().int().min(1).max(2147483647).optional(),
       }),
     )
     .optional(),

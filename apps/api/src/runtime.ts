@@ -5,7 +5,12 @@ import { z } from "zod";
 import { createApp } from "./app.js";
 import { requestClientIp } from "./auth/client-ip.js";
 import type { createAuthRuntime } from "./auth/runtime.js";
-import { MarketRepository } from "./modules.js";
+import {
+  ImportRepository,
+  livePortfolioValuation,
+  MarketRepository,
+  PortfolioRepository,
+} from "./modules.js";
 import { checkPostgres, checkValkey } from "./probes.js";
 import { StreamStore } from "./stream-store.js";
 
@@ -54,9 +59,32 @@ export function createRuntime(
     return auth;
   };
   let market: MarketRepository | undefined;
+  let portfolio: PortfolioRepository | undefined;
   let stream: StreamStore | undefined;
   const app = createApp({
+    portfolio: {
+      imports: async () => {
+        const runtime = await getAuth();
+        portfolio ??= new PortfolioRepository(runtime.appDatabase, runtime.enqueueRecompute);
+        return new ImportRepository(portfolio, runtime.enqueueImport);
+      },
+      repository: async () => {
+        const runtime = await getAuth();
+        portfolio ??= new PortfolioRepository(runtime.appDatabase, runtime.enqueueRecompute);
+        return portfolio;
+      },
+      authorize: async (request, stepUp) => {
+        const principal = await (await getAuth()).service.requireData(request, stepUp);
+        return { userId: principal.user_id, role: principal.role };
+      },
+      assertOrigin: async (request) => (await getAuth()).service.assertOrigin(request),
+    },
     stream: {
+      valuation: async (owner) => {
+        const runtime = await getAuth();
+        portfolio ??= new PortfolioRepository(runtime.appDatabase, runtime.enqueueRecompute);
+        return livePortfolioValuation(portfolio, { userId: owner.userId, role: "user" });
+      },
       origin: new URL(config.PUBLIC_BASE_URL).origin,
       authorize: async (request) => {
         const principal = await (await getAuth()).service.requireData(request);

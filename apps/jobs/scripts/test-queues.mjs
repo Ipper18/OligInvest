@@ -12,6 +12,7 @@ import { checkHealth, readRuntime, startJobs } from "../dist/index.js";
 import { marketSchedules } from "../dist/modules.js";
 import { testFeatureFlags } from "./test-feature-flags.mjs";
 import { testProviderLimits } from "./test-provider-limits.mjs";
+import { testRecomputeQueue } from "./test-recompute-queue.mjs";
 
 const dev = await isolatedEnvironment();
 const env = applicationEnvironment(dev);
@@ -40,6 +41,13 @@ try {
   assert.equal((await ingest.getJobSchedulers()).length, marketSchedules.length);
   assert.equal(await checkHealth(env), true);
   const runtime = readRuntime(env);
+  const recompute = jobs.queues.find((q) => q.name === "recompute");
+  const nightly = (await recompute.getJobSchedulers()).find(
+    (s) => s.key === "portfolio.recompute-all",
+  );
+  assert.equal(nightly.pattern, "0 3 * * *");
+  assert.equal(nightly.tz, "Europe/Warsaw");
+  await testRecomputeQueue(runtime.connection);
   const client = await jobs.queues[0].getBackend().client;
   const info = await client.info();
   assert.match(info, /maxmemory_policy:noeviction/u);

@@ -186,6 +186,17 @@ Moduły z wyświetlaniem danych rynkowych i wyników analiz korzystają ze wspó
 - Handlery są **idempotentne** (klucz idempotencji w payloadzie, np. `batchId`, `date`); ponowienia z wykładniczym odstępem; po wyczerpaniu prób zadanie trafia do stanu `failed` widocznego w panelu admina (FR-08.07).
 - Siatka bezpieczeństwa: nocne pełne przeliczenie wycen i pozycji (`portfolio.recompute-all`) naprawia skutki ewentualnie utraconych zdarzeń.
 
+Implementacja portfela (BL-146): przeliczenie działa pod blokadą właściciela i w jego
+kontekście RLS; atomowo odbudowuje partie FIFO, zużycia, pozycje, gotówkę i wyceny
+od daty zmiany. Odtwarza wszystkie rachunki właściciela, aby uwzględnić transfery.
+Zmiana podczas aktywnego zadania zachowuje jedno kolejne przeliczenie; ponowienie
+nie dopisuje kopii stanu. Nocne zadanie o 03:00 Europe/Warsaw odbudowuje historię,
+usuwa wygasłe pliki importu i ponawia importy bez zakończonego parsowania.
+Aktualizacja EOD/FX uruchamia odbudowę również dla korekt wcześniejszych danych.
+Notowania wywołują osobną wycenę tylko do odczytu i ulotne SSE właściciela;
+nie nadpisują dziennych wycen. Brak ceny/kursu oznacza niekompletność wyceny,
+a nieznany koszt pozostaje `null`. Zdarzenie trwałe wychodzi dopiero po commit.
+
 ### 5.2 Katalog kolejek
 
 | Kolejka | Instancja | Konsument | Współbieżność | Priorytety / uwagi |
