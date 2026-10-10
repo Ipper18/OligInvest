@@ -5,7 +5,12 @@ import { z } from "zod";
 import { createApp } from "./app.js";
 import { requestClientIp } from "./auth/client-ip.js";
 import type { createAuthRuntime } from "./auth/runtime.js";
-import { ImportRepository, MarketRepository, PortfolioRepository } from "./modules.js";
+import {
+  ImportRepository,
+  livePortfolioValuation,
+  MarketRepository,
+  PortfolioRepository,
+} from "./modules.js";
 import { checkPostgres, checkValkey } from "./probes.js";
 import { StreamStore } from "./stream-store.js";
 
@@ -75,6 +80,11 @@ export function createRuntime(
       assertOrigin: async (request) => (await getAuth()).service.assertOrigin(request),
     },
     stream: {
+      valuation: async (owner) => {
+        const runtime = await getAuth();
+        portfolio ??= new PortfolioRepository(runtime.appDatabase, runtime.enqueueRecompute);
+        return livePortfolioValuation(portfolio, { userId: owner.userId, role: "user" });
+      },
       origin: new URL(config.PUBLIC_BASE_URL).origin,
       authorize: async (request) => {
         const principal = await (await getAuth()).service.requireData(request);

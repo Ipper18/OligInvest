@@ -2,9 +2,10 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { createAppDatabase, createAuthDatabase } from "@oliginvest/db";
-import { parseImport } from "@oliginvest/mod-portfolio/jobs";
+import { parseImport, recomputePortfolio } from "@oliginvest/mod-portfolio/jobs";
 import {
   ImportRepository,
+  livePortfolioValuation,
   loadLedger,
   PortfolioRepository,
 } from "@oliginvest/mod-portfolio/server";
@@ -169,6 +170,117 @@ export async function testImportStorage(settings) {
     );
     assert.equal((await request(`imports/${batch.id}`, "DELETE")).status, 409);
     assert.equal(events[0].event, "portfolio.import.parsed");
+    await database.transaction({ userId: null, role: "system" }, async (tx) => {
+      for (const [base, rate] of [
+        ["USD", "4"],
+        ["EUR", "4.5"],
+      ])
+        await tx.execute(
+          sql`INSERT INTO market.fx_rates(base,quote,rate_date,rate,source) VALUES(${base},'PLN','2025-12-29',${rate},'nbp') ON CONFLICT(base,quote,rate_date,source) DO UPDATE SET rate=excluded.rate`,
+        );
+      for (const [symbol, price] of [
+        ["AAPL.US", "250"],
+        ["PKO.PL", "73"],
+        ["VWCE.DE", "125"],
+      ])
+        await tx.execute(
+          sql`INSERT INTO market.bars_daily(instrument_id,session_date,close,source) VALUES(${symbols[symbol]}::uuid,'2025-12-31',${price},'synthetic') ON CONFLICT(instrument_id,session_date) DO UPDATE SET close=excluded.close`,
+        );
+      // Yesterday's close is the same, so today's quote movement has a known cash-neutral delta.
+      await tx.execute(
+        sql`INSERT INTO market.bars_daily(instrument_id,session_date,close,source) SELECT instrument_id,'2025-12-29',close,source FROM market.bars_daily WHERE session_date='2025-12-31' AND instrument_id=ANY(${sql.param(Object.values(symbols))}::uuid[]) ON CONFLICT DO NOTHING`,
+      );
+    });
+    const start = performance.now();
+    const payload = {
+      userId: owner.userId,
+      accountIds: [account.id],
+      fromDate: "2025-01-01",
+      reason: "import",
+    };
+    const now = () => new Date("2025-12-31T20:00:00Z");
+    const publish = async (userId, event) => {
+      assert.equal(userId, owner.userId);
+      await database.transaction(owner, async (tx) => {
+        const [count] = (
+          await tx.execute(
+            sql`SELECT count(*)::integer AS count FROM portfolio.positions_daily WHERE valuation_date='2025-12-31'`,
+          )
+        ).rows;
+        assert.equal(count.count, 3);
+      });
+      events.push(event);
+    };
+    await recomputePortfolio(portfolio, payload, publish, now);
+    assert(performance.now() - start < 5000, "recompute must finish within five seconds");
+    const snapshot = () =>
+      database.transaction(owner, async (tx) => ({
+        positions: (
+          await tx.execute(
+            sql`SELECT account_id,instrument_id,quantity,cost_basis,market_value FROM portfolio.positions_daily WHERE valuation_date='2025-12-31' ORDER BY instrument_id`,
+          )
+        ).rows,
+        cash: (
+          await tx.execute(
+            sql`SELECT balance FROM portfolio.cash_balances_daily WHERE valuation_date='2025-12-31'`,
+          )
+        ).rows,
+        pl: (
+          await tx.execute(
+            sql`SELECT sum(realized_pl_economic)::text AS value FROM portfolio.lot_consumptions`,
+          )
+        ).rows,
+      }));
+    const before = await snapshot();
+    assert.equal(before.cash[0].balance, "14518.27000000");
+    assert.equal(before.pl[0].value, "-902.71000000");
+    assert.equal(
+      before.positions.find((p) => p.instrument_id === symbols["AAPL.US"]).market_value,
+      "3000.00000000",
+    );
+    await recomputePortfolio(portfolio, payload, async () => {}, now);
+    assert.deepEqual(await snapshot(), before);
+    await database.transaction(other, async (tx) => {
+      assert.equal((await tx.execute(sql`SELECT * FROM portfolio.positions_daily`)).rows.length, 0);
+    });
+    await portfolio.createTransaction(
+      owner,
+      {
+        accountId: account.id,
+        type: "SECURITY_TRANSFER_IN",
+        tradeDate: "2025-12-30",
+        instrumentId: symbols["AAPL.US"],
+        quantity: "1",
+      },
+      randomUUID(),
+    );
+    await recomputePortfolio(
+      portfolio,
+      { ...payload, fromDate: "2025-12-30", reason: "transactions" },
+      async () => {},
+      now,
+    );
+    const unknown = (await snapshot()).positions.find(
+      (p) => p.instrument_id === symbols["AAPL.US"],
+    );
+    assert.equal(unknown.cost_basis, null);
+    assert.equal(unknown.quantity, "4.0000000000");
+    assert.equal(unknown.market_value, "4000.00000000");
+    await database.transaction({ userId: null, role: "system" }, async (tx) => {
+      await tx.execute(
+        sql`INSERT INTO market.quotes_latest(instrument_id,price,as_of,source) VALUES(${symbols["AAPL.US"]}::uuid,'260','2025-12-31T19:00:00Z','synthetic') ON CONFLICT(instrument_id) DO UPDATE SET price=excluded.price,as_of=excluded.as_of,source=excluded.source`,
+      );
+    });
+    const live = await livePortfolioValuation(portfolio, owner, now);
+    assert.equal(live.summary.dayChange.amount, "160");
+    assert.equal(live.reason, "quotes");
+    assert.deepEqual(live.accountIds, [account.id]);
+    assert.deepEqual((await livePortfolioValuation(portfolio, other, now)).accountIds, []);
+    assert.deepEqual(
+      (await snapshot()).positions.find((p) => p.instrument_id === symbols["AAPL.US"]),
+      unknown,
+      "live valuation must not rewrite EOD history",
+    );
   } finally {
     await auth.transaction(async (tx) => {
       await tx.execute(

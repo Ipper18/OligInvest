@@ -73,7 +73,12 @@ export async function startJobs(
   let mailer: ReturnType<typeof createAuthMailer> | undefined;
   let mailWorker: Worker | undefined;
   let marketWorker: { close(): Promise<void> } | undefined;
-  let portfolioWorker: { close(): Promise<void> } | undefined;
+  let portfolioWorker:
+    | {
+        close(): Promise<void>;
+        enqueueAll(reason: "eod" | "fx" | "recompute", fromDate?: string): Promise<void>;
+      }
+    | undefined;
   let timer: ReturnType<typeof setTimeout> | undefined;
   let stopped = false;
   let heartbeat: Promise<void> = Promise.resolve();
@@ -121,6 +126,7 @@ export async function startJobs(
     });
     const { startMarketWorker } = await import("./market-runtime.js");
     marketWorker = await startMarketWorker({
+      updated: async (reason, fromDate) => portfolioWorker?.enqueueAll(reason, fromDate),
       database: flagRuntime.database,
       cache: flagRuntime.cache,
       queue: healthQueue,

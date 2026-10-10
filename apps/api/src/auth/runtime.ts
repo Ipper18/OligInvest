@@ -9,6 +9,7 @@ import { createAppDatabase, createAuthDatabase } from "@oliginvest/db";
 import { type PlatformLogger, subscribeFeatureFlags } from "@oliginvest/platform";
 import { Queue } from "bullmq";
 import { Redis } from "ioredis";
+import { enqueuePortfolioRecompute } from "../modules.js";
 import { Administration } from "./administration.js";
 import { AuditWriter } from "./audit.js";
 import { defaultPasswordChecks } from "./password.js";
@@ -140,12 +141,7 @@ export function createAuthRuntime(
       fromDate: string;
       reason: "transactions" | "import";
     }) => {
-      await queue("recompute").add("portfolio.recompute", payload, {
-        attempts: 3,
-        backoff: { type: "exponential", delay: 1000 },
-        removeOnComplete: true,
-        removeOnFail: { age: 86400 },
-      });
+      await enqueuePortfolioRecompute(queue("recompute"), payload);
     },
     enqueueMarketSearch: async (query: string) => {
       const { createHash } = await import("node:crypto");

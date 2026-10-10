@@ -52,6 +52,8 @@ try {
   const b = { userId: randomUUID(), sessionId: randomUUID() };
   const instrumentA = randomUUID(),
     instrumentB = randomUUID();
+  const liveAccountA = randomUUID(),
+    liveAccountB = randomUUID();
   const event = (id) => ({ event: "identity.export.ready", data: { v: 1, exportId: id } });
   const leases = await Promise.allSettled(Array.from({ length: 6 }, () => store.claim(a)));
   assert.equal(leases.filter((r) => r.status === "fulfilled").length, 5);
@@ -105,6 +107,12 @@ try {
         return token === "a" ? a : b;
       },
       ownedInstruments: async (owner) => [owner.userId === a.userId ? instrumentA : instrumentB],
+      valuation: async (owner) => ({
+        v: 1,
+        accountIds: [owner.userId === a.userId ? liveAccountA : liveAccountB],
+        valuationAsOf: new Date().toISOString(),
+        reason: "quotes",
+      }),
     },
   });
   const get = (token, headers = {}) =>
@@ -196,6 +204,14 @@ try {
   );
   assert.ok(!sa.frames.some((f) => f.includes(instrumentB)));
   assert.ok(!sb.frames.some((f) => f.includes(instrumentA)));
+  await until(
+    () =>
+      sa.frames.some((f) => f.includes(liveAccountA)) &&
+      sb.frames.some((f) => f.includes(liveAccountB)),
+  );
+  assert.ok(!sa.frames.some((f) => f.includes(liveAccountB)));
+  assert.ok(!sb.frames.some((f) => f.includes(liveAccountA)));
+  assert.ok(!sa.frames.find((f) => f.includes(liveAccountA)).includes("id:"));
   // Irrelevant batches cannot crowd an allowed quote out of the connection buffer.
   for (let batch = 0; batch < 2; batch++)
     await redis.publish(
@@ -216,11 +232,11 @@ try {
     data: { v: 1, accountIds: [account], valuationAsOf: new Date().toISOString(), reason: "eod" },
   });
   await store.publish(a.userId, valuation(accountA));
-  await until(() => sa.frames.some((f) => f.includes("portfolio.valuation.updated")));
+  await until(() => sa.frames.some((f) => f.includes('"reason":"eod"')));
   await store.publish(a.userId, valuation(accountA));
   const lastValuation = await store.publish(a.userId, valuation(accountB));
   await sleep(300);
-  assert.equal(sa.frames.filter((f) => f.includes("portfolio.valuation.updated")).length, 1);
+  assert.equal(sa.frames.filter((f) => f.includes('"reason":"eod"')).length, 1);
   instant += 2001;
   await until(() => sa.frames.some((f) => f.includes(`id: ${lastValuation}`)));
   const merged = sa.frames.find((f) => f.includes(`id: ${lastValuation}`));

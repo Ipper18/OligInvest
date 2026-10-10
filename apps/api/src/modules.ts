@@ -14,7 +14,9 @@ export {
   mountMarket,
 } from "@oliginvest/mod-market/server";
 export {
+  enqueuePortfolioRecompute,
   ImportRepository,
+  livePortfolioValuation,
   mountPortfolio,
   type PortfolioDependencies,
   PortfolioRepository,

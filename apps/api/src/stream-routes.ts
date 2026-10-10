@@ -9,6 +9,9 @@ export interface StreamDependencies {
   store(): Promise<StreamStore>;
   authorize(request: Request): Promise<StreamOwner>;
   ownedInstruments(owner: StreamOwner): Promise<string[]>;
+  valuation?(
+    owner: StreamOwner,
+  ): Promise<z.infer<(typeof realtimeSchemas)["portfolio.valuation.updated"]>>;
   origin: string;
   now?: () => number;
 }
@@ -257,6 +260,12 @@ export function mountStream(api: OpenAPIHono<AppEnv>, dependencies: StreamDepend
               pending.clear();
               if (quotes.length) {
                 await send("market.quotes.updated", { v: 1, quotes });
+                if (dependencies.valuation) {
+                  const valuation = realtimeSchemas["portfolio.valuation.updated"].parse(
+                    await dependencies.valuation(owner),
+                  );
+                  await send("portfolio.valuation.updated", valuation);
+                }
                 lastQuote = now();
               }
             }

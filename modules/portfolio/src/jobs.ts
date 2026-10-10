@@ -4,6 +4,7 @@ import { parseXtb } from "./import/xtb.js";
 import type { ImportRepository } from "./server/imports.js";
 
 export { parseXtb } from "./import/xtb.js";
+export { portfolioDate, recomputePortfolio } from "./recompute.js";
 export async function parseImport(
   repository: ImportRepository,
   raw: unknown,
