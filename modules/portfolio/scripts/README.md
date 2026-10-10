@@ -5,9 +5,23 @@
 Skrypt lokalny odczytuje obsługiwany eksport XTB (XLSX/XLS/CSV) i buduje nowy
 XLSX zawierający wyłącznie operacje gotówkowe. Nie kopiuje metadanych skoroszytu,
 nazw osób, rachunków, identyfikatorów, opisów ani dodatkowych arkuszy. Instrumenty
-dostają fikcyjne symbole, rachunek fikcyjny numer, kwoty i ilości losowe mnożniki,
-a wszystkie daty wspólne losowe przesunięcie. Zachowuje znaki, kolejność,
-powiązania opłat i pary operacji; brakujące dane dywidendy pozostają brakujące.
+dostają fikcyjne symbole, rachunek fikcyjny numer. Ceny powstają z losowej bazy
+i niezależnego od wejścia przebiegu dla każdego instrumentu; ilości, opłaty,
+dywidendy i kursy przeliczenia są syntetyczne. Kwoty transakcji wynikają z
+syntetycznej ilości × ceny × kursu, z osobnymi wierszami opłat. Nie ma wspólnego
+mnożnika kwot ani skalowania rzeczywistych cen. Sprzedaże nie przekraczają
+syntetycznych zakupów, a wpłaty i transfery przychodzące pokrywają przyszłe
+wydatki do następnego zasilenia z losowym zapasem, bez ujemnego salda gotówki.
+
+Zachowana jest struktura: typy i kolejność wierszy w pliku, powiązania opłat,
+pary operacji oraz rozpoznane formaty komentarzy. Daty, odstępy i godziny są
+generowane od nowa, w kolejności chronologicznej, od poniedziałku do piątku
+(bez odwzorowania świąt giełdowych). Powiązane wiersze nadal mają wspólny czas;
+komentarze opłat odwołują się do nowych dat. Brakujące ilości dywidendy pozostają
+brakujące. Eksport z ujemną pozycją bez wcześniejszego zakupu lub wydatkami bez
+wystarczających wcześniejszych wpływów i bez wpłaty/transferu przychodzącego
+jest odrzucany jako `ANONYMIZATION_INCOMPLETE_HISTORY`: zachowanie liczby i typów
+wierszy nie pozwala uzupełnić brakującego salda początkowego.
 Nierozpoznana operacja lub uszkodzony wiersz blokuje zapis. Obowiązują limity
 rozmiaru i zakaz formuł parsera importu. Skrypt nie korzysta z sieci ani bazy.
 
