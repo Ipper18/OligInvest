@@ -393,6 +393,8 @@ Implementacja M0-2 i kolejność poleceń właściciela: [instrukcja uruchomieni
 
 M0-2, 2026-10-01: Caddy 2.11.6 zastępuje binarium 2.11.4 ze względu na poprawki bezpieczeństwa ([oficjalne wydanie](https://github.com/caddyserver/caddy/releases/tag/v2.11.6)). Obraz bazowy pozostaje przypięty digestem, archiwum linux/amd64 wydawcy dodatkowo SHA-256; po publikacji oficjalnego obrazu aktualizację zaproponuje Renovate. Bez zmiany linii 2.11 ani decyzji ADR. Pakiety Debian w bazach Python/Valkey mają przypięte poprawki glibc, OpenSSL, Perl i util-linux; nieużywane root-only gosu usunięto z PostgreSQL uruchamianego zawsze jako UID z tabeli §8.1. Testy Caddyfile i E2E weryfikują zgodność konfiguracji. Poprawki bezpieczeństwa korzystają z trybu pilnego SEC §4.2.
 
+M1-3, 2026-10-11: obraz bazowy `caddy:2.11.7` (przypięty digestem), a binarium Caddy 2.11.7 zbudowane ze źródła modułu (`go install`, baza sum kontrolnych Go) przez Go 1.26.9, bo oficjalny obraz zawiera Go 1.26.8 z poprawionymi podatnościami biblioteki standardowej (GO-2026-66xx). Obraz `golang:1.26.9-alpine` przypięty digestem manifestu z 2026-10-08, użyty po 72 h karencji. Wrócić do samego oficjalnego obrazu, gdy wydawca opublikuje go z poprawionym Go.
+
 M0-3: [sieć i hardening BL-024/025](m0-3-network-runbook.md), [DNS i migracja BL-026/027](m0-3-dns-immich-runbook.md). Szablony zawierają wyłącznie znaczniki; właściciel dostarcza dowody wykonania.
 
 BL-028/029: [kopie, timery, Kuma i próby alarmów](m0-3-backup-monitoring-runbook.md). Produkcyjny override storage przenosi repozytorium pgBackRest na HDD; bez niego domyślny wolumen Dockera nie dowodzi rozdzielenia nośników. Operacje hosta odrzucają wolumeny niepowiązane z oczekiwanymi źródłami.

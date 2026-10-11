@@ -42,8 +42,7 @@ Go 1.26.9 / 1.27.2 wydano 8.10. Przypięty manifest Go 1.26.9 Alpine linux/amd64
 opublikowano 8.10 o 18:04:50.073999262 UTC. Karencja kończy się
 **11.10 o 20:04:51 Europe/Warsaw**. Projekt z digestami:
 `.git/m1-3-caddy.Dockerfile.pending` — bez budowy/pusha przed tym terminem.
-Potem: zastosować, uzupełnić INF/STACK, zbudować, sprawdzić Caddyfile i OSV bez
-nowych wyjątków; po PASS osobny commit/push. Raport źródłowy CI pobrano do
+2026-10-11 po karencji: zastosowane w `infra/docker/caddy.Dockerfile` (Claude Code), opis w INF; build, Caddyfile i OSV weryfikuje CI `images` bez nowych wyjątków. Raport źródłowy CI pobrano do
 `.git/m1-3-images-original/`; stary `reports/images/summary.md` był nieaktualny.
 
 ## Pozostałe warunki
