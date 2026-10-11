@@ -56,9 +56,11 @@ Powiązane: [`roadmapa.md`](roadmapa.md), [`backlog.md`](backlog.md), [`../06-be
 
 | **R-34** | Kontrakty portfela i oczekiwane wyniki importu nie odzwierciedlają rdzenia | BL-144/145, [raport M1-3](m1-3-session-report.md): nieznany koszt, brutto dywidendy, opłata SEC | 3 | 3 | 9 | rozstrzygnięcie dokumentów przed implementacją; testy kontraktowe i integracyjne z core; nie zastępować brakującego kosztu zerem ani pomijać opłat | zapis null blokowany przez SQL/API lub rozbieżny P/L fixture | agent, właściciel | zamknięte 2026-10-10: decyzje właściciela w dokumentach, SQL/API i testy PostgreSQL potwierdzają null, brutto dywidendy oraz P/L po SEC |
 
+| **R-35** | Dokumentacja powłoki wymaga zachowań niedostępnych w natywnym EventSource; brak zależności akceptacji regulaminu i sprzeczny domyślny motyw | BL-121/122/113, [raport M1-4a](m1-4a-session-report.md) | 3 | 3 | 9 | decyzja właściciela przed zmianą ADR/kontraktów; testy wznowienia SSE i błędów HTTP, akceptacji regulaminu oraz domyślnego motywu; pomiar budżetu powłoki | implementacja klienta SSE lub ekranów wymagających brakujących kontraktów | agent, właściciel | M1-4a, otwarte 2026-10-11 |
+
 ## 3. Podsumowanie
 
-34 ryzyka: **5 wysokich** (R-01, R-07, R-11, R-16, R-28), 25 średnich, 4 niskie; brak krytycznych.
+35 ryzyk: **5 wysokich** (R-01, R-07, R-11, R-16, R-28), 26 średnich, 4 niskie; brak krytycznych.
 
 | Ryzyko wysokie | Działanie przed końcem etapu |
 |---|---|
