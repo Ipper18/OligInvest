@@ -4173,7 +4173,8 @@ components:
             properties:
               date: {$ref: '#/components/schemas/LocalDate'}
               type: {type: string, enum: [split, reverse_split, dividend]}
-              ratio: {$ref: '#/components/schemas/DecimalString'}
+              ratioFrom: {type: integer, minimum: 1, maximum: 2147483647}
+              ratioTo: {type: integer, minimum: 1, maximum: 2147483647}
         meta: {$ref: '#/components/schemas/DataMeta'}
       example:
         instrumentId: 0192f0c4-7b1e-7c3a-9f00-3d2a1b4c5d6e
@@ -4503,17 +4504,50 @@ components:
         externalRef: {type: [string, 'null'], maxLength: 40}
         closedOn: {oneOf: [{$ref: '#/components/schemas/LocalDate'}, {type: 'null'}]}
     Account:
-      allOf:
-        - {$ref: '#/components/schemas/AccountInput'}
-        - type: object
-          required: [id, createdAt, updatedAt]
-          properties:
-            id: {$ref: '#/components/schemas/Uuid'}
-            closedOn: {$ref: '#/components/schemas/LocalDate'}
-            lastImportAt: {$ref: '#/components/schemas/Timestamp'}
-            reconciliationStatus: {type: string, enum: [ok, differences, never_imported]}
-            createdAt: {$ref: '#/components/schemas/Timestamp'}
-            updatedAt: {$ref: '#/components/schemas/Timestamp'}
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 60
+          example: XTB — zwykły
+        broker:
+          $ref: "#/components/schemas/Broker"
+        accountType:
+          $ref: "#/components/schemas/AccountType"
+        currency:
+          $ref: "#/components/schemas/CurrencyCode"
+        externalRef:
+          type: string
+          maxLength: 40
+          description: Własna etykieta (np. końcówka numeru); nie przechowujemy pełnych numerów rachunków ani haseł do
+            brokera.
+        openedOn:
+          $ref: "#/components/schemas/LocalDate"
+        id:
+          $ref: "#/components/schemas/Uuid"
+        closedOn:
+          $ref: "#/components/schemas/LocalDate"
+        lastImportAt:
+          $ref: "#/components/schemas/Timestamp"
+        reconciliationStatus:
+          type: string
+          enum:
+            - ok
+            - differences
+            - never_imported
+        createdAt:
+          $ref: "#/components/schemas/Timestamp"
+        updatedAt:
+          $ref: "#/components/schemas/Timestamp"
+      required:
+        - name
+        - broker
+        - accountType
+        - currency
+        - id
+        - createdAt
+        - updatedAt
     TransactionType:
       type: string
       description: Semantyka i znaki — `obliczenia-finansowe.md` § 1.
@@ -4534,58 +4568,335 @@ components:
         tax: {$ref: '#/components/schemas/Money', description: 'Np. podatek u źródła dywidendy (wartość dodatnia).'}
         fxRate: {$ref: '#/components/schemas/DecimalString', description: 'Kurs brokera price_currency → waluta rozliczenia.'}
         fxSource: {type: string, enum: [broker, implied, nbp_fallback, manual]}
-        splitRatio: {$ref: '#/components/schemas/DecimalString', description: 'Nowe akcje za 1 dotychczasową (4:1 → "4").'}
+        ratioFrom: {type: integer, minimum: 1, maximum: 2147483647}
+        ratioTo: {type: integer, minimum: 1, maximum: 2147483647}
+        cashInLieu: {$ref: '#/components/schemas/Money', description: 'Gotówka za ułamek po scaleniu, w walucie rachunku.'}
+        acquisitionCost: {$ref: '#/components/schemas/Money', description: 'Deklarowany koszt przeniesionych papierów, w walucie rachunku; razem z acquiredOn.'}
+        acquiredOn: {$ref: '#/components/schemas/LocalDate'}
         counterAmount: {$ref: '#/components/schemas/Money', description: 'Druga noga FX_CONVERSION.'}
         category: {type: string, maxLength: 40, example: cfd_pl}
         relatedTransactionId: {$ref: '#/components/schemas/Uuid'}
         note: {type: string, maxLength: 500}
     TransactionInput:
+      type: object
       description: Wymagalność pól odpowiada ograniczeniom CHECK w `portfolio.transactions` (`schema.sql`).
+      properties:
+        executedAt:
+          $ref: "#/components/schemas/Timestamp"
+        settleDate:
+          $ref: "#/components/schemas/LocalDate"
+        sequence:
+          type: integer
+          minimum: 0
+          description: Kolejność w obrębie dnia.
+        instrumentId:
+          $ref: "#/components/schemas/Uuid"
+        quantity:
+          $ref: "#/components/schemas/DecimalString"
+        price:
+          $ref: "#/components/schemas/DecimalString"
+        priceCurrency:
+          $ref: "#/components/schemas/CurrencyCode"
+        amount:
+          $ref: "#/components/schemas/Money"
+          description: Wpływ na gotówkę ze znakiem w walucie rozliczenia (DIVIDEND = netto). Dla BUY/SELL pominięte →
+            liczone przez serwer.
+        fee:
+          $ref: "#/components/schemas/Money"
+        tax:
+          $ref: "#/components/schemas/Money"
+          description: Np. podatek u źródła dywidendy (wartość dodatnia).
+        fxRate:
+          $ref: "#/components/schemas/DecimalString"
+          description: Kurs brokera price_currency → waluta rozliczenia.
+        fxSource:
+          type: string
+          enum:
+            - broker
+            - implied
+            - nbp_fallback
+            - manual
+        ratioFrom:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+        ratioTo:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+        cashInLieu:
+          $ref: "#/components/schemas/Money"
+          description: Gotówka za ułamek po scaleniu, w walucie rachunku.
+        acquisitionCost:
+          $ref: "#/components/schemas/Money"
+          description: Deklarowany koszt przeniesionych papierów, w walucie rachunku; razem z acquiredOn.
+        acquiredOn:
+          $ref: "#/components/schemas/LocalDate"
+        counterAmount:
+          $ref: "#/components/schemas/Money"
+          description: Druga noga FX_CONVERSION.
+        category:
+          type: string
+          maxLength: 40
+          example: cfd_pl
+        relatedTransactionId:
+          $ref: "#/components/schemas/Uuid"
+        note:
+          type: string
+          maxLength: 500
+        accountId:
+          $ref: "#/components/schemas/Uuid"
+        type:
+          $ref: "#/components/schemas/TransactionType"
+        tradeDate:
+          $ref: "#/components/schemas/LocalDate"
+      required:
+        - accountId
+        - type
+        - tradeDate
       allOf:
-        - {$ref: '#/components/schemas/TransactionFields'}
-        - type: object
-          required: [accountId, type, tradeDate]
-          properties:
-            accountId: {$ref: '#/components/schemas/Uuid'}
-            type: {$ref: '#/components/schemas/TransactionType'}
-            tradeDate: {$ref: '#/components/schemas/LocalDate'}
-        - if: {properties: {type: {enum: [BUY, SELL, SECURITY_TRANSFER_IN, SECURITY_TRANSFER_OUT]}}}
-          then: {required: [instrumentId, quantity]}
-        - if: {properties: {type: {enum: [BUY, SELL]}}}
-          then: {required: [price, priceCurrency]}
-        - if: {properties: {type: {enum: [DIVIDEND, SPLIT]}}}
-          then: {required: [instrumentId]}
-        - if: {properties: {type: {const: SPLIT}}}
-          then: {required: [splitRatio]}
-        - if: {properties: {type: {const: FX_CONVERSION}}}
-          then: {required: [amount, counterAmount]}
-        - if: {properties: {type: {enum: [DIVIDEND, INTEREST, FEE, TAX, DEPOSIT, WITHDRAWAL, CASH_TRANSFER_IN, CASH_TRANSFER_OUT, ADJUSTMENT]}}}
-          then: {required: [amount]}
-      example: {accountId: 0192f0c4-7b1e-7c3a-9f00-3d2a1b4c5d6e, type: BUY, tradeDate: '2026-09-18', instrumentId: 0192f0c4-7b1e-7c3a-9f00-3d2a1b4c5d6f, quantity: '10', price: '58.34', priceCurrency: PLN}
+        - if:
+            properties:
+              type:
+                enum:
+                  - BUY
+                  - SELL
+                  - SECURITY_TRANSFER_IN
+                  - SECURITY_TRANSFER_OUT
+          then:
+            required:
+              - instrumentId
+              - quantity
+        - if:
+            properties:
+              type:
+                enum:
+                  - BUY
+                  - SELL
+          then:
+            required:
+              - price
+              - priceCurrency
+        - if:
+            properties:
+              type:
+                enum:
+                  - DIVIDEND
+                  - SPLIT
+          then:
+            required:
+              - instrumentId
+        - if:
+            properties:
+              type:
+                const: SPLIT
+          then:
+            required:
+              - ratioFrom
+              - ratioTo
+        - if:
+            properties:
+              type:
+                const: DIVIDEND
+          then:
+            required:
+              - quantity
+              - price
+              - priceCurrency
+        - if:
+            properties:
+              type:
+                const: FX_CONVERSION
+          then:
+            required:
+              - amount
+              - counterAmount
+        - if:
+            properties:
+              type:
+                enum:
+                  - DIVIDEND
+                  - INTEREST
+                  - FEE
+                  - TAX
+                  - DEPOSIT
+                  - WITHDRAWAL
+                  - CASH_TRANSFER_IN
+                  - CASH_TRANSFER_OUT
+                  - ADJUSTMENT
+          then:
+            required:
+              - amount
     TransactionPatch:
+      type: object
       description: Typ i rachunek niezmienne — zmiana wymaga usunięcia i ponownego dodania.
-      allOf:
-        - {$ref: '#/components/schemas/TransactionFields'}
-        - type: object
-          minProperties: 1
-          properties:
-            tradeDate: {$ref: '#/components/schemas/LocalDate'}
+      properties:
+        executedAt:
+          $ref: "#/components/schemas/Timestamp"
+        settleDate:
+          $ref: "#/components/schemas/LocalDate"
+        sequence:
+          type: integer
+          minimum: 0
+          description: Kolejność w obrębie dnia.
+        instrumentId:
+          $ref: "#/components/schemas/Uuid"
+        quantity:
+          $ref: "#/components/schemas/DecimalString"
+        price:
+          $ref: "#/components/schemas/DecimalString"
+        priceCurrency:
+          $ref: "#/components/schemas/CurrencyCode"
+        amount:
+          $ref: "#/components/schemas/Money"
+          description: Wpływ na gotówkę ze znakiem w walucie rozliczenia (DIVIDEND = netto). Dla BUY/SELL pominięte →
+            liczone przez serwer.
+        fee:
+          $ref: "#/components/schemas/Money"
+        tax:
+          $ref: "#/components/schemas/Money"
+          description: Np. podatek u źródła dywidendy (wartość dodatnia).
+        fxRate:
+          $ref: "#/components/schemas/DecimalString"
+          description: Kurs brokera price_currency → waluta rozliczenia.
+        fxSource:
+          type: string
+          enum:
+            - broker
+            - implied
+            - nbp_fallback
+            - manual
+        ratioFrom:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+        ratioTo:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+        cashInLieu:
+          $ref: "#/components/schemas/Money"
+          description: Gotówka za ułamek po scaleniu, w walucie rachunku.
+        acquisitionCost:
+          $ref: "#/components/schemas/Money"
+          description: Deklarowany koszt przeniesionych papierów, w walucie rachunku; razem z acquiredOn.
+        acquiredOn:
+          $ref: "#/components/schemas/LocalDate"
+        counterAmount:
+          $ref: "#/components/schemas/Money"
+          description: Druga noga FX_CONVERSION.
+        category:
+          type: string
+          maxLength: 40
+          example: cfd_pl
+        relatedTransactionId:
+          $ref: "#/components/schemas/Uuid"
+        note:
+          type: string
+          maxLength: 500
+        tradeDate:
+          $ref: "#/components/schemas/LocalDate"
+      minProperties: 1
     Transaction:
-      allOf:
-        - {$ref: '#/components/schemas/TransactionFields'}
-        - type: object
-          required: [id, accountId, type, tradeDate, amount, source, createdAt, updatedAt]
-          properties:
-            id: {$ref: '#/components/schemas/Uuid'}
-            accountId: {$ref: '#/components/schemas/Uuid'}
-            type: {$ref: '#/components/schemas/TransactionType'}
-            tradeDate: {$ref: '#/components/schemas/LocalDate'}
-            instrument: {$ref: '#/components/schemas/InstrumentSummary'}
-            source: {type: string, enum: [manual, import, quick, demo]}
-            importBatchId: {$ref: '#/components/schemas/Uuid'}
-            externalId: {type: string}
-            createdAt: {$ref: '#/components/schemas/Timestamp'}
-            updatedAt: {$ref: '#/components/schemas/Timestamp'}
+      type: object
+      properties:
+        executedAt:
+          $ref: "#/components/schemas/Timestamp"
+        settleDate:
+          $ref: "#/components/schemas/LocalDate"
+        sequence:
+          type: integer
+          minimum: 0
+          description: Kolejność w obrębie dnia.
+        instrumentId:
+          $ref: "#/components/schemas/Uuid"
+        quantity:
+          $ref: "#/components/schemas/DecimalString"
+        price:
+          $ref: "#/components/schemas/DecimalString"
+        priceCurrency:
+          $ref: "#/components/schemas/CurrencyCode"
+        amount:
+          $ref: "#/components/schemas/Money"
+          description: Wpływ na gotówkę ze znakiem w walucie rozliczenia (DIVIDEND = netto). Dla BUY/SELL pominięte →
+            liczone przez serwer.
+        fee:
+          $ref: "#/components/schemas/Money"
+        tax:
+          $ref: "#/components/schemas/Money"
+          description: Np. podatek u źródła dywidendy (wartość dodatnia).
+        fxRate:
+          $ref: "#/components/schemas/DecimalString"
+          description: Kurs brokera price_currency → waluta rozliczenia.
+        fxSource:
+          type: string
+          enum:
+            - broker
+            - implied
+            - nbp_fallback
+            - manual
+        ratioFrom:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+        ratioTo:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+        cashInLieu:
+          $ref: "#/components/schemas/Money"
+          description: Gotówka za ułamek po scaleniu, w walucie rachunku.
+        acquisitionCost:
+          $ref: "#/components/schemas/Money"
+          description: Deklarowany koszt przeniesionych papierów, w walucie rachunku; razem z acquiredOn.
+        acquiredOn:
+          $ref: "#/components/schemas/LocalDate"
+        counterAmount:
+          $ref: "#/components/schemas/Money"
+          description: Druga noga FX_CONVERSION.
+        category:
+          type: string
+          maxLength: 40
+          example: cfd_pl
+        relatedTransactionId:
+          $ref: "#/components/schemas/Uuid"
+        note:
+          type: string
+          maxLength: 500
+        id:
+          $ref: "#/components/schemas/Uuid"
+        accountId:
+          $ref: "#/components/schemas/Uuid"
+        type:
+          $ref: "#/components/schemas/TransactionType"
+        tradeDate:
+          $ref: "#/components/schemas/LocalDate"
+        instrument:
+          $ref: "#/components/schemas/InstrumentSummary"
+        source:
+          type: string
+          enum:
+            - manual
+            - import
+            - quick
+            - demo
+        importBatchId:
+          $ref: "#/components/schemas/Uuid"
+        externalId:
+          type: string
+        createdAt:
+          $ref: "#/components/schemas/Timestamp"
+        updatedAt:
+          $ref: "#/components/schemas/Timestamp"
+      required:
+        - id
+        - accountId
+        - type
+        - tradeDate
+        - amount
+        - source
+        - createdAt
+        - updatedAt
     TransactionPage:
       type: object
       required: [data, page]
@@ -4678,6 +4989,7 @@ components:
       properties:
         action: {type: string, enum: [map_instrument, skip, include]}
         instrumentId: {$ref: '#/components/schemas/Uuid'}
+        fields: {$ref: '#/components/schemas/TransactionFields', description: 'Uzupełnienie danych wiersza przy include, m.in. quantity, price i priceCurrency dywidendy. Ponowna walidacja per typ.'}
         rememberMapping: {type: boolean, default: true, description: 'Zapamiętaj symbol brokera → instrument dla przyszłych importów.'}
       if: {properties: {action: {const: map_instrument}}}
       then: {required: [instrumentId]}
@@ -4710,9 +5022,23 @@ components:
             id: {$ref: '#/components/schemas/Uuid'}
             createdAt: {$ref: '#/components/schemas/Timestamp'}
             updatedAt: {$ref: '#/components/schemas/Timestamp'}
+    CostExclusions:
+      type: object
+      required: [count, positions]
+      description: 'Pozycje wyłączone z sum kosztu i P/L z powodu nieznanego kosztu. Nie zastępujemy kosztu zerem.'
+      properties:
+        count: {type: integer, minimum: 0}
+        positions:
+          type: array
+          items:
+            type: object
+            required: [accountId, instrumentId]
+            properties:
+              accountId: {$ref: '#/components/schemas/Uuid'}
+              instrumentId: {$ref: '#/components/schemas/Uuid'}
     PortfolioSummary:
       type: object
-      required: [totalValue, marketValue, cash, unrealizedPl, dayChange, dayChangeRatio, view, isComplete, meta]
+      required: [totalValue, marketValue, cash, unrealizedPl, dayChange, dayChangeRatio, view, isComplete, exclusions, meta]
       properties:
         totalValue: {$ref: '#/components/schemas/Money'}
         marketValue: {$ref: '#/components/schemas/Money'}
@@ -4733,6 +5059,7 @@ components:
               name: {type: string}
               totalValue: {$ref: '#/components/schemas/Money'}
               totalValueBase: {$ref: '#/components/schemas/Money'}
+        exclusions: {$ref: '#/components/schemas/CostExclusions'}
         isComplete: {type: boolean, description: '`false`, gdy brakuje kursu lub FX dla części pozycji (wycena częściowa).'}
         meta: {$ref: '#/components/schemas/DataMeta'}
     DayChange:
@@ -4771,18 +5098,18 @@ components:
         accountId: {$ref: '#/components/schemas/Uuid', description: 'Brak przy groupBy=instrument.'}
         instrument: {$ref: '#/components/schemas/InstrumentSummary'}
         quantity: {$ref: '#/components/schemas/DecimalString'}
-        averageCost: {$ref: '#/components/schemas/Money', description: 'Na jednostkę, wg metody użytkownika (FIFO lub średnia).'}
-        costBasis: {$ref: '#/components/schemas/Money', description: 'W walucie bazowej; w widoku tax — kursy NBP D−1.'}
+        averageCost: {oneOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}]}
+        costBasis: {oneOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}]}
         price: {$ref: '#/components/schemas/DecimalString'}
         priceCurrency: {$ref: '#/components/schemas/CurrencyCode'}
         marketValue: {$ref: '#/components/schemas/Money', description: 'W walucie instrumentu.'}
         marketValueBase: {$ref: '#/components/schemas/Money'}
         weight: {type: number}
-        unrealizedPl: {$ref: '#/components/schemas/Money'}
+        unrealizedPl: {oneOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}]}
         unrealizedPlRatio: {type: [number, 'null']}
-        unrealizedPlInstrumentCurrency: {$ref: '#/components/schemas/Money'}
-        priceEffect: {$ref: '#/components/schemas/Money', description: 'FR-02.06; priceEffect + fxEffect = unrealizedPl (± 0,01).'}
-        fxEffect: {$ref: '#/components/schemas/Money'}
+        unrealizedPlInstrumentCurrency: {oneOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}]}
+        priceEffect: {oneOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}]}
+        fxEffect: {oneOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}]}
         dayChange: {$ref: '#/components/schemas/Money'}
         meta: {$ref: '#/components/schemas/DataMeta'}
     PositionsResponse:
@@ -4792,8 +5119,9 @@ components:
         data: {type: array, items: {$ref: '#/components/schemas/Position'}}
         totals:
           type: object
-          required: [marketValueBase, costBasis, unrealizedPl]
+          required: [marketValueBase, costBasis, unrealizedPl, exclusions]
           properties:
+            exclusions: {$ref: '#/components/schemas/CostExclusions'}
             marketValueBase: {$ref: '#/components/schemas/Money'}
             costBasis: {$ref: '#/components/schemas/Money'}
             unrealizedPl: {$ref: '#/components/schemas/Money'}
@@ -4810,8 +5138,8 @@ components:
         acquiredOn: {$ref: '#/components/schemas/LocalDate'}
         quantityOpen: {$ref: '#/components/schemas/DecimalString'}
         quantityRemaining: {$ref: '#/components/schemas/DecimalString'}
-        costTotal: {$ref: '#/components/schemas/Money'}
-        costTotalTax: {$ref: '#/components/schemas/Money', description: 'W PLN wg kursów NBP D−1.'}
+        costTotal: {oneOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}]}
+        costTotalTax: {oneOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}]}
         feesTotal: {$ref: '#/components/schemas/Money'}
         splitFactor: {$ref: '#/components/schemas/DecimalString'}
         closedOn: {$ref: '#/components/schemas/LocalDate'}
@@ -4824,12 +5152,12 @@ components:
               closeTransactionId: {$ref: '#/components/schemas/Uuid'}
               quantity: {$ref: '#/components/schemas/DecimalString'}
               closedOn: {$ref: '#/components/schemas/LocalDate'}
-              costEconomic: {$ref: '#/components/schemas/Money'}
+              costEconomic: {oneOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}]}
               proceedsEconomic: {$ref: '#/components/schemas/Money'}
-              realizedPlEconomic: {$ref: '#/components/schemas/Money'}
-              costTax: {$ref: '#/components/schemas/Money'}
-              proceedsTax: {$ref: '#/components/schemas/Money'}
-              realizedPlTax: {$ref: '#/components/schemas/Money'}
+              realizedPlEconomic: {oneOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}]}
+              costTax: {oneOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}]}
+              proceedsTax: {oneOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}]}
+              realizedPlTax: {oneOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}]}
     LotPage:
       type: object
       required: [data, page, method]
@@ -6431,7 +6759,8 @@ components:
         exDate: {$ref: '#/components/schemas/LocalDate'}
         recordDate: {$ref: '#/components/schemas/LocalDate'}
         payDate: {$ref: '#/components/schemas/LocalDate'}
-        ratio: {$ref: '#/components/schemas/DecimalString'}
+        ratioFrom: {type: integer, minimum: 1, maximum: 2147483647}
+        ratioTo: {type: integer, minimum: 1, maximum: 2147483647}
         amount: {$ref: '#/components/schemas/DecimalString'}
         currency: {$ref: '#/components/schemas/CurrencyCode'}
         details: {type: object}

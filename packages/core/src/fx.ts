@@ -108,6 +108,13 @@ export function fxConversionCost(gross: Money, mid: FxRate, margin: DecimalInput
   return money(convertMoney(gross, mid).amount.times(m), mid.quote);
 }
 
+/** Inverse of brokerFxRate; an imported rate already includes the margin. */
+export function midFxRate(broker: FxRate, margin: DecimalInput, side: "buy" | "sell"): FxRate {
+  const m = validMargin(margin);
+  const factor = side === "buy" ? new Decimal(1).plus(m) : new Decimal(1).minus(m);
+  return fxRate({ ...broker, rate: broker.rate.div(factor), source: "derived" });
+}
+
 /** Pure lookup over preloaded rates (e.g. NBP table A); the caller does all I/O. */
 export interface FxRateTable {
   /** Last rate published on or before `date` (valuation, carry-forward on days without a table). */

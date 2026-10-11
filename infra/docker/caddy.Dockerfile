@@ -1,9 +1,23 @@
-FROM caddy:2.11.4@sha256:0c994536bddb66445885237f1a5dcc1916bccea922661c76b4e9fc24061f9b52 AS upstream
-# Official security patch; Docker Hub has not published its image yet.
-ADD --checksum=sha256:22c84f8d2d4e4e0e2d422f8049fdd0fc1ed8d5665d0fe166f506c7fd863b4555 https://github.com/caddyserver/caddy/releases/download/v2.11.6/caddy_2.11.6_linux_amd64.tar.gz /tmp/caddy.tar.gz
-RUN tar -xzf /tmp/caddy.tar.gz -C /tmp caddy
+# Caddy 2.11.7 rebuilt with Go 1.26.9 and golang.org/x/net v0.60.0: the official image ships Go 1.26.8
+# and x/net v0.59.0 with fixed HTTP/2 vulnerabilities (GO-2026-66xx; M1-3, 2026-10-11). Golang manifest
+# pushed 2026-10-08T18:04:50Z and x/net v0.60.0 published 2026-10-08T17:22:58Z, both outside the 72-hour
+# window. x/net v0.60.0 requires the same x/crypto, x/sys, x/term and x/text versions as Caddy 2.11.7.
+FROM golang:1.26.9-alpine@sha256:397ecc648150dd585f1734dfcd8d1bb4746664e54464191d77ad0ecffaf38bdb AS builder
+ENV CGO_ENABLED=0 GOTOOLCHAIN=local GOFLAGS=-mod=mod
+WORKDIR /src
+# Same entry point as the official build (cmd + standard modules); go.sum is verified by the Go checksum database.
+RUN printf '%s\n' 'package main' '' 'import (' \
+      '	caddycmd "github.com/caddyserver/caddy/v2/cmd"' \
+      '	_ "github.com/caddyserver/caddy/v2/modules/standard"' ')' '' \
+      'func main() { caddycmd.Main() }' > main.go \
+    && go mod init oliginvest.invalid/caddy \
+    && go get github.com/caddyserver/caddy/v2@v2.11.7 golang.org/x/net@v0.60.0 \
+    && go mod tidy \
+    && go list -m golang.org/x/net golang.org/x/crypto golang.org/x/sys golang.org/x/text \
+    && go build -trimpath -ldflags="-s -w" -o /go/bin/caddy . \
+    && go version -m /go/bin/caddy
 
-FROM caddy:2.11.4@sha256:0c994536bddb66445885237f1a5dcc1916bccea922661c76b4e9fc24061f9b52
-COPY --from=upstream /tmp/caddy /usr/bin/caddy
+FROM caddy:2.11.7@sha256:f2a1290d0463aad60660d4ec134943f183ee2a5f6c3eb7bf32dd984f2f020772
+COPY --from=builder /go/bin/caddy /usr/bin/caddy
 RUN mkdir -p /var/log/caddy && chown -R 10005:10005 /data /config /var/log/caddy
 USER 10005:10005

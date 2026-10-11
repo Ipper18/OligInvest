@@ -34,6 +34,17 @@
   "dependencies": {
     "drizzle-orm": "0.45.2",
     "@oliginvest/mod-identity": "workspace:*",
-    "@oliginvest/mod-market": "workspace:*"
+    "@oliginvest/mod-market": "workspace:*",
+    "@oliginvest/core": "workspace:*",
+    "@oliginvest/db": "workspace:*",
+    "@oliginvest/platform": "workspace:*",
+    "@oliginvest/contracts": "workspace:*",
+    "@hono/zod-openapi": "1.6.3",
+    "hono": "4.13.8",
+    "zod": "4.6.5",
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
+  },
+  "devDependencies": {
+    "@types/node": "24.13.5"
   }
 }

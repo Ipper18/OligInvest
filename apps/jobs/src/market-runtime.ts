@@ -14,6 +14,7 @@ export async function startMarketWorker(options: {
   queue: Queue;
   connection: ReturnType<typeof readRuntime>["connection"];
   logger: PlatformLogger;
+  updated?(reason: "eod" | "fx", fromDate: string): Promise<void>;
 }) {
   const redis = new Redis(options.connection);
   redis.on("error", () => options.logger.warn({ event: "market.queue_unavailable" }));
@@ -112,6 +113,15 @@ export async function startMarketWorker(options: {
           await job.updateData({ ...job.data, date, scheduledAt: scheduled.toISOString() });
         }
         await market.dispatch(job.name, job.data, job.attemptsMade);
+        if (
+          ["market.fx", "market.gpw", "market.gpw-backfill", "market.us-eod"].includes(job.name)
+        ) {
+          await options.updated?.(
+            job.name === "market.fx" ? "fx" : "eod",
+            // Providers can revise earlier bars/rates in their overlapping fetch window.
+            job.data.from ?? "1970-01-01",
+          );
+        }
       } catch (error) {
         if (error instanceof ProviderError && error.reason === "provider_quota") {
           await job.moveToDelayed(Date.now() + Math.max(error.retryAfterMs, 1000), token);

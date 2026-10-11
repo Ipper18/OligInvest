@@ -29,7 +29,8 @@
     "ioredis": "6.0.0",
     "bullmq": "6.3.6",
     "@oliginvest/contracts": "workspace:*",
-    "@oliginvest/mod-market": "workspace:*"
+    "@oliginvest/mod-market": "workspace:*",
+    "@oliginvest/mod-portfolio": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "24.13.5",

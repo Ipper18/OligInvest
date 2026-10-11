@@ -24,7 +24,8 @@
     "@oliginvest/i18n": "workspace:*",
     "nodemailer": "10.0.13",
     "@oliginvest/db": "workspace:*",
-    "drizzle-orm": "0.45.2"
+    "drizzle-orm": "0.45.2",
+    "@oliginvest/mod-portfolio": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "24.13.5",
