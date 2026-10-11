@@ -190,3 +190,5 @@ BL-011: strona techniczna używa lokalnych ciasteczek `oi-test-theme` i `oi-test
 - **Test wizualny:** zrzuty kluczowych ekranów w motywie ciemnym (domyślnym), jasnym i z paletą dla daltonistów.
 - **Test fontów w CI:** w `packages/ui` i `apps/web` nie ma reguł `@font-face` ani odwołań do zewnętrznych hostów fontów (zasada 8 z § 1).
 - **Przegląd ręczny** raz na etap: symulacja deuteranopii i protanopii w narzędziach deweloperskich Chrome (Rendering → Emulate vision deficiencies).
+
+Decyzja M1-4a (2026-10-11): domyślna wartość `theme` w bazie i fallback API to `dark`. Migracja zmienia wyłącznie DEFAULT; zapisane wartości użytkowników pozostają bez zmian, także `system`.

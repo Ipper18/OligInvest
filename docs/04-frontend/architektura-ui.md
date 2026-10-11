@@ -30,7 +30,7 @@ apps/web/
     ├── modules.ts            # rejestr modułów UI (nawigacja, panele admina, wyjaśnienia)
     ├── api/                  # schema.d.ts (generowany), klient serwerowy i przeglądarkowy
     ├── query/                # QueryClient, fabryki kluczy, mapowanie zdarzeń SSE na unieważnienia
-    └── sse/                  # EventSource, czuwanie, tryb odpytywania
+    └── sse/                  # fetch/ReadableStream, czuwanie, tryb odpytywania
 ```
 
 Adresy URL są po polsku, bez znaków diakrytycznych (`/portfel`, `/rynek`, `/analizy`, `/alerty`, `/nauka`, `/ustawienia`) — pełna lista w [`mapa-ekranow.md`](mapa-ekranow.md). Identyfikatory w kodzie są po angielsku.
@@ -42,7 +42,7 @@ flowchart LR
   subgraph B["Przeglądarka"]
     CC["Komponenty klienckie"] --> TQ["TanStack Query"]
     TQ --> OF["openapi-fetch"]
-    ES["EventSource"] -->|"zdarzenia"| TQ
+    ES["fetch/ReadableStream"] -->|"zdarzenia"| TQ
     SW["Service worker"]
   end
   subgraph WEB["web (Node)"]
@@ -113,7 +113,7 @@ Bez biblioteki stanu globalnego (stos § 4).
 
 ## 7. Realtime
 
-`SseProvider` w `(app)/layout.tsx` otwiera jedno `EventSource` na kartę po przejściu bramki MFA, mapuje zdarzenia na unieważnienia zapytań i przełącza się na odpytywanie według [`realtime.md`](../02-api/realtime.md) § 6–7. Karta instrumentu zgłasza dodatkowe instrumenty przez `PUT /stream/connections/{connectionId}/instruments`.
+`SseProvider` w `(app)/layout.tsx` otwiera jedno `fetch/ReadableStream` na kartę po przejściu bramki MFA, mapuje zdarzenia na unieważnienia zapytań i przełącza się na odpytywanie według [`realtime.md`](../02-api/realtime.md) § 6–7. Karta instrumentu zgłasza dodatkowe instrumenty przez `PUT /stream/connections/{connectionId}/instruments`.
 
 ## 8. PWA i service worker
 

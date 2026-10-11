@@ -99,16 +99,16 @@ sequenceDiagram
 
 ## 6. Zachowanie klienta (`web`)
 
-1. **Jedno `EventSource` na kartę**, tworzone po zalogowaniu i przejściu bramki MFA; zamykane przy wylogowaniu.
+1. **Jeden strumień `fetch`/`ReadableStream` na kartę**, tworzony po zalogowaniu i przejściu bramki MFA; anulowany przez `AbortController` przy wylogowaniu. Decyzja właściciela 2026-10-11 uzupełnia ADR-007 bez zmiany protokołu SSE. Ostatnie trwałe `id` pozostaje wyłącznie w pamięci karty i trafia do nagłówka `Last-Event-ID` po każdym wznowieniu.
 2. **Czuwanie:** brak jakiejkolwiek ramki przez 60 s → klient zamyka połączenie i łączy się ponownie (wykrywa połączenia „półotwarte”, których przeglądarka sama nie zamyka).
 3. **Karta w tle:** po 5 min ukrycia (`visibilitychange`) klient zamyka strumień; po powrocie łączy się z `Last-Event-ID` i odświeża zapytania starsze niż 60 s. W zainstalowanej PWA na iOS system i tak wstrzymuje stronę w tle — powrót zawsze przechodzi tę ścieżkę.
-4. **Ponawianie:** przy błędach sieci — mechanizm `EventSource` z `retry: 5000`; przy `401` — przejście do logowania; przy `403 MFA_*` — ekran 2FA; przy `429` — tryb odpytywania (§ 7) i ponowna próba SSE po `Retry-After`.
+4. **Ponawianie:** błędy sieci — backoff wykładniczy od 5 s (lub wartości `retry`), jitter 50–100% wyliczonego opóźnienia, maksymalnie 60 s; licznik resetowany po poprawnej ramce `ready`. `401` i `403` kończą strumień bez ponawiania i kierują do `/logowanie`; zwykła bramka logowania wybiera dalszy ekran MFA/regulaminu. `429` włącza polling (§ 7); następna próba SSE nie wcześniej niż `Retry-After` (sekundy lub data HTTP), domyślnie po 5 min. Przy trzech kolejnych nieudanych próbach w 2 min przejście na polling; ponowne próby SSE co 5 min. Parser obsługuje fragmentację UTF-8, CR/LF/CRLF, komentarze, wieloliniowe `data` i ramki bez `id`; niepełna ramka po zerwaniu nie przesuwa kursora.
 5. **Aktualizacja danych:** zdarzenia wywołują unieważnienie zapytań TanStack Query (`invalidateQueries`) lub bezpośrednią aktualizację kursów (`setQueryData` dla `market.quotes.updated`). Żadnej logiki biznesowej w obsłudze zdarzeń.
 6. **Wiele kart:** każda karta ma własny strumień (limit 5 wystarcza przy typowym użyciu). Współdzielenie jednego strumienia przez `BroadcastChannel` z wyborem lidera jest opcją na później, jeśli pomiary pokażą potrzebę.
 
 ## 7. Tryb awaryjny — odpytywanie
 
-Włączany, gdy: przeglądarka nie obsługuje `EventSource`, serwer zwrócił `429`, albo 3 kolejne próby połączenia zawiodły w ciągu 2 min.
+Włączany, gdy: przeglądarka nie obsługuje strumieni `fetch`, serwer zwrócił `429`, albo 3 kolejne próby połączenia zawiodły w ciągu 2 min. Odpytywanie również zatrzymuje się po 5 min ukrycia karty oraz przy wylogowaniu lub odpowiedzi 401/403.
 
 | Dane | Zapytanie | Interwał |
 |---|---|---|
@@ -132,7 +132,7 @@ UI pokazuje dyskretny wskaźnik „aktualizacje co minutę” zamiast „na żyw
 
 Implementacja M1-2: `apps/api/src/stream-routes.ts` i `stream-store.ts`; schematy Zod oraz JSON Schema w `packages/contracts/src/realtime.ts`. Połączenia mają klucze `sse:connection:{userId}:{connectionId}` i są sprawdzane także względem `sessionId`. Utrata klucza replay podczas połączenia wywołuje `resync`. Kolejne wyceny są łączone w oknie 2 s z sumą identyfikatorów rachunków i zachowaniem kolejności identyfikatorów replay. Publikacja następuje po zatwierdzeniu transakcji; powiadomienie o odwołaniu sesji nie zawiera jej tokenu.
 
-`node apps/api/scripts/test-stream.mjs` uruchamia izolowany Valkey z produkcyjną listą ACL i syntetycznym uwierzytelnianiem: sprawdza izolację użytkowników/sesji, replay, luki, limity, Origin, filtrowanie i łączenie notowań, heartbeat, odwołanie oraz zwalnianie połączeń. Test działa w workflow `workers`. Rzeczywistą bramkę MFA i sesje sprawdzają testy auth/PostgreSQL. Klient EventSource, odpytywanie i testy UI pozostają w BL-121 (M1-4); pomiar p95 w przeglądarce w BL-212.
+`node apps/api/scripts/test-stream.mjs` uruchamia izolowany Valkey z produkcyjną listą ACL i syntetycznym uwierzytelnianiem: sprawdza izolację użytkowników/sesji, replay, luki, limity, Origin, filtrowanie i łączenie notowań, heartbeat, odwołanie oraz zwalnianie połączeń. Test działa w workflow `workers`. Rzeczywistą bramkę MFA i sesje sprawdzają testy auth/PostgreSQL. Klient fetch/ReadableStream, odpytywanie i testy UI pozostają w BL-121 (M1-4); pomiar p95 w przeglądarce w BL-212.
 
 | Test | Poziom | Kryterium |
 |---|---|---|

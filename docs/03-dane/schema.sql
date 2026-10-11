@@ -208,7 +208,7 @@ CREATE TABLE identity.user_preferences (
   pl_view            text        NOT NULL DEFAULT 'economic' CHECK (pl_view IN ('economic', 'tax')),
   timezone           text        NOT NULL DEFAULT 'Europe/Warsaw',
   locale             text        NOT NULL DEFAULT 'pl-PL',
-  theme              text        NOT NULL DEFAULT 'system' CHECK (theme IN ('system', 'light', 'dark')),
+  theme              text        NOT NULL DEFAULT 'dark' CHECK (theme IN ('system', 'light', 'dark')),
   pl_palette         text        NOT NULL DEFAULT 'default' CHECK (pl_palette IN ('default', 'colorblind')),
   tax_date_basis     text        NOT NULL DEFAULT 'settlement' CHECK (tax_date_basis IN ('settlement', 'trade')), -- obliczenia-finansowe.md § 2.2
   tax_include_fx_fee boolean     NOT NULL DEFAULT false,     -- marża przewalutowania w koszcie podatkowym (domyślnie osobno)
