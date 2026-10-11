@@ -348,7 +348,7 @@ export const identityUserPreferences = identitySchema.table(
     plView: text("pl_view").notNull().default(sql`'economic'::text`),
     timezone: text("timezone").notNull().default(sql`'Europe/Warsaw'::text`),
     locale: text("locale").notNull().default(sql`'pl-PL'::text`),
-    theme: text("theme").notNull().default(sql`'system'::text`),
+    theme: text("theme").notNull().default(sql`'dark'::text`),
     plPalette: text("pl_palette").notNull().default(sql`'default'::text`),
     taxDateBasis: text("tax_date_basis").notNull().default(sql`'settlement'::text`),
     taxIncludeFxFee: boolean("tax_include_fx_fee").notNull().default(sql`false`),

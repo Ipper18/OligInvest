@@ -2913,31 +2913,32 @@ export interface components {
         ConsentPurpose: "diagnostics";
         LegalStatus: {
             terms: {
-                currentVersion: components["schemas"]["LegalDocumentVersion"];
-                acceptedVersion?: components["schemas"]["LegalDocumentVersion"];
-                acceptedAt?: components["schemas"]["Timestamp"];
-                /** @example /regulamin */
+                currentVersion: string;
                 url: string;
+                acceptedVersion?: string;
+                /** Format: date-time */
+                acceptedAt?: string;
             };
             privacyNotice: {
-                currentVersion: components["schemas"]["LegalDocumentVersion"];
-                acknowledgedVersion?: components["schemas"]["LegalDocumentVersion"];
-                acknowledgedAt?: components["schemas"]["Timestamp"];
-                /** @example /prywatnosc */
+                currentVersion: string;
                 url: string;
+                acknowledgedVersion?: string;
+                /** Format: date-time */
+                acknowledgedAt?: string;
             };
             consents: {
                 diagnostics: {
                     granted: boolean;
-                    version?: components["schemas"]["LegalDocumentVersion"];
-                    updatedAt?: components["schemas"]["Timestamp"];
+                    version?: string;
+                    /** Format: date-time */
+                    updatedAt?: string;
                 };
             };
             termsAcceptanceRequired: boolean;
         };
         LegalAcceptanceRequest: {
-            termsVersion: components["schemas"]["LegalDocumentVersion"];
-            privacyNoticeVersion: components["schemas"]["LegalDocumentVersion"];
+            termsVersion: string;
+            privacyNoticeVersion: string;
         };
         ConsentUpdate: {
             granted: boolean;

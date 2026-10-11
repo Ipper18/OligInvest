@@ -200,7 +200,7 @@ export function mountIdentity(api: OpenAPIHono<AppEnv>, dependencies: IdentityDe
             taxIncludeFxFee: false,
             timezone: "Europe/Warsaw",
             locale: "pl-PL",
-            theme: "system",
+            theme: "dark",
             plPalette: "default",
           },
         }),

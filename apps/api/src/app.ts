@@ -7,6 +7,7 @@ import {
 } from "@oliginvest/platform";
 import { bodyLimit } from "hono/body-limit";
 import { type IdentityDependencies, mountIdentity } from "./auth/identity-routes.js";
+import { mountPreferences } from "./auth/preferences-routes.js";
 import { type AuthRouteDependencies, createAuthRouter, mountStepUp } from "./auth/routes.js";
 import { SESSION_COOKIE } from "./auth/session.js";
 import {
@@ -181,6 +182,7 @@ export function createApp(
         throw new ProblemError("SERVICE_UNAVAILABLE");
       }),
   });
+  mountPreferences(api, authDependencies);
   mountMarket(
     api,
     options.market ?? {
