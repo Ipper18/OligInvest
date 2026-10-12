@@ -99,8 +99,8 @@ NBP ma do 11 prób co 10 min, kończonych o 14:00 czasu lokalnego (spóźnione z
 
 1. 06:00 — kalendarze (earnings USA z Alpha Vantage: 1 zapytanie; makro FRED: ≤ 5).
 2. 12:20 — NBP tabela A + złoto (2 zapytania) → przeliczenie wycen w PLN.
-3. 09:00–17:05 co 5 min — intraday GPW (Yahoo, 1 zapytanie na partię ≤ 50 symboli).
-4. 15:30–22:00 co 5 min — intraday USA (Yahoo; fallback Finnhub 1 zapytanie/symbol).
+3. 09:00–17:05 co 5 min — intraday GPW (Yahoo chart v8, 1 zapytanie na instrument, budżet 30/min; przy cięciu kwoty lub po 20 s zwracane są pobrane notowania, a następny cykl kontynuuje rotacyjnie — [ADR-016](../09-decyzje/ADR-016-cienki-adapter-yahoo.md)).
+4. 15:30–22:00 co 5 min — intraday USA (Yahoo chart v8 jak wyżej; fallback Finnhub 1 zapytanie/symbol).
 5. 18:30 — archiwum GPW (1 XLS = cały rynek) → `market.bars_daily` + korekty 5 sesji.
 6. 23:30 — EOD USA dla pozycji ∪ watchlist (Yahoo; fallback Alpha Vantage z rezerwą 10 zapytań).
 7. 02:00 — backfill historii (nowe instrumenty, luki wykryte przez `data-scrub`), maks. 20 % kwoty dziennej każdego dostawcy.
