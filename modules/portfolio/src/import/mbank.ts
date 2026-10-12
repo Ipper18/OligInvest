@@ -271,6 +271,10 @@ export function parseMbank(bytes: Uint8Array, rawAccount: unknown): ParsedImport
   const lines = decodeCsv(bytes).replace(/^﻿/, "").split(/\r?\n/);
   if (lines.length > MAX_ROWS + 100) throw new Error("IMPORT_FORMAT_UNKNOWN");
   const { kind, index, separator, columns } = header(lines);
+  // Count data rows before any parsing so oversized files fail closed cheaply.
+  let dataRows = 0;
+  for (let line = index + 1; line < lines.length; line++)
+    if (lines[line]!.trim() && ++dataRows > MAX_ROWS) throw new Error("IMPORT_FORMAT_UNKNOWN");
   // eMakler books every trade and cash flow in PLN.
   if (account.currency !== "PLN") throw new Error("account_currency_mismatch");
   const currency = account.currency;
