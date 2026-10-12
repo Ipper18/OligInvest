@@ -23,10 +23,25 @@
 
 Wybieramy **C**: adapter `YahooProvider` woła tylko `query2.finance.yahoo.com` — `v8/finance/chart` dla EOD (`period1/period2`, `interval=1d`) i ostatniej ceny opóźnionej (`range=1d`, pola `meta`: `regularMarketPrice`, `regularMarketTime`, `previousClose`/`chartPreviousClose`, `regularMarketVolume`) oraz `v1/finance/search` dla wyszukiwania. Endpoint `v7/finance/quote` (partie, ale wymaga crumb) nie jest używany. Kontrakt `DataProvider` bez zmian: `source: "yahoo"`, `delayMinutes` 15 (notowania) i 0 (EOD), atrybucja „Dane: Yahoo Finance”, awaria = ostatnia wartość z `stale: true`.
 
+## Kadencja notowań i próg „nieaktualne”
+
+Decyzja właściciela 2026-10-12: limit Yahoo **12 zapytań/min** (lub niżej), cykl odświeżania kilku minut wystarcza, bo notowania i tak są opóźnione o 15 min. Stałe w `modules/market/src/quote-cadence.ts`:
+
+| Parametr | Wartość | Uzasadnienie |
+|---|---|---|
+| Budżet Yahoo | 12/min | decyzja właściciela; wspólny dla notowań, wyszukiwania i EOD |
+| Zapytań notowań na uruchomienie | 10 | 2/min zostają na wyszukiwanie symboli na żądanie |
+| Uruchomienie zadania `market.quotes` | co 1 min | równomierne rozłożenie zapytań zamiast paczki co 5 min |
+| Cykl odświeżenia instrumentu | 5 min | znacznik próby `qa:{instrumentId}` w `valkey-cache` (270 s, `NX`): najwyżej jedno zapytanie na instrument w cyklu |
+| Maksymalna liczba notowanych instrumentów | **50** w otwartych sesjach (GPW + USA łącznie) | 10 na uruchomienie × 5 uruchomień w cyklu |
+| Próg „nieaktualne” (`fetchedAt`) | **7 min** | pełny cykl przy maksymalnej liczbie instrumentów (5) + jedno pominięte uruchomienie (1) + margines na czas zadania i opóźnienie harmonogramu (1) |
+
+Średnie obciążenie: min(N, 50) / 5 zapytań/min dla N obserwowanych instrumentów (np. 20 → 4/min); przy 50 — 10/min. Cięcie kwoty lub limit 20 s w jednym uruchomieniu zwraca pobrane notowania; pozostałe czekają na koniec cyklu znacznika. Powyżej 50 instrumentów część pozostaje „nieaktualna” dłużej niż cykl — sygnał do ponownej oceny (zapasowy dostawca USA albo zgoda właściciela na partie v7 z crumb). Utrata znacznika (LRU) powoduje najwyżej wcześniejsze odświeżenie, budżet pilnuje token bucket.
+
 ## Konsekwencje
 
 - Pozytywne: `apps/jobs` 172 → 68 pakietów produkcyjnych; allowlista transportu bez `fc.yahoo.com`, `finance.yahoo.com` i `query1`; jedno zapytanie zamiast trzech przy zimnym starcie; walidacja Zod wybranych pól `.strict()` i testy kontraktowe na zapisanych syntetycznych odpowiedziach bez sieci.
-- Negatywne / dług: notowania kosztują 1 zapytanie na instrument. Budżet Yahoo 12 → 30/min; przy cięciu kwoty lub po 20 s zadanie zwraca pobrane notowania, a kolejne uruchomienie kontynuuje rotacyjnie (pozostałe instrumenty są „nieaktualne” do następnego cyklu). Przy stałym przekroczeniu ok. 30 obserwowanych instrumentów jednej sesji — ponowna ocena (zapasowy dostawca USA albo zgoda właściciela na partie v7 z crumb).
+- Negatywne / dług: notowania kosztują 1 zapytanie chart na instrument zamiast partii ≤ 50. Budżet Yahoo **pozostaje 12/min** (decyzja właściciela 2026-10-12); kadencję opisuje sekcja poniżej.
 - Jeśli Yahoo zacznie wymagać crumb lub ciasteczek dla chart/search, adapter kończy się błędem i dane degradują do „tylko EOD”; **nie** dodajemy obejścia bez nowej decyzji (ADR-005 § 2–3).
 - Zadania: BL-159; aktualizacja STACK, SRC, CACHE, RISK (R-33 zamknięte).
 

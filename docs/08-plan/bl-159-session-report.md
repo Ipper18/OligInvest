@@ -9,8 +9,8 @@
 - `YahooProvider` na `createProviderFetch`: chart v8 (EOD i ostatnia cena z `meta`), search v1; bez cookie/crumb i bez v7 quote. Metadane bez zmian: `source: "yahoo"`, `delayMinutes` 15/0, atrybucja, awaria → ostatnia wartość `stale`.
 - Allowlista transportu: tylko `query2.finance.yahoo.com` dla Yahoo (usunięte `query1`, `fc.yahoo.com`, `finance.yahoo.com`).
 - `yahoo-finance2` usunięte z `packages/data-providers` i lockfile (`pnpm install --lockfile-only`; wyłącznie usunięcia, `--frozen-lockfile --lockfile-only` PASS).
-- Testy kontraktowe na czterech zapisanych syntetycznych odpowiedziach (`test/fixtures/yahoo/`), z globalnym `fetch` zablokowanym: Decimal bez utraty, URL/parametry, UA, brak przekierowań, 404 → `no_data`, dryf schematu i waluta → błąd, limit rozmiaru, odrzucenie spreparowanych symboli i hostów cookie, cięcie kwoty z rotacją, degradacja w rejestrze. Testy mutacyjne: wyłączenie rotacji i `JSON.parse` zamiast Decimal są wykrywane.
-- Lokalnie (Node 24.21): data-providers 20/20, lint/typecheck/test `data-providers`, `mod-market`, `jobs` 21/21 zadań, `check:deps`, `check:repository` PASS.
+- Testy kontraktowe na czterech zapisanych syntetycznych odpowiedziach (`test/fixtures/yahoo/`), z globalnym `fetch` zablokowanym: Decimal bez utraty, URL/parametry, UA, brak przekierowań, 404 → `no_data`, dryf schematu i waluta → błąd, limit rozmiaru, odrzucenie spreparowanych symboli i hostów cookie, cięcie kwoty z częściowym wynikiem, degradacja w rejestrze. Test mutacyjny: `JSON.parse` zamiast Decimal jest wykrywany.
+- Lokalnie (Node 24.21): data-providers 20/20, mod-market 12/12 (kadencja: limit 10 na uruchomienie, jedno zapytanie na instrument w cyklu, stałe), lint/typecheck/test `data-providers`, `mod-market`, `jobs` 21/21 zadań, `check:deps`, `check:repository` PASS. Granica 7 min w PostgreSQL bez testu integracyjnego (brak PostgreSQL 18 w sesji); próg to stała pokryta testem jednostkowym.
 
 ## Porównanie
 
@@ -26,7 +26,7 @@ Liczone z lockfile: domknięcie `dependencies` + `optionalDependencies` importer
 
 ## Odchylenia i ryzyka
 
-- Notowania: 1 zapytanie na instrument zamiast partii ≤ 50. Budżet Yahoo 12 → 30/min; po cięciu kwoty lub 20 s zwracane są pobrane notowania, następny cykl rotuje. Przy ponad ok. 30 instrumentach jednej sesji część jest „nieaktualna” do kolejnego cyklu — warunek ponownej oceny w ADR-016.
+- Notowania: 1 zapytanie chart na instrument zamiast partii ≤ 50. Decyzja właściciela 2026-10-12: budżet Yahoo **12/min** bez zmian. Zadanie co 1 min, ≤ 10 zapytań na uruchomienie (2/min na wyszukiwanie), każdy instrument raz na 5 min (znacznik `qa:` w Valkey); maks. 50 instrumentów w otwartych sesjach; próg „nieaktualne” 5 → 7 min (cykl + pominięte uruchomienie + margines). Szczegóły: ADR-016 § Kadencja.
 - R-33 zamknięte (P 1 × W 3). Nowych ryzyk brak; sygnały: zmiana schematu lub wymóg crumb dla chart.
 
 ## Pominięte i dlaczego
@@ -37,4 +37,4 @@ Liczone z lockfile: domknięcie `dependencies` + `optionalDependencies` importer
 
 ## CI
 
-Sprawdzane raz na końcu sesji; wynik w opisie PR.
+Pierwszy przebieg: wszystko zielone poza `lint` (`chart-eod.json` niesformatowany przez Biome) — poprawione. Kolejny przebieg sprawdzany raz na końcu; wynik w PR.
