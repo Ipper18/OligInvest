@@ -6,6 +6,12 @@ import { fileURLToPath } from "node:url";
 // An isolated temporary route exercises Next's actual client/server compiler guard.
 const directory = new URL(`../src/app/boundary-${crypto.randomUUID()}/`, import.meta.url);
 const web = new URL("../", import.meta.url);
+// A clean checkout has no generated CSS; isolate the intended compiler rejection.
+const css = spawnSync(process.execPath, ["scripts/inline-css.mjs"], {
+  cwd: web,
+  encoding: "utf8",
+});
+assert.equal(css.status, 0, "Trusted CSS compilation must succeed before the boundary test");
 mkdirSync(directory);
 try {
   writeFileSync(
