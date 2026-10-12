@@ -37,12 +37,12 @@ export function createMarketJobs(options: {
     "OligInvest/0.0.0 (+https://invest.oligi.pl)",
     options.transport,
   );
-  // Budget every HTTP request, including SDK cookie and crumb calls.
+  // Budget every HTTP request; Yahoo costs one chart request per instrument.
   const request =
     (provider: string, perMinute: number): typeof fetch =>
     async (input, init) =>
       limits.run(provider, { perMinute }, () => guarded(input, init));
-  const yahoo = new YahooProvider(request("yahoo", 12), (id) => repository.resolve(id), now);
+  const yahoo = new YahooProvider(request("yahoo", 30), (id) => repository.resolve(id), now);
   const nbp = new NbpProvider(request("nbp", 6), now);
   const ecb = new FrankfurterProvider(request("ecb", 6), now);
   async function dispatch(name: string, raw: unknown, failures = 0): Promise<void> {

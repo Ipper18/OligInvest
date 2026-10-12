@@ -1,0 +1,51 @@
+{
+  "chart": {
+    "result": [
+      {
+        "meta": {
+          "currency": "PLN",
+          "symbol": "SYNTH.WA",
+          "exchangeName": "WSE",
+          "fullExchangeName": "Warsaw",
+          "instrumentType": "EQUITY",
+          "firstTradeDate": 1100000000,
+          "regularMarketTime": 1791213300,
+          "hasPrePostMarketData": false,
+          "gmtoffset": 7200,
+          "timezone": "CEST",
+          "exchangeTimezoneName": "Europe/Warsaw",
+          "regularMarketPrice": 90071992547409.91,
+          "fiftyTwoWeekHigh": 90071992547410,
+          "fiftyTwoWeekLow": 1,
+          "regularMarketDayHigh": 90071992547410,
+          "regularMarketDayLow": 90071992547409,
+          "regularMarketVolume": 123456,
+          "longName": "Synthetic Spolka SA",
+          "shortName": "SYNTH",
+          "chartPreviousClose": 90071992547409.5,
+          "previousClose": 90071992547409.41,
+          "scale": 3,
+          "priceHint": 2,
+          "dataGranularity": "1d",
+          "range": "1d",
+          "validRanges": ["1d", "5d", "max"],
+          "unknownFutureField": { "nested": [1, 2] }
+        },
+        "timestamp": [1791183600],
+        "indicators": {
+          "quote": [
+            {
+              "open": [90071992547409],
+              "high": [90071992547410],
+              "low": [90071992547409],
+              "close": [90071992547409.91],
+              "volume": [123456]
+            }
+          ],
+          "adjclose": [{ "adjclose": [90071992547409.91] }]
+        }
+      }
+    ],
+    "error": null
+  }
+}
