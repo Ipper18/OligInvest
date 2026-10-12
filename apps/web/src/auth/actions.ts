@@ -92,5 +92,19 @@ export async function submitAction(name: ActionName, input: unknown): Promise<Ac
     return { ok: true, data };
   } catch {
     return failure("SERVICE_UNAVAILABLE");
+  } finally {
+    if (name === "signOut") {
+      const jar = await cookies();
+      for (const cookie of jar.getAll()) {
+        if (cookie.name.startsWith("__Host-oliginvest."))
+          jar.set(cookie.name, "", {
+            httpOnly: true,
+            secure: true,
+            sameSite: "lax",
+            path: "/",
+            maxAge: 0,
+          });
+      }
+    }
   }
 }
