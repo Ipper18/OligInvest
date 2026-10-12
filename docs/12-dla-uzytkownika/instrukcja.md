@@ -33,7 +33,7 @@ Importuj regularnie, np. raz w miesiącu — cały plik historii, bez wycinania 
 
 ## 3. Import z mBank eMakler i z innych źródeł
 
-- **mBank:** bankowość internetowa → **Inwestycje → eMakler → Historia** → „Pobierz CSV” — pobierz **historię transakcji** i **historię finansową** i zaimportuj oba pliki na ten sam rachunek. mBank podaje nazwy papierów zamiast kodów ISIN, więc przy pierwszym imporcie część instrumentów przypiszesz ręcznie.
+- **mBank:** bankowość internetowa → **Inwestycje → eMakler → Historia** → „Pobierz CSV” — pobierz **historię transakcji** i **historię finansową** i zaimportuj oba pliki na ten sam rachunek. mBank podaje nazwy papierów zamiast kodów ISIN, więc przy pierwszym imporcie część instrumentów przypiszesz ręcznie. Najpierw wgraj historię finansową, potem historię transakcji: aplikacja podpowie wtedy instrument na podstawie rozliczeń. Wybór zapamiętujemy, więc kolejne importy tego samego papieru przypiszą się same. Transakcje zagraniczne bez wartości w złotych uzupełnisz w podglądzie importu (kwota w PLN albo kurs przewalutowania).
 - **Inny broker lub arkusz:** przygotuj plik CSV w szablonie OligInvest (UTF-8, przecinek jako separator, kropka dziesiętna):
 
 | Kolumna | Znaczenie | Przykład |

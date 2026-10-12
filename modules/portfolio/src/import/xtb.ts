@@ -22,6 +22,7 @@ export interface ParsedRow {
   key: string;
   symbol: string;
   isin?: string;
+  mic?: string;
   status: "new" | "error" | "unsupported" | "skipped";
   reason?: string;
   input: Partial<TransactionInput>;
@@ -35,6 +36,8 @@ export interface ParsedImport {
   rows: ParsedRow[];
   positions: Record<string, string>;
   cash: string | null;
+  /** False when the file has no cash information to reconcile against. */
+  reconcileCash?: boolean;
 }
 const accountSchema = z.object({ id: z.uuid(), currency: z.enum(["PLN", "USD", "EUR"]) }).strict();
 const names: Record<string, string> = {

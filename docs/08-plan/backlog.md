@@ -211,7 +211,7 @@ Brama A (**[A]**) — MVP właściciela; brama B (**[B]**) — funkcje wymagane 
 | BL-205 | Watchlisty: listy, kolejność, notatki, ekran z kursami | FR-01.08 | API, EKR | BL-137 | 2 | todo |
 | BL-206 | Indeksy i benchmarki (WIG20, WIG, mWIG40, sWIG80, S&P 500, Nasdaq-100 i ETF-y): backfill ≥ 5 lat, `listBenchmarks`, ekran `/rynek` | FR-01.09 | SRC, EKR | BL-134 | 2 | todo |
 | BL-207 | Klasyfikacja instrumentów (klasa, sektor, kraj, waluta) z nadpisaniami; `getAllocation` i ekran alokacji | FR-02.05 | API, EKR | BL-146 | 3 | todo |
-| BL-208 | Import mBank eMakler (historia transakcji i finansowa, Windows-1250, mapowanie po nazwie) | FR-03.02 | IMP | BL-145 | 3 | todo |
+| BL-208 | Import mBank eMakler (historia transakcji i finansowa, Windows-1250, mapowanie po nazwie) | FR-03.02 | IMP | BL-145 | 3 | w toku (Claude Code, `feat/bl-208-mbank-import`; nakład/odchylenie niezmierzone) |
 | BL-209 | Pełna kontrola jakości danych: reguły BLOCK/WARN/INFO, `data_quality_issues`, oznaczenia w UI, blokada analiz | NFR-08.04, NFR-09.02 | OBL | BL-139 | 1,5 | todo |
 | BL-210 | Zapasowe adaptery USA: Finnhub, Twelve Data, Alpha Vantage — kwoty, testy kontraktowe na zapisanych odpowiedziach | NFR-02.04, NFR-09.02 | SRC, CACHE | BL-131 | 2 | todo |
 | BL-211 | Preferencje: metoda kosztu (FIFO/średnia), ustawienia widoku podatkowego (dzień przychodu, marża przewalutowania w koszcie — przelicza widok podatkowy), strefa czasowa, język; synchronizacja między urządzeniami | FR-07.08 | API | BL-113 | 1 | todo |
