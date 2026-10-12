@@ -1,53 +1,51 @@
 # M1-4a — stan bieżący
 
-**Cel:** przekazać stan BL-121/122/113/116 i pozostałe warunki PR #11.
+**Cel:** przekazać stan BL-121/122/113/116 i warunki PR #11.
 
-**2026-10-12**, `feat/m1-4a-ui-shell`, [PR #11](https://github.com/Ipper18/OligInvest/pull/11), roboczy.
-Implementacja lokalnie wykonana; statusy `w toku` do zielonego CI i wspólnego DoD.
-Nakład i odchylenie niezmierzone. Szczegóły testów i zależności w opisie PR.
+**2026-10-12**, feat/m1-4a-ui-shell, [PR #11](https://github.com/Ipper18/OligInvest/pull/11), roboczy, niescalony.
+Statusy nadal „w toku” do zielonego CI i wspólnego DoD. Nakład/odchylenie niezmierzone.
 
 ## Zrobione
 
-- Powłoka mobilna/desktopowa, nawigacja z definicji modułów, bramki proxy/RSC,
-  QueryClient per użytkownik, SSE fetch/ReadableStream: wznowienie, backoff/jitter,
-  terminalne 401/403, wylogowanie, jedno połączenie na kartę, pauza po 5 min w tle.
-- Logowanie, TOTP i kody zapasowe, zaproszenie/reset z tokenem we fragmencie,
-  konfiguracja QR i akceptacja dokumentów. API wywoływane przez serwer web.
-- Preferencje dark/light/system i paleta; SSR i zapis bez przeładowania dokumentu.
-  Domyślny dark w migracji/API; zapisane wybory zachowane. PLN zgodnie z ADR-014.
-- Trzy strony prawne MDX, pełne teksty w i18n, test zgodności ze źródłem, LEGAL_*,
-  pobieranie/druk i disclaimer general. CSS kompilowany i osadzany z nonce CSP.
-- Wypchnięte osobne commity UI, rejestru modułów, wydajności i testów shell-auth.
-  Korekty zatwierdzone przez właściciela zapisano wcześniej w osobnym `docs:`.
+Powłoka, auth/MFA i regulamin, SSE, preferencje i dokumenty prawne wykonane lokalnie.
+Wcześniejsze dowody DB/RLS, zgodności schematu i Lighthouse pozostają w opisie PR.
 
-## Weryfikacja
+- 76b6d03: zastane zmiany dokumentacji zapisane przed scaleniem.
+- 0ae4d68: merge origin/main, bez rebase/force. Konflikty: lockfile oraz dwa
+  niezależne dopiski backlogu (zachowano oba). Lockfile z main + pnpm install;
+  dodatki identyczne z poprzednią gałęzią: web i trzy linki workspace do platformy.
+  Brak innych zmian grafu; frozen install PASS.
+- fe459ef: własny komunikat BroadcastChannel uruchamiał nawigację i anulował
+  POST wylogowania przed usunięciem ciasteczek (potwierdzone śladem WebKit).
+  Nadawca ignoruje własny komunikat; inne karty powiadamiane po odpowiedzi API.
+  Powłoka/cache znikają od razu; zatrzymany także spóźniony start SSE.
+  Jawne wylogowanie → /logowanie; returnTo pozostaje przy wejściu bez sesji.
+- Bramka regulaminu: stan fixture był współdzielony między przeglądarkami.
+  Osobne identyfikatory eliminują przenoszenie akceptacji i preferencji.
+  Regresje sprawdzają brak HTML powłoki przy bramkach oraz brak/błędną sesję.
+- Images: artefakty pokazywały logowanie, bo sztuczne ciasteczka trafiały do
+  prawdziwego API/innego origin. Projekty *-shell mają lokalny build produkcyjny
+  i fixture API; integracyjne nadal kierują się do obrazów za Caddy.
+  Job images buduje web także na hoście; brak obejścia auth w aplikacji.
+- Preferencje: aktualizacja DOM/cache profilu bez zbędnego router.refresh,
+  który kolidował z reload w Firefox. Zapis i ponowny SSR sprawdzone.
 
-- Zmienione pakiety JS/TS i zależne: 84 zadania PASS; po poprawkach CI cztery
-  pakiety web/ui/i18n/contracts: 18/18 PASS. API: 92 testy. Lokalnie brak `uv`;
-  niezmieniony Python sprawdza CI. Produkcyjny build i granica server-only PASS.
-- PostgreSQL 18, rzeczywiste MFA, endpointy preferencji/akceptacji i RLS PASS;
-  migracje kontra schema.sql: **ZERO DIFFERENCES**. Drizzle snapshot odtworzony
-  po błędzie loadera ESM generatora; porównanie bazy potwierdza zgodność.
-- Chromium: 19 PASS, 1 test prawdziwego API pozostawiony CI. Axe: 0 naruszeń
-  dark/light przy 360/1280 px oraz na publicznych/auth (zawsze dark). UI fixtures
-  nie zastępują pełnego E2E z bazą i importem. Testy narzędzi wydajności: 13 PASS.
-- Powłoka **21,98/30 KiB**, Start 148,89/190, ustawienia 149,62/185,
-  logowanie 138,40/160; wszystkie wdrożone trasy PASS, twarde budżety w CI.
-- Lighthouse (TLS/HTTP2 jak Caddy, mediana 3): LCP logowanie **1586 ms**,
-  Start **1654 ms**; TBT 30/38 ms, CLS 0. Progi 2000/200/0,1 bez zmian.
+## Weryfikacja tej sesji
 
-## CI i pozostałe warunki
+- Build produkcyjny PASS; web lint/typecheck/test: 9 zadań, 20 testów PASS.
+- Zmienione E2E Chromium/WebKit/Firefox: **33 PASS**, 3 istniejące próby
+  gotowości API pominięte bez Compose. Opóźnione wylogowanie i druga karta PASS.
+- Konfiguracja z E2E_BASE_URL/E2E_API_URL jak images: **30/30 PASS** na lokalnym
+  buildzie produkcyjnym. Pełny przebieg obrazów wykonuje CI.
+- Powłoka **22,11/30 KiB**, Start 149,28/190, ustawienia 150,05/185,
+  logowanie 138,63/160; budżety tras PASS. Dokumentacja/repo/check-ci PASS.
+- Jednorazowy timeout SSE WebKit nie powtórzył się w 10 próbach tego przypadku
+  ani końcowej macierzy 30 testów. Przyczyna niepotwierdzona: R-36.
 
-CI odczytano **jeden raz**. Buildu bez modułów dotyczył typ PrintButton;
-CodeQL wskazał SSRF i wyłączenie walidacji TLS w lokalnym proxy pomiarowym.
-Commit `826daf4` usuwa przyczyny: jawny ReactElement, stały host upstream,
-walidacja TLS z własnym certyfikatem fixture; regresje PASS. Typecheck był
-anulowany przez nowszy push. Pozostałe kontrole PASS lub w toku w chwili odczytu.
-**Nowego przebiegu po poprawkach nie odpytywano; brak potwierdzenia zielonego CI.**
+## Pozostałe warunki
 
-BL-147/148/152/154/155/157/158 pozostają M1-4b; reszta BL-104 w bramie B.
-Bramy M1 A/B otwarte: przegląd właściciela, pełne E2E/VoiceOver i telefon,
-realny import, wdrożenie i uzupełnienie LEGAL_* przez właściciela.
-Nie ma nowego ADR: dopisek ADR-007/realtime i dwie operacje BL-104 zatwierdzone.
-R-35 rozwiązane lokalnie; końcowe potwierdzenie przy DoD. Brak nowych ryzyk
-wymagających zmiany decyzji lub osłabienia kontroli bezpieczeństwa.
+CI: końcowy odczyt po pushu, bez oczekiwania/pętli; wynik w odpowiedzi sesji.
+Brak potwierdzenia zielonego CI dla tej wersji w chwili zapisu raportu.
+BL-147/148/152/154/155/157/158 oraz reszta BL-104 pozostają poza paczką.
+Bramy M1 A/B otwarte: przegląd właściciela, pełne E2E/import, VoiceOver/telefon,
+wdrożenie i LEGAL_*. Bez nowego ADR, usługi, kosztu ani osłabienia kontroli.

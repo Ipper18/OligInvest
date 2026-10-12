@@ -58,9 +58,11 @@ Powiązane: [`roadmapa.md`](roadmapa.md), [`backlog.md`](backlog.md), [`../06-be
 
 | **R-35** | Dokumentacja powłoki wymaga zachowań niedostępnych w natywnym EventSource; brak zależności akceptacji regulaminu i sprzeczny domyślny motyw | BL-121/122/113, [raport M1-4a](m1-4a-session-report.md) | 3 | 3 | 9 | decyzja właściciela przed zmianą ADR/kontraktów; testy wznowienia SSE i błędów HTTP, akceptacji regulaminu oraz domyślnego motywu; pomiar budżetu powłoki | implementacja klienta SSE lub ekranów wymagających brakujących kontraktów | agent, właściciel | M1-4a, decyzje zatwierdzone 2026-10-11; implementacja i testy lokalne PASS 2026-10-12, ostateczne zamknięcie przy CI/DoD |
 
+| **R-36** | Sporadyczny timeout oczekiwania na start SSE w WebKit | M1-4a: jeden lokalny timeout, następnie 10/10 tego przypadku i 30/30 macierzy PASS; przyczyna niepotwierdzona | 2 | 2 | 4 | zachować asercję i limit; przy nawrocie zebrać trace sieci/hydratacji przed zmianą kodu | status wstrzymany zamiast live po 5 s | agent, CI | M1-4a, otwarte do wyjaśnienia nawrotu lub stabilnego CI |
+
 ## 3. Podsumowanie
 
-35 ryzyk: **5 wysokich** (R-01, R-07, R-11, R-16, R-28), 26 średnich, 4 niskie; brak krytycznych.
+36 ryzyk: **5 wysokich** (R-01, R-07, R-11, R-16, R-28), 26 średnich, 5 niskich; brak krytycznych.
 
 | Ryzyko wysokie | Działanie przed końcem etapu |
 |---|---|
