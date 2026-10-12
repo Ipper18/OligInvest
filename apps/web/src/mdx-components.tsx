@@ -1,11 +1,12 @@
-import type { MDXComponents } from "mdx/types";
-export function useMDXComponents(components: MDXComponents): MDXComponents {
-  return {
-    table: (props) => (
-      <div className="oi-legal-table">
-        <table {...props} />
-      </div>
-    ),
-    ...components,
-  };
+import type { ComponentProps } from "react";
+
+const components = {
+  table: (props: ComponentProps<"table">) => (
+    <div className="oi-legal-table">
+      <table {...props} />
+    </div>
+  ),
+};
+export function useMDXComponents() {
+  return components;
 }

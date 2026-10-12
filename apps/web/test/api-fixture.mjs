@@ -1,4 +1,5 @@
 import { createServer } from "node:http";
+import { uiFixture } from "./ui-fixture.mjs";
 
 let lastRequest;
 createServer(async (request, response) => {
@@ -22,6 +23,6 @@ createServer(async (request, response) => {
   } else if (request.url === "/last-request") {
     response.end(JSON.stringify(lastRequest));
   } else {
-    response.writeHead(404).end();
+    if (!(await uiFixture(request, response))) response.writeHead(404).end();
   }
 }).listen(3198, "127.0.0.1");

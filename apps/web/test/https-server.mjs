@@ -4,6 +4,7 @@ import { createServer } from "node:https";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import next from "next";
+import { uiFixture } from "./ui-fixture.mjs";
 
 // Ephemeral self-signed TLS keeps the production upgrade-insecure-requests CSP intact.
 const directory = mkdtempSync(fileURLToPath(new URL("../../../.git/e2e-tls-", import.meta.url)));
@@ -36,7 +37,11 @@ try {
   const credentials = { key: readFileSync(key), cert: readFileSync(cert) };
   const app = next({ dev: false, hostname: "127.0.0.1", port: 3197 });
   await app.prepare();
-  const server = createServer(credentials, app.getRequestHandler());
+  const handler = app.getRequestHandler();
+  const server = createServer(credentials, async (request, response) => {
+    if (request.url === "/api/v1/stream") await uiFixture(request, response);
+    else await handler(request, response);
+  });
   server.listen(3197, "127.0.0.1");
   for (const signal of ["SIGTERM", "SIGINT"])
     process.once(signal, () => {
