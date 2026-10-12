@@ -186,3 +186,5 @@ BL-012: `packages/ui` eksportuje natywne `Button`, `TextField`, `SelectField`, `
 - **CSP z nonce a renderowanie statyczne:** świadomie rezygnujemy ze statycznej optymalizacji i PPR (§ 5). Konflikt zapisany zgodnie z NFR-01.09.
 - **Migawka offline tylko na żądanie:** FR-09.02 działa po jednym potwierdzeniu w zainstalowanej aplikacji; brak zgody = brak migawki (ASVS V14.3.3, art. 399 PKE).
 - **Rozmiary bibliotek** (Radix per komponent, `openapi-fetch`) nie są tu podawane — mierzy je `size-limit` w CI względem budżetów tras.
+
+M1-4a: nawigacja jest generowana z publicznych definicji `UiModuleDefinition` do rejestru web podczas budowania. Pominięcie katalogu modułu funkcjonalnego usuwa jego wpis bez importowania serwera modułu do web. `proxy.ts` sprawdza sesję i bramki przez wewnętrzne API, a układ serwerowy ponawia kontrolę przed renderowaniem prywatnej zawartości. Dane profilu i preferencji nie są pobierane przez publiczne strony prawne.

@@ -4,13 +4,16 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { Me } from "../api/validation";
 
-const links = [
-  { id: "portfolio", href: "/portfel", label: "portfolio", permission: "portfolio:read" },
-  { id: "market", href: "/rynek", label: "market", permission: "market:read" },
-  { id: "alerts", href: "/alerty", label: "alerts", permission: "alerts:manage" },
-  { id: "analytics", href: "/analizy", label: "analytics", permission: "analytics:run:light" },
-  { id: "education", href: "/nauka", label: "learn", permission: "education:use" },
-] as const;
+import { uiModules } from "../modules";
+
+const links = uiModules.flatMap((module) =>
+  (module.nav ?? []).map((item) => ({
+    id: module.id,
+    href: item.href,
+    permission: item.permission,
+    label: item.labelKey.replace(/^nav\./u, "") as keyof typeof messages.nav,
+  })),
+);
 export function Navigation({ me }: { me: Me }) {
   const pathname = usePathname();
   const items = [

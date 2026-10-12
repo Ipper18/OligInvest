@@ -1,1 +1,1 @@
-export {};
+export { uiDefinition } from "../ui-module.js";
