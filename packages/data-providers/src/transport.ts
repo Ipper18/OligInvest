@@ -13,10 +13,8 @@ const HOSTS = new Set([
   "api.nbp.pl",
   "api.frankfurter.dev",
   "www.gpw.pl",
-  "query1.finance.yahoo.com",
+  // Chart and search only; no cookie or crumb hosts (BL-159).
   "query2.finance.yahoo.com",
-  "fc.yahoo.com",
-  "finance.yahoo.com",
 ]);
 export function createProviderFetch(
   userAgent: string,

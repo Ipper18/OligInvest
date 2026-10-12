@@ -18,6 +18,8 @@ BL-017 (2026-09-30): Next.js **16.3.6** zastępuje 16.3.5 ze względu na [GHSA-v
 
 Decyzja właściciela 2026-10-08: BlueOak-1.0.0 dopuszczona ogólnie w polityce i audycie licencji, bez wyjątków per pakiet; kontrole podatności i pokrycia SBOM pozostają obowiązkowe. Rozbudowane zależności runtime yahoo-finance2 4.0.2 pozostają bez zmian w M1-2; osobna ocena w BL-159 (R-33).
 
+BL-159 (2026-10-12): `yahoo-finance2` usunięte z zależności i lockfile; adapter Yahoo to własny klient chart/search ([ADR-016](../09-decyzje/ADR-016-cienki-adapter-yahoo.md)). Pakiety produkcyjne `apps/jobs`: 172 → 68, bez nowych zależności.
+
 BL-017 (2026-10-08): Next.js **16.3.8** zastępuje 16.3.6; [GHSA-cjq9-62q9-8jv4](https://github.com/vercel/next.js/security/advisories/GHSA-cjq9-62q9-8jv4), CVSS 8,3, poprawka wskazana przez OSV. Wydanie npm 2026-09-30 16:07 UTC, poza karencją; aktualizacja w tej samej linii bez overrides i wyjątków OSV. Frozen install, testy/build web i pełny audyt zależności PASS. Graf Yahoo bez zmian.
 
 ## 2. Runtime i platforma
@@ -114,7 +116,7 @@ BL-007: pakiet db deklaruje także istniejące `zod@4.6.5` do walidacji konfigur
 | Logi | **pino** | 10.3 | MIT | Szybkie logi JSON, redakcja pól wrażliwych. | winston (wolniejszy). |
 | Pieniądze | **decimal.js** | 10.6 | MIT | Arytmetyka dziesiętna o konfigurowalnej precyzji ([ADR-014](../09-decyzje/ADR-014-pieniadze-waluty-czas.md)). | `number` (błędy zmiennoprzecinkowe), big.js (brak funkcji potrzebnych w XIRR, np. `pow` z ułamkiem), Dinero.js (zbędna warstwa). |
 | Pliki XLS/XLSX/CSV | **SheetJS Community Edition** (`xlsx`) z oficjalnego CDN | 0.20.3 | Apache-2.0 | Archiwum GPW zwraca binarny XLS (BIFF), XTB — XLSX; jedna biblioteka dla obu i dla CSV. Rejestr npm ma przestarzałe 0.18.5 z podatnościami — instalujemy z `https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz` (hash w lockfile, Renovate z regułą niestandardową). Tylko po stronie serwera (`jobs`). | read-excel-file (bez XLS), exceljs (brak wydań od 2023), parsowanie w Pythonie (wymagałoby internetu i zapisu w `analytics`). |
-| Klient Yahoo Finance | **yahoo-finance2** | 4.0 | MIT | Utrzymywany klient nieoficjalnego API (obsługa ciasteczek/crumb, walidacja odpowiedzi); tylko w adapterze `yahoo`. | Własny klient `fetch` (koszt nadążania za zmianami Yahoo). |
+| Klient Yahoo Finance | **własny adapter** `YahooProvider` (chart v8 + search v1) na `createProviderFetch` | — | — | BL-159, [ADR-016](../09-decyzje/ADR-016-cienki-adapter-yahoo.md): bez cookie/crumb, ten sam transport co NBP/GPW (identyfikujący UA, allowlista, bez przekierowań, limit rozmiaru, JSON → Decimal), 0 pakietów runtime. | `yahoo-finance2` 4.0 (109 pakietów runtime z serwerem MCP i express; zastąpione 2026-10-12), `yahoo-finance2` 3.14 (cofnięcie linii, nadal shim Deno i magazyn ciasteczek). |
 | E-mail | **nodemailer** przez SMTP (Brevo) | 10.0.13 (BL-107; `@types/nodemailer` 8.0.2) | MIT-0 | Worker `jobs` wysyła reset hasła; transport SMTP z wymaganym STARTTLS, bez SDK dostawcy ([ADR-010](../09-decyzje/ADR-010-kanaly-powiadomien.md)). Wersja 10.0.13 po karencji 72 h; nowsza 10.0.14 jeszcze przed karencją 2026-10-04. | SDK dostawców (uzależnienie). |
 | Web Push | **web-push** | 3.6 | MPL-2.0 | Standardowa implementacja VAPID i szyfrowania treści powiadomień. | Własna implementacja (kryptografia — nie piszemy sami). |
 | Magazyn sesji/limitów (opcjonalnie) | `@better-auth/redis-storage` | 1.7.5 | MIT | Jeśli limity Better Auth mają trafić do Valkey zamiast Postgresa — decyzja w `06-bezpieczenstwo/`. | — |

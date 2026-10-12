@@ -38,6 +38,8 @@ Data weryfikacji: **2026-09-18**. Oznaczenia: ✅ zweryfikowane bezpośrednio (s
 | **mBank eMakler — eksport CSV** 🔶 | Historia operacji → „Pobierz CSV”; kolumny ❓ (data, typ, symbol, ilość, cena, waluta); zestawienia podatkowe PDF | — | — | Nie | Dane własne użytkownika | Format niestandaryzowany → fixture z realnego pliku | SECONDARY import transakcji | https://podatekgieldy.pl/pl/pomoc/brokerzy/mbank-emakler · https://www.fundstat.pl/pl/docs/import-mbank-emakler |
 | **GPW Benchmark** 🔶 | Indeksy GPW (WIG, WIG20, mWIG40, sWIG80…), „Dane historyczne”, „Dane opóźnione” | ❓ | Opóźnione 15 min na stronie | Nie | ❓ licencja indeksów GPW Benchmark (dane indeksowe są licencjonowane komercyjnie) | Wysoka | FALLBACK indeksy (primary: Yahoo `WIG20.WA`) | https://gpwbenchmark.pl/ |
 
+**Yahoo — sposób dostępu (BL-159, 2026-10-12):** adapter `yahoo` woła wyłącznie `query2.finance.yahoo.com`: `v8/finance/chart` (EOD oraz ostatnia cena opóźniona z pól `meta`) i `v1/finance/search`; nie pobiera ciasteczek ani crumb i nie używa `v7/finance/quote`. Klient przedstawia się `User-Agent: OligInvest/<wersja> (+kontakt)`, nie podąża za przekierowaniami, nie zmienia automatycznie tożsamości ani nagłówków po 429/403 — odpowiedź blokująca otwiera breaker, a dane degradują do „nieaktualne”/„tylko EOD” ([ADR-016](../09-decyzje/ADR-016-cienki-adapter-yahoo.md)). Warunki Yahoo („personal use only”, brak redystrybucji) bez zmian: dane tylko dla zalogowanych, atrybucja „Dane: Yahoo Finance”; pełna treść ToS **NIEZWERYFIKOWANE** (jak w tabeli).
+
 ## 3. Źródła przejrzane i odrzucone
 
 | Źródło | Powód |

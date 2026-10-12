@@ -1,0 +1,51 @@
+{
+  "explains": [],
+  "count": 4,
+  "quotes": [
+    {
+      "exchange": "WSE",
+      "shortname": "SYNTH",
+      "quoteType": "EQUITY",
+      "symbol": "SYNTH.WA",
+      "index": "quotes",
+      "score": 20001.5,
+      "typeDisp": "Equity",
+      "longname": "Synthetic Spolka SA",
+      "exchDisp": "Warsaw",
+      "isYahooFinance": true
+    },
+    {
+      "exchange": "PCX",
+      "shortname": "Synthetic ETF",
+      "quoteType": "ETF",
+      "symbol": "SYNE",
+      "index": "quotes",
+      "score": 20000,
+      "isYahooFinance": true
+    },
+    {
+      "exchange": "LSE",
+      "shortname": "Synthetic London",
+      "quoteType": "EQUITY",
+      "symbol": "SYNTH.L",
+      "index": "quotes",
+      "score": 100,
+      "isYahooFinance": true
+    },
+    {
+      "exchange": "CCC",
+      "shortname": "Synthetic Coin",
+      "quoteType": "CRYPTOCURRENCY",
+      "symbol": "SYN-USD",
+      "index": "quotes",
+      "score": 50,
+      "isYahooFinance": true
+    }
+  ],
+  "news": [],
+  "nav": [],
+  "lists": [],
+  "researchReports": [],
+  "totalTime": 12,
+  "timeTakenForQuotes": 5
+}
