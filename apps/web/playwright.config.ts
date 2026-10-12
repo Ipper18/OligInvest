@@ -16,29 +16,33 @@ export default defineConfig({
     ],
   ],
   use: { ignoreHTTPSErrors: true, baseURL: process.env.E2E_BASE_URL || "https://127.0.0.1:3197" },
-  projects: [
-    { name: "chromium", use: { browserName: "chromium" } },
-    { name: "webkit", use: { browserName: "webkit" } },
-    { name: "firefox", use: { browserName: "firefox" } },
+  projects: (["chromium", "webkit", "firefox"] as const).flatMap((browserName) => [
+    { name: browserName, testIgnore: "**/shell-auth.spec.ts", use: { browserName } },
+    {
+      name: `${browserName}-shell`,
+      testMatch: "**/shell-auth.spec.ts",
+      use: { browserName, baseURL: "https://127.0.0.1:3197" },
+    },
+  ]),
+  // Synthetic sessions belong only to the local production build and fixture API.
+  // Image integration projects keep E2E_BASE_URL and the real API (no auth bypass).
+  webServer: [
+    {
+      command: "node test/api-fixture.mjs",
+      url: "http://127.0.0.1:3198/api/v1/health/live",
+      reuseExistingServer: false,
+      env: { E2E_API_URL: process.env.E2E_BASE_URL ? "" : (process.env.E2E_API_URL ?? "") },
+    },
+    {
+      command: "node test/https-server.mjs",
+      url: "https://127.0.0.1:3197",
+      ignoreHTTPSErrors: true,
+      reuseExistingServer: false,
+      env: {
+        NODE_ENV: "production",
+        PUBLIC_BASE_URL: "https://example.test",
+        API_INTERNAL_URL: "http://127.0.0.1:3198",
+      },
+    },
   ],
-  webServer: process.env.E2E_BASE_URL
-    ? undefined
-    : [
-        {
-          command: "node test/api-fixture.mjs",
-          url: "http://127.0.0.1:3198/api/v1/health/live",
-          reuseExistingServer: false,
-        },
-        {
-          command: "node test/https-server.mjs",
-          url: "https://127.0.0.1:3197",
-          ignoreHTTPSErrors: true,
-          reuseExistingServer: false,
-          env: {
-            NODE_ENV: "production",
-            PUBLIC_BASE_URL: "https://example.test",
-            API_INTERNAL_URL: "http://127.0.0.1:3198",
-          },
-        },
-      ],
 });

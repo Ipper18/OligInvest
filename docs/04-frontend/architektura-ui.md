@@ -125,6 +125,7 @@ Bez biblioteki stanu globalnego (stos § 4).
   - nowa wersja → komunikat „Dostępna nowa wersja — odśwież”; `skipWaiting` dopiero po geście użytkownika.
 - **Tryb offline (FR-09.02) — decyzja właściciela z 2026-09-19 („ustaw najlepiej”):** migawka powstaje wyłącznie w **zainstalowanej aplikacji** (tryb `standalone`) i **wyłącznie na żądanie** — przy pierwszym uruchomieniu po instalacji aplikacja raz pyta „Zapamiętywać ostatni stan portfela do podglądu bez internetu na tym urządzeniu?” (Tak/Nie; zmiana w Ustawienia → Dane). W zwykłej karcie przeglądarki (możliwy komputer współdzielony) funkcji nie ma. Zakres: podsumowanie, wynik dnia i lista pozycji — bez operacji, dziennika i analiz. Migawka jest nadpisywana przy każdej synchronizacji, **nie jest pokazywana po 30 dniach** bez synchronizacji i jest kasowana przy wylogowaniu, odpowiedzi `401` (np. sesja odwołana zdalnie) i wyłączeniu opcji. Strona `/offline` pokazuje ją tylko do odczytu z datą „dane z …”. Uzasadnienie: dane finansowe w pamięci urządzenia to świadome odstępstwo od ASVS V14.3.3, a zapis w urządzeniu końcowym, który nie jest niezbędny do świadczenia usługi, wymaga wyraźnego żądania użytkownika (art. 399 Prawa komunikacji elektronicznej) — [`../06-bezpieczenstwo/kontrole-bezpieczenstwa.md`](../06-bezpieczenstwo/kontrole-bezpieczenstwa.md) § 8.
 - **Wylogowanie:** czyści cache TanStack Query, IndexedDB, cache service workera z danymi i powiadamia inne karty przez `BroadcastChannel`.
+- Jawne wylogowanie kończy się na `/logowanie` bez `returnTo`; parametr zachowuje cel przy wejściu bez sesji (§ 4). Powłoka znika od razu, a nawigacja i powiadomienie innych kart następują dopiero po odpowiedzi wylogowania usuwającej ciasteczka. Karta wysyłająca ignoruje własny komunikat.
 
 ## 9. Nawigacja i moduły UI
 
@@ -172,6 +173,13 @@ BL-012: `packages/ui` eksportuje natywne `Button`, `TextField`, `SelectField`, `
 - Linki zewnętrzne (źródła newsów) z `rel="noopener noreferrer"` i ikoną „link zewnętrzny”.
 
 ## 13. Testy warstwy UI
+
+Testy `shell-auth.spec.ts` działają w projektach Playwright `*-shell` na lokalnym
+buildzie produkcyjnym z syntetycznym API. Każda sesja fixture ma osobny identyfikator,
+także między przeglądarkami i powtórzeniami. Projekty integracyjne używają
+`E2E_BASE_URL` (obrazy za Caddy) i rzeczywistego API; syntetyczne ciasteczka nie
+stanowią uwierzytelnienia w obrazach. Job `images` buduje również web na hoście dla
+testów granicy UI. Pełna ścieżka z rzeczywistym kontem i importem pozostaje BL-155.
 
 | Rodzaj | Narzędzie | Zakres |
 |---|---|---|

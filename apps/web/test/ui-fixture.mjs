@@ -1,4 +1,6 @@
 // Synthetic UI boundary only. Real authentication/RLS is tested by apps/api/integration.
+import { randomUUID } from "node:crypto";
+
 const preferences = {
   baseCurrency: "PLN",
   costBasisMethod: "fifo",
@@ -64,9 +66,9 @@ export async function uiFixture(request, response) {
       ? (saved.get(key) ?? {
           ...preferences,
           theme: key.includes("light") ? "light" : "dark",
-          required: key === "fixture-legal",
-          enrolled: key !== "fixture-enroll",
-          verified: key !== "fixture-unverified",
+          required: key.startsWith("fixture-legal"),
+          enrolled: !key.startsWith("fixture-enroll"),
+          verified: !key.startsWith("fixture-unverified"),
         })
       : null;
   if (path === "/api/v1/health/live") return send({ status: "ok" });
@@ -138,7 +140,7 @@ export async function uiFixture(request, response) {
     return send({ twoFactorRedirect: true });
   }
   if (path === "/api/auth/sign-up/email") {
-    cookie("session_token", "fixture-enroll");
+    cookie("session_token", `fixture-enroll-${randomUUID()}`);
     return send({ session, user: { ...user, twoFactorEnabled: false } });
   }
   if (path === "/api/auth/two-factor/enable")
@@ -151,8 +153,12 @@ export async function uiFixture(request, response) {
     path === "/api/auth/two-factor/verify-backup-code"
   ) {
     if (data.code !== "123456" && data.code !== "fixture-0000") return fail("MFA_REQUIRED", 403);
-    cookie("session_token", "fixture-verified");
-    return send({ session, user, ...(key === "fixture-enroll" ? { backupCodes: codes } : {}) });
+    cookie("session_token", `fixture-verified-${randomUUID()}`);
+    return send({
+      session,
+      user,
+      ...(key?.startsWith("fixture-enroll") ? { backupCodes: codes } : {}),
+    });
   }
   if (path === "/api/auth/sign-out") {
     cookie("session_token", "", 0);

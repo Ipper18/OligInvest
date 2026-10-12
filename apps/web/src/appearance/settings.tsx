@@ -1,16 +1,16 @@
 "use client";
 import { appMessages, commonMessages } from "@oliginvest/i18n";
 import { Button, SelectField } from "@oliginvest/ui";
-import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import type { Preferences } from "../api/validation";
+import type { Me, Preferences } from "../api/validation";
 import { submitAction } from "../auth/actions";
 
 const t = appMessages;
 export function Settings({ preferences }: { preferences: Preferences }) {
   const [pending, setPending] = useState(false),
     [message, setMessage] = useState("");
-  const router = useRouter();
+  const client = useQueryClient();
   return (
     <form
       className="oi-form"
@@ -29,7 +29,10 @@ export function Settings({ preferences }: { preferences: Preferences }) {
           document.documentElement.dataset.palette =
             result.data.plPalette === "colorblind" ? "colorblind" : "standard";
           setMessage(t.saved);
-          router.refresh();
+          client.setQueriesData<Me>(
+            { predicate: (query) => query.queryKey[1] === "me" },
+            (me) => me && { ...me, preferences: result.data as Preferences },
+          );
         } else setMessage(appMessages.offline);
       }}
     >

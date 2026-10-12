@@ -1,4 +1,13 @@
 const listeners = new Set<() => void>();
+const source = crypto.randomUUID();
+export function onRemoteLogout(listener: () => void) {
+  if (typeof BroadcastChannel === "undefined") return () => {};
+  const channel = new BroadcastChannel("oliginvest-session");
+  channel.onmessage = (event) => {
+    if (event.data?.type === "logout" && event.data.source !== source) listener();
+  };
+  return () => channel.close();
+}
 export function onLogout(listener: () => void) {
   listeners.add(listener);
   return () => {
@@ -9,7 +18,7 @@ export async function clearPrivateState(broadcast = true) {
   for (const listener of listeners) listener();
   if (broadcast && typeof BroadcastChannel !== "undefined") {
     const channel = new BroadcastChannel("oliginvest-session");
-    channel.postMessage("logout");
+    channel.postMessage({ type: "logout", source });
     channel.close();
   }
   if ("caches" in window) await Promise.all((await caches.keys()).map((key) => caches.delete(key)));

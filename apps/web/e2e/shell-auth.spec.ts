@@ -5,7 +5,7 @@ async function session(context: BrowserContext, value: string) {
   await context.addCookies([
     {
       name: "__Host-oliginvest.session_token",
-      value: `fixture-${value}`,
+      value: `fixture-${value}-${crypto.randomUUID()}`,
       url: "https://127.0.0.1:3197",
       secure: true,
       httpOnly: true,
@@ -146,4 +146,65 @@ test("public legal and auth pages have no axe violations; fragments are removed"
   const download = await page.request.get("/dokumenty/terms");
   expect(download.headers()["content-disposition"]).toContain("attachment");
   expect(await download.text()).toContain("§ 10. Postanowienia końcowe");
+});
+
+test("logout waits for cookie removal before navigation and notifies other tabs afterwards", async ({
+  page,
+  context,
+}) => {
+  await session(context, "logout-race");
+  await page.goto("/ustawienia");
+  await expect(page.getByText("Aktualizacje na żywo", { exact: true })).toBeVisible();
+  const other = await context.newPage();
+  await other.goto("/");
+  await expect(other.getByText("Aktualizacje na żywo", { exact: true })).toBeVisible();
+  let release!: () => void;
+  const responseGate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  let received!: () => void;
+  const requestArrived = new Promise<void>((resolve) => {
+    received = resolve;
+  });
+  await page.route("**/ustawienia", async (route) => {
+    if (route.request().method() !== "POST") return route.continue();
+    received();
+    await responseGate;
+    await route.continue();
+  });
+  try {
+    await page.getByRole("button", { name: "Wyloguj się" }).click();
+    await requestArrived;
+    await expect(page.locator(".oi-shell")).toHaveCount(0);
+    await expect(page).toHaveURL("/ustawienia");
+    await expect(other.getByRole("button", { name: "Wyloguj się" })).toBeVisible();
+  } finally {
+    release();
+  }
+  await expect(page).toHaveURL("/logowanie");
+  await expect(other).toHaveURL("/logowanie");
+  for (const tab of [page, other]) {
+    await expect(tab.getByRole("heading", { name: "Zaloguj się" })).toBeVisible();
+    await expect(tab.locator(".oi-shell")).toHaveCount(0);
+  }
+  expect((await context.cookies()).filter((c) => c.name.startsWith("__Host-oliginvest."))).toEqual(
+    [],
+  );
+  await page.goto("/ustawienia");
+  await expect(page).toHaveURL("/logowanie?returnTo=%2Fustawienia");
+  await expect(page.locator(".oi-shell")).toHaveCount(0);
+});
+
+test("fresh legal and MFA gates never render the private shell", async ({ page, context }) => {
+  for (const [value, destination] of [
+    ["legal", "/akceptacja-regulaminu"],
+    ["unverified", "/logowanie/2fa"],
+  ] as const) {
+    await context.clearCookies();
+    await session(context, value);
+    const response = await page.goto("/ustawienia");
+    await expect(page).toHaveURL(`${destination}?returnTo=%2Fustawienia`);
+    expect(await response?.text()).not.toContain('class="oi-shell"');
+    await expect(page.locator(".oi-shell")).toHaveCount(0);
+  }
 });

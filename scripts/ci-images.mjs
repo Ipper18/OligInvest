@@ -73,15 +73,15 @@ for (const service of Object.keys(catalog)) {
   );
 }
 if (process.argv.includes("--build-only")) process.exit(0);
-// Playwright imports the shared messages on the host. Image builds do not
-// populate workspace dist directories on a clean CI checkout.
+// Boundary tests need a host production web build and their synthetic API.
+// Separate integration projects exercise the images through E2E_BASE_URL.
 run(
   process.execPath,
   [
     "node_modules/turbo/bin/turbo",
     "run",
     "build",
-    "--filter=@oliginvest/i18n",
+    "--filter=@oliginvest/web",
     "--output-logs=new-only",
   ],
   { log: "e2e-dependencies.log" },

@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import type { Me } from "../api/validation";
 import { submitAction } from "../auth/actions";
-import { clearPrivateState, onLogout } from "../auth/logout";
+import { clearPrivateState, onLogout, onRemoteLogout } from "../auth/logout";
 import { connectStream, type StreamState } from "../sse/transport";
 import { Navigation } from "./navigation";
 export const queryKey = (userId: string, ...parts: unknown[]) => [userId, ...parts];
@@ -28,6 +28,7 @@ export function Providers({
   const [me, setMe] = useState(initialMe);
   const [state, setState] = useState<StreamState>("paused");
   const [paused, setPaused] = useState(false);
+  const [leaving, setLeaving] = useState(false);
   const pausedRef = useRef(false);
   const stream = useRef<ReturnType<typeof connectStream> | null>(null);
   const router = useRouter();
@@ -45,6 +46,8 @@ export function Providers({
       router.refresh();
     };
     const logout = () => {
+      setLeaving(true);
+      disposed = true;
       stream.current?.stop();
       client.clear();
       void clearPrivateState(false).finally(() => {
@@ -52,17 +55,12 @@ export function Providers({
       });
     };
     const unsubscribe = onLogout(() => {
+      setLeaving(true);
+      disposed = true;
       stream.current?.stop();
       client.clear();
     });
-    const channel =
-      typeof BroadcastChannel !== "undefined"
-        ? new BroadcastChannel("oliginvest-session")
-        : undefined;
-    if (channel)
-      channel.onmessage = (e) => {
-        if (e.data === "logout") logout();
-      };
+    const unsubscribeRemote = onRemoteLogout(logout);
     // Validation is loaded outside the initial shell bundle; no Zod runtime in initial JS.
     void import("@oliginvest/contracts/realtime")
       .then(({ realtimeSchemas }) => {
@@ -119,7 +117,7 @@ export function Providers({
       disposed = true;
       stream.current?.stop();
       unsubscribe();
-      channel?.close();
+      unsubscribeRemote();
       client.clear();
     };
   }, [client, me.id, router]);
@@ -139,6 +137,7 @@ export function Providers({
     }, 5000);
     return () => clearInterval(interval);
   }, [client, state, me.id, router]);
+  if (leaving) return null;
   return (
     <QueryClientProvider client={client}>
       <AppShell
@@ -160,8 +159,9 @@ export function Providers({
             </Button>
             <Button
               onClick={async () => {
-                await clearPrivateState();
+                await clearPrivateState(false);
                 await submitAction("signOut", {});
+                await clearPrivateState();
                 location.replace("/logowanie");
               }}
             >
