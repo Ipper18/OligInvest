@@ -7,7 +7,7 @@
     "jsx": "preserve",
     "noEmit": true,
     "resolveJsonModule": true,
-    "types": ["node"],
+    "types": ["node", "mdx"],
     "plugins": [
       {
         "name": "next"

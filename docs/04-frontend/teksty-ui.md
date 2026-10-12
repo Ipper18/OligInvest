@@ -299,3 +299,7 @@ Teksty uzupełniające BL-121/122/113/116 (2026-10-11), klucze w katalogu `app`:
 | configurationMissing | Dane usługodawcy nie zostały jeszcze skonfigurowane. |
 
 Kody błędów pozostają z § 7. Teksty dokumentów prawnych pochodzą w całości z dokumentów użytkownika, bez przeredagowania.
+
+### Teksty publicznych dokumentów M1-4a
+
+Pełne treści po separatorze w `docs/12-dla-uzytkownika/regulamin.md`, `informacja-o-prywatnosci.md` i `zrodla-danych.md` są źródłem katalogu `packages/i18n/src/pl/legal.json` oraz stron MDX. Generator i test kontrolują ich zgodność. Przy brakującej konfiguracji pokazujemy „Dane instancji wymagają uzupełnienia przez administratora.”; przycisk druku: „Drukuj”. Data wejścia w życie pochodzi z `LEGAL_EFFECTIVE_DATE` (YYYY-MM-DD).
