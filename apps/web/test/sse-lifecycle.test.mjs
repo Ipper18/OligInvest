@@ -73,6 +73,7 @@ test("hidden tab pauses after five minutes and refreshes on return; logout stops
   const o = options();
   client = connectStream(o);
   await flush();
+  expect(o.resume).not.toHaveBeenCalled();
   doc.hidden = true;
   doc.dispatchEvent(new Event("visibilitychange"));
   for (let i = 0; i < 5; i++) {

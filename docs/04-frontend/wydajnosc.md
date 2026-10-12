@@ -212,3 +212,13 @@ process.exit(failed ? 1 : 0);
 | Onboarding | driver.js leniwie, tylko przy pierwszym logowaniu lub na żądanie. |
 | Panel admina „nie od zera” | Minimalny panel w aplikacji (ADR-006), ładowany wyłącznie w `/admin`. |
 | Offline shell | Tylko zasoby statyczne w cache service workera; migawka danych w IndexedDB na żądanie użytkownika. |
+
+### Pomiar wdrożonych tras M1-4a
+
+`pnpm budgets` sprawdza dodatkowo powłokę `/`: sumę gzip-9 wszystkich początkowych chunków poza `rootMainFiles` bieżącego frameworka; limit 30 KiB, brak bazowych chunków lub przekroczenie blokuje CI. Nie odejmujemy komponentów aplikacji ani TanStack Query. Zod klienta SSE ładuje się dynamicznie. Lokalne pomiary renderowania i axe korzystają z syntetycznych odpowiedzi granicy API, bez obejścia bramek w kodzie web; nie zastępują testów rzeczywistego uwierzytelniania i RLS. Pełny scenariusz z bazą i portfelem pozostaje w M1-4b (BL-155). `PERF_ROUTE_COOKIES` pozwala przekazać sesje per trasa przy zewnętrznym `BASE_URL`, bez zapisywania ich w raportach.
+
+CI uruchamia `--assert-available`: twarde progi Lighthouse dla wdrożonych tras z listy § 6.3. `--assert` nadal wymaga całego zestawu czterech tras na bramę M1. Brakujące trasy nie otrzymują wyniku PASS.
+
+M1-4a: mały wspólny arkusz CSS jest kompilowany przez PostCSS/Tailwind podczas budowania i osadzany w serwerowym układzie jako `<style nonce={nonce}>`. Usuwa dodatkowe żądanie blokujące pierwsze wyświetlenie, kosztem ponownego przesłania arkusza w HTML. Plik wynikowy jest artefaktem buildu, objętym cache Turbo. Nie używamy `experimental.inlineCss`: w przypiętym Next.js/React nonce znikał przy hoistowaniu arkusza z `precedence`. Test produkcyjny sprawdza nonce stylów, działanie CSS i brak `unsafe-inline`. Regresje LCP i CSP blokują CI.
+
+Lokalny pomiar M1-4a odtwarza transport TLS/HTTP2 przed `next start`, tak jak produkcyjny Caddy, także kierowanie `/api/` do fixture API. Lighthouse ufa wyłącznie odciskowi jednorazowego klucza certyfikatu fixture (SPKI); sandbox Chrome pozostaje włączony. Weryfikacja certyfikatu dla zewnętrznego `BASE_URL` nie jest zmieniana. HTTP/1.1 serwera Next ograniczał współbieżne pobieranie chunków i nie reprezentował docelowego transportu.

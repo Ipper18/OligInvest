@@ -1,3 +1,8 @@
+import { fixtureCookie, uiFixture } from "../test/ui-fixture.mjs";
+import { fetchLocalFixture, startPerformanceProxy } from "./performance-tls.mjs";
+
+export { fixtureCookie };
+
 import { spawn } from "node:child_process";
 import { appendFileSync, closeSync, openSync, readFileSync } from "node:fs";
 import { createServer } from "node:http";
@@ -15,23 +20,22 @@ export function report(markdown) {
 }
 
 export async function fetchChecked(url, { cookie = "", type = "text/html" } = {}) {
-  const response = await fetch(url, {
-    redirect: "manual",
-    signal: AbortSignal.timeout(15000),
-    headers: cookie ? { Cookie: cookie } : {},
-  });
+  const response = await (fetchLocalFixture(url, cookie) ??
+    fetch(url, {
+      redirect: "manual",
+      signal: AbortSignal.timeout(15000),
+      headers: cookie ? { Cookie: cookie } : {},
+    }));
   if (response.status !== 200 || !response.headers.get("content-type")?.includes(type))
     throw new Error(`Invalid performance response (${response.status}, expected ${type})`);
   return response;
 }
 
-// M0 has only a health endpoint; real authenticated fixtures belong to M1.
+// Local rendering uses synthetic boundary fixtures, never an authentication bypass in web.
 export async function withPerformanceServer(run) {
   if (process.env.BASE_URL) return run(new URL(process.env.BASE_URL).origin);
-  const fixture = createServer((request, response) => {
-    if (request.url !== "/api/v1/health/live") return response.writeHead(404).end();
-    response.writeHead(200, { "Content-Type": "application/json" });
-    response.end(JSON.stringify({ status: "ok" }));
+  const fixture = createServer(async (request, response) => {
+    if (!(await uiFixture(request, response))) response.writeHead(404).end();
   });
   await new Promise((accept) => fixture.listen(0, "127.0.0.1", accept));
   const reservation = createServer();
@@ -51,7 +55,7 @@ export async function withPerformanceServer(run) {
         ...process.env,
         NODE_ENV: "production",
         NEXT_TELEMETRY_DISABLED: "1",
-        PUBLIC_BASE_URL: origin,
+        PUBLIC_BASE_URL: "https://example.test",
         API_INTERNAL_URL: `http://127.0.0.1:${fixture.address().port}`,
       },
     },
@@ -61,13 +65,14 @@ export async function withPerformanceServer(run) {
   child.on("error", (error) => {
     spawnError = error;
   });
+  let proxy;
   try {
     let ready = false;
     for (let attempt = 0; attempt < 120; attempt++) {
       if (spawnError || child.exitCode !== null)
         throw new Error("next start failed; inspect .git/bl016-next.log");
       try {
-        await fetchChecked(origin);
+        await fetchChecked(new URL("/logowanie", origin));
         ready = true;
         break;
       } catch {
@@ -75,8 +80,10 @@ export async function withPerformanceServer(run) {
       }
     }
     if (!ready) throw new Error("next start timed out; inspect .git/bl016-next.log");
-    return await run(origin);
+    proxy = await startPerformanceProxy(origin, `http://127.0.0.1:${fixture.address().port}`);
+    return await run(proxy.origin);
   } finally {
+    await proxy?.close();
     if (child.exitCode === null) {
       const exited = new Promise((accept) => child.once("exit", accept));
       child.kill();

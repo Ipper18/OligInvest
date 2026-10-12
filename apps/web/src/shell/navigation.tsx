@@ -1,5 +1,5 @@
 "use client";
-import { messages } from "@oliginvest/i18n";
+import { appMessages, commonMessages } from "@oliginvest/i18n";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { Me } from "../api/validation";
@@ -11,7 +11,7 @@ const links = uiModules.flatMap((module) =>
     id: module.id,
     href: item.href,
     permission: item.permission,
-    label: item.labelKey.replace(/^nav\./u, "") as keyof typeof messages.nav,
+    label: item.labelKey.replace(/^nav\./u, "") as keyof typeof commonMessages.nav,
   })),
 );
 export function Navigation({ me }: { me: Me }) {
@@ -34,20 +34,20 @@ export function Navigation({ me }: { me: Me }) {
         (item.href === "/" ? pathname === "/" : pathname.startsWith(item.href)) ? "page" : undefined
       }
     >
-      {messages.nav[item.label]}
+      {commonMessages.nav[item.label]}
     </Link>
   );
   return (
     <>
-      <nav className="oi-sidebar" aria-label={messages.app.navigation}>
+      <nav className="oi-sidebar" aria-label={appMessages.navigation}>
         {items.map(link)}
       </nav>
-      <nav className="oi-bottom-nav" aria-label={messages.app.navigation}>
+      <nav className="oi-bottom-nav" aria-label={appMessages.navigation}>
         {items
           .filter((i) => ["start", "portfolio", "market", "alerts"].includes(i.label))
           .map(link)}
         <details>
-          <summary>{messages.nav.more}</summary>
+          <summary>{commonMessages.nav.more}</summary>
           <div className="oi-more">
             {items
               .filter((i) => !["start", "portfolio", "market", "alerts"].includes(i.label))

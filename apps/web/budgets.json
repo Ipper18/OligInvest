@@ -1,100 +1,191 @@
 {
   "compression": "gzip-9",
   "routes": {
-    "/logowanie": { "initialKb": 160, "totalKb": 160, "forbid": ["query", "charts", "radix"] },
-    "/logowanie/2fa": { "initialKb": 160, "totalKb": 160, "forbid": ["query", "charts", "radix"] },
-    "/rejestracja": { "initialKb": 160, "totalKb": 160, "forbid": ["query", "charts", "radix"] },
+    "/logowanie": {
+      "initialKb": 160,
+      "totalKb": 160,
+      "forbid": ["query", "charts", "radix", "zod"]
+    },
+    "/logowanie/2fa": {
+      "initialKb": 160,
+      "totalKb": 160,
+      "forbid": ["query", "charts", "radix", "zod"]
+    },
+    "/rejestracja": {
+      "initialKb": 160,
+      "totalKb": 160,
+      "forbid": ["query", "charts", "radix", "zod"]
+    },
     "/konfiguracja-2fa": {
       "initialKb": 160,
       "totalKb": 160,
-      "forbid": ["query", "charts", "radix"]
+      "forbid": ["query", "charts", "radix", "zod"]
     },
     "/akceptacja-regulaminu": {
       "initialKb": 160,
       "totalKb": 160,
-      "forbid": ["query", "charts", "radix"]
+      "forbid": ["query", "charts", "radix", "zod"]
     },
-    "/regulamin": { "initialKb": 160, "totalKb": 160, "forbid": ["query", "charts", "radix"] },
-    "/prywatnosc": { "initialKb": 160, "totalKb": 160, "forbid": ["query", "charts", "radix"] },
-    "/zrodla-danych": { "initialKb": 160, "totalKb": 160, "forbid": ["query", "charts", "radix"] },
+    "/regulamin": {
+      "initialKb": 160,
+      "totalKb": 160,
+      "forbid": ["query", "charts", "radix", "zod"]
+    },
+    "/prywatnosc": {
+      "initialKb": 160,
+      "totalKb": 160,
+      "forbid": ["query", "charts", "radix", "zod"]
+    },
+    "/zrodla-danych": {
+      "initialKb": 160,
+      "totalKb": 160,
+      "forbid": ["query", "charts", "radix", "zod"]
+    },
     "/": {
       "initialKb": 190,
-      "lazyKb": { "uplot": 23 },
+      "lazyKb": {
+        "uplot": 23
+      },
       "totalKb": 230,
-      "forbid": ["lightweight-charts", "uplot", "driver.js", "radix"]
+      "forbid": ["lightweight-charts", "uplot", "driver.js", "radix", "zod"]
     },
     "/portfel": {
       "initialKb": 195,
-      "lazyKb": { "table-virtual": 41, "menu": 31, "uplot": 23 },
+      "lazyKb": {
+        "table-virtual": 41,
+        "menu": 31,
+        "uplot": 23
+      },
       "totalKb": 290,
       "forbid": ["charts", "radix", "zod"]
     },
     "/portfel/*": {
       "initialKb": 195,
-      "lazyKb": { "table-virtual": 41, "menu": 31, "uplot": 23 },
+      "lazyKb": {
+        "table-virtual": 41,
+        "menu": 31,
+        "uplot": 23
+      },
       "totalKb": 290,
       "forbid": ["charts", "radix", "zod"]
     },
     "/rynek/screener": {
       "initialKb": 195,
-      "lazyKb": { "table-virtual": 41 },
+      "lazyKb": {
+        "table-virtual": 41
+      },
       "totalKb": 250,
       "forbid": ["charts", "zod"]
     },
     "/rynek/heatmapa": {
       "initialKb": 195,
-      "lazyKb": { "table-virtual": 41 },
+      "lazyKb": {
+        "table-virtual": 41
+      },
       "totalKb": 250,
       "forbid": ["charts", "zod"]
     },
     "/rynek/[instrumentId]": {
       "initialKb": 190,
-      "lazyKb": { "lightweight-charts": 54, "search": 24 },
+      "lazyKb": {
+        "lightweight-charts": 54,
+        "search": 24
+      },
       "totalKb": 280,
       "forbid": ["radix", "zod"]
     },
     "/analizy": {
       "initialKb": 195,
-      "lazyKb": { "uplot": 23, "zod": 26, "tabs-slider": 19 },
+      "lazyKb": {
+        "uplot": 23,
+        "zod": 26,
+        "tabs-slider": 19
+      },
       "totalKb": 270,
-      "forbid": ["lightweight-charts"]
+      "forbid": ["lightweight-charts", "zod"]
     },
     "/analizy/*": {
       "initialKb": 195,
-      "lazyKb": { "uplot": 23, "zod": 26, "tabs-slider": 19 },
+      "lazyKb": {
+        "uplot": 23,
+        "zod": 26,
+        "tabs-slider": 19
+      },
       "totalKb": 270,
-      "forbid": ["lightweight-charts"]
+      "forbid": ["lightweight-charts", "zod"]
     },
-    "/alerty": { "initialKb": 190, "lazyKb": { "zod": 26 }, "totalKb": 220, "forbid": ["charts"] },
+    "/alerty": {
+      "initialKb": 190,
+      "lazyKb": {
+        "zod": 26
+      },
+      "totalKb": 220,
+      "forbid": ["charts", "zod"]
+    },
     "/alerty/*": {
       "initialKb": 190,
-      "lazyKb": { "zod": 26 },
+      "lazyKb": {
+        "zod": 26
+      },
       "totalKb": 220,
-      "forbid": ["charts"]
+      "forbid": ["charts", "zod"]
     },
     "/nauka": {
       "initialKb": 180,
-      "lazyKb": { "driver.js": 8 },
+      "lazyKb": {
+        "driver.js": 8
+      },
       "totalKb": 190,
       "forbid": ["charts", "zod"]
     },
     "/nauka/*": {
       "initialKb": 180,
-      "lazyKb": { "driver.js": 8 },
+      "lazyKb": {
+        "driver.js": 8
+      },
       "totalKb": 190,
       "forbid": ["charts", "zod"]
     },
-    "/ustawienia/*": { "initialKb": 185, "totalKb": 190, "forbid": ["charts"] },
+    "/ustawienia/*": {
+      "initialKb": 185,
+      "totalKb": 190,
+      "forbid": ["charts", "zod"]
+    },
     "/admin/*": {
       "initialKb": 200,
-      "lazyKb": { "table": 41, "menu": 31, "tabs": 9 },
+      "lazyKb": {
+        "table": 41,
+        "menu": 31,
+        "tabs": 9
+      },
       "totalKb": 290,
-      "forbid": []
+      "forbid": ["zod"]
     },
     "/ui-preview": {
       "initialKb": 190,
       "totalKb": 230,
       "forbid": ["charts", "driver.js", "radix", "zod"]
+    },
+    "/reset-hasla": {
+      "initialKb": 160,
+      "totalKb": 160,
+      "forbid": ["query", "charts", "radix", "zod"]
+    },
+    "/reset-hasla/nowe": {
+      "initialKb": 160,
+      "totalKb": 160,
+      "forbid": ["query", "charts", "radix", "zod"]
+    },
+    "/ustawienia": {
+      "initialKb": 185,
+      "totalKb": 190,
+      "forbid": ["charts", "zod"]
+    },
+    "/ui-preview/bootstrap": {
+      "initialKb": 190,
+      "totalKb": 230,
+      "forbid": ["charts", "driver.js", "radix", "zod"]
     }
-  }
+  },
+  "shellKb": 30
 }

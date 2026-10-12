@@ -1,6 +1,7 @@
 import { gzipSync } from "node:zlib";
 import {
   fetchChecked,
+  fixtureCookie,
   isMain,
   readJson,
   report,
@@ -97,6 +98,17 @@ export function assessRoute(chunks, budget) {
     failed: bytes > budget.initialKb * 1024 || bytes >= 200 * 1024 || forbidden.length > 0,
   };
 }
+export function assessShell(row, frameworkFiles, limitKb) {
+  if (!row || !frameworkFiles?.length) throw new Error("Missing shell or framework baseline");
+  const framework = new Set(frameworkFiles.map((file) => `/_next/${file}`));
+  for (const source of framework)
+    if (!row.sources.includes(source)) throw new Error("Framework baseline absent from shell");
+  const bytes = row.chunks.reduce(
+    (sum, chunk, index) => sum + (framework.has(row.sources[index]) ? 0 : gzipBytes(chunk)),
+    0,
+  );
+  return { bytes, failed: bytes > limitKb * 1024 };
+}
 export function currentPlan() {
   const config = readJson("budgets.json");
   if (config.compression !== "gzip-9") throw new Error("Expected gzip-9");
@@ -108,7 +120,7 @@ export function currentPlan() {
 }
 export async function measureRoute(origin, route, budget) {
   const url = new URL(route, origin);
-  const html = await (await fetchChecked(url, { cookie: process.env.LH_SESSION_COOKIE })).text();
+  const html = await (await fetchChecked(url, { cookie: fixtureCookie(route) })).text();
   const sources = scriptSources(html);
   const chunks = await Promise.all(
     sources.map(async (source) => {
@@ -138,10 +150,18 @@ export async function main() {
       rows.push({ ...(await measureRoute(origin, route, budget)), budget });
     return rows;
   });
+  const limit = readJson("budgets.json").shellKb;
+  if (limit !== 30) throw new Error("Expected shell budget of 30 KiB");
+  const shell = assessShell(
+    results.find((row) => row.route === "/"),
+    readJson(".next/build-manifest.json").rootMainFiles,
+    limit,
+  );
   report(
     [
       "### Budżety JS (gzip -9, KiB)",
       "",
+      `Powłoka ponad rootMainFiles frameworka: ${(shell.bytes / 1024).toFixed(2)} / ${limit} KiB — ${shell.failed ? "FAIL" : "PASS"}.`,
       "| Trasa | Początkowy / limit | Zakazane | Wynik |",
       "|---|---:|---|---|",
       ...results.map(
@@ -153,7 +173,7 @@ export async function main() {
       "Leniwe / razem: niezmierzone (wymagają scenariuszy interakcji).",
     ].join("\n"),
   );
-  process.exitCode = results.some((row) => row.failed) ? 1 : 0;
+  process.exitCode = shell.failed || results.some((row) => row.failed) ? 1 : 0;
 }
 if (isMain(import.meta.url))
   main().catch((error) => {

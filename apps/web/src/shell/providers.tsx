@@ -1,5 +1,5 @@
 "use client";
-import { messages } from "@oliginvest/i18n";
+import { appMessages } from "@oliginvest/i18n";
 import { AppShell, Button } from "@oliginvest/ui";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
@@ -10,7 +10,15 @@ import { clearPrivateState, onLogout } from "../auth/logout";
 import { connectStream, type StreamState } from "../sse/transport";
 import { Navigation } from "./navigation";
 export const queryKey = (userId: string, ...parts: unknown[]) => [userId, ...parts];
-export function Providers({ initialMe, children }: { initialMe: Me; children: ReactNode }) {
+export function Providers({
+  initialMe,
+  children,
+  footer,
+}: {
+  initialMe: Me;
+  children: ReactNode;
+  footer: ReactNode;
+}) {
   const [client] = useState(
     () =>
       new QueryClient({
@@ -127,18 +135,19 @@ export function Providers({ initialMe, children }: { initialMe: Me; children: Re
           q.getObserversCount() > 0 &&
           (q.meta?.pollSeconds === 5 || tick % 60 === 0),
       });
-      if (tick % 300 === 0) router.refresh();
+      if (tick % 60 === 0) router.refresh();
     }, 5000);
     return () => clearInterval(interval);
   }, [client, state, me.id, router]);
   return (
     <QueryClientProvider client={client}>
       <AppShell
+        footer={footer}
         navigation={<Navigation me={me} />}
         toolbar={
           <div className="oi-toolbar">
             <span role="status" className="oi-connection">
-              {messages.app[state]}
+              {appMessages[state]}
             </span>
             <Button
               onClick={() => {
@@ -147,7 +156,7 @@ export function Providers({ initialMe, children }: { initialMe: Me; children: Re
                 stream.current?.pause(!paused);
               }}
             >
-              {paused ? messages.app.resume : messages.app.pause}
+              {paused ? appMessages.resume : appMessages.pause}
             </Button>
             <Button
               onClick={async () => {
@@ -156,7 +165,7 @@ export function Providers({ initialMe, children }: { initialMe: Me; children: Re
                 location.replace("/logowanie");
               }}
             >
-              {messages.app.signOut}
+              {appMessages.signOut}
             </Button>
           </div>
         }

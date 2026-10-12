@@ -1,13 +1,13 @@
-import { messages } from "@oliginvest/i18n";
+import { appMessages, commonMessages } from "@oliginvest/i18n";
 import type { ReactNode } from "react";
 import { Disclaimer } from "./compliance.js";
 export function LegalFooter() {
   return (
     <footer className="oi-footer">
-      <nav aria-label={messages.app.publicNavigation}>
-        <a href="/regulamin">{messages.app.terms}</a>
-        <a href="/prywatnosc">{messages.app.privacy}</a>
-        <a href="/zrodla-danych">{messages.app.sources}</a>
+      <nav aria-label={appMessages.publicNavigation}>
+        <a href="/regulamin">{appMessages.terms}</a>
+        <a href="/prywatnosc">{appMessages.privacy}</a>
+        <a href="/zrodla-danych">{appMessages.sources}</a>
       </nav>
       <Disclaimer disclaimerKey="general" version="2026-09" />
     </footer>
@@ -31,20 +31,22 @@ export function Skeleton() {
 export function AppShell({
   navigation,
   toolbar,
+  footer,
   children,
 }: {
   navigation: ReactNode;
   toolbar: ReactNode;
+  footer: ReactNode;
   children: ReactNode;
 }) {
   return (
     <div className="oi-shell">
       <a href="#main" className="oi-skip">
-        {messages.shell.skipLink}
+        {commonMessages.shell.skipLink}
       </a>
       <header className="oi-shell-header">
         <a className="oi-brand" href="/">
-          {messages.app.brand}
+          {appMessages.brand}
         </a>
         {toolbar}
       </header>
@@ -52,7 +54,7 @@ export function AppShell({
       <main id="main" tabIndex={-1} className="oi-content">
         {children}
       </main>
-      <LegalFooter />
+      {footer}
     </div>
   );
 }
@@ -60,11 +62,11 @@ export function PublicShell({ children }: { children: ReactNode }) {
   return (
     <div className="oi-public">
       <a href="#main" className="oi-skip">
-        {messages.shell.skipLink}
+        {commonMessages.shell.skipLink}
       </a>
       <header>
         <a className="oi-brand" href="/logowanie">
-          {messages.app.brand}
+          {appMessages.brand}
         </a>
       </header>
       <main id="main" tabIndex={-1}>

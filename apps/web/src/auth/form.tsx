@@ -1,5 +1,5 @@
 "use client";
-import { errorMessages, formatMessage, messages } from "@oliginvest/i18n";
+import { appMessages, errorMessages, formatMessage } from "@oliginvest/i18n";
 import { Button, TextField } from "@oliginvest/ui";
 import { useSearchParams } from "next/navigation";
 import { type FormEvent, useEffect, useRef, useState } from "react";
@@ -8,7 +8,7 @@ import { type ActionResult, submitAction } from "./actions";
 import { clearPrivateState } from "./logout";
 import { safeReturnTo } from "./navigation";
 
-const t = messages.app;
+const t = appMessages;
 export type FormKind =
   | "signIn"
   | "totp"

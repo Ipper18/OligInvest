@@ -1,12 +1,12 @@
 "use client";
-import { messages } from "@oliginvest/i18n";
+import { appMessages, commonMessages } from "@oliginvest/i18n";
 import { Button, SelectField } from "@oliginvest/ui";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { Preferences } from "../api/validation";
 import { submitAction } from "../auth/actions";
 
-const t = messages.app;
+const t = appMessages;
 export function Settings({ preferences }: { preferences: Preferences }) {
   const [pending, setPending] = useState(false),
     [message, setMessage] = useState("");
@@ -30,7 +30,7 @@ export function Settings({ preferences }: { preferences: Preferences }) {
             result.data.plPalette === "colorblind" ? "colorblind" : "standard";
           setMessage(t.saved);
           router.refresh();
-        } else setMessage(messages.app.offline);
+        } else setMessage(appMessages.offline);
       }}
     >
       <SelectField id="theme" name="theme" label={t.theme} defaultValue={preferences.theme}>
@@ -62,7 +62,7 @@ export function Settings({ preferences }: { preferences: Preferences }) {
         <option value={preferences.baseCurrency}>{preferences.baseCurrency}</option>
       </SelectField>
       <Button type="submit" disabled={pending}>
-        {messages.action.save}
+        {commonMessages.action.save}
       </Button>
       <p role="status">{message}</p>
     </form>

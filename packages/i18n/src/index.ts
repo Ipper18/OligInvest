@@ -6,6 +6,8 @@ import data from "./pl/data.json" with { type: "json" };
 import disclaimerCatalog from "./pl/disclaimers.json" with { type: "json" };
 import errors from "./pl/errors.json" with { type: "json" };
 
+export const appMessages = app;
+export const commonMessages = common;
 export const messages = { ...common, bootstrap, data, app } as const;
 export const disclaimers = disclaimerCatalog;
 export const errorMessages = errors;

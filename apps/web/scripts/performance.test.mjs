@@ -6,7 +6,13 @@ import { gzipSync } from "node:zlib";
 import { build } from "esbuild";
 import { assessLighthouse, diagnosticCode, lighthouseExitCode } from "./lighthouse-assert.mjs";
 import { fetchChecked, webDirectory } from "./performance-server.mjs";
-import { assessRoute, matchBudget, planRoutes, scriptSources } from "./route-budgets.mjs";
+import {
+  assessRoute,
+  assessShell,
+  matchBudget,
+  planRoutes,
+  scriptSources,
+} from "./route-budgets.mjs";
 
 const budgets = JSON.parse(readFileSync(new URL("../budgets.json", import.meta.url)));
 
@@ -161,4 +167,15 @@ test("Lighthouse rejects absent, nonfinite, errored or redirected results even i
     assert.throws(() => assessLighthouse([invalid, lhr(), lhr()], "http://localhost/"));
   }
   assert.throws(() => assessLighthouse([lhr()], "http://localhost/"));
+});
+
+test("shell excludes only verified framework chunks and fails above 30 KiB", () => {
+  const code = Buffer.from("shell");
+  const row = {
+    sources: ["/_next/framework.js", "/_next/shell.js"],
+    chunks: [Buffer.from("framework"), code],
+  };
+  assert.equal(assessShell(row, ["framework.js"], 30).bytes, gzipSync(code, { level: 9 }).length);
+  assert.equal(assessShell(row, ["framework.js"], 0).failed, true);
+  assert.throws(() => assessShell(row, ["missing.js"], 30), /baseline/);
 });

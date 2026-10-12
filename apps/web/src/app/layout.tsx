@@ -2,9 +2,9 @@ import { messages } from "@oliginvest/i18n";
 import type { Metadata, Viewport } from "next";
 import { headers } from "next/headers";
 import type { ReactNode } from "react";
+import inline from "../appearance/inline-css.json";
 import { getTestPreferences } from "../appearance/preferences";
 import { getMe } from "../auth/session";
-import "./globals.css";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
@@ -45,6 +45,9 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   const { theme, palette } = await appearance();
   return (
     <html lang="pl" data-theme={theme} data-palette={palette}>
+      <head>
+        <style nonce={(await headers()).get("x-nonce") ?? undefined}>{inline.css}</style>
+      </head>
       <body className="min-h-dvh bg-bg font-sans text-ink">{children}</body>
     </html>
   );

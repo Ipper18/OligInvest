@@ -178,7 +178,7 @@ export function connectStream(options: {
       }
     }
   }
-  const visibility = () => {
+  const visibility = (event?: Event) => {
     clearTimeout(hiddenTimer);
     if (document.hidden) {
       hiddenTimer = setTimeout(() => {
@@ -187,7 +187,7 @@ export function connectStream(options: {
         options.state("paused");
       }, 300000);
     } else {
-      options.resume();
+      if (event) options.resume();
       if (background) {
         background = false;
         if (!paused) schedule(0);
