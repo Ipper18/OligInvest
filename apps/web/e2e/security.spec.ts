@@ -4,11 +4,11 @@ test("dynamic documents use unique nonces on every script, including a 404", asy
   request,
 }) => {
   const nonces = new Set<string>();
-  for (const path of ["/", "/", "/missing-test-page"]) {
+  for (const path of ["/ui-preview/bootstrap", "/ui-preview/bootstrap", "/missing-test-page"]) {
     const response = await request.get(path, {
       headers: { "x-nonce": "spoofed", "content-security-policy": "spoofed" },
     });
-    expect(response.status()).toBe(path === "/" ? 200 : 404);
+    expect(response.status()).toBe(path === "/ui-preview/bootstrap" ? 200 : 404);
     const csp = response.headers()["content-security-policy"] ?? "";
     expect(csp).not.toMatch(/unsafe-inline|unsafe-eval|https?:|spoofed/);
     const nonce = csp.match(/'nonce-([^']+)'/)?.[1] ?? "";
@@ -49,7 +49,7 @@ test("browser resources stay on origin and RSC forwards the request context", as
     page.on("console", (message) => {
       if (message.type() === "error") errors.push(message.text());
     });
-    await page.goto(origin);
+    await page.goto(`${origin}/ui-preview/bootstrap`);
     await expect(page.getByText("API: proces działa.")).toBeVisible();
     await page.waitForLoadState("networkidle");
     expect(errors).toEqual([]);
@@ -99,7 +99,7 @@ test("CSP refuses a script without the response nonce", async ({ page }) => {
       ),
     });
   });
-  await page.goto("/");
+  await page.goto("/ui-preview/bootstrap");
   expect(await page.locator("html").getAttribute("data-unsafe-script")).toBeNull();
   await expect(page.locator("html")).toHaveAttribute("data-blocked-directive", /script-src/);
 });

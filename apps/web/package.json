@@ -28,7 +28,13 @@
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "server-only": "0.0.1",
-    "zod": "4.6.5"
+    "zod": "4.6.5",
+    "@tanstack/react-query": "5.103.1",
+    "@oliginvest/contracts": "workspace:*",
+    "qrcode": "1.5.4",
+    "@next/mdx": "16.3.8",
+    "@mdx-js/loader": "3.1.1",
+    "@mdx-js/react": "3.1.1"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.13.0",
@@ -43,6 +49,8 @@
     "esbuild": "0.28.2",
     "lighthouse": "13.5.0",
     "size-limit": "14.0.0",
-    "tailwindcss": "4.3.3"
+    "tailwindcss": "4.3.3",
+    "@types/qrcode": "1.5.5",
+    "@types/mdx": "2.0.13"
   }
 }

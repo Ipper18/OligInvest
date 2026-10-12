@@ -1,4 +1,4 @@
-import { z } from "zod";
+import * as z from "zod";
 
 const uuid = z.uuid();
 const decimal = z.string().regex(/^-?\d{1,14}(\.\d{1,10})?$/);

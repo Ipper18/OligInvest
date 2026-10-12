@@ -27,6 +27,7 @@ export function proxy(request: NextRequest) {
   headers.set("x-nonce", nonce);
   headers.set("x-request-id", requestId);
   headers.set("content-security-policy", csp);
+  headers.set("x-oi-pathname", request.nextUrl.pathname);
   const response = NextResponse.next({ request: { headers } });
   response.headers.set("Content-Security-Policy", csp);
   response.headers.set("X-Request-Id", requestId);

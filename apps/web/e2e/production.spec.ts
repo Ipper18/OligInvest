@@ -9,7 +9,7 @@ test("production page and API dependencies are ready with Compose", async ({ pag
     status: "ok",
     checks: { postgres: "ok", valkeyQueue: "ok", valkeyCache: "ok" },
   });
-  const response = await page.goto("/");
+  const response = await page.goto("/ui-preview/bootstrap");
   expect(response?.status()).toBe(200);
   await expect(page.getByText("API: proces działa.")).toBeVisible();
   const result = await new AxeBuilder({ page })

@@ -1,7 +1,7 @@
 import { messages } from "@oliginvest/i18n";
 import { renderToStaticMarkup } from "react-dom/server";
 import { expect, test, vi } from "vitest";
-import TestPage from "../src/app/page.tsx";
+import TestPage from "../src/app/ui-preview/bootstrap/page.tsx";
 
 vi.mock("../src/api/server", () => ({ getHealthStatus: async () => "ok" }));
 vi.mock("../src/appearance/preferences", () => ({

@@ -4,7 +4,7 @@ test("dark is the default regardless of OS, theme changes persist and system fol
   page,
 }) => {
   await page.emulateMedia({ colorScheme: "light" });
-  const response = await page.goto("/");
+  const response = await page.goto("/ui-preview/bootstrap");
   expect(await response?.text()).toContain('data-theme="dark"');
   await expect(page.locator("body")).toHaveCSS("background-color", "rgb(11, 13, 15)");
   await expect(page.getByText("+ wzrost — próbka koloru", { exact: true })).toHaveCSS(
@@ -33,7 +33,7 @@ test("dark is the default regardless of OS, theme changes persist and system fol
 test("palette updates without navigation and remains server-rendered after reload", async ({
   page,
 }) => {
-  await page.goto("/");
+  await page.goto("/ui-preview/bootstrap");
   const timeOrigin = await page.evaluate(() => performance.timeOrigin);
   let documentRequests = 0;
   // History updates during Next hydration can emit framenavigated without a reload.
@@ -59,7 +59,7 @@ test("invalid preferences fall back to the default in the initial HTML", async (
     { name: "oi-test-theme", value: "invalid", url: "https://127.0.0.1:3197" },
     { name: "oi-test-palette", value: "invalid", url: "https://127.0.0.1:3197" },
   ]);
-  const response = await page.goto("/");
+  const response = await page.goto("/ui-preview/bootstrap");
   const html = await response?.text();
   expect(html).toContain('data-theme="dark"');
   expect(html).toContain('data-palette="standard"');
@@ -70,7 +70,7 @@ test("system fonts, readable controls and keyboard focus work at mobile and desk
 }) => {
   for (const width of [360, 768, 1280]) {
     await page.setViewportSize({ width, height: 800 });
-    await page.goto("/");
+    await page.goto("/ui-preview/bootstrap");
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
       true,
     );
