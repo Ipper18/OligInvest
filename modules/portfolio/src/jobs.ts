@@ -1,8 +1,10 @@
 import { persistentEventSchema } from "@oliginvest/contracts";
 import { importJob } from "./contracts.js";
-import { parseXtb } from "./import/xtb.js";
+import { parseMbank } from "./import/mbank.js";
+import { type ParsedImport, parseXtb } from "./import/xtb.js";
 import type { ImportRepository } from "./server/imports.js";
 
+export { parseMbank } from "./import/mbank.js";
 export { parseXtb } from "./import/xtb.js";
 export { portfolioDate, recomputePortfolio } from "./recompute.js";
 export async function parseImport(
@@ -14,9 +16,9 @@ export async function parseImport(
     context = { userId: payload.userId, role: "user" as const };
   const input = await repository.parseInput(context, payload.importId);
   if (input) {
-    let parsed: ReturnType<typeof parseXtb> | undefined;
+    let parsed: ParsedImport | undefined;
     try {
-      parsed = parseXtb(input.content, input.account);
+      parsed = (input.source === "mbank" ? parseMbank : parseXtb)(input.content, input.account);
     } catch {
       await repository.fail(context, payload.importId);
     }

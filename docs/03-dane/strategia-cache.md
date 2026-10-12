@@ -77,7 +77,7 @@ sequenceDiagram
 | Typ danych | L1 (pamięć procesu) | L2 `valkey-cache` (TTL) | L3 Postgres | Odświeżanie / źródło zdarzenia |
 |---|---|---|---|---|
 | Bary EOD (akcje, ETF, indeksy) | 60 s | 24 h (klucz per instrument+rok) | **trwałe** (`market.bars_daily`); okno korekt: ostatnie 5 sesji nadpisywane przy każdym batchu | Batch nocny: GPW 18:30 CET (po publikacji archiwum), USA 23:30 CET; backfill historii dla nowych instrumentów |
-| Notowania intraday (opóźnione) | 15 s | **5 min** w godzinach sesji (GPW 09:00–17:05 CET; USA 15:30–22:00 CET; kalendarz z `pandas-market-calendars`/własna tabela `trading_calendar`), 60 min poza sesją | ostatnia wartość w `market.quotes_latest` (do trybu stale) | Job cykliczny co 5 min dla: pozycji użytkowników ∪ watchlist ∪ otwartych ekranów (heartbeat SSE); nic dla instrumentów nieobserwowanych |
+| Notowania intraday (opóźnione) | 15 s | **7 min** w godzinach sesji (próg „nieaktualne” = cykl 5 min przy maks. 50 instrumentach + 1 pominięte uruchomienie + 1 min marginesu; [ADR-016](../09-decyzje/ADR-016-cienki-adapter-yahoo.md)) (GPW 09:00–17:05 CET; USA 15:30–22:00 CET; kalendarz z `pandas-market-calendars`/własna tabela `trading_calendar`), 60 min poza sesją | ostatnia wartość w `market.quotes_latest` (do trybu stale) | Job co 1 min, najwyżej 10 zapytań Yahoo chart na uruchomienie i jedno na instrument w cyklu 5 min (znacznik `qa:{instrumentId}`), dla: pozycji użytkowników ∪ watchlist ∪ otwartych ekranów (heartbeat SSE); nic dla instrumentów nieobserwowanych |
 | Kursy NBP (A/C) i złoto | 5 min | 24 h; klucz per data | **trwałe** (`fx_rates`), tabela per dzień | Job 12:20 CET (NBP publikuje ~12:15) + retry co 10 min do 14:00; brak tabeli w święta → kurs z ostatniego dnia roboczego (zgodnie z zasadą podatkową D-1) |
 | Kursy Frankfurter | — | 24 h | `fx_rates` z `source='ECB'` | tylko gdy NBP zawiedzie 3× |
 | Profil instrumentu (nazwa, sektor, waluta, ISIN) | 10 min | 7 dni | **trwałe** (`instruments`) | ręczna edycja admina lub odświeżenie na żądanie |
@@ -87,7 +87,7 @@ sequenceDiagram
 | Kalendarz earnings/makro | — | 24 h | `calendar_events` | Job dzienny 06:00 CET |
 | Makro FRED | — | 24 h | `macro_series` trwałe | Job tygodniowy + na żądanie |
 
-Klucze w `valkey-cache`: `q:{instrumentId}` (quote), `b:{instrumentId}:{yyyy}` (bary), `fx:{base}{quote}:{date}`, `news:{instrumentId}`; dane per użytkownik zawsze z prefiksem `u:{userId}:` (NFR-03.05). Klucze w `valkey-queue`: `quota:{provider}:{window}`, `breaker:{provider}`. Instancja cache ma politykę `allkeys-lru` — utrata wpisu oznacza tylko ponowne pobranie z L3 (ADR-003). Wszystkie wartości z `fetchedAt` w payloadzie, by UI liczył wiek danych lokalnie.
+Klucze w `valkey-cache`: `q:{instrumentId}` (quote), `qa:{instrumentId}` (znacznik próby notowania, 270 s), `b:{instrumentId}:{yyyy}` (bary), `fx:{base}{quote}:{date}`, `news:{instrumentId}`; dane per użytkownik zawsze z prefiksem `u:{userId}:` (NFR-03.05). Klucze w `valkey-queue`: `quota:{provider}:{window}`, `breaker:{provider}`. Instancja cache ma politykę `allkeys-lru` — utrata wpisu oznacza tylko ponowne pobranie z L3 (ADR-003). Wszystkie wartości z `fetchedAt` w payloadzie, by UI liczył wiek danych lokalnie.
 
 ## 5. Warm-up i planowanie kwot
 
@@ -99,8 +99,8 @@ NBP ma do 11 prób co 10 min, kończonych o 14:00 czasu lokalnego (spóźnione z
 
 1. 06:00 — kalendarze (earnings USA z Alpha Vantage: 1 zapytanie; makro FRED: ≤ 5).
 2. 12:20 — NBP tabela A + złoto (2 zapytania) → przeliczenie wycen w PLN.
-3. 09:00–17:05 co 5 min — intraday GPW (Yahoo, 1 zapytanie na partię ≤ 50 symboli).
-4. 15:30–22:00 co 5 min — intraday USA (Yahoo; fallback Finnhub 1 zapytanie/symbol).
+3. 09:00–17:05 co 1 min — intraday GPW (Yahoo chart v8, 1 zapytanie na instrument, ≤ 10 na uruchomienie, każdy instrument co 5 min; budżet Yahoo 12/min, w tym 2/min na wyszukiwanie; maks. 50 instrumentów w otwartych sesjach, próg „nieaktualne” 7 min — [ADR-016](../09-decyzje/ADR-016-cienki-adapter-yahoo.md)).
+4. 15:30–22:00 co 1 min — intraday USA (Yahoo chart v8 jak wyżej; fallback Finnhub 1 zapytanie/symbol).
 5. 18:30 — archiwum GPW (1 XLS = cały rynek) → `market.bars_daily` + korekty 5 sesji.
 6. 23:30 — EOD USA dla pozycji ∪ watchlist (Yahoo; fallback Alpha Vantage z rezerwą 10 zapytań).
 7. 02:00 — backfill historii (nowe instrumenty, luki wykryte przez `data-scrub`), maks. 20 % kwoty dziennej każdego dostawcy.

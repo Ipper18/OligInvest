@@ -8,8 +8,10 @@ Przeniesiono je bez zmiany bajtów z `docs/03-dane/fixtures/anonymized/` w BL-14
 - `xtb/`: stary i nowy szablon tego samego rachunku PLN, 17 wierszy źródłowych,
   14 operacji po parowaniu, CFD jako korekta gotówki, opłata SEC i dywidenda
   wymagająca podania brakującej ilości 15 sztuk.
-- `mbank/`: syntetyczne eksporty transakcji i finansów w Windows-1250; parser mBank
-  należy do osobnego zadania.
+- `mbank/`: syntetyczne eksporty transakcji i finansów w Windows-1250; parser BL-208
+  (`test/mbank.test.mjs`, test PostgreSQL `apps/api/integration/mbank-imports.mjs`).
+  Historia finansowa jest częściowa (jedno rozliczenie T+2), więc jej uzgodnienie
+  gotówki wymaga potwierdzenia różnicy.
 - `oczekiwane-wyniki.json`: saldo XTB 14 518,27 PLN, P/L AAPL −1083,91 PLN
   (po SEC), PKO +181,20 PLN oraz ilości i koszty pozostałych pozycji.
 

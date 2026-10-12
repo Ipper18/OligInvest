@@ -66,7 +66,11 @@ export function createRuntime(
       imports: async () => {
         const runtime = await getAuth();
         portfolio ??= new PortfolioRepository(runtime.appDatabase, runtime.enqueueRecompute);
-        return new ImportRepository(portfolio, runtime.enqueueImport);
+        return new ImportRepository(portfolio, runtime.enqueueImport, async (context, key) =>
+          context.role !== "system" && context.role !== "anonymous"
+            ? runtime.service.features.enabled(key, context)
+            : false,
+        );
       },
       repository: async () => {
         const runtime = await getAuth();

@@ -1,0 +1,61 @@
+{
+  "chart": {
+    "result": [
+      {
+        "meta": {
+          "currency": "USD",
+          "symbol": "SYNTH",
+          "exchangeName": "NMS",
+          "fullExchangeName": "NasdaqGS",
+          "instrumentType": "EQUITY",
+          "firstTradeDate": 1600000000,
+          "regularMarketTime": 1791230400,
+          "hasPrePostMarketData": true,
+          "gmtoffset": -14400,
+          "timezone": "EDT",
+          "exchangeTimezoneName": "America/New_York",
+          "regularMarketPrice": 10.5,
+          "chartPreviousClose": 9.75,
+          "priceHint": 2,
+          "currentTradingPeriod": {
+            "pre": {
+              "timezone": "EDT",
+              "start": 1791187200,
+              "end": 1791207000,
+              "gmtoffset": -14400
+            },
+            "regular": {
+              "timezone": "EDT",
+              "start": 1791207000,
+              "end": 1791230400,
+              "gmtoffset": -14400
+            },
+            "post": {
+              "timezone": "EDT",
+              "start": 1791230400,
+              "end": 1791244800,
+              "gmtoffset": -14400
+            }
+          },
+          "dataGranularity": "1d",
+          "range": "",
+          "validRanges": ["1d", "5d", "1mo", "max"]
+        },
+        "timestamp": [1790861400, 1790947800, 1791207000],
+        "indicators": {
+          "quote": [
+            {
+              "open": [9.5, 10, 10.25],
+              "high": [10, 10.5, 10.75],
+              "low": [9.25, 9.75, 10],
+              "close": [9.75, null, 10.123456789],
+              "volume": [1200, 0, 1000]
+            }
+          ],
+          "adjclose": [{ "adjclose": [9.75, null, 10.123456789] }]
+        }
+      }
+    ],
+    "error": null
+  }
+}

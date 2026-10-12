@@ -21,6 +21,7 @@ import {
   statusSchema,
   summarySchema,
 } from "../contracts.js";
+import { QUOTE_STALE_MS } from "../quote-cadence.js";
 
 const system = { userId: null, role: "system" } as const;
 const columns = sql`id::text,coalesce(ticker,isin,id::text) AS ticker,name,isin,mic,currency,type,country,is_active AS "isActive",exchange_short_name AS "exchangeShortName"`;
@@ -116,7 +117,7 @@ export class MarketRepository {
       ).rows;
       return rows.map(({ asOf, delay, source, eod, hold, ...row }) => {
         const age = this.now().getTime() - Date.parse(String(row.fetchedAt));
-        const stale = Boolean(hold) || Boolean(eod) || age > 300_000;
+        const stale = Boolean(hold) || Boolean(eod) || age > QUOTE_STALE_MS;
         return quoteSchema.parse({
           ...clean(row),
           meta: {
@@ -329,7 +330,7 @@ export class MarketRepository {
       const stamp = z.coerce.date().parse(last);
       const stale =
         this.now().getTime() - stamp.getTime() >
-        (key.startsWith("intraday") ? 300_000 : 3 * 86_400_000);
+        (key.startsWith("intraday") ? QUOTE_STALE_MS : 3 * 86_400_000);
       return {
         key,
         status: stale ? "degraded" : "ok",

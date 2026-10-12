@@ -62,7 +62,7 @@ function checkZip(bytes: Buffer) {
   }
   if (offset !== end) reject();
 }
-function decodeCsv(bytes: Buffer) {
+export function decodeCsv(bytes: Uint8Array) {
   try {
     return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
   } catch {

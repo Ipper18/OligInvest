@@ -27,7 +27,7 @@ Szczegóły, licencje i uzasadnienia: [`docs/01-architektura/stack-technologiczn
 | Runtime | Node.js 24 LTS; Python 3.13 (uv 0.12, Ruff 0.16, mypy 2.3) |
 | `apps/web` | Next.js 16.3 (App Router, RSC, streaming, `proxy.ts` z CSP nonce), React 19.3, Tailwind CSS 4.3, natywny HTML + wybrane Radix Primitives, TanStack Query 5, TanStack Table 9 + Virtual 3, Lightweight Charts 5.2, uPlot 1.6, driver.js 1.8, własny service worker; **bez dostępu do bazy** |
 | `apps/api` | Hono 4.13 + `@hono/node-server`, Zod 4.6 + `@hono/zod-openapi` 1.6, Better Auth 1.7.5 (`twoFactor`, `admin`, `haveIBeenPwned`, `@better-auth/api-key`), Argon2id przez `@node-rs/argon2`, SSE; jedyna granica domenowa (REST `/api/v1`) |
-| `apps/jobs` | BullMQ 6.3, SheetJS CE 0.20.3 (tarball z cdn.sheetjs.com), `yahoo-finance2`, nodemailer (SMTP Brevo), `web-push` |
+| `apps/jobs` | BullMQ 6.3, SheetJS CE 0.20.3 (tarball z cdn.sheetjs.com), własny adapter Yahoo chart/search na `fetch` ([ADR-016](docs/09-decyzje/ADR-016-cienki-adapter-yahoo.md)), nodemailer (SMTP Brevo), `web-push` |
 | `apps/analytics` | Python: vectorbt 1.1, PyPortfolioOpt 1.6 + cvxpy, quantstats, numpy/pandas/scipy, `bullmq` 3.2, psycopg 3.3 (rola tylko do odczytu), `jsonschema`; **bez internetu i bez danych użytkowników w bazie** |
 | Dane | PostgreSQL 18 (RLS, `uuidv7()`, `NUMERIC`), Drizzle ORM 0.45 + drizzle-kit, `pg`; Valkey 9 ×2: `valkey-queue` (`noeviction`, AOF) i `valkey-cache` (`allkeys-lru`) |
 | Testy | Vitest 5, pytest 9 + hypothesis, Playwright 1.63 + `@axe-core/playwright`, Lighthouse 13.5 ze skryptem asercji, size-limit; referencje tylko w testach: TA-Lib, empyrical-reloaded ≥ 0.5.12 |
