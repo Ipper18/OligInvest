@@ -1,5 +1,12 @@
 import { existsSync } from "node:fs";
-import { fetchChecked, isMain, report, withPerformanceServer } from "./performance-server.mjs";
+import {
+  fetchChecked,
+  fixtureCookie,
+  isMain,
+  report,
+  withPerformanceServer,
+} from "./performance-server.mjs";
+import { localChromeFlags } from "./performance-tls.mjs";
 import { currentPlan } from "./route-budgets.mjs";
 
 const LIMITS = {
@@ -34,7 +41,8 @@ export const lighthouseExitCode = (results, enforce) =>
   enforce && results.some((row) => row.failed) ? 1 : 0;
 
 export async function main() {
-  const enforce = process.argv.includes("--assert");
+  const fullGate = process.argv.includes("--assert");
+  const enforce = fullGate || process.argv.includes("--assert-available");
   const plan = currentPlan();
   const fixtures = JSON.parse(process.env.PERF_FIXTURES || "{}");
   const wanted = [
@@ -45,7 +53,7 @@ export async function main() {
   ];
   const routes = wanted.filter((route) => plan.routes.some((entry) => entry.route === route));
   const pending = wanted.filter((route) => !routes.includes(route));
-  if (!routes.length || (enforce && pending.length)) throw failure("LH_REQUIRED_ROUTES_MISSING");
+  if (!routes.length || (fullGate && pending.length)) throw failure("LH_REQUIRED_ROUTES_MISSING");
   const [{ default: lighthouse }, { launch }, { chromium }] = await Promise.all([
     import("lighthouse"),
     import("chrome-launcher"),
@@ -58,7 +66,7 @@ export async function main() {
     phase = "chrome-launch";
     const chrome = await launch({
       chromePath,
-      chromeFlags: ["--headless=new"],
+      chromeFlags: ["--headless=new", ...localChromeFlags()],
       // Startup diagnostics concern an empty, isolated profile, before any cookie is supplied.
       logLevel: "error",
     });
@@ -67,7 +75,7 @@ export async function main() {
       const rows = [];
       for (const route of routes) {
         const url = new URL(route, origin).href;
-        await fetchChecked(url, { cookie: process.env.LH_SESSION_COOKIE });
+        await fetchChecked(url, { cookie: fixtureCookie(route) });
         const runs = [];
         for (let iteration = 0; iteration < 3; iteration++) {
           const result = await lighthouse(url, {
@@ -77,9 +85,7 @@ export async function main() {
             logLevel: "error",
             formFactor: "mobile",
             throttlingMethod: "simulate",
-            extraHeaders: process.env.LH_SESSION_COOKIE
-              ? { Cookie: process.env.LH_SESSION_COOKIE }
-              : {},
+            extraHeaders: fixtureCookie(route) ? { Cookie: fixtureCookie(route) } : {},
           });
           if (!result?.lhr) throw failure("LH_NO_REPORT");
           runs.push(result.lhr);

@@ -4,7 +4,12 @@ export function Button({ type = "button", className = "", ...props }: ComponentP
   return <button {...props} type={type} className={`oi-button ${className}`} />;
 }
 
-type FieldLabels = { id: string; label: string; description?: string; error?: string };
+type FieldLabels = {
+  id: string;
+  label: string;
+  description?: string | undefined;
+  error?: string | undefined;
+};
 function descriptions(id: string, description?: string, error?: string, external?: string) {
   return (
     [external, description ? `${id}-description` : undefined, error ? `${id}-error` : undefined]

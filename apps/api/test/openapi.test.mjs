@@ -24,6 +24,7 @@ test("Zod document matches all implemented operations and pending is the exact r
   assertContract(source, generated);
   assertPending(source, generated, pending, pending);
   expect([...operations(generated).keys()].sort()).toEqual([
+    "acceptLegalDocuments",
     "adminCreateInvitation",
     "authChangePassword",
     "authGetSession",
@@ -52,9 +53,11 @@ test("Zod document matches all implemented operations and pending is the exact r
     "getImport",
     "getInstrument",
     "getInstrumentChart",
+    "getLegalStatus",
     "getMarketDataStatus",
     "getMe",
     "getOpenApiDocument",
+    "getPreferences",
     "getQuotes",
     "getTransaction",
     "listAccounts",
@@ -67,6 +70,7 @@ test("Zod document matches all implemented operations and pending is the exact r
     "searchInstruments",
     "setStreamInstruments",
     "updateAccount",
+    "updatePreferences",
     "updateTransaction",
     "uploadImport",
     "verifyStepUp",

@@ -26,6 +26,14 @@ Specyfikacja przewiduje „realtime: WebSocket vs SSE vs Supabase Realtime”. D
 
 ## Konsekwencje
 
+**Uzupełnienie 2026-10-11 (decyzja właściciela, M1-4a):** protokół SSE pozostaje
+bez zmian. Klient używa natywnego `fetch`/`ReadableStream`, bez biblioteki, ponieważ
+`EventSource` nie pozwala ustawić `Last-Event-ID` po ręcznym odtworzeniu obiektu ani
+odczytać statusu HTTP i `Retry-After`. Klient zapewnia jedno połączenie na kartę,
+wznowienie z ostatnim ID, backoff wykładniczy z jitterem i limitem 60 s, zakończenie
+bez ponawiania przy 401/403 (przekierowanie do logowania), anulowanie przy wylogowaniu
+i wstrzymanie po 5 min ukrycia karty. Budżet powłoki nadal wynosi 30 KiB.
+
 - Pozytywne: brak biblioteki klienckiej; prosta konfiguracja proxy; mniejsze zużycie zasobów serwera przy kilku użytkownikach.
 - Negatywne: przyszła funkcja wymagająca kanału klient → serwer w czasie rzeczywistym wymagałaby nowego ADR (dziś żadna nie wymaga).
 - Zadania: hub SSE w `platform` (M1), mapowanie zdarzeń modułów (M1–M4), test opóźnienia < 2 s (NFR-01.06).

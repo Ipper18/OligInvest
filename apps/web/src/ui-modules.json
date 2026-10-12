@@ -1,0 +1,52 @@
+[
+  {
+    "id": "portfolio",
+    "nav": [
+      {
+        "href": "/portfel",
+        "labelKey": "nav.portfolio",
+        "permission": "portfolio:read"
+      }
+    ]
+  },
+  {
+    "id": "market",
+    "nav": [
+      {
+        "href": "/rynek",
+        "labelKey": "nav.market",
+        "permission": "market:read"
+      }
+    ]
+  },
+  {
+    "id": "alerts",
+    "nav": [
+      {
+        "href": "/alerty",
+        "labelKey": "nav.alerts",
+        "permission": "alerts:manage"
+      }
+    ]
+  },
+  {
+    "id": "analytics",
+    "nav": [
+      {
+        "href": "/analizy",
+        "labelKey": "nav.analytics",
+        "permission": "analytics:run:light"
+      }
+    ]
+  },
+  {
+    "id": "education",
+    "nav": [
+      {
+        "href": "/nauka",
+        "labelKey": "nav.learn",
+        "permission": "education:use"
+      }
+    ]
+  }
+]

@@ -142,6 +142,8 @@ try {
     process.platform === "win32" ? "Scripts/python.exe" : "bin/python",
   );
   start(python, ["-m", "oliginvest_analytics"], env, "analytics");
+  // next dev bypasses the web package script; build the generated, git-ignored trusted CSS first.
+  run(process.execPath, ["apps/web/scripts/inline-css.mjs"], { log: "dev-web-css.log" });
   start(
     process.execPath,
     [

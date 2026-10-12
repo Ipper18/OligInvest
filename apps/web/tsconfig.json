@@ -6,8 +6,10 @@
     "moduleResolution": "Bundler",
     "jsx": "preserve",
     "noEmit": true,
+    "declaration": false,
+    "declarationMap": false,
     "resolveJsonModule": true,
-    "types": ["node"],
+    "types": ["node", "mdx"],
     "plugins": [
       {
         "name": "next"

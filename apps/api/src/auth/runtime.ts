@@ -8,6 +8,7 @@ import {
 import { createAppDatabase, createAuthDatabase } from "@oliginvest/db";
 import { type PlatformLogger, subscribeFeatureFlags } from "@oliginvest/platform";
 import { Queue } from "bullmq";
+import { sql } from "drizzle-orm";
 import { Redis } from "ioredis";
 import { enqueuePortfolioRecompute } from "../modules.js";
 import { Administration } from "./administration.js";
@@ -115,6 +116,19 @@ export function createAuthRuntime(
       });
     },
     event: (event) => logger.warn({ event }),
+    preferencesChanged: async (userId) => {
+      const accounts = await appDatabase.transaction(
+        { userId, role: "user" },
+        async (tx) => (await tx.execute(sql`SELECT id FROM portfolio.accounts`)).rows,
+      );
+      if (accounts.length)
+        await enqueuePortfolioRecompute(queue("recompute"), {
+          userId,
+          accountIds: accounts.map((row) => String(row.id)),
+          fromDate: "1900-01-01",
+          reason: "recompute",
+        });
+    },
     sessionsChanged: async () => {
       await cache.publish("sse:auth", JSON.stringify({ v: 1 }));
     },

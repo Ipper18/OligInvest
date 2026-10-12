@@ -30,7 +30,7 @@ apps/web/
     ├── modules.ts            # rejestr modułów UI (nawigacja, panele admina, wyjaśnienia)
     ├── api/                  # schema.d.ts (generowany), klient serwerowy i przeglądarkowy
     ├── query/                # QueryClient, fabryki kluczy, mapowanie zdarzeń SSE na unieważnienia
-    └── sse/                  # EventSource, czuwanie, tryb odpytywania
+    └── sse/                  # fetch/ReadableStream, czuwanie, tryb odpytywania
 ```
 
 Adresy URL są po polsku, bez znaków diakrytycznych (`/portfel`, `/rynek`, `/analizy`, `/alerty`, `/nauka`, `/ustawienia`) — pełna lista w [`mapa-ekranow.md`](mapa-ekranow.md). Identyfikatory w kodzie są po angielsku.
@@ -42,7 +42,7 @@ flowchart LR
   subgraph B["Przeglądarka"]
     CC["Komponenty klienckie"] --> TQ["TanStack Query"]
     TQ --> OF["openapi-fetch"]
-    ES["EventSource"] -->|"zdarzenia"| TQ
+    ES["fetch/ReadableStream"] -->|"zdarzenia"| TQ
     SW["Service worker"]
   end
   subgraph WEB["web (Node)"]
@@ -113,7 +113,7 @@ Bez biblioteki stanu globalnego (stos § 4).
 
 ## 7. Realtime
 
-`SseProvider` w `(app)/layout.tsx` otwiera jedno `EventSource` na kartę po przejściu bramki MFA, mapuje zdarzenia na unieważnienia zapytań i przełącza się na odpytywanie według [`realtime.md`](../02-api/realtime.md) § 6–7. Karta instrumentu zgłasza dodatkowe instrumenty przez `PUT /stream/connections/{connectionId}/instruments`.
+`SseProvider` w `(app)/layout.tsx` otwiera jedno `fetch/ReadableStream` na kartę po przejściu bramki MFA, mapuje zdarzenia na unieważnienia zapytań i przełącza się na odpytywanie według [`realtime.md`](../02-api/realtime.md) § 6–7. Karta instrumentu zgłasza dodatkowe instrumenty przez `PUT /stream/connections/{connectionId}/instruments`.
 
 ## 8. PWA i service worker
 
@@ -125,6 +125,7 @@ Bez biblioteki stanu globalnego (stos § 4).
   - nowa wersja → komunikat „Dostępna nowa wersja — odśwież”; `skipWaiting` dopiero po geście użytkownika.
 - **Tryb offline (FR-09.02) — decyzja właściciela z 2026-09-19 („ustaw najlepiej”):** migawka powstaje wyłącznie w **zainstalowanej aplikacji** (tryb `standalone`) i **wyłącznie na żądanie** — przy pierwszym uruchomieniu po instalacji aplikacja raz pyta „Zapamiętywać ostatni stan portfela do podglądu bez internetu na tym urządzeniu?” (Tak/Nie; zmiana w Ustawienia → Dane). W zwykłej karcie przeglądarki (możliwy komputer współdzielony) funkcji nie ma. Zakres: podsumowanie, wynik dnia i lista pozycji — bez operacji, dziennika i analiz. Migawka jest nadpisywana przy każdej synchronizacji, **nie jest pokazywana po 30 dniach** bez synchronizacji i jest kasowana przy wylogowaniu, odpowiedzi `401` (np. sesja odwołana zdalnie) i wyłączeniu opcji. Strona `/offline` pokazuje ją tylko do odczytu z datą „dane z …”. Uzasadnienie: dane finansowe w pamięci urządzenia to świadome odstępstwo od ASVS V14.3.3, a zapis w urządzeniu końcowym, który nie jest niezbędny do świadczenia usługi, wymaga wyraźnego żądania użytkownika (art. 399 Prawa komunikacji elektronicznej) — [`../06-bezpieczenstwo/kontrole-bezpieczenstwa.md`](../06-bezpieczenstwo/kontrole-bezpieczenstwa.md) § 8.
 - **Wylogowanie:** czyści cache TanStack Query, IndexedDB, cache service workera z danymi i powiadamia inne karty przez `BroadcastChannel`.
+- Jawne wylogowanie kończy się na `/logowanie` bez `returnTo`; parametr zachowuje cel przy wejściu bez sesji (§ 4). Powłoka znika od razu, a nawigacja i powiadomienie innych kart następują dopiero po odpowiedzi wylogowania usuwającej ciasteczka. Karta wysyłająca ignoruje własny komunikat.
 
 ## 9. Nawigacja i moduły UI
 
@@ -173,6 +174,13 @@ BL-012: `packages/ui` eksportuje natywne `Button`, `TextField`, `SelectField`, `
 
 ## 13. Testy warstwy UI
 
+Testy `shell-auth.spec.ts` działają w projektach Playwright `*-shell` na lokalnym
+buildzie produkcyjnym z syntetycznym API. Każda sesja fixture ma osobny identyfikator,
+także między przeglądarkami i powtórzeniami. Projekty integracyjne używają
+`E2E_BASE_URL` (obrazy za Caddy) i rzeczywistego API; syntetyczne ciasteczka nie
+stanowią uwierzytelnienia w obrazach. Job `images` buduje również web na hoście dla
+testów granicy UI. Pełna ścieżka z rzeczywistym kontem i importem pozostaje BL-155.
+
 | Rodzaj | Narzędzie | Zakres |
 |---|---|---|
 | Jednostkowe | Vitest + Testing Library | formatery pl-PL, `<ChangeValue/>`, `<MoneyValue/>`, mapowanie błędów, reduktory stanu |
@@ -186,3 +194,5 @@ BL-012: `packages/ui` eksportuje natywne `Button`, `TextField`, `SelectField`, `
 - **CSP z nonce a renderowanie statyczne:** świadomie rezygnujemy ze statycznej optymalizacji i PPR (§ 5). Konflikt zapisany zgodnie z NFR-01.09.
 - **Migawka offline tylko na żądanie:** FR-09.02 działa po jednym potwierdzeniu w zainstalowanej aplikacji; brak zgody = brak migawki (ASVS V14.3.3, art. 399 PKE).
 - **Rozmiary bibliotek** (Radix per komponent, `openapi-fetch`) nie są tu podawane — mierzy je `size-limit` w CI względem budżetów tras.
+
+M1-4a: nawigacja jest generowana z publicznych definicji `UiModuleDefinition` do rejestru web podczas budowania. Pominięcie katalogu modułu funkcjonalnego usuwa jego wpis bez importowania serwera modułu do web. `proxy.ts` sprawdza sesję i bramki przez wewnętrzne API, a układ serwerowy ponawia kontrolę przed renderowaniem prywatnej zawartości. Dane profilu i preferencji nie są pobierane przez publiczne strony prawne.

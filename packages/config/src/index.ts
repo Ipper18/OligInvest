@@ -31,7 +31,11 @@ const versionedSecrets = text.refine((value) => {
     return true;
   });
 });
-const legal = { LEGAL_CONTROLLER_NAME: text.optional(), LEGAL_CONTACT_EMAIL: z.email().optional() };
+const legal = {
+  LEGAL_CONTROLLER_NAME: text.optional(),
+  LEGAL_CONTACT_EMAIL: z.email().optional(),
+  LEGAL_EFFECTIVE_DATE: z.iso.date().optional(),
+};
 const push = { VAPID_PUBLIC_KEY: text.optional(), VAPID_PRIVATE_KEY: text.optional() };
 export const configSchemas = {
   web: z.object({ PUBLIC_BASE_URL: publicUrl, API_INTERNAL_URL: httpUrl, ...legal }).strict(),

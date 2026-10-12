@@ -6,7 +6,13 @@ import { gzipSync } from "node:zlib";
 import { build } from "esbuild";
 import { assessLighthouse, diagnosticCode, lighthouseExitCode } from "./lighthouse-assert.mjs";
 import { fetchChecked, webDirectory } from "./performance-server.mjs";
-import { assessRoute, matchBudget, planRoutes, scriptSources } from "./route-budgets.mjs";
+import {
+  assessRoute,
+  assessShell,
+  matchBudget,
+  planRoutes,
+  scriptSources,
+} from "./route-budgets.mjs";
 
 const budgets = JSON.parse(readFileSync(new URL("../budgets.json", import.meta.url)));
 
@@ -161,4 +167,47 @@ test("Lighthouse rejects absent, nonfinite, errored or redirected results even i
     assert.throws(() => assessLighthouse([invalid, lhr(), lhr()], "http://localhost/"));
   }
   assert.throws(() => assessLighthouse([lhr()], "http://localhost/"));
+});
+
+test("shell excludes only verified framework chunks and fails above 30 KiB", () => {
+  const code = Buffer.from("shell");
+  const row = {
+    sources: ["/_next/framework.js", "/_next/shell.js"],
+    chunks: [Buffer.from("framework"), code],
+  };
+  assert.equal(assessShell(row, ["framework.js"], 30).bytes, gzipSync(code, { level: 9 }).length);
+  assert.equal(assessShell(row, ["framework.js"], 0).failed, true);
+  assert.throws(() => assessShell(row, ["missing.js"], 30), /baseline/);
+});
+
+import { fetchLocalFixture, proxyDestination, startPerformanceProxy } from "./performance-tls.mjs";
+
+test("performance proxy never derives an upstream host from a request target", () => {
+  const next = "http://127.0.0.1:1234",
+    api = "http://127.0.0.1:1235";
+  for (const path of ["https://example.test/", "//example.test/", "/\\example.test/"])
+    assert.throws(() => proxyDestination(path, next, api));
+  assert.deepEqual(proxyDestination("/api/v1/me?url=https://example.test", next, api), {
+    protocol: "http:",
+    hostname: "127.0.0.1",
+    port: "1235",
+    path: "/api/v1/me?url=https://example.test",
+  });
+});
+test("local TLS fixture trusts its own certificate without disabling certificate validation", async () => {
+  const upstream = createServer((_, response) =>
+    response.writeHead(200, { "content-type": "text/html" }).end("<html></html>"),
+  );
+  await new Promise((resolve) => upstream.listen(0, "127.0.0.1", resolve));
+  const origin = `http://127.0.0.1:${upstream.address().port}`;
+  const proxy = await startPerformanceProxy(origin, origin);
+  try {
+    await assert.rejects(fetch(proxy.origin));
+    assert.equal((await fetchLocalFixture(proxy.origin)).status, 200);
+    assert.equal(fetchLocalFixture("https://example.test"), null);
+  } finally {
+    await proxy.close();
+    upstream.closeAllConnections();
+    await new Promise((resolve) => upstream.close(resolve));
+  }
 });

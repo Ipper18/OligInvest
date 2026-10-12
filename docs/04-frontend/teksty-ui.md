@@ -221,3 +221,85 @@ Pełna lista zakazanych zwrotów i ich test w CI: [`../11-zgodnosc-prawna.md`](.
 - Disclaimery mają osobne, wersjonowane źródło ([`../11-zgodnosc-prawna.md`](../11-zgodnosc-prawna.md) § 4.3 → `packages/i18n/src/pl/disclaimers.json`) i własny test zgodności — nie powtarzamy ich tutaj.
 - Zmiana tekstu w aplikacji zaczyna się od zmiany w tym dokumencie (zasada „dokumentacja przed kodem”, [`../../CONTRIBUTING.md`](../../CONTRIBUTING.md) § 1).
 - Tekstów interfejsu nie tłumaczymy na inne języki w M0–M6; struktura kluczy jest jednak przygotowana na dodanie kolejnego języka bez zmian w komponentach.
+
+## 11. Formularze i powłoka M1-4a
+
+Teksty uzupełniające BL-121/122/113/116 (2026-10-11), klucze w katalogu `app`:
+
+| Klucz | Tekst |
+|---|---|
+| brand | OligInvest |
+| navigation | Nawigacja główna |
+| publicNavigation | Dokumenty i informacje |
+| email | E-mail |
+| password | Hasło |
+| newPassword | Nowe hasło |
+| name | Imię lub nazwa |
+| passwordHint | Co najmniej 12 znaków. |
+| remember | Zapamiętaj mnie |
+| signIn | Zaloguj się |
+| signOut | Wyloguj się |
+| verify | Potwierdź kod |
+| code | Kod z aplikacji |
+| backupCode | Kod zapasowy |
+| useBackup | Użyj kodu zapasowego |
+| useTotp | Użyj kodu z aplikacji |
+| twoFactorHint | Wpisz sześciocyfrowy kod lub użyj kodu zapasowego. |
+| enrollment | Włącz drugi składnik |
+| enrollmentHint | Bez niego nie zobaczysz swoich danych. |
+| secret | Klucz do wpisania ręcznie |
+| qr | Kod QR do aplikacji uwierzytelniającej |
+| backupTitle | Kody zapasowe |
+| backupHint | Zapisz kody w bezpiecznym miejscu. Każdego kodu możesz użyć tylko raz. |
+| copy | Kopiuj |
+| download | Pobierz TXT |
+| savedCodes | Kody zapisane |
+| register | Załóż konto |
+| invitationHint | Konto zakładasz z zaproszenia od administratora. |
+| invalidInvitation | Zaproszenie jest nieważne. Poproś administratora o nowe. |
+| acceptTerms | Akceptuję regulamin. |
+| acknowledgePrivacy | Potwierdzam zapoznanie się z informacją o przetwarzaniu danych. |
+| diagnostics | Zgadzam się na diagnostykę wydajności. |
+| reset | Reset hasła |
+| forgot | Nie pamiętam hasła |
+| sendReset | Wyślij link |
+| resetSent | Jeśli konto istnieje, otrzymasz wiadomość z instrukcją zmiany hasła. |
+| passwordSaved | Hasło zostało zmienione. Zaloguj się ponownie. |
+| invalidReset | Link jest nieważny. Poproś o nowy link do zmiany hasła. |
+| termsTitle | Zmienił się regulamin |
+| termsHint | Przeczytaj zmiany i potwierdź, aby korzystać dalej. |
+| accept | Potwierdź akceptację |
+| terms | Regulamin |
+| privacy | Informacja o prywatności |
+| sources | Źródła danych |
+| print | Drukuj |
+| version | Wersja |
+| theme | Motyw |
+| dark | Ciemny |
+| light | Jasny |
+| system | Systemowy |
+| palette | Paleta zysku i straty |
+| default | Domyślna |
+| colorblind | Dla daltonistów |
+| baseCurrency | Waluta bazowa |
+| currencyHint | W tej wersji walutą bazową jest PLN. |
+| saved | Zapisano preferencje. |
+| pending | Trwa zapisywanie. |
+| live | Aktualizacje na żywo |
+| polling | Aktualizacje co minutę |
+| paused | Aktualizacje wstrzymane |
+| pause | Wstrzymaj aktualizacje |
+| resume | Wznów aktualizacje |
+| offline | Brak połączenia z siecią. |
+| back | Wróć na start |
+| notFound | Nie znaleziono strony. |
+| shellReady | Wybierz sekcję w nawigacji. |
+| required | Podaj wartość |
+| copied | Skopiowano. |
+| configurationMissing | Dane usługodawcy nie zostały jeszcze skonfigurowane. |
+
+Kody błędów pozostają z § 7. Teksty dokumentów prawnych pochodzą w całości z dokumentów użytkownika, bez przeredagowania.
+
+### Teksty publicznych dokumentów M1-4a
+
+Pełne treści po separatorze w `docs/12-dla-uzytkownika/regulamin.md`, `informacja-o-prywatnosci.md` i `zrodla-danych.md` są źródłem katalogu `packages/i18n/src/pl/legal.json` oraz stron MDX. Generator i test kontrolują ich zgodność. Przy brakującej konfiguracji pokazujemy „Dane instancji wymagają uzupełnienia przez administratora.”; przycisk druku: „Drukuj”. Data wejścia w życie pochodzi z `LEGAL_EFFECTIVE_DATE` (YYYY-MM-DD).

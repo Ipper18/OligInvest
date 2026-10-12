@@ -51,3 +51,6 @@ Thumbs.db
 
 # CI reports
 /reports/
+
+# Build-time CSS embedded with a per-request CSP nonce
+/apps/web/src/appearance/inline-css.json

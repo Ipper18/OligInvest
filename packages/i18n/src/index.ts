@@ -1,3 +1,4 @@
+import app from "./pl/app.json" with { type: "json" };
 import authMail from "./pl/auth-mail.json" with { type: "json" };
 import bootstrap from "./pl/bootstrap.json" with { type: "json" };
 import common from "./pl/common.json" with { type: "json" };
@@ -5,7 +6,9 @@ import data from "./pl/data.json" with { type: "json" };
 import disclaimerCatalog from "./pl/disclaimers.json" with { type: "json" };
 import errors from "./pl/errors.json" with { type: "json" };
 
-export const messages = { ...common, bootstrap, data } as const;
+export const appMessages = app;
+export const commonMessages = common;
+export const messages = { ...common, bootstrap, data, app } as const;
 export const disclaimers = disclaimerCatalog;
 export const errorMessages = errors;
 export const authMailMessages = authMail;

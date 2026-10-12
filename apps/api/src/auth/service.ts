@@ -70,6 +70,7 @@ export interface AuthServiceOptions {
   passwordChecks: PasswordChecks;
   audit: Pick<AuditWriter, "record">;
   securityEvent: (event: AuthSecurityEvent) => Promise<void>;
+  preferencesChanged?: (userId: string) => Promise<void>;
   sessionsChanged?: () => Promise<void>;
   wait?: (milliseconds: number) => Promise<void>;
   event: (event: string) => void;

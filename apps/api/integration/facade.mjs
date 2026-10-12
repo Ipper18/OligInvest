@@ -844,6 +844,63 @@ export async function testAuthFacade(settings) {
         ),
         command,
       );
+    // BL-113/122: independently authenticated users never share preferences or consent history.
+    // Current user's session may have been revoked by the CLI checks above; issue a synthetic session via SQL.
+    const syntheticToken = randomBytes(32).toString("hex");
+    await database.transaction(async (tx) => {
+      await tx.execute(
+        sql`UPDATE auth.users SET two_factor_enabled=true WHERE id=${ownerId}::uuid`,
+      );
+      await tx.execute(
+        sql`INSERT INTO auth.sessions (token,user_id,expires_at,mfa_verified_at,mfa_method) VALUES (${syntheticToken},${ownerId}::uuid,now()+interval '1 day',now(),'totp')`,
+      );
+    });
+    const signed = sessionCookie(syntheticToken, configuration, true).split(";")[0];
+    const prefCall = (path, method = "GET", body, cookie = signed, origin = configuration.origin) =>
+      app.request("/api/v1" + path, {
+        method,
+        headers: { cookie, origin, "content-type": "application/json" },
+        ...(body ? { body: JSON.stringify(body) } : {}),
+      });
+    assert.equal((await prefCall("/me/preferences", "GET", undefined, "")).status, 401);
+    assert.equal((await prefCall("/me/legal")).status, 200);
+    assert.equal(
+      (
+        await prefCall("/me/legal/acceptances", "POST", {
+          termsVersion: "2025-01",
+          privacyNoticeVersion: "2026-09",
+        })
+      ).status,
+      422,
+    );
+    assert.equal(
+      (
+        await prefCall(
+          "/me/legal/acceptances",
+          "POST",
+          { termsVersion: "2026-09", privacyNoticeVersion: "2026-09" },
+          signed,
+          "https://wrong.example",
+        )
+      ).status,
+      403,
+    );
+    const acceptance = { termsVersion: "2026-09", privacyNoticeVersion: "2026-09" };
+    assert.equal((await prefCall("/me/legal/acceptances", "POST", acceptance)).status, 200);
+    assert.equal((await prefCall("/me/legal/acceptances", "POST", acceptance)).status, 200);
+    assert.equal((await (await prefCall("/me/legal")).json()).termsAcceptanceRequired, false);
+    assert.equal((await (await prefCall("/me/preferences")).json()).theme, "dark");
+    assert.equal(
+      (await prefCall("/me/preferences", "PATCH", { theme: "light", plPalette: "colorblind" }))
+        .status,
+      200,
+    );
+    assert.equal((await (await prefCall("/me/preferences")).json()).theme, "light");
+    assert.equal((await prefCall("/me/preferences", "PATCH", { theme: "system" })).status, 200);
+    assert.equal((await (await prefCall("/me/preferences")).json()).theme, "system");
+    assert.equal((await prefCall("/me/preferences", "PATCH", { theme: "blue" })).status, 422);
+    assert.equal((await prefCall("/me/preferences", "PATCH", { userId: ownerId })).status, 422);
+    assert.equal((await prefCall("/me/preferences", "PATCH", {})).status, 422);
     assert.deepEqual(events, []);
   } finally {
     if (ownerId)
