@@ -18,9 +18,24 @@
           "chartPreviousClose": 9.75,
           "priceHint": 2,
           "currentTradingPeriod": {
-            "pre": { "timezone": "EDT", "start": 1791187200, "end": 1791207000, "gmtoffset": -14400 },
-            "regular": { "timezone": "EDT", "start": 1791207000, "end": 1791230400, "gmtoffset": -14400 },
-            "post": { "timezone": "EDT", "start": 1791230400, "end": 1791244800, "gmtoffset": -14400 }
+            "pre": {
+              "timezone": "EDT",
+              "start": 1791187200,
+              "end": 1791207000,
+              "gmtoffset": -14400
+            },
+            "regular": {
+              "timezone": "EDT",
+              "start": 1791207000,
+              "end": 1791230400,
+              "gmtoffset": -14400
+            },
+            "post": {
+              "timezone": "EDT",
+              "start": 1791230400,
+              "end": 1791244800,
+              "gmtoffset": -14400
+            }
           },
           "dataGranularity": "1d",
           "range": "",

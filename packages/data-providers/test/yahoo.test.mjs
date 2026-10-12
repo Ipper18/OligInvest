@@ -102,7 +102,7 @@ test("delayed quote uses chart meta: price, previous close, volume and source me
   });
 });
 
-test("quota cut returns fetched quotes and the next run continues round-robin", async () => {
+test("quota cut returns the quotes fetched so far and stops requesting", async () => {
   let budget = 2;
   const transport = network([
     [
@@ -118,9 +118,8 @@ test("quota cut returns fetched quotes and the next run continues round-robin", 
   const yahoo = new YahooProvider(transport, async (key) => instruments.find((i) => i.id === key));
   const first = await yahoo.getIntradayQuotes(ids);
   expect(first.map((q) => q.instrumentId)).toEqual(ids.slice(0, 2));
-  budget = 2;
-  const second = await yahoo.getIntradayQuotes(ids);
-  expect(second.map((q) => q.instrumentId)).toEqual(ids.slice(2, 4));
+  // Four parallel requests, then the cut: the fifth instrument is never requested.
+  expect(transport).toHaveBeenCalledTimes(4);
   budget = 0;
   await expect(yahoo.getIntradayQuotes(ids)).rejects.toMatchObject({ reason: "provider_quota" });
 });

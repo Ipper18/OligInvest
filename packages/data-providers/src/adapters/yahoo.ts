@@ -90,12 +90,10 @@ export class YahooProvider implements DataProvider {
     id: "yahoo",
     capabilities: ["eodBars", "intradayQuote", "symbolSearch"],
     markets: ["XWAR", "XNYS", "XNAS", "ARCX"],
-    quota: { perMinute: 30 },
+    quota: { perMinute: 12 },
     delayMinutes: 15,
     license: "Dane: Yahoo Finance",
   } as const;
-  /** Round-robin position, so a quota cut never starves the same instruments every run. */
-  private cursor = "";
   constructor(
     private readonly request: typeof fetch,
     private readonly resolve: Resolve,
@@ -159,13 +157,12 @@ export class YahooProvider implements DataProvider {
   /**
    * One chart request per instrument (the batched v7 quote endpoint requires a cookie and crumb).
    * A quota cut or the deadline returns the quotes fetched so far; the rest keep their last value
-   * and turn stale. Without any quote the first error is thrown, never a made-up price.
+   * and turn stale. Without any quote the first error is thrown, never a made-up price. The
+   * caller limits instruments per run (modules/market quote cadence).
    */
   async getIntradayQuotes(ids: string[]): Promise<Quote[]> {
-    const unique = [...new Set(ids.map((id) => z.uuid().parse(id)))].sort();
-    const start = unique.findIndex((id) => id > this.cursor);
-    const ordered = start > 0 ? [...unique.slice(start), ...unique.slice(0, start)] : unique;
-    const instruments = await Promise.all(ordered.map((id) => this.resolve(id)));
+    const unique = [...new Set(ids.map((id) => z.uuid().parse(id)))];
+    const instruments = await Promise.all(unique.map((id) => this.resolve(id)));
     const deadline = performance.now() + QUOTE_DEADLINE_MS;
     const output: Quote[] = [];
     let failure: unknown;
@@ -173,18 +170,16 @@ export class YahooProvider implements DataProvider {
       if (performance.now() > deadline) break;
       const batch = instruments.slice(index, index + QUOTE_CONCURRENCY);
       const results = await Promise.allSettled(batch.map((item) => this.quote(item)));
-      let cut = false;
-      results.forEach((result, position) => {
-        const quota =
-          result.status === "rejected" &&
-          result.reason instanceof ProviderError &&
-          result.reason.reason === "provider_quota";
+      for (const result of results)
         if (result.status === "fulfilled") output.push(result.value);
         else failure ??= result.reason;
-        if (quota) cut = true;
-        else if (!cut) this.cursor = batch[position]?.id ?? this.cursor;
-      });
-      if (cut) break;
+      const quota = results.some(
+        (result) =>
+          result.status === "rejected" &&
+          result.reason instanceof ProviderError &&
+          result.reason.reason === "provider_quota",
+      );
+      if (quota) break;
     }
     if (!output.length && failure) {
       throw failure instanceof ProviderError ? failure : new ProviderError("provider_error");

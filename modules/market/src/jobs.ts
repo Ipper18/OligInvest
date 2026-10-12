@@ -11,13 +11,14 @@ import type { AppDatabase } from "@oliginvest/db";
 import type { Redis } from "ioredis";
 import { marketJobSchema } from "./contracts.js";
 import { IngestionStore } from "./ingestion-store.js";
+import { QUOTE_ATTEMPT_MS, QUOTES_PER_RUN, YAHOO_PER_MINUTE } from "./quote-cadence.js";
 import { MarketRepository } from "./server/repository.js";
 
 export { IngestionStore } from "./ingestion-store.js";
 export const marketSchedules = [
   { job: "market.fx", cron: "20 12 * * 1-5", tz: "Europe/Warsaw" },
   { job: "market.gpw", cron: "30 18 * * 1-5", tz: "Europe/Warsaw" },
-  { job: "market.quotes", cron: "*/5 * * * *", tz: "Europe/Warsaw" },
+  { job: "market.quotes", cron: "* * * * *", tz: "Europe/Warsaw" },
   { job: "market.us-eod", cron: "30 23 * * 1-5", tz: "Europe/Warsaw" },
 ] as const;
 export function createMarketJobs(options: {
@@ -42,7 +43,11 @@ export function createMarketJobs(options: {
     (provider: string, perMinute: number): typeof fetch =>
     async (input, init) =>
       limits.run(provider, { perMinute }, () => guarded(input, init));
-  const yahoo = new YahooProvider(request("yahoo", 30), (id) => repository.resolve(id), now);
+  const yahoo = new YahooProvider(
+    request("yahoo", YAHOO_PER_MINUTE),
+    (id) => repository.resolve(id),
+    now,
+  );
   const nbp = new NbpProvider(request("nbp", 6), now);
   const ecb = new FrankfurterProvider(request("ecb", 6), now);
   async function dispatch(name: string, raw: unknown, failures = 0): Promise<void> {
@@ -100,7 +105,13 @@ export function createMarketJobs(options: {
         return;
       }
       case "market.quotes": {
-        const ids = await store.activeIds(await options.observed(), now().toISOString());
+        const active = await store.activeIds(await options.observed(), now().toISOString());
+        // At most one attempt per instrument and cycle; cache eviction only refreshes earlier.
+        const ids: string[] = [];
+        for (const id of active) {
+          if (ids.length === QUOTES_PER_RUN) break;
+          if (await options.cache.set(`qa:${id}`, "1", "PX", QUOTE_ATTEMPT_MS, "NX")) ids.push(id);
+        }
         if (!ids.length) return;
         const quotes = await limits.singleFlight("yahoo-quotes", () =>
           yahoo.getIntradayQuotes(ids),
