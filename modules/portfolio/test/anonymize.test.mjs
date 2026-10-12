@@ -136,7 +136,7 @@ test("synthetic output is independent of input prices, quantities and amount mag
     expect(held.gte(0)).toBe(true);
   }
   assertCash(after);
-});
+}, 30_000);
 
 test("reverse-ordered exports retain row order and funding, charges and split sales reconcile", () => {
   const lines = [

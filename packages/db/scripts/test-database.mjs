@@ -230,6 +230,13 @@ try {
   console.log(
     "XTB uploads, worker parsing, reconciliation, atomic commit, FIFO fixtures and owner isolation: PASS",
   );
+  const { testMbankImportStorage } = await import(
+    "../../../apps/api/integration/mbank-imports.mjs"
+  );
+  await testMbankImportStorage({ host, port, database: migrated, passwords });
+  console.log(
+    "mBank flag, both CSV histories, name mapping with candidates, resolution, FIFO and re-import: PASS",
+  );
   await testMarketScheduleStorage({ host, port, database: migrated, passwords });
   console.log(
     "Market schedules: observed-only sessions, holiday, missing calendar and US/Europe DST mismatch PASS",

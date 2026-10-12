@@ -95,7 +95,7 @@
       {
         "name": "MICROSOFT",
         "qty": "2",
-        "cost": "❓ brak wartości i prowizji w wierszu — wymaga kursu z historii finansowej lub NBP; import oznacza wiersz warning: missing_settlement_value"
+        "cost": "❓ brak wartości i prowizji w wierszu — wymaga kursu z historii finansowej lub NBP; import oznacza wiersz status=error, kod missing_settlement_value (uzupełnienie przez resolveImportRow)"
       }
     ],
     "realized_pl_economic": [
