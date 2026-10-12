@@ -1,49 +1,53 @@
 # M1-4a — stan bieżący
 
-**Cel:** przekazać stan BL-121/122/113/116 i rozbieżności wymagające decyzji przed implementacją.
+**Cel:** przekazać stan BL-121/122/113/116 i pozostałe warunki PR #11.
 
-**2026-10-11**, gałąź `feat/m1-4a-ui-shell` z aktualnego `main` (`7ccffc8`).
-Zakres: powłoka, uwierzytelnianie, preferencje i strony prawne. BL-147/148/152/154/155/157/158
-pozostają w M1-4b. Nakład i odchylenie niezmierzone; żadne zadanie nie jest zamknięte.
+**2026-10-12**, `feat/m1-4a-ui-shell`, [PR #11](https://github.com/Ipper18/OligInvest/pull/11), roboczy.
+Implementacja lokalnie wykonana; statusy `w toku` do zielonego CI i wspólnego DoD.
+Nakład i odchylenie niezmierzone. Szczegóły testów i zależności w opisie PR.
 
 ## Zrobione
 
-- Sprawdzono czyste repozytorium, pobrano `origin/main`, utworzono wskazaną gałąź.
-- Odczytano raport M1-3, zakres backlogu, DoD, wymagania i dokumenty frontendowe.
-- BL-102/103 są gotowe; BL-107 ma gotowy zakres API, czeka na produkcyjną pocztę.
-  Zależności lokalnie wykonane uznajemy zgodnie z AGENTS.md § 6.1.
-- Porównano klienta SSE z interfejsem platformy, API tożsamości i listą pending.
-  Implementacja zatrzymana zgodnie z AGENTS.md § 2.5 i § 6.1.
+- Powłoka mobilna/desktopowa, nawigacja z definicji modułów, bramki proxy/RSC,
+  QueryClient per użytkownik, SSE fetch/ReadableStream: wznowienie, backoff/jitter,
+  terminalne 401/403, wylogowanie, jedno połączenie na kartę, pauza po 5 min w tle.
+- Logowanie, TOTP i kody zapasowe, zaproszenie/reset z tokenem we fragmencie,
+  konfiguracja QR i akceptacja dokumentów. API wywoływane przez serwer web.
+- Preferencje dark/light/system i paleta; SSR i zapis bez przeładowania dokumentu.
+  Domyślny dark w migracji/API; zapisane wybory zachowane. PLN zgodnie z ADR-014.
+- Trzy strony prawne MDX, pełne teksty w i18n, test zgodności ze źródłem, LEGAL_*,
+  pobieranie/druk i disclaimer general. CSS kompilowany i osadzany z nonce CSP.
+- Wypchnięte osobne commity UI, rejestru modułów, wydajności i testów shell-auth.
+  Korekty zatwierdzone przez właściciela zapisano wcześniej w osobnym `docs:`.
 
-## Decyzje do zatwierdzenia — propozycja
+## Weryfikacja
 
-1. **SSE:** RT § 6 wymaga `EventSource`, ale także odtworzenia po `close()` z zachowanym
-   `Last-Event-ID` oraz odczytu 401/403/429 i `Retry-After`. Natywny konstruktor nie
-   przyjmuje nagłówków, nowy obiekt zaczyna z pustym ID, a błąd nie udostępnia odpowiedzi
-   HTTP ([HTML Standard, sprawdzono 2026-10-11](https://html.spec.whatwg.org/multipage/server-sent-events.html#the-eventsource-interface)).
-   Automatyczne wznowienie tego samego obiektu działa, ręczne odtworzenie go nie zastępuje.
-   Propozycja: nowy ADR uzupełniający ADR-007, klient SSE na natywnym `fetch` i
-   `ReadableStream`, bez biblioteki. Zachować endpoint, ramki, cookie, bramki i nagłówek
-   wznowienia; jawnie obsłużyć parser, ponawianie, czuwanie, tło i polling.
-   Zaktualizować RT i UI; testować fragmentację ramek, wznowienia, statusy i budżet 30 KiB.
-2. **Akceptacja regulaminu:** BL-122 wymaga działającego ekranu, ale `getLegalStatus`
-   i `acceptLegalDocuments` są w `apps/api/openapi-pending.json`; implementacja należy
-   do BL-104 planowanego dopiero w M1-5. Bramka istnieje w `AuthService.requireData`.
-   Propozycja: przenieść do M1-4a wyłącznie te dwa endpointy i ich testy z BL-104,
-   dodać tę zależność BL-122. Pozostała część BL-104, w tym zarządzanie zgodą na
-   diagnostykę, pozostaje M1-5; BL-104 nie otrzyma statusu gotowe.
-3. **Motyw domyślny:** DS § 7 i wymagania nakazują `dark`, natomiast
-   `schema.sql` (tabela `identity.user_preferences`) ma `DEFAULT 'system'`, a fallback
-   `GET /me` również zwraca `system`. Propozycja: zmienić domyślną wartość schematu na
-   `dark`, dodać migrację samego DEFAULT i poprawić fallback API. Zachować wszystkie
-   zapisane preferencje, także `system`; nie da się odróżnić wyboru od starej wartości
-   domyślnej. Brak zmiany enum, RLS i kontraktu odpowiedzi.
+- Zmienione pakiety JS/TS i zależne: 84 zadania PASS; po poprawkach CI cztery
+  pakiety web/ui/i18n/contracts: 18/18 PASS. API: 92 testy. Lokalnie brak `uv`;
+  niezmieniony Python sprawdza CI. Produkcyjny build i granica server-only PASS.
+- PostgreSQL 18, rzeczywiste MFA, endpointy preferencji/akceptacji i RLS PASS;
+  migracje kontra schema.sql: **ZERO DIFFERENCES**. Drizzle snapshot odtworzony
+  po błędzie loadera ESM generatora; porównanie bazy potwierdza zgodność.
+- Chromium: 19 PASS, 1 test prawdziwego API pozostawiony CI. Axe: 0 naruszeń
+  dark/light przy 360/1280 px oraz na publicznych/auth (zawsze dark). UI fixtures
+  nie zastępują pełnego E2E z bazą i importem. Testy narzędzi wydajności: 13 PASS.
+- Powłoka **21,98/30 KiB**, Start 148,89/190, ustawienia 149,62/185,
+  logowanie 138,40/160; wszystkie wdrożone trasy PASS, twarde budżety w CI.
+- Lighthouse (TLS/HTTP2 jak Caddy, mediana 3): LCP logowanie **1586 ms**,
+  Start **1654 ms**; TBT 30/38 ms, CLS 0. Progi 2000/200/0,1 bez zmian.
 
-## Weryfikacja i pozostała praca
+## CI i pozostałe warunki
 
-Zmiana obejmuje wyłącznie dokumentację startową i zapis ryzyka R-35; bez kodu produktu.
-`node scripts/check-docs.mjs`, `node scripts/check-repository.mjs` i `git diff --check`
-PASS. CI sprawdzane raz na końcu sesji. Budżety, axe, bramki i testy ekranów
-nie są jeszcze wykonane.
-Po decyzji: dokumenty → testy → implementacja; commit/push po każdym etapie.
-Bramy M1 A/B pozostają otwarte, także realny import, telefon i wdrożenie.
+CI odczytano **jeden raz**. Buildu bez modułów dotyczył typ PrintButton;
+CodeQL wskazał SSRF i wyłączenie walidacji TLS w lokalnym proxy pomiarowym.
+Commit `826daf4` usuwa przyczyny: jawny ReactElement, stały host upstream,
+walidacja TLS z własnym certyfikatem fixture; regresje PASS. Typecheck był
+anulowany przez nowszy push. Pozostałe kontrole PASS lub w toku w chwili odczytu.
+**Nowego przebiegu po poprawkach nie odpytywano; brak potwierdzenia zielonego CI.**
+
+BL-147/148/152/154/155/157/158 pozostają M1-4b; reszta BL-104 w bramie B.
+Bramy M1 A/B otwarte: przegląd właściciela, pełne E2E/VoiceOver i telefon,
+realny import, wdrożenie i uzupełnienie LEGAL_* przez właściciela.
+Nie ma nowego ADR: dopisek ADR-007/realtime i dwie operacje BL-104 zatwierdzone.
+R-35 rozwiązane lokalnie; końcowe potwierdzenie przy DoD. Brak nowych ryzyk
+wymagających zmiany decyzji lub osłabienia kontroli bezpieczeństwa.
