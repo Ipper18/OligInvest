@@ -179,3 +179,35 @@ test("shell excludes only verified framework chunks and fails above 30 KiB", () 
   assert.equal(assessShell(row, ["framework.js"], 0).failed, true);
   assert.throws(() => assessShell(row, ["missing.js"], 30), /baseline/);
 });
+
+import { fetchLocalFixture, proxyDestination, startPerformanceProxy } from "./performance-tls.mjs";
+
+test("performance proxy never derives an upstream host from a request target", () => {
+  const next = "http://127.0.0.1:1234",
+    api = "http://127.0.0.1:1235";
+  for (const path of ["https://example.test/", "//example.test/", "/\\example.test/"])
+    assert.throws(() => proxyDestination(path, next, api));
+  assert.deepEqual(proxyDestination("/api/v1/me?url=https://example.test", next, api), {
+    protocol: "http:",
+    hostname: "127.0.0.1",
+    port: "1235",
+    path: "/api/v1/me?url=https://example.test",
+  });
+});
+test("local TLS fixture trusts its own certificate without disabling certificate validation", async () => {
+  const upstream = createServer((_, response) =>
+    response.writeHead(200, { "content-type": "text/html" }).end("<html></html>"),
+  );
+  await new Promise((resolve) => upstream.listen(0, "127.0.0.1", resolve));
+  const origin = `http://127.0.0.1:${upstream.address().port}`;
+  const proxy = await startPerformanceProxy(origin, origin);
+  try {
+    await assert.rejects(fetch(proxy.origin));
+    assert.equal((await fetchLocalFixture(proxy.origin)).status, 200);
+    assert.equal(fetchLocalFixture("https://example.test"), null);
+  } finally {
+    await proxy.close();
+    upstream.closeAllConnections();
+    await new Promise((resolve) => upstream.close(resolve));
+  }
+});

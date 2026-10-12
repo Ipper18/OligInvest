@@ -7,9 +7,21 @@ import { request as tlsRequest } from "node:https";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-let localOrigin, fingerprint;
+let localOrigin, fingerprint, localCertificate;
 export const localChromeFlags = () =>
   fingerprint ? [`--ignore-certificate-errors-spki-list=${fingerprint}`] : [];
+export function proxyDestination(path, nextOrigin, apiOrigin) {
+  if (!path.startsWith("/") || path.startsWith("//") || path.includes("\\"))
+    throw new Error("Invalid proxy request target");
+  const incoming = new URL(path, "http://fixture.invalid");
+  const target = new URL(incoming.pathname.startsWith("/api/") ? apiOrigin : nextOrigin);
+  return {
+    protocol: target.protocol,
+    hostname: target.hostname,
+    port: target.port,
+    path: incoming.pathname + incoming.search,
+  };
+}
 export async function startPerformanceProxy(nextOrigin, apiOrigin) {
   const directory = mkdtempSync(fileURLToPath(new URL("../../../.git/perf-tls-", import.meta.url)));
   const key = join(directory, "key.pem"),
@@ -45,6 +57,7 @@ export async function startPerformanceProxy(nextOrigin, apiOrigin) {
   fingerprint = createHash("sha256")
     .update(createPublicKey(credentials.cert).export({ type: "spki", format: "der" }))
     .digest("base64");
+  localCertificate = credentials.cert;
   const forbidden = new Set([
     "connection",
     "keep-alive",
@@ -55,21 +68,24 @@ export async function startPerformanceProxy(nextOrigin, apiOrigin) {
   const sessions = new Set();
   const sockets = new Set();
   const server = createSecureServer({ ...credentials, allowHTTP1: true }, (request, response) => {
+    let destination;
+    try {
+      destination = proxyDestination(request.url, nextOrigin, apiOrigin);
+    } catch {
+      response.writeHead(400).end();
+      return;
+    }
     const headers = Object.fromEntries(
       Object.entries(request.headers).filter(([k]) => !k.startsWith(":") && !forbidden.has(k)),
     );
-    headers.host = new URL(nextOrigin).host;
-    const upstream = proxyRequest(
-      new URL(request.url, request.url.startsWith("/api/") ? apiOrigin : nextOrigin),
-      { method: request.method, headers },
-      (reply) => {
-        response.writeHead(
-          reply.statusCode,
-          Object.fromEntries(Object.entries(reply.headers).filter(([k]) => !forbidden.has(k))),
-        );
-        reply.pipe(response);
-      },
-    );
+    headers.host = request.headers[":authority"] ?? request.headers.host;
+    const upstream = proxyRequest({ ...destination, method: request.method, headers }, (reply) => {
+      response.writeHead(
+        reply.statusCode,
+        Object.fromEntries(Object.entries(reply.headers).filter(([k]) => !forbidden.has(k))),
+      );
+      reply.pipe(response);
+    });
     upstream.on("error", () => {
       if (!response.headersSent) response.writeHead(502);
       response.end();
@@ -92,6 +108,7 @@ export async function startPerformanceProxy(nextOrigin, apiOrigin) {
     close: async () => {
       localOrigin = undefined;
       fingerprint = undefined;
+      localCertificate = undefined;
       for (const session of sessions) session.destroy();
       for (const socket of sockets) socket.destroy();
       await new Promise((resolve) => server.close(resolve));
@@ -103,7 +120,7 @@ export function fetchLocalFixture(url, cookie) {
   return new Promise((resolve, reject) => {
     const request = tlsRequest(
       url,
-      { rejectUnauthorized: false, headers: cookie ? { Cookie: cookie } : {} },
+      { ca: localCertificate, headers: cookie ? { Cookie: cookie } : {} },
       (reply) => {
         const chunks = [];
         reply.on("data", (chunk) => chunks.push(chunk));
