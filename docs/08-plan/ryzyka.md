@@ -60,9 +60,11 @@ Powiązane: [`roadmapa.md`](roadmapa.md), [`backlog.md`](backlog.md), [`../06-be
 
 | **R-36** | Sporadyczny timeout oczekiwania na start SSE w WebKit | M1-4a: jeden lokalny timeout, następnie 10/10 tego przypadku i 30/30 macierzy PASS; przyczyna niepotwierdzona | 2 | 2 | 4 | zachować asercję i limit; przy nawrocie zebrać trace sieci/hydratacji przed zmianą kodu | status wstrzymany zamiast live po 5 s | agent, CI | M1-4a, otwarte do wyjaśnienia nawrotu lub stabilnego CI |
 
+| **R-37** | Kontrakt odczytów portfela nie reprezentuje wszystkich luk wyceny i danych podatkowych; mapowanie może tworzyć pozorne zera/wyniki lub ukrywać pozycje | BL-147, [propozycja M1-4b](m1-4b-valuation-contract-proposal.md) | 2 | 2 | 4 | uzgodnić nullable i jawne wyłączenia w OpenAPI, następnie testy braku ceny/FX/kosztu i IKE/IKZE; nie zmieniać rdzenia ani zastępować braków zerem | core/SQL zwracają null, a wymagane Money w REST go nie dopuszcza | agent, właściciel | M1-4b, otwarte |
+
 ## 3. Podsumowanie
 
-36 ryzyk: **5 wysokich** (R-01, R-07, R-11, R-16, R-28), 26 średnich, 5 niskich; brak krytycznych.
+37 ryzyk: **5 wysokich** (R-01, R-07, R-11, R-16, R-28), 27 średnich, 5 niskich; brak krytycznych.
 
 | Ryzyko wysokie | Działanie przed końcem etapu |
 |---|---|

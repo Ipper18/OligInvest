@@ -1,64 +1,59 @@
 # M1-4b — stan bieżący
 
-**Cel:** przekazać stan BL-147/148/157/158/154/155 oraz części aplikacyjnej BL-152
-i rozdzielić dowody automatyczne od odbioru bramy A przez właściciela.
+**Cel:** przekazać stan BL-147/148/157/158/154/155 i części aplikacyjnej BL-152
+oraz warunki bramy A.
 
-**2026-10-13**, `feat/m1-4b-mvp-screens`, baza `origin/main` = `a8b17b0`.
-Korekta kontraktu zatwierdzona przez właściciela 2026-10-13; implementacja wznowiona.
-Zadania pozostają `todo`; nakład i odchylenie niezmierzone. Brama A otwarta.
+**2026-10-13**, `feat/m1-4b-mvp-screens`, [PR #14](https://github.com/Ipper18/OligInvest/pull/14),
+roboczy; baza `a8b17b0` (aktualny main przy rozpoczęciu). BL-147 w toku;
+pozostałe zadania paczki todo. Nakład/odchylenie niezmierzone, brama A otwarta.
 
-## Zrobione i ustalenia
+## Zrobione
 
-- Pobrano aktualny main; drzewo było czyste. Utworzono żądaną gałąź.
-- M1-4a i import mBank są na main. Raporty zależności potwierdzają wykonanie
-  lokalne; status `w toku` nie blokuje zależności według AGENTS.md § 6.1.
-- Sprawdzono zakres paczki, roadmapę, dokumenty UI, monitoring oraz wybrane
-  operacje i schematy OpenAPI. Nie zmieniono kodu, kontraktów ani zależności.
-- Odczyty `getPortfolioSummary`, `getDayChange`, `listPositions`, `listLots`,
-  `getCashBalances`, `getRealizedPl` są nadal w `apps/api/openapi-pending.json`.
-  `modules/portfolio/src/server/routes.ts` obsługuje rachunki, operacje i importy;
-  `livePortfolioValuation` zwraca zdarzenie SSE, nie pełne odpowiedzi REST.
-  Ekrany BL-147 wymagają również implementacji tych odczytów z testami RLS
-  i kontraktowymi, na istniejącym rdzeniu finansowym.
+- `dbc82d4` — osobny commit `docs:` z zatwierdzoną korektą OpenAPI.
+  `Position.accountId` opcjonalne w schemacie; wymagane dla
+  `groupBy=account_instrument`, nieobecne dla `groupBy=instrument`.
+- `20b6c12` — zregenerowane typy klienta, ścisły schemat `Position` i walidator
+  obu grupowań. Agregacja odrzuca pole rachunku, również `null`/`undefined`;
+  nie podstawia identyfikatora. Nieznany koszt i P/L zachowują `null`.
+  Cztery regresje obejmują warianty, błędne pola/kwoty i źródłowy kontrakt.
+- Nie dodano jeszcze endpointu `listPositions`; testy walidatora nie są
+  dowodem integracji HTTP/RLS ani wykonania agregacji rachunków.
 
-## Rozbieżność źródłowa — decyzja właściciela
+## Weryfikacja lokalna
 
-`docs/02-api/openapi.yaml`, schema `Position` (wiersze 5165–5170):
-`accountId` znajduje się w `required`, ale opis brzmi
-„Brak przy groupBy=instrument.”. Operacja `listPositions` dopuszcza oba grupowania.
-Odpowiedź dla agregacji instrumentu nie może spełnić obu zapisów jednocześnie.
+- `pnpm turbo run lint typecheck test --filter=...[origin/main] --output-logs=new-only`:
+  **27/27 zadań PASS** (z wymaganymi buildami zależności); portfolio 34,
+  API 92, jobs 11, web 20 testów PASS. Log lokalny `.git/m1-4b-checks.log`.
+- Aktualność klienta API, Redocly, zgodność OpenAPI (50 wdrożonych / 135 pending),
+  granice zależności, dokumentacja i `git diff --check` PASS.
+- Nie wykonano E2E/Lighthouse nowych ekranów: ekrany jeszcze nie powstały.
+  Końcowy jednorazowy odczyt CI po pushu w odpowiedzi sesji; brak deklaracji PASS CI.
 
-Zatwierdzona i zastosowana korekta (osobny commit `docs:`):
+## Blokada i następny krok
 
-```diff
--      required: [accountId, instrument, quantity, costBasis, marketValue, marketValueBase, weight, unrealizedPl, meta]
-+      required: [instrument, quantity, costBasis, marketValue, marketValueBase, weight, unrealizedPl, meta]
-```
+Zatwierdzona korekta rachunku jest wdrożona. Dalsze mapowanie portfela ujawniło
+odrębną lukę: rdzeń i SQL dopuszczają brak wyceny, a wymagane kwoty REST nie.
+P/L zrealizowany nie reprezentuje też wszystkich braków kosztu i danych podatkowych.
+[Propozycja z dowodami i listą pól](m1-4b-valuation-contract-proposal.md)
+czeka na decyzję właściciela zgodnie z AGENTS.md § 6.1; nie zastosowano jej do API.
+R-37: ryzyko fałszywych zer/wyników lub ukrycia pozycji przy mapowaniu.
 
-Opis `accountId` wymaga pola przy `groupBy=account_instrument` i zabrania go
-przy `groupBy=instrument`; agregacja nie wskazuje żadnego rachunku. Testy obu wariantów muszą egzekwować
-warunek; następnie regeneracja klienta API i zgodność Zod/OpenAPI.
-To korekta kontraktu, bez zmiany ADR. Koszt nieznany nadal oznacza `null`, nigdy 0.
+Odczyty summary/day-change/positions/lots/cash/realized nadal są pending;
+BL-147 wymaga ich implementacji na istniejącym rdzeniu, z HTTP/RLS i testami luk.
+Pozostała implementacja paczki niewykonana. BL-152: tylko health-checki, metryki
+oraz raport błędów aplikacji; sondy Kuma pozostają u właściciela. Bez zmiany ADR.
 
-## Brama A — stan dowodów
+## Brama A — dowody do zamknięcia
 
-Nie uruchomiono nowych testów funkcjonalnych; nie potwierdzono zielonego CI
-M1-4b. Wcześniejsze raporty są wskazówką, nie dowodem CI tej paczki.
+Nie ma jeszcze dowodu CI zamykającego M1-4b. Wcześniejsze raporty nie zastępują
+walidacji tej paczki.
 
 | Kryterium | Dowód automatyczny do zebrania | Odbiór właściciela |
 |---|---|---|
-| 1. Uzgodnienie XTB | fixtures importu i FIFO w CI | realny plik poza repo; salda/ilości i P/L do 0,01 PLN lub wyjaśnienie |
-| 2. Import → portfel < 2 min | E2E z rzeczywistym API w 3 przeglądarkach | pomiar na telefonie |
-| 3. SSE i degradacja | aktualizacja ≤ 5 s, awaria adaptera, świeżość | harmonogram GPW/NBP na serwerze |
-| 4. Wydajność | JS/Lighthouse 4 tras MVP, wykres ≤ 3000 punktów | płynność telefonu |
+| 1. XTB | fixtures importu/FIFO w CI | realny plik poza repo; salda/ilości, P/L do 0,01 PLN lub wyjaśnienie |
+| 2. Import → portfel < 2 min | E2E rzeczywistego API w 3 przeglądarkach | telefon |
+| 3. SSE/degradacja | ≤ 5 s, awaria adaptera, świeżość | GPW/NBP na serwerze |
+| 4. Wydajność | JS/Lighthouse 4 tras, ≤ 3000 punktów | płynność telefonu |
 | 5. Bezpieczeństwo | MFA, step-up, sesje, RLS, audyt CLI | polecenia awaryjne na serwerze |
 | 6. Dostępność | axe, klawiatura, tabela wykresu | protokół VoiceOver |
-| 7. ADR-001 | brak pomiaru nakładu w raportach | porównanie kosztu core/importu z estymacją |
-
-## Pozostałe prace i ryzyka
-
-Implementacja paczki pozostaje do wykonania; rozbieżność kontraktu rozstrzygnięta.
-BL-152 obejmie health-checki, metryki i raport błędów; sondy Kuma wykonuje
-właściciel. Dodatkowy nakład na brakujące odczyty REST może zwiększyć estymację
-BL-147. Nie wprowadzono nowej usługi, kosztu ani zmiany ADR.
-Kontrole dokumentacji oraz jednorazowy końcowy odczyt CI: wynik w odpowiedzi sesji.
+| 7. ADR-001 | nakład dotąd niezmierzony | porównanie core/importu z estymacją |
