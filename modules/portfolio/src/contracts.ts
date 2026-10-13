@@ -1,6 +1,6 @@
 import { z } from "@hono/zod-openapi";
 import { TRANSACTION_TYPES } from "@oliginvest/core";
-import { summarySchema } from "@oliginvest/mod-market/contracts";
+import { metaSchema, summarySchema } from "@oliginvest/mod-market/contracts";
 export const object = <T extends z.ZodRawShape>(shape: T) =>
   z.object(shape).strict().openapi({ additionalProperties: true });
 export const currency = z.string().regex(/^[A-Z]{3}$/);
@@ -194,3 +194,33 @@ export const recomputeJob = z
   })
   .strict();
 export const importJob = z.object({ userId: z.uuid(), importId: z.uuid() }).strict();
+
+const nullableMoney = z.union([moneySchema, z.null()]).openapi({}, { unionPreferredType: "oneOf" });
+export const positionSchema = object({
+  accountId: z.uuid().optional(),
+  instrument: summarySchema,
+  quantity: decimal,
+  averageCost: nullableMoney.optional(),
+  costBasis: nullableMoney,
+  price: decimal.optional(),
+  priceCurrency: currency.optional(),
+  marketValue: moneySchema,
+  marketValueBase: moneySchema,
+  weight: z.number(),
+  unrealizedPl: nullableMoney,
+  unrealizedPlRatio: z.number().nullable().optional(),
+  unrealizedPlInstrumentCurrency: nullableMoney.optional(),
+  priceEffect: nullableMoney.optional(),
+  fxEffect: nullableMoney.optional(),
+  dayChange: moneySchema.optional(),
+  meta: metaSchema,
+}).openapi("Position");
+export const positionGrouping = z.enum(["account_instrument", "instrument"]);
+const accountPosition = positionSchema.extend({ accountId: z.uuid() }).strict();
+const instrumentPosition = positionSchema.omit({ accountId: true }).strict();
+/** Validate the response against the requested grouping; never assign an account to an aggregate. */
+export function parsePosition(value: unknown, groupBy: z.infer<typeof positionGrouping>) {
+  return positionGrouping.parse(groupBy) === "instrument"
+    ? instrumentPosition.parse(value)
+    : accountPosition.parse(value);
+}

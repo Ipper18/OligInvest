@@ -3856,8 +3856,8 @@ export interface components {
             meta: components["schemas"]["DataMeta"];
         };
         Position: {
-            /** @description Brak przy groupBy=instrument. */
-            accountId: components["schemas"]["Uuid"];
+            /** @description Wymagane przy groupBy=account_instrument; nie występuje przy groupBy=instrument. Agregacja nie wskazuje żadnego rachunku. */
+            accountId?: components["schemas"]["Uuid"];
             instrument: components["schemas"]["InstrumentSummary"];
             quantity: components["schemas"]["DecimalString"];
             averageCost?: components["schemas"]["Money"] | null;
