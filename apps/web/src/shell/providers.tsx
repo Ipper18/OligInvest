@@ -7,6 +7,7 @@ import { type ReactNode, useEffect, useRef, useState } from "react";
 import type { Me } from "../api/validation";
 import { submitAction } from "../auth/actions";
 import { clearPrivateState, onLogout, onRemoteLogout } from "../auth/logout";
+import { updateImportCache, updatePortfolioCache } from "../portfolio/stream-cache";
 import { connectStream, type StreamState } from "../sse/transport";
 import { Navigation } from "./navigation";
 export const queryKey = (userId: string, ...parts: unknown[]) => [userId, ...parts];
@@ -81,24 +82,19 @@ export function Providers({
               await client.invalidateQueries({ queryKey: queryKey(me.id, "me") });
               router.refresh();
             }
-            if (frame.event === "market.quotes.updated")
+            if (frame.event === "market.quotes.updated") {
+              void client.invalidateQueries({ queryKey: queryKey(me.id, "market") });
               for (const quote of data.quotes as { instrumentId: string }[])
                 client.setQueryData(queryKey(me.id, "market", "quote", quote.instrumentId), quote);
-            if (frame.event === "portfolio.valuation.updated") {
-              if (data.reason === "quotes" && data.summary)
-                client.setQueryData(
-                  queryKey(me.id, "portfolio", "summary"),
-                  (previous: Record<string, unknown> | undefined) =>
-                    previous
-                      ? { ...previous, ...(data.summary as Record<string, unknown>) }
-                      : undefined,
-                );
-              else void client.invalidateQueries({ queryKey: queryKey(me.id, "portfolio") });
             }
+            if (frame.event === "portfolio.valuation.updated")
+              updatePortfolioCache(
+                client,
+                me.id,
+                data as unknown as Parameters<typeof updatePortfolioCache>[2],
+              );
             if (frame.event === "portfolio.import.parsed")
-              void client.invalidateQueries({
-                queryKey: queryKey(me.id, "portfolio", "import", data.importId),
-              });
+              updateImportCache(client, me.id, data.importId as string);
             if (frame.event.startsWith("analytics.run."))
               void client.invalidateQueries({ queryKey: queryKey(me.id, "analytics", data.runId) });
             if (frame.event === "identity.export.ready")
