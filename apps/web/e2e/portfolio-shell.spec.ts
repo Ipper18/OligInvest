@@ -13,6 +13,25 @@ test.beforeEach(async ({ context }) => {
     },
   ]);
 });
+
+test("manual cash operation can be created, edited and deleted", async ({ page }) => {
+  await page.goto("/portfel/operacje/nowa");
+  await page.getByLabel("Typ operacji", { exact: true }).selectOption("DEPOSIT");
+  await page.getByLabel("Data operacji", { exact: true }).fill("2026-10-12");
+  await page.getByLabel("Kwota ze znakiem", { exact: true }).fill("123,45");
+  await page.getByRole("button", { name: "Zapisz", exact: true }).click();
+  await expect(page).toHaveURL(/\/portfel\/operacje$/);
+  await expect(page.getByRole("cell", { name: /123,45/ })).toBeVisible();
+  await page.getByRole("link", { name: "Edytuj", exact: true }).click();
+  await page.getByLabel("Kwota ze znakiem", { exact: true }).fill("125,00");
+  await page.getByRole("button", { name: "Zapisz", exact: true }).click();
+  await expect(page.getByRole("cell", { name: /125,00/ })).toBeVisible();
+  await page.getByRole("link", { name: "Edytuj", exact: true }).click();
+  await page.getByRole("button", { name: "Usuń", exact: true }).click();
+  await page.getByRole("button", { name: "Potwierdź usunięcie", exact: true }).click();
+  await expect(page).toHaveURL(/\/portfel\/operacje$/);
+  await expect(page.getByRole("cell", { name: /125,00/ })).toHaveCount(0);
+});
 test("portfolio gaps remain visible with quantity and an accessible tax view", async ({ page }) => {
   await page.goto("/portfel");
   await expect(page.getByRole("heading", { name: "Pozycje", exact: true })).toBeVisible();
