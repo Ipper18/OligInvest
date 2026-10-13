@@ -4,7 +4,7 @@
 i rozdzielić dowody automatyczne od odbioru bramy A przez właściciela.
 
 **2026-10-13**, `feat/m1-4b-mvp-screens`, baza `origin/main` = `a8b17b0`.
-Paczka zatrzymana przed implementacją zgodnie z AGENTS.md § 2.5 i § 6.1.
+Korekta kontraktu zatwierdzona przez właściciela 2026-10-13; implementacja wznowiona.
 Zadania pozostają `todo`; nakład i odchylenie niezmierzone. Brama A otwarta.
 
 ## Zrobione i ustalenia
@@ -21,22 +21,22 @@ Zadania pozostają `todo`; nakład i odchylenie niezmierzone. Brama A otwarta.
   Ekrany BL-147 wymagają również implementacji tych odczytów z testami RLS
   i kontraktowymi, na istniejącym rdzeniu finansowym.
 
-## Rozbieżność źródłowa — propozycja do zatwierdzenia
+## Rozbieżność źródłowa — decyzja właściciela
 
 `docs/02-api/openapi.yaml`, schema `Position` (wiersze 5165–5170):
 `accountId` znajduje się w `required`, ale opis brzmi
 „Brak przy groupBy=instrument.”. Operacja `listPositions` dopuszcza oba grupowania.
 Odpowiedź dla agregacji instrumentu nie może spełnić obu zapisów jednocześnie.
 
-Proponowana korekta, jeszcze niezastosowana:
+Zatwierdzona i zastosowana korekta (osobny commit `docs:`):
 
 ```diff
 -      required: [accountId, instrument, quantity, costBasis, marketValue, marketValueBase, weight, unrealizedPl, meta]
 +      required: [instrument, quantity, costBasis, marketValue, marketValueBase, weight, unrealizedPl, meta]
 ```
 
-Uzupełnić opis `accountId`: „Wymagane przy groupBy=account_instrument;
-nie występuje przy groupBy=instrument.”. Testy obu wariantów muszą egzekwować
+Opis `accountId` wymaga pola przy `groupBy=account_instrument` i zabrania go
+przy `groupBy=instrument`; agregacja nie wskazuje żadnego rachunku. Testy obu wariantów muszą egzekwować
 warunek; następnie regeneracja klienta API i zgodność Zod/OpenAPI.
 To korekta kontraktu, bez zmiany ADR. Koszt nieznany nadal oznacza `null`, nigdy 0.
 
@@ -57,7 +57,7 @@ M1-4b. Wcześniejsze raporty są wskazówką, nie dowodem CI tej paczki.
 
 ## Pozostałe prace i ryzyka
 
-Cała implementacja paczki pozostaje do wykonania po rozstrzygnięciu kontraktu.
+Implementacja paczki pozostaje do wykonania; rozbieżność kontraktu rozstrzygnięta.
 BL-152 obejmie health-checki, metryki i raport błędów; sondy Kuma wykonuje
 właściciel. Dodatkowy nakład na brakujące odczyty REST może zwiększyć estymację
 BL-147. Nie wprowadzono nowej usługi, kosztu ani zmiany ADR.

@@ -5164,9 +5164,9 @@ components:
         meta: {source: mixed, asOf: '2026-09-18T13:42:00Z', delayMinutes: 15, stale: false}
     Position:
       type: object
-      required: [accountId, instrument, quantity, costBasis, marketValue, marketValueBase, weight, unrealizedPl, meta]
+      required: [instrument, quantity, costBasis, marketValue, marketValueBase, weight, unrealizedPl, meta]
       properties:
-        accountId: {$ref: '#/components/schemas/Uuid', description: 'Brak przy groupBy=instrument.'}
+        accountId: {$ref: '#/components/schemas/Uuid', description: 'Wymagane przy groupBy=account_instrument; nie występuje przy groupBy=instrument. Agregacja nie wskazuje żadnego rachunku.'}
         instrument: {$ref: '#/components/schemas/InstrumentSummary'}
         quantity: {$ref: '#/components/schemas/DecimalString'}
         averageCost: {oneOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}]}
