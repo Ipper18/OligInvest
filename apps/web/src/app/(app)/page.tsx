@@ -1,10 +1,6 @@
 import { messages } from "@oliginvest/i18n";
-import { ScreenState } from "@oliginvest/ui";
+import { portfolioPage, type SearchParams } from "../../portfolio/page";
 export const metadata = { title: messages.nav.start + " — " + messages.app.brand };
-export default function Page() {
-  return (
-    <ScreenState title={messages.nav.start}>
-      <p>{messages.app.shellReady}</p>
-    </ScreenState>
-  );
+export default function Page({ searchParams }: { searchParams: SearchParams }) {
+  return portfolioPage("summary", searchParams);
 }

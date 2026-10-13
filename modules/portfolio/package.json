@@ -11,9 +11,9 @@
   },
   "exports": {
     "./contracts": {
-      "types": "./dist/src/contracts.d.ts",
-      "import": "./dist/src/contracts.js",
-      "default": "./dist/src/contracts.js"
+      "types": "./dist/src/contracts-index.d.ts",
+      "import": "./dist/src/contracts-index.js",
+      "default": "./dist/src/contracts-index.js"
     },
     "./server": {
       "types": "./dist/src/server/index.d.ts",

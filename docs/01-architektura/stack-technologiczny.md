@@ -202,6 +202,11 @@ M1-3 (BL-144/145): moduł portfolio deklaruje bezpośrednio istniejące pakiety 
 
 M1-4a (2026-10-11): TanStack Query 5.103.1 w powłoce; qrcode 1.5.4 (MIT) wyłącznie na serwerze do lokalnego QR TOTP, bez usług zewnętrznych. Zaufane dokumenty MDX kompiluje @next/mdx 16.3.8 z @mdx-js/loader i @mdx-js/react 3.1.1 (MIT); bez kompilacji treści użytkownika i bez ewaluacji w runtime. Typy @types/qrcode i @types/mdx (MIT) tylko do budowy.
 
+M1-4b (2026-10-13): `packages/ui` używa Lightweight Charts 5.2.1 (Apache-2.0)
+do świec i wolumenu oraz TanStack Virtual 3.14.13 (MIT) do tabel ponad 100 wierszy.
+Oba moduły ładowane dynamicznie; atrybucja TradingView widoczna na wykresie i stronie
+źródeł. To realizacja przyjętych wyborów z ADR-009 i tabeli powyżej.
+
 BL-116: narzędzia budowania i kontroli stron prawnych: `@mdx-js/mdx` 3.1.1 i `remark-gfm` 4.0.1 (MIT). Parser działa wyłącznie podczas generowania/testu; do przeglądarki trafia HTML, bez kompilatora Markdown.
 
 BL-121: `postcss` 8.5.28 (MIT), już używany przez Tailwind, jest jawną zależnością narzędziową web do kompilacji wspólnego CSS przed osadzeniem z nonce CSP. Brak kodu PostCSS w przeglądarce.

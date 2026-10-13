@@ -18,6 +18,8 @@
     "./components.css": "./src/components.css"
   },
   "dependencies": {
+    "lightweight-charts": "5.2.1",
+    "@tanstack/react-virtual": "3.14.13",
     "@oliginvest/i18n": "workspace:*",
     "react": "19.3.0"
   },

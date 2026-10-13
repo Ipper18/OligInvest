@@ -1,5 +1,6 @@
 // Synthetic UI boundary only. Real authentication/RLS is tested by apps/api/integration.
 import { randomUUID } from "node:crypto";
+import { portfolioFixture } from "./portfolio-fixture.mjs";
 
 const preferences = {
   baseCurrency: "PLN",
@@ -39,7 +40,12 @@ export function fixtureCookie(route) {
   if (route === "/konfiguracja-2fa") return "__Host-oliginvest.session_token=fixture-enroll";
   if (route === "/akceptacja-regulaminu") return "__Host-oliginvest.session_token=fixture-legal";
   if (route === "/logowanie/2fa") return "__Host-oliginvest.two_factor=fixture-challenge";
-  if (route === "/" || route.startsWith("/ustawienia"))
+  if (
+    route === "/" ||
+    route.startsWith("/ustawienia") ||
+    route.startsWith("/portfel") ||
+    route.startsWith("/rynek")
+  )
     return "__Host-oliginvest.session_token=fixture-perf";
   return "";
 }
@@ -112,6 +118,14 @@ export async function uiFixture(request, response) {
     request.on("close", () => clearInterval(interval));
     return true;
   }
+  if (
+    await portfolioFixture(
+      request,
+      response,
+      profile?.enrolled && profile.verified && !profile.required ? key : null,
+    )
+  )
+    return true;
   let body = "";
   for await (const chunk of request) body += chunk;
   const data = body ? JSON.parse(body) : {};

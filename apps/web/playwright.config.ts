@@ -17,10 +17,14 @@ export default defineConfig({
   ],
   use: { ignoreHTTPSErrors: true, baseURL: process.env.E2E_BASE_URL || "https://127.0.0.1:3197" },
   projects: (["chromium", "webkit", "firefox"] as const).flatMap((browserName) => [
-    { name: browserName, testIgnore: "**/shell-auth.spec.ts", use: { browserName } },
+    {
+      name: browserName,
+      testIgnore: ["**/shell-auth.spec.ts", "**/portfolio-shell.spec.ts"],
+      use: { browserName },
+    },
     {
       name: `${browserName}-shell`,
-      testMatch: "**/shell-auth.spec.ts",
+      testMatch: ["**/shell-auth.spec.ts", "**/portfolio-shell.spec.ts"],
       use: { browserName, baseURL: "https://127.0.0.1:3197" },
     },
   ]),

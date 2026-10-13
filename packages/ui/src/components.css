@@ -266,6 +266,88 @@
   background: var(--color-hairline);
   opacity: 0.5;
 }
+.oi-table-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+}
+.oi-virtual-table {
+  max-height: 36rem;
+  overflow-y: auto;
+}
+.oi-data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+.oi-data-table caption {
+  text-align: start;
+  font-weight: 600;
+  padding-block: 1rem;
+}
+.oi-data-table th,
+.oi-data-table td {
+  padding: 0.75rem;
+  border-bottom: 1px solid var(--color-border);
+  text-align: start;
+  vertical-align: top;
+}
+.oi-data-table th {
+  white-space: nowrap;
+}
+.oi-section-nav,
+.oi-filters,
+.oi-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: end;
+  margin-block: 1rem;
+}
+.oi-section-nav a {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+}
+.oi-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+  gap: 1rem;
+  margin-block: 1rem;
+}
+.oi-kpi {
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  padding: 1rem;
+}
+.oi-kpi dd {
+  font-size: 1.6rem;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.oi-domain-form {
+  max-width: 42rem;
+  display: grid;
+  gap: 1rem;
+}
+.oi-domain-form fieldset {
+  border: 1px solid var(--color-border);
+  padding: 1rem;
+}
+.oi-partial {
+  border-inline-start: 3px solid var(--color-focus);
+  padding: 0.75rem;
+  margin-block: 1rem;
+}
+.oi-gain {
+  color: var(--color-gain);
+}
+.oi-loss {
+  color: var(--color-loss);
+}
+.oi-chart {
+  min-height: 24rem;
+  width: 100%;
+}
 .oi-legal {
   max-width: 70ch;
   margin: auto;
