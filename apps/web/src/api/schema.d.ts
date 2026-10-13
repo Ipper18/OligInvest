@@ -3796,7 +3796,7 @@ export interface components {
             unrealizedPl: components["schemas"]["Money"];
             unrealizedPlRatio?: number | null;
             realizedPlYtd?: components["schemas"]["Money"];
-            dayChange: components["schemas"]["Money"];
+            dayChange: components["schemas"]["Money"] | null;
             dayChangeRatio: number | null;
             /** @enum {string} */
             view: "economic" | "tax";
@@ -3804,7 +3804,7 @@ export interface components {
                 accountId: components["schemas"]["Uuid"];
                 name: string;
                 totalValue: components["schemas"]["Money"];
-                totalValueBase: components["schemas"]["Money"];
+                totalValueBase: components["schemas"]["Money"] | null;
             }[];
             exclusions: components["schemas"]["CostExclusions"];
             /** @description `false`, gdy brakuje kursu lub FX dla części pozycji (wycena częściowa). */
@@ -3840,18 +3840,17 @@ export interface components {
          *     }
          */
         DayChange: {
-            change: components["schemas"]["Money"];
+            change: components["schemas"]["Money"] | null;
             changeRatio: number | null;
-            previousValue: components["schemas"]["Money"];
-            currentValue: components["schemas"]["Money"];
-            /** @description Przepływy zewnętrzne dnia wyłączone z wyniku. */
-            flowsToday: components["schemas"]["Money"];
+            previousValue: components["schemas"]["Money"] | null;
+            currentValue: components["schemas"]["Money"] | null;
+            flowsToday: components["schemas"]["Money"] | null;
             positions: {
                 instrument: components["schemas"]["InstrumentSummary"];
-                change: components["schemas"]["Money"];
+                change: components["schemas"]["Money"] | null;
                 priceChangeRatio?: number | null;
                 fxChange?: components["schemas"]["Money"];
-                contributionRatio: number;
+                contributionRatio: number | null;
             }[];
             meta: components["schemas"]["DataMeta"];
         };
@@ -3864,10 +3863,9 @@ export interface components {
             costBasis: components["schemas"]["Money"] | null;
             price?: components["schemas"]["DecimalString"];
             priceCurrency?: components["schemas"]["CurrencyCode"];
-            /** @description W walucie instrumentu. */
-            marketValue: components["schemas"]["Money"];
-            marketValueBase: components["schemas"]["Money"];
-            weight: number;
+            marketValue: components["schemas"]["Money"] | null;
+            marketValueBase: components["schemas"]["Money"] | null;
+            weight: number | null;
             unrealizedPl: components["schemas"]["Money"] | null;
             unrealizedPlRatio?: number | null;
             unrealizedPlInstrumentCurrency?: components["schemas"]["Money"] | null;
@@ -3877,6 +3875,8 @@ export interface components {
             meta: components["schemas"]["DataMeta"];
         };
         PositionsResponse: {
+            /** @description false — wycena częściowa; brak ceny lub FX nie usuwa pozycji. */
+            isComplete: boolean;
             data: components["schemas"]["Position"][];
             totals: {
                 exclusions: components["schemas"]["CostExclusions"];
@@ -3993,13 +3993,15 @@ export interface components {
             view: "economic" | "tax";
             groupBy: string;
             rows: {
+                /** @enum {string} */
+                status: "complete" | "missing_cost" | "missing_fx" | "missing_tax_data" | "not_applicable";
                 key: string;
                 label: string;
-                proceeds: components["schemas"]["Money"];
-                cost: components["schemas"]["Money"];
+                proceeds: components["schemas"]["Money"] | null;
+                cost: components["schemas"]["Money"] | null;
                 fees?: components["schemas"]["Money"];
                 fxCosts?: components["schemas"]["Money"];
-                realizedPl: components["schemas"]["Money"];
+                realizedPl: components["schemas"]["Money"] | null;
             }[];
             totals: {
                 proceeds: components["schemas"]["Money"];
@@ -4008,6 +4010,15 @@ export interface components {
                 fxCosts?: components["schemas"]["Money"];
                 realizedPl: components["schemas"]["Money"];
             };
+            isComplete: boolean;
+            /** @description Operacje poza wspólnym zbiorem sum przychodu, kosztu i P/L. Grupy z wyłączeniami mają zależne kwoty null. Pełne przyczyny w tej liście; status grupy według pierwszeństwa missing_cost, missing_fx, missing_tax_data, not_applicable. */
+            exclusions: {
+                transactionId: components["schemas"]["Uuid"];
+                accountId: components["schemas"]["Uuid"];
+                instrumentId: components["schemas"]["Uuid"];
+                /** @enum {string} */
+                reason: "missing_cost" | "missing_fx" | "missing_tax_data" | "not_applicable";
+            }[];
             /** @description Ustawienia użyte w widoku tax (FR-02.07): dzień przychodu i kosztu oraz sposób ujęcia marży przewalutowania brokera; fxCosts pokazuje tę marżę osobno. */
             taxSettings?: {
                 /** @enum {string} */

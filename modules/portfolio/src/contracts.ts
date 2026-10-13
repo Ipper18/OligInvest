@@ -195,7 +195,9 @@ export const recomputeJob = z
   .strict();
 export const importJob = z.object({ userId: z.uuid(), importId: z.uuid() }).strict();
 
-const nullableMoney = z.union([moneySchema, z.null()]).openapi({}, { unionPreferredType: "oneOf" });
+export const nullableMoney = z
+  .union([moneySchema, z.null()])
+  .openapi({}, { unionPreferredType: "oneOf" });
 export const positionSchema = object({
   accountId: z.uuid().optional(),
   instrument: summarySchema,
@@ -204,9 +206,9 @@ export const positionSchema = object({
   costBasis: nullableMoney,
   price: decimal.optional(),
   priceCurrency: currency.optional(),
-  marketValue: moneySchema,
-  marketValueBase: moneySchema,
-  weight: z.number(),
+  marketValue: nullableMoney,
+  marketValueBase: nullableMoney,
+  weight: z.number().nullable(),
   unrealizedPl: nullableMoney,
   unrealizedPlRatio: z.number().nullable().optional(),
   unrealizedPlInstrumentCurrency: nullableMoney.optional(),
@@ -219,8 +221,151 @@ export const positionGrouping = z.enum(["account_instrument", "instrument"]);
 const accountPosition = positionSchema.extend({ accountId: z.uuid() }).strict();
 const instrumentPosition = positionSchema.omit({ accountId: true }).strict();
 /** Validate the response against the requested grouping; never assign an account to an aggregate. */
-export function parsePosition(value: unknown, groupBy: z.infer<typeof positionGrouping>) {
+export function parsePosition(
+  value: unknown,
+  groupBy: z.infer<typeof positionGrouping>,
+): z.infer<typeof positionSchema> {
   return positionGrouping.parse(groupBy) === "instrument"
     ? instrumentPosition.parse(value)
     : accountPosition.parse(value);
 }
+
+export const costExclusions = object({
+  count: z.number().int().min(0),
+  positions: z.array(object({ accountId: z.uuid(), instrumentId: z.uuid() })),
+}).openapi("CostExclusions");
+export const positionsResponse = object({
+  data: z.array(positionSchema),
+  totals: object({
+    marketValueBase: moneySchema,
+    costBasis: moneySchema,
+    unrealizedPl: moneySchema,
+    exclusions: costExclusions,
+  }),
+  view: z.enum(["economic", "tax"]),
+  isComplete: z.boolean(),
+  meta: metaSchema,
+}).openapi("PositionsResponse");
+export const dayChangeResponse = object({
+  change: nullableMoney,
+  changeRatio: z.number().nullable(),
+  previousValue: nullableMoney,
+  currentValue: nullableMoney,
+  flowsToday: nullableMoney,
+  positions: z.array(
+    object({
+      instrument: summarySchema,
+      change: nullableMoney,
+      contributionRatio: z.number().nullable(),
+      priceChangeRatio: z.number().nullable().optional(),
+      fxChange: moneySchema.optional(),
+    }),
+  ),
+  meta: metaSchema,
+}).openapi("DayChange");
+export const portfolioSummary = object({
+  totalValue: moneySchema,
+  marketValue: moneySchema,
+  cash: moneySchema,
+  unrealizedPl: moneySchema,
+  unrealizedPlRatio: z.number().nullable().optional(),
+  realizedPlYtd: moneySchema.optional(),
+  dayChange: nullableMoney,
+  dayChangeRatio: z.number().nullable(),
+  view: z.enum(["economic", "tax"]),
+  accounts: z
+    .array(
+      object({
+        accountId: z.uuid(),
+        name: z.string(),
+        totalValue: moneySchema,
+        totalValueBase: nullableMoney,
+      }),
+    )
+    .optional(),
+  exclusions: costExclusions,
+  isComplete: z.boolean(),
+  meta: metaSchema,
+}).openapi("PortfolioSummary");
+export const lotSchema = object({
+  id: z.uuid(),
+  accountId: z.uuid(),
+  instrumentId: z.uuid(),
+  openTransactionId: z.uuid().optional(),
+  acquiredOn: date,
+  quantityOpen: decimal,
+  quantityRemaining: decimal,
+  costTotal: nullableMoney,
+  costTotalTax: nullableMoney.optional(),
+  feesTotal: moneySchema.optional(),
+  splitFactor: decimal,
+  closedOn: date.optional(),
+  consumptions: z.array(
+    object({
+      closeTransactionId: z.uuid(),
+      quantity: decimal,
+      closedOn: date,
+      costEconomic: nullableMoney.optional(),
+      proceedsEconomic: moneySchema.optional(),
+      realizedPlEconomic: nullableMoney,
+      costTax: nullableMoney.optional(),
+      proceedsTax: nullableMoney.optional(),
+      realizedPlTax: nullableMoney,
+    }),
+  ),
+}).openapi("Lot");
+export const lotPage = object({
+  data: z.array(lotSchema),
+  page: pageInfo,
+  method: z.enum(["fifo", "average"]),
+}).openapi("LotPage");
+export const cashBalanceSchema = object({
+  accountId: z.uuid(),
+  balance: moneySchema,
+  balanceBase: moneySchema.optional(),
+  asOf: date,
+}).openapi("CashBalance");
+export const realizedStatus = z.enum([
+  "complete",
+  "missing_cost",
+  "missing_fx",
+  "missing_tax_data",
+  "not_applicable",
+]);
+export const realizedResponse = object({
+  view: z.enum(["economic", "tax"]),
+  groupBy: z.string(),
+  rows: z.array(
+    object({
+      key: z.string(),
+      label: z.string(),
+      proceeds: nullableMoney,
+      cost: nullableMoney,
+      realizedPl: nullableMoney,
+      status: realizedStatus,
+      fees: moneySchema.optional(),
+      fxCosts: moneySchema.optional(),
+    }),
+  ),
+  totals: object({
+    proceeds: moneySchema,
+    cost: moneySchema,
+    realizedPl: moneySchema,
+    fees: moneySchema.optional(),
+    fxCosts: moneySchema.optional(),
+  }),
+  isComplete: z.boolean(),
+  exclusions: z.array(
+    object({
+      transactionId: z.uuid(),
+      accountId: z.uuid(),
+      instrumentId: z.uuid(),
+      reason: z.enum(["missing_cost", "missing_fx", "missing_tax_data", "not_applicable"]),
+    }),
+  ),
+  taxSettings: object({
+    dateBasis: z.enum(["settlement", "trade"]),
+    includeFxFee: z.boolean(),
+  }).optional(),
+  taxNote: z.string().optional(),
+}).openapi("RealizedPl");

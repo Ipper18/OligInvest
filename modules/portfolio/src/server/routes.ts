@@ -17,6 +17,7 @@ import {
 } from "../contracts.js";
 import { mountImports } from "./import-routes.js";
 import type { ImportRepository } from "./imports.js";
+import { mountPortfolioReads } from "./read-routes.js";
 import { type PortfolioRepository, validationError } from "./repository.js";
 
 export interface PortfolioDependencies {
@@ -247,6 +248,7 @@ export function mountPortfolio(api: OpenAPIHono<AppEnv>, deps: PortfolioDependen
     }),
   ];
   mountImports(api, deps);
+  mountPortfolioReads(api, deps);
   for (const route of routes) {
     api.openAPIRegistry.registerPath(route);
     api.on(route.method, route.path.replace(/\{([^}]+)\}/g, ":$1"), async (c: Context<AppEnv>) => {
