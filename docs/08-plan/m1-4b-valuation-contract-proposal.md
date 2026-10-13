@@ -3,7 +3,7 @@
 **Cel:** rozstrzygnąć reprezentację luk danych przed implementacją odczytów
 REST i ekranów BL-147, bez podstawiania zera i bez pomijania posiadanych instrumentów.
 
-Status: propozycja do zatwierdzenia, 2026-10-13. Nie zmienia źródłowego OpenAPI.
+Status: zatwierdzona przez właściciela 2026-10-13; zastosowana do źródłowego OpenAPI.
 Zgoda na opcjonalne `Position.accountId` została wdrożona niezależnie.
 
 ## Dowody rozbieżności
@@ -26,7 +26,7 @@ Zgoda na opcjonalne `Position.accountId` została wdrożona niezależnie.
    nie zawiera wyłączeń. Rdzeń `RealizedSale` rozróżnia nieznany koszt,
    `taxStatus=missing_data` i `taxStatus=not_applicable` (IKE/IKZE).
 
-## Proponowany kontrakt
+## Zatwierdzony kontrakt
 
 | Miejsce | Zmiana |
 |---|---|

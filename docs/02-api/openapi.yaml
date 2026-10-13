@@ -5117,7 +5117,7 @@ components:
         unrealizedPl: {$ref: '#/components/schemas/Money'}
         unrealizedPlRatio: {type: [number, 'null']}
         realizedPlYtd: {$ref: '#/components/schemas/Money'}
-        dayChange: {$ref: '#/components/schemas/Money'}
+        dayChange: {oneOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}]}
         dayChangeRatio: {type: [number, 'null']}
         view: {type: string, enum: [economic, tax]}
         accounts:
@@ -5129,7 +5129,7 @@ components:
               accountId: {$ref: '#/components/schemas/Uuid'}
               name: {type: string}
               totalValue: {$ref: '#/components/schemas/Money'}
-              totalValueBase: {$ref: '#/components/schemas/Money'}
+              totalValueBase: {oneOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}]}
         exclusions: {$ref: '#/components/schemas/CostExclusions'}
         isComplete: {type: boolean, description: '`false`, gdy brakuje kursu lub FX dla części pozycji (wycena częściowa).'}
         meta: {$ref: '#/components/schemas/DataMeta'}
@@ -5137,11 +5137,11 @@ components:
       type: object
       required: [change, changeRatio, previousValue, currentValue, flowsToday, positions, meta]
       properties:
-        change: {$ref: '#/components/schemas/Money'}
+        change: {oneOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}]}
         changeRatio: {type: [number, 'null']}
-        previousValue: {$ref: '#/components/schemas/Money'}
-        currentValue: {$ref: '#/components/schemas/Money'}
-        flowsToday: {$ref: '#/components/schemas/Money', description: 'Przepływy zewnętrzne dnia wyłączone z wyniku.'}
+        previousValue: {oneOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}]}
+        currentValue: {oneOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}]}
+        flowsToday: {oneOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}]}
         positions:
           type: array
           items:
@@ -5149,10 +5149,10 @@ components:
             required: [instrument, change, contributionRatio]
             properties:
               instrument: {$ref: '#/components/schemas/InstrumentSummary'}
-              change: {$ref: '#/components/schemas/Money'}
+              change: {oneOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}]}
               priceChangeRatio: {type: [number, 'null']}
               fxChange: {$ref: '#/components/schemas/Money'}
-              contributionRatio: {type: number}
+              contributionRatio: {type: [number, 'null']}
         meta: {$ref: '#/components/schemas/DataMeta'}
       example:
         change: {amount: '280.45', currency: PLN}
@@ -5173,9 +5173,9 @@ components:
         costBasis: {oneOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}]}
         price: {$ref: '#/components/schemas/DecimalString'}
         priceCurrency: {$ref: '#/components/schemas/CurrencyCode'}
-        marketValue: {$ref: '#/components/schemas/Money', description: 'W walucie instrumentu.'}
-        marketValueBase: {$ref: '#/components/schemas/Money'}
-        weight: {type: number}
+        marketValue: {oneOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}]}
+        marketValueBase: {oneOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}]}
+        weight: {type: [number, 'null']}
         unrealizedPl: {oneOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}]}
         unrealizedPlRatio: {type: [number, 'null']}
         unrealizedPlInstrumentCurrency: {oneOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}]}
@@ -5185,8 +5185,9 @@ components:
         meta: {$ref: '#/components/schemas/DataMeta'}
     PositionsResponse:
       type: object
-      required: [data, totals, view, meta]
+      required: [data, totals, view, isComplete, meta]
       properties:
+        isComplete: {type: boolean, description: "false — wycena częściowa; brak ceny lub FX nie usuwa pozycji."}
         data: {type: array, items: {$ref: '#/components/schemas/Position'}}
         totals:
           type: object
@@ -5325,7 +5326,7 @@ components:
         meta: {$ref: '#/components/schemas/DataMeta'}
     RealizedPl:
       type: object
-      required: [view, groupBy, rows, totals]
+      required: [view, groupBy, rows, totals, isComplete, exclusions]
       properties:
         view: {type: string, enum: [economic, tax]}
         groupBy: {type: string}
@@ -5333,15 +5334,16 @@ components:
           type: array
           items:
             type: object
-            required: [key, label, proceeds, cost, realizedPl]
+            required: [key, label, proceeds, cost, realizedPl, status]
             properties:
+              status: {type: string, enum: [complete, missing_cost, missing_fx, missing_tax_data, not_applicable]}
               key: {type: string}
               label: {type: string}
-              proceeds: {$ref: '#/components/schemas/Money'}
-              cost: {$ref: '#/components/schemas/Money'}
+              proceeds: {oneOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}]}
+              cost: {oneOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}]}
               fees: {$ref: '#/components/schemas/Money'}
               fxCosts: {$ref: '#/components/schemas/Money'}
-              realizedPl: {$ref: '#/components/schemas/Money'}
+              realizedPl: {oneOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}]}
         totals:
           type: object
           required: [proceeds, cost, realizedPl]
@@ -5351,6 +5353,18 @@ components:
             fees: {$ref: '#/components/schemas/Money'}
             fxCosts: {$ref: '#/components/schemas/Money'}
             realizedPl: {$ref: '#/components/schemas/Money'}
+        isComplete: {type: boolean}
+        exclusions:
+          type: array
+          description: 'Operacje poza wspólnym zbiorem sum przychodu, kosztu i P/L. Grupy z wyłączeniami mają zależne kwoty null. Pełne przyczyny w tej liście; status grupy według pierwszeństwa missing_cost, missing_fx, missing_tax_data, not_applicable.'
+          items:
+            type: object
+            required: [transactionId, accountId, instrumentId, reason]
+            properties:
+              transactionId: {$ref: '#/components/schemas/Uuid'}
+              accountId: {$ref: '#/components/schemas/Uuid'}
+              instrumentId: {$ref: '#/components/schemas/Uuid'}
+              reason: {type: string, enum: [missing_cost, missing_fx, missing_tax_data, not_applicable]}
         taxSettings:
           type: object
           description: 'Ustawienia użyte w widoku tax (FR-02.07): dzień przychodu i kosztu oraz sposób ujęcia marży przewalutowania brokera; fxCosts pokazuje tę marżę osobno.'
