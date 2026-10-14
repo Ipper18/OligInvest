@@ -1,6 +1,7 @@
 export * from "./average-cost.js";
 export * from "./currency.js";
 export * from "./dates.js";
+export * from "./day-contributions.js";
 export * from "./decimal.js";
 export * from "./dividends.js";
 export * from "./drawdown.js";
