@@ -76,3 +76,32 @@ test("MVP portfolio routes render at phone width", async ({ page }) => {
     ).toEqual([]);
   }
 });
+
+for (const broker of ["xtb", "mbank"])
+  test(`${broker}: upload, resolve, acknowledge reconciliation and commit`, async ({ page }) => {
+    await page.goto("/portfel/import");
+    await page.getByLabel("Broker", { exact: true }).selectOption(broker);
+    await page.getByLabel("Plik eksportu", { exact: false }).setInputFiles({
+      name: "synthetic.csv",
+      mimeType: "text/csv",
+      buffer: Buffer.from("synthetic fixture"),
+    });
+    const started = Date.now();
+    await page.getByRole("button", { name: "Wczytaj plik" }).click();
+    await expect(page.getByRole("button", { name: "Zatwierdź import" })).toBeDisabled();
+    await page.getByRole("button", { name: "Edytuj", exact: true }).click();
+    await page.getByLabel("Nazwa, ticker lub ISIN", { exact: true }).fill("TEST");
+    await page.getByRole("button", { name: "Wyszukaj instrument", exact: true }).click();
+    await page.getByRole("radio", { name: /TEST.*Instrument syntetyczny/ }).check();
+    await page.getByRole("button", { name: "Zapisz", exact: true }).click();
+    await expect(page.getByRole("button", { name: "Zatwierdź import" })).toBeDisabled();
+    await page.getByLabel("Potwierdzam zapoznanie się z różnicami uzgodnienia.").check();
+    expect(
+      (await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze())
+        .violations,
+    ).toEqual([]);
+    await page.getByRole("button", { name: "Zatwierdź import" }).click();
+    await expect(page).toHaveURL(/\/portfel$/);
+    expect(Date.now() - started).toBeLessThan(120000);
+  });
+

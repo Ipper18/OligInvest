@@ -54,7 +54,21 @@ export async function portfolioFixture(request, response, key) {
       401,
     );
   if (!users.has(key))
-    users.set(key, { accounts: [{ ...account }], transactions: [], committed: false });
+    users.set(key, {
+      accounts: [
+        { ...account },
+        {
+          ...account,
+          id: "01900000-0000-7000-8000-000000000105",
+          name: "mBank syntetyczny",
+          broker: "mbank",
+        },
+      ],
+      transactions: [],
+      committed: false,
+      mapped: false,
+      source: "xtb",
+    });
   const state = users.get(key);
   let body = "";
   if (request.method !== "GET") for await (const chunk of request) body += chunk;
@@ -213,19 +227,48 @@ export async function portfolioFixture(request, response, key) {
         meta: { ...meta, staleReason: "eod_only" },
       },
     });
+  if (path === "/portfolio/imports" && request.method === "POST") {
+    state.source = body.includes("\r\nmbank\r\n") ? "mbank" : "xtb";
+  }
+  const row = {
+    id: "01900000-0000-7000-8000-000000000106",
+    rowNumber: 2,
+    raw: { instrument: "TEST" },
+    status: state.mapped ? "new" : "needs_mapping",
+    ...(state.mapped ? { instrumentId } : {}),
+  };
+  if (path.includes("/rows/") && request.method === "PATCH") {
+    state.mapped = true;
+    return send({ ...row, status: "new", instrumentId });
+  }
   const batch = {
     id: importId,
     accountId,
-    source: "xtb",
+    source: state.source,
     fileName: "synthetic.xlsx",
     status: state.committed ? "committed" : "parsed",
     createdAt: instant,
-    summary: { rowsTotal: 2, byStatus: { new: 2 } },
-    reconciliation: { ok: true, cash: [], positions: [] },
+    summary: { rowsTotal: 2, byStatus: state.mapped ? { new: 2 } : { new: 1, needs_mapping: 1 } },
+    reconciliation: {
+      ok: false,
+      cash: [
+        {
+          currency: "PLN",
+          expected: money("1000"),
+          computed: money("999"),
+          difference: money("-1"),
+        },
+      ],
+      positions: [],
+    },
   };
   if (path === "/portfolio/imports")
     return request.method === "POST" ? send(batch, 201) : send({ data: [batch], page: emptyPage });
-  if (path.endsWith("/rows")) return send({ data: [], page: emptyPage });
+  if (path.endsWith("/rows"))
+    return send({
+      data: state.mapped && url.searchParams.has("status") ? [] : [row],
+      page: emptyPage,
+    });
   if (path.endsWith("/commit")) {
     state.committed = true;
     return send({ ...batch, status: "committed" });

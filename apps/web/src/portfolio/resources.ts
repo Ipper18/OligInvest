@@ -112,6 +112,12 @@ export async function fetchResource<K extends ReadKey>(
   const query = new URLSearchParams(
     Object.entries(args).filter((entry): entry is [string, string] => entry[1] !== undefined),
   );
+  if (key === "rows" && args.status === "unresolved") {
+    query.delete("status");
+    query.append("status", "needs_mapping");
+    query.append("status", "error");
+  }
+  if (key === "rows" && args.status === "all") query.delete("status");
   return spec.output.parse(
     await domainRequest(`${path}${query.size ? `?${query}` : ""}`),
   ) as Resource<K>;

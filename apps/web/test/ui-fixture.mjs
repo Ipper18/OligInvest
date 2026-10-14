@@ -99,6 +99,7 @@ export async function uiFixture(request, response) {
             "education:use",
           ],
           features: {
+            "module.portfolio.import.mbank": !key.includes("no-mbank"),
             "module.alerts": !key.includes("no-alerts"),
             "module.analytics": true,
             "module.education": true,
@@ -108,6 +109,14 @@ export async function uiFixture(request, response) {
       : fail();
   if (path === "/api/v1/me/legal" && request.method === "GET")
     return profile ? send(legal(profile.required)) : fail();
+  if (
+    /^\/api\/v1\/stream\/connections\/[\w-]+\/instruments$/.test(path) &&
+    request.method === "PUT"
+  ) {
+    if (!profile) return fail();
+    response.writeHead(204).end();
+    return true;
+  }
   if (path === "/api/v1/stream") {
     if (!profile) return fail();
     response.writeHead(200, { "Content-Type": "text/event-stream", "Cache-Control": "no-store" });

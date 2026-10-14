@@ -100,7 +100,7 @@ export async function uploadFile(form: FormData) {
       throw new DomainError("FILE_TOO_LARGE", "");
     const fields = importUploadSchema
       .omit({ file: true })
-      .parse({ accountId: form.get("accountId"), source: "xtb" });
+      .parse({ accountId: form.get("accountId"), source: form.get("source") });
     const key = z.uuid().parse(form.get("key"));
     const outgoing = new FormData();
     outgoing.set("file", file);
