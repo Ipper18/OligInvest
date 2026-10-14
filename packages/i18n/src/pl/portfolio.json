@@ -26,6 +26,8 @@
   "unavailable": "Brak danych",
   "totalValue": "Wartość portfela",
   "dayChange": "Wynik dnia",
+  "contributionRatio": "Wkład w stopę portfela",
+  "residualChange": "Gotówka i pozostałe",
   "unrealizedPl": "Wynik niezrealizowany",
   "marketValue": "Wartość instrumentów",
   "cash": "Gotówka",

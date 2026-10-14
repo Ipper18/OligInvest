@@ -45,6 +45,16 @@ test("portfolio gaps remain visible with quantity and an accessible tax view", a
       .violations,
   ).toEqual([]);
 });
+
+test("Start exposes daily contributions and residual without substituting zero for gaps", async ({
+  page,
+}) => {
+  await page.goto("/");
+  const table = page.getByRole("table", { name: "Wynik dnia", exact: true });
+  await expect(table.getByRole("columnheader", { name: "Wkład w stopę portfela" })).toBeVisible();
+  await expect(table.getByRole("row", { name: /Gotówka i pozostałe.*Brak danych/ })).toBeVisible();
+  await expect(table.getByRole("row", { name: /TEST.*Brak danych/ })).toBeVisible();
+});
 test("MVP portfolio routes render at phone width", async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 800 });
   for (const route of [

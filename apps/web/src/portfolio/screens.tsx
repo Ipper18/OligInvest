@@ -20,9 +20,20 @@ const instrumentLink = (id: string, title: string) => (
     {title}
   </Link>
 );
-export function SummaryScreen({ userId, args, initial }: Props<"summary">) {
+export function SummaryScreen({
+  userId,
+  args,
+  initial,
+  initialDay,
+}: Props<"summary"> & { initialDay: Resource<"day"> }) {
   const query = useResource(userId, "summary", args, initial),
     data = query.data;
+  const day = useResource(
+    userId,
+    "day",
+    args.accountId ? { accountId: args.accountId } : {},
+    initialDay,
+  );
   return (
     <>
       <QueryNotice failed={query.isError} retry={query.refetch} />
@@ -44,6 +55,29 @@ export function SummaryScreen({ userId, args, initial }: Props<"summary">) {
         ))}
       </dl>
       <p>{m.dayHelp}</p>
+      <QueryNotice failed={day.isError} retry={day.refetch} />
+      <DataTable
+        caption={m.dayChange}
+        headings={[m.instrument, m.dayChange, m.contributionRatio]}
+        rows={[
+          ...day.data.positions.map((p) => ({
+            id: p.instrument.id,
+            cells: [
+              instrumentLink(p.instrument.id, p.instrument.ticker),
+              <Amount key="change" value={p.change} signed />,
+              ratio(p.contributionRatio),
+            ],
+          })),
+          {
+            id: "residual",
+            cells: [
+              m.residualChange,
+              <Amount key="change" value={day.data.residualChange} signed />,
+              m.not_applicable,
+            ],
+          },
+        ]}
+      />
       <Freshness meta={data.meta} />
       {!data.accounts?.length && <p>{m.emptyStart}</p>}
       <DataTable

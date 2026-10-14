@@ -26,7 +26,11 @@ export async function portfolioPage(
   const common = { userId: me.id, args, accounts: accounts.data };
   const screen =
     kind === "summary" ? (
-      <SummaryScreen {...common} initial={await fetchResource("summary", args)} />
+      <SummaryScreen
+        {...common}
+        initial={await fetchResource("summary", args)}
+        initialDay={await fetchResource("day", args.accountId ? { accountId: args.accountId } : {})}
+      />
     ) : kind === "positions" ? (
       <PositionsScreen
         {...common}

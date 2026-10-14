@@ -62,6 +62,17 @@ export async function portfolioFixture(request, response, key) {
     body && !request.headers["content-type"]?.includes("multipart") ? JSON.parse(body) : {};
   const view = url.searchParams.get("view") ?? "economic";
   const exclusions = { count: 1, positions: [{ accountId, instrumentId }] };
+  if (path === "/portfolio/day-change")
+    return send({
+      change: null,
+      changeRatio: null,
+      previousValue: money("1000"),
+      currentValue: null,
+      flowsToday: money("0"),
+      residualChange: null,
+      positions: [{ instrument, change: null, contributionRatio: null }],
+      meta,
+    });
   if (path === "/portfolio/accounts") {
     if (request.method === "POST") {
       const value = { ...account, ...data, id: randomUUID() };
