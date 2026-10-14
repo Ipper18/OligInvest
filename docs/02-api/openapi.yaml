@@ -5135,13 +5135,16 @@ components:
         meta: {$ref: '#/components/schemas/DataMeta'}
     DayChange:
       type: object
-      required: [change, changeRatio, previousValue, currentValue, flowsToday, positions, meta]
+      required: [change, changeRatio, previousValue, currentValue, flowsToday, residualChange, positions, meta]
       properties:
         change: {oneOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}]}
         changeRatio: {type: [number, 'null']}
         previousValue: {oneOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}]}
         currentValue: {oneOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}]}
         flowsToday: {oneOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}]}
+        residualChange:
+          oneOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}]
+          description: 'Wynik dnia minus suma wkładów instrumentów przed zaokrągleniem; gotówka i pozostałe, null przy brakach składników (obliczenia-finansowe § 5.1).'
         positions:
           type: array
           items:
@@ -5152,7 +5155,7 @@ components:
               change: {oneOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}]}
               priceChangeRatio: {type: [number, 'null']}
               fxChange: {$ref: '#/components/schemas/Money'}
-              contributionRatio: {type: [number, 'null']}
+              contributionRatio: {type: [number, 'null'], description: 'Wkład kwotowy instrumentu podzielony przez V(D−1) + przepływy zewnętrzne dnia; null przy bazie ≤ 0 lub brakach danych.'}
         meta: {$ref: '#/components/schemas/DataMeta'}
       example:
         change: {amount: '280.45', currency: PLN}
@@ -5160,6 +5163,7 @@ components:
         previousValue: {amount: '51903.75', currency: PLN}
         currentValue: {amount: '52184.20', currency: PLN}
         flowsToday: {amount: '0.00', currency: PLN}
+        residualChange: {amount: '280.45', currency: PLN}
         positions: []
         meta: {source: mixed, asOf: '2026-09-18T13:42:00Z', delayMinutes: 15, stale: false}
     Position:

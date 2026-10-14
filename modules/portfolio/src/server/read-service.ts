@@ -4,6 +4,7 @@ import {
   dayChange,
   externalFlows,
   grossValue,
+  isCoreError,
   isoDate,
   type Money,
   price,
@@ -25,6 +26,7 @@ import {
   realizedResponse,
 } from "../contracts.js";
 import { portfolioDate, valuationState } from "../recompute.js";
+import { dayInstrument, projectDayBreakdown } from "./day-breakdown.js";
 import { baseMoney, jsonMoney, projectPortfolio, type ReadQuote, readMeta } from "./read-model.js";
 import { clean, type PortfolioRepository } from "./repository.js";
 
@@ -58,6 +60,19 @@ export async function readPortfolio(
     );
     const ids = new Set(accounts.map((a) => a.id));
     const ledger = state.ledgerOn(date);
+    const previousLedger = state.ledgerOn(addDays(date, -1));
+    const instrumentIds = [
+      ...new Set([
+        ...ledger.positions.filter((p) => ids.has(p.accountId)).map((p) => p.instrumentId),
+        ...previousLedger.positions.filter((p) => ids.has(p.accountId)).map((p) => p.instrumentId),
+        ...state.transactions
+          .filter((t) => ids.has(t.accountId) && t.tradeDate === date)
+          .flatMap((t) => {
+            const id = dayInstrument(t, state.transactions);
+            return id ? [id] : [];
+          }),
+      ]),
+    ];
     const selected = {
       ...ledger,
       positions: ledger.positions.filter((p) => ids.has(p.accountId)),
@@ -71,12 +86,12 @@ export async function readPortfolio(
     if (operation === "getRealizedPl") return projectRealized(selected.sales, state, query, view);
     const instruments = (
       await tx.execute(
-        sql`SELECT id::text,coalesce(ticker,isin,id::text) AS ticker,name,isin,mic,currency,type,country,is_active AS "isActive",exchange_short_name AS "exchangeShortName" FROM market.instruments WHERE id=ANY(${sql.param([...new Set(selected.positions.map((p) => p.instrumentId))])}::uuid[])`,
+        sql`SELECT id::text,coalesce(ticker,isin,id::text) AS ticker,name,isin,mic,currency,type,country,is_active AS "isActive",exchange_short_name AS "exchangeShortName" FROM market.instruments WHERE id=ANY(${sql.param(instrumentIds)}::uuid[])`,
       )
     ).rows.map((r) => summarySchema.parse(clean(r)));
     const quotes: ReadQuote[] = state
       .quotesOn(date)
-      .filter((q) => selected.positions.some((p) => p.instrumentId === q.instrumentId))
+      .filter((q) => instrumentIds.includes(q.instrumentId))
       .map((q) => {
         const bar = state.bars.findLast((b) => b.id === q.instrumentId && b.date <= date)!;
         return {
@@ -176,7 +191,7 @@ export async function readPortfolio(
       ).map((f) => baseMoney(f.amount, state.fx, date));
       if (items.every((v) => v !== null)) flows = sumMoney(items, "PLN");
     } catch (error) {
-      if (!(error instanceof Error) || !error.message.includes("transfer")) throw error;
+      if (!isCoreError(error) || error.code !== "missing_transfer_value") throw error;
     }
     const change =
       valuation.isComplete && previous.isComplete && flows
@@ -186,16 +201,27 @@ export async function readPortfolio(
             externalFlows: flows,
           })
         : null;
+    const breakdown = projectDayBreakdown({
+      previous,
+      current: valuation,
+      transactions: state.transactions.filter((t) => ids.has(t.accountId)),
+      quotes,
+      fx: state.fx,
+      date,
+      flows,
+      change: change?.change ?? null,
+    });
     const result = dayChangeResponse.parse({
       change: jsonMoney(change?.change ?? null),
       changeRatio: change?.ratio ?? null,
       previousValue: jsonMoney(previous.isComplete ? previous.total : null),
       currentValue: jsonMoney(valuation.isComplete ? valuation.total : null),
       flowsToday: jsonMoney(flows),
-      positions: instruments.map((instrument) => ({
-        instrument,
-        change: null,
-        contributionRatio: null,
+      residualChange: jsonMoney(breakdown.residualChange),
+      positions: breakdown.positions.map((p) => ({
+        instrument: instruments.find((i) => i.id === p.instrumentId),
+        change: jsonMoney(p.change),
+        contributionRatio: p.contributionRatio,
       })),
       meta: readMeta(quotes, Boolean(change)),
     });

@@ -72,6 +72,16 @@ export async function testPortfolioReads({ request, database, owner, instrumentI
   const summary = await get(`summary?${selection}`);
   assert.equal(summary.dayChange, null);
   assert.equal(summary.isComplete, true);
+  assert.equal(day.residualChange, null);
+  await database.transaction(owner, async (tx) => {
+    await tx.execute(
+      sql`INSERT INTO market.bars_daily(instrument_id,session_date,close,source) VALUES(${instrumentId}::uuid,'2026-10-12',7,'gpw')`,
+    );
+  });
+  const pricedDay = await get(`day-change?${selection}`);
+  assert.equal(pricedDay.change.amount, "4.00000000");
+  assert.equal(pricedDay.positions[0].change.amount, "4.00000000");
+  assert.equal(pricedDay.residualChange.amount, "0.00000000");
   const sell = (accountId) =>
     post("transactions", {
       accountId,
@@ -93,6 +103,13 @@ export async function testPortfolioReads({ request, database, owner, instrumentI
   assert.equal(realized.exclusions[0].transactionId, unknown.id);
   assert.equal(realized.totals.proceeds.amount, "8.00000000");
   assert.equal(realized.totals.cost.amount, "5.00000000");
+  const soldDay = await get(`day-change?${selection}`);
+  assert.equal(
+    soldDay.positions[0].change.amount,
+    "4.00000000",
+    "sale proceeds do not inflate day contribution",
+  );
+  assert.equal(soldDay.residualChange.amount, "0.00000000");
   assert.equal(realized.totals.realizedPl.amount, "3.00000000");
   for (const account of accounts.slice(2)) {
     await transfer(account.id, true);

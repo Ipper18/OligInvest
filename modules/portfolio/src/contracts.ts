@@ -252,11 +252,18 @@ export const dayChangeResponse = object({
   previousValue: nullableMoney,
   currentValue: nullableMoney,
   flowsToday: nullableMoney,
+  residualChange: nullableMoney.openapi({
+    description:
+      "Wynik dnia minus suma wkładów instrumentów przed zaokrągleniem; gotówka i pozostałe, null przy brakach składników (obliczenia-finansowe § 5.1).",
+  }),
   positions: z.array(
     object({
       instrument: summarySchema,
       change: nullableMoney,
-      contributionRatio: z.number().nullable(),
+      contributionRatio: z.number().nullable().openapi({
+        description:
+          "Wkład kwotowy instrumentu podzielony przez V(D−1) + przepływy zewnętrzne dnia; null przy bazie ≤ 0 lub brakach danych.",
+      }),
       priceChangeRatio: z.number().nullable().optional(),
       fxChange: moneySchema.optional(),
     }),

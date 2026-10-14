@@ -3830,6 +3830,10 @@ export interface components {
          *         "amount": "0.00",
          *         "currency": "PLN"
          *       },
+         *       "residualChange": {
+         *         "amount": "280.45",
+         *         "currency": "PLN"
+         *       },
          *       "positions": [],
          *       "meta": {
          *         "source": "mixed",
@@ -3845,11 +3849,14 @@ export interface components {
             previousValue: components["schemas"]["Money"] | null;
             currentValue: components["schemas"]["Money"] | null;
             flowsToday: components["schemas"]["Money"] | null;
+            /** @description Wynik dnia minus suma wkładów instrumentów przed zaokrągleniem; gotówka i pozostałe, null przy brakach składników (obliczenia-finansowe § 5.1). */
+            residualChange: components["schemas"]["Money"] | null;
             positions: {
                 instrument: components["schemas"]["InstrumentSummary"];
                 change: components["schemas"]["Money"] | null;
                 priceChangeRatio?: number | null;
                 fxChange?: components["schemas"]["Money"];
+                /** @description Wkład kwotowy instrumentu podzielony przez V(D−1) + przepływy zewnętrzne dnia; null przy bazie ≤ 0 lub brakach danych. */
                 contributionRatio: number | null;
             }[];
             meta: components["schemas"]["DataMeta"];
