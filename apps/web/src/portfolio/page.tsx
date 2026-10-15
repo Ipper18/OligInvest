@@ -3,17 +3,9 @@ import { notFound } from "next/navigation";
 import { requireMe } from "../auth/session";
 import { PortfolioFilters, PortfolioNav } from "./presentation";
 import { fetchResource, readArgs } from "./resources";
-import {
-  AccountsScreen,
-  LotsScreen,
-  PositionsScreen,
-  RealizedScreen,
-  SummaryScreen,
-  TransactionsScreen,
-} from "./screens";
 export type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 export async function portfolioPage(
-  kind: "summary" | "positions" | "transactions" | "accounts" | "lots" | "realized",
+  kind: "positions" | "transactions" | "accounts" | "lots" | "realized",
   search: SearchParams,
 ) {
   const me = await requireMe();
@@ -21,17 +13,13 @@ export async function portfolioPage(
   const parsed = readArgs.safeParse(raw);
   if (!parsed.success) notFound();
   const args = parsed.data;
-  if (["summary", "positions", "realized"].includes(kind)) args.view ??= me.preferences.plView;
+  if (["positions", "realized"].includes(kind)) args.view ??= me.preferences.plView;
   const accounts = await fetchResource("accounts");
   const common = { userId: me.id, args, accounts: accounts.data };
+  const { AccountsScreen, LotsScreen, PositionsScreen, RealizedScreen, TransactionsScreen } =
+    await import("./screens");
   const screen =
-    kind === "summary" ? (
-      <SummaryScreen
-        {...common}
-        initial={await fetchResource("summary", args)}
-        initialDay={await fetchResource("day", args.accountId ? { accountId: args.accountId } : {})}
-      />
-    ) : kind === "positions" ? (
+    kind === "positions" ? (
       <PositionsScreen
         {...common}
         initial={await fetchResource("positions", args)}
@@ -50,13 +38,13 @@ export async function portfolioPage(
     );
   return (
     <section>
-      <h1>{kind === "summary" ? m.start : m[kind]}</h1>
+      <h1>{m[kind]}</h1>
       <PortfolioNav />
       {kind !== "accounts" && (
         <PortfolioFilters
           accounts={accounts.data}
           args={args}
-          view={["summary", "positions", "realized"].includes(kind)}
+          view={["positions", "realized"].includes(kind)}
         >
           {kind === "positions" && (
             <label>

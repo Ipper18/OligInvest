@@ -10,6 +10,14 @@
     "build": "tsc -p tsconfig.json"
   },
   "exports": {
+    "./chart": {
+      "types": "./dist/candlestick-chart.d.ts",
+      "import": "./dist/candlestick-chart.js"
+    },
+    "./table": {
+      "types": "./dist/data-table.d.ts",
+      "import": "./dist/data-table.js"
+    },
     "./tokens.css": "./src/tokens.css",
     ".": {
       "types": "./dist/index.d.ts",

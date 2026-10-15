@@ -1,6 +1,7 @@
 "use client";
 import { formatDateTime, formatQuantity, portfolioMessages as m } from "@oliginvest/i18n";
-import { Button, DataTable, Disclosure, SelectField, TextField } from "@oliginvest/ui";
+import { Button, Disclosure, SelectField, TextField } from "@oliginvest/ui";
+import { DataTable } from "@oliginvest/ui/table";
 import { useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter } from "next/navigation";

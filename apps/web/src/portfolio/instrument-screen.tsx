@@ -1,6 +1,8 @@
 "use client";
 import { formatDate, formatQuantity, portfolioMessages as m } from "@oliginvest/i18n";
-import { Button, CandlestickChart, DataTable, SelectField } from "@oliginvest/ui";
+import { Button, SelectField } from "@oliginvest/ui";
+import { CandlestickChart } from "@oliginvest/ui/chart";
+import { DataTable } from "@oliginvest/ui/table";
 import { useState } from "react";
 import { Amount, Freshness, ratio } from "./presentation";
 import { QueryNotice, useResource } from "./query";

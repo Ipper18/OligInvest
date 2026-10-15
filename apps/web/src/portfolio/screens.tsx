@@ -1,6 +1,7 @@
 "use client";
 import { formatDate, formatQuantity, portfolioMessages as m } from "@oliginvest/i18n";
-import { DataTable, Disclosure } from "@oliginvest/ui";
+import { Disclosure } from "@oliginvest/ui";
+import { DataTable } from "@oliginvest/ui/table";
 import Link from "next/link";
 import { Amount, Freshness, ratio, TaxDisclaimer } from "./presentation";
 import { QueryNotice, useResource } from "./query";
@@ -20,83 +21,6 @@ const instrumentLink = (id: string, title: string) => (
     {title}
   </Link>
 );
-export function SummaryScreen({
-  userId,
-  args,
-  initial,
-  initialDay,
-}: Props<"summary"> & { initialDay: Resource<"day"> }) {
-  const query = useResource(userId, "summary", args, initial),
-    data = query.data;
-  const day = useResource(
-    userId,
-    "day",
-    args.accountId ? { accountId: args.accountId } : {},
-    initialDay,
-  );
-  return (
-    <>
-      <QueryNotice failed={query.isError} retry={query.refetch} />
-      <TaxDisclaimer view={data.view} />
-      {!data.isComplete && <p className="oi-partial">{m.partial}</p>}
-      {data.exclusions.count > 0 && (
-        <p>
-          {m.excluded} {data.exclusions.count}
-        </p>
-      )}
-      <dl className="oi-kpis">
-        {(["totalValue", "dayChange", "unrealizedPl", "cash"] as const).map((key) => (
-          <div key={key} className="oi-kpi">
-            <dt>{m[key]}</dt>
-            <dd>
-              <Amount value={data[key]} signed={key === "dayChange" || key === "unrealizedPl"} />
-            </dd>
-          </div>
-        ))}
-      </dl>
-      <p>{m.dayHelp}</p>
-      <QueryNotice failed={day.isError} retry={day.refetch} />
-      <DataTable
-        caption={m.dayChange}
-        headings={[m.instrument, m.dayChange, m.contributionRatio]}
-        rows={[
-          ...day.data.positions.map((p) => ({
-            id: p.instrument.id,
-            cells: [
-              instrumentLink(p.instrument.id, p.instrument.ticker),
-              <Amount key="change" value={p.change} signed />,
-              ratio(p.contributionRatio),
-            ],
-          })),
-          {
-            id: "residual",
-            cells: [
-              m.residualChange,
-              <Amount key="change" value={day.data.residualChange} signed />,
-              m.not_applicable,
-            ],
-          },
-        ]}
-      />
-      <Freshness meta={data.meta} />
-      {!data.accounts?.length && <p>{m.emptyStart}</p>}
-      <DataTable
-        caption={m.accounts}
-        headings={[m.account, m.totalValue, m.valueBase]}
-        rows={(data.accounts ?? []).map((a) => ({
-          id: a.accountId,
-          cells: [
-            <Link key={a.accountId} href={`/portfel/rachunki/${a.accountId}`}>
-              {a.name}
-            </Link>,
-            <Amount key="total" value={a.totalValue} />,
-            <Amount key="base" value={a.totalValueBase} />,
-          ],
-        }))}
-      />
-    </>
-  );
-}
 export function PositionsScreen({
   userId,
   args,
