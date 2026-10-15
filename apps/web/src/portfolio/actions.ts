@@ -1,4 +1,6 @@
 "use server";
+import * as z from "zod";
+import { requireMe } from "../auth/session";
 import {
   accountInput,
   accountPatch,
@@ -11,9 +13,7 @@ import {
   transactionInput,
   transactionPatch,
   transactionSchema,
-} from "@oliginvest/mod-portfolio/contracts";
-import * as z from "zod";
-import { requireMe } from "../auth/session";
+} from "../modules";
 import { DomainError, domainRequest } from "./resources";
 
 export async function mutateResource(raw: unknown) {

@@ -1,23 +1,25 @@
 import "server-only";
 import { loadConfig } from "@oliginvest/config";
-import { chartSchema, instrumentSchema, pageSchema } from "@oliginvest/mod-market/contracts";
+import { headers } from "next/headers";
+import * as z from "zod";
+import { problemSchema } from "../api/validation";
 import {
   accountSchema,
   cashBalanceSchema,
+  chartSchema,
   dayChangeResponse,
   importBatchPage,
   importBatchSchema,
   importRowPage,
+  instrumentSchema,
   lotPage,
+  pageSchema,
   portfolioSummary,
   positionsResponse,
   realizedResponse,
   transactionPage,
   transactionSchema,
-} from "@oliginvest/mod-portfolio/contracts";
-import { headers } from "next/headers";
-import * as z from "zod";
-import { problemSchema } from "../api/validation";
+} from "../modules";
 
 export const readSpecs = {
   accounts: {

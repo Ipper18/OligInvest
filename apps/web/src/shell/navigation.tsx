@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { Me } from "../api/validation";
 
-import { uiModules } from "../modules";
+import { uiModules } from "../ui-registry";
 
 const links = uiModules.flatMap((module) =>
   (module.nav ?? []).map((item) => ({

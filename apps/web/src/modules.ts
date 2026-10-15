@@ -1,3 +1,27 @@
-import type { UiModuleDefinition } from "@oliginvest/platform/modules";
-import definitions from "./ui-modules.json";
-export const uiModules: readonly UiModuleDefinition[] = definitions;
+import "server-only";
+
+// Foundation DTOs enter the web application only through its composition root.
+// Functional modules remain optional and are discovered by generate-ui-registry.
+export { chartSchema, instrumentSchema, pageSchema } from "@oliginvest/mod-market/contracts";
+export {
+  accountInput,
+  accountPatch,
+  accountSchema,
+  cashBalanceSchema,
+  dayChangeResponse,
+  importBatchPage,
+  importBatchSchema,
+  importCommitSchema,
+  importRowPage,
+  importRowSchema,
+  importUploadSchema,
+  lotPage,
+  portfolioSummary,
+  positionsResponse,
+  realizedResponse,
+  resolutionSchema,
+  transactionInput,
+  transactionPage,
+  transactionPatch,
+  transactionSchema,
+} from "@oliginvest/mod-portfolio/contracts";
