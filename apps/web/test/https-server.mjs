@@ -39,7 +39,7 @@ try {
   await app.prepare();
   const handler = app.getRequestHandler();
   const server = createServer(credentials, async (request, response) => {
-    if (request.url === "/api/v1/stream") await uiFixture(request, response);
+    if (request.url?.startsWith("/api/v1/stream")) await uiFixture(request, response);
     else await handler(request, response);
   });
   server.listen(3197, "127.0.0.1");

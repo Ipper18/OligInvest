@@ -105,3 +105,25 @@ for (const broker of ["xtb", "mbank"])
     expect(Date.now() - started).toBeLessThan(120000);
   });
 
+test("instrument has lazy canvas, keyboard controls, EOD metadata and alternative table", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 360, height: 800 });
+  await page.goto("/rynek/01900000-0000-7000-8000-000000000101");
+  await expect(page.getByRole("heading", { name: /TEST/ })).toBeVisible();
+  await page.locator(".oi-candlestick").scrollIntoViewIfNeeded();
+  await expect(page.locator("canvas").first()).toBeVisible();
+  await page.getByRole("slider").focus();
+  await page.keyboard.press("End");
+  await expect(page.getByRole("slider")).toHaveValue("1");
+  await page.getByRole("button", { name: "Pokaż jako tabelę" }).click();
+  await expect(page.getByRole("table", { name: "Kurs i wolumen" })).toBeVisible();
+  await page.getByLabel("Interwał", { exact: true }).selectOption("1w");
+  await page.getByRole("button", { name: "Zastosuj", exact: true }).click();
+  await expect(page).toHaveURL(/interval=1w/);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  expect(
+    (await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze())
+      .violations,
+  ).toEqual([]);
+});

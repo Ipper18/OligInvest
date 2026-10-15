@@ -2,7 +2,7 @@
 import { appMessages } from "@oliginvest/i18n";
 import { AppShell, Button } from "@oliginvest/ui";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import type { Me } from "../api/validation";
 import { submitAction } from "../auth/actions";
@@ -33,6 +33,26 @@ export function Providers({
   const pausedRef = useRef(false);
   const stream = useRef<ReturnType<typeof connectStream> | null>(null);
   const router = useRouter();
+  const pathname = usePathname();
+  const [connectionId, setConnectionId] = useState<string | null>(null);
+  useEffect(() => {
+    if (!connectionId) return;
+    const id = /^\/rynek\/([0-9a-f-]{36})$/i.exec(pathname)?.[1];
+    const abort = new AbortController();
+    void fetch(`/api/v1/stream/connections/${connectionId}/instruments`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ instrumentIds: id ? [id] : [] }),
+      signal: abort.signal,
+    })
+      .then((response) => {
+        if (!response.ok) setState("polling");
+      })
+      .catch(() => {
+        if (!abort.signal.aborted) setState("polling");
+      });
+    return () => abort.abort();
+  }, [connectionId, pathname]);
   useEffect(() => {
     setMe(initialMe);
     client.setQueryData(queryKey(initialMe.id, "me"), initialMe);
@@ -76,6 +96,7 @@ export function Providers({
             const schema = realtimeSchemas[frame.event as keyof typeof realtimeSchemas];
             const event = schema.parse(JSON.parse(frame.data));
             const data = event as unknown as Record<string, unknown>;
+            if (frame.event === "ready") setConnectionId(data.connectionId as string);
             if ((frame.event === "ready" && data.resumed === false) || frame.event === "resync")
               void client.invalidateQueries({ queryKey: [me.id] });
             if (frame.event === "flags.changed") {

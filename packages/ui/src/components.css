@@ -513,3 +513,8 @@
     border-color: #555;
   }
 }
+.oi-candlestick {
+  height: 360px;
+  width: 100%;
+  min-width: 0;
+}

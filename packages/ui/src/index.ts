@@ -1,3 +1,4 @@
+export { type CandleSeries, CandlestickChart } from "./candlestick-chart.js";
 export { AssumptionsBlock, DataFreshness, type DataMeta, Disclaimer } from "./compliance.js";
 export { DataTable } from "./data-table.js";
 export { Button, Disclosure, SelectField, TextField } from "./native-controls.js";
