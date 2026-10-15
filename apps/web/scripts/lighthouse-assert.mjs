@@ -7,7 +7,7 @@ import {
   withPerformanceServer,
 } from "./performance-server.mjs";
 import { localChromeFlags } from "./performance-tls.mjs";
-import { currentPlan } from "./route-budgets.mjs";
+import { currentPlan, performanceFixtures } from "./route-budgets.mjs";
 
 const LIMITS = {
   "largest-contentful-paint": 2000,
@@ -44,7 +44,7 @@ export async function main() {
   const fullGate = process.argv.includes("--assert");
   const enforce = fullGate || process.argv.includes("--assert-available");
   const plan = currentPlan();
-  const fixtures = JSON.parse(process.env.PERF_FIXTURES || "{}");
+  const fixtures = performanceFixtures();
   const wanted = [
     "/logowanie",
     "/",

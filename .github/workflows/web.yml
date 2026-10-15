@@ -38,8 +38,8 @@ jobs:
       - run: pnpm --filter @oliginvest/web test:performance
       - run: pnpm size
       - run: pnpm budgets
-      - name: Lighthouse (implemented M1 routes, system Chrome sandbox)
+      - name: Lighthouse (all four MVP routes, system Chrome sandbox)
         run: |
           export CHROME_PATH="$(command -v google-chrome)"
           "$CHROME_PATH" --version
-          pnpm --filter @oliginvest/web exec node scripts/lighthouse-assert.mjs --assert-available
+          pnpm --filter @oliginvest/web exec node scripts/lighthouse-assert.mjs --assert
