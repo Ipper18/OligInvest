@@ -147,6 +147,7 @@ function RowEditor({
         const f = new FormData(e.currentTarget),
           get = (key: string) => String(f.get(key) ?? "").trim();
         const fields: Record<string, unknown> = {};
+        if (get("quantity")) fields.quantity = get("quantity").replace(",", ".");
         if (get("amount"))
           fields.amount = { amount: get("amount").replace(",", "."), currency: get("currency") };
         if (get("fxRate")) {
@@ -178,6 +179,12 @@ function RowEditor({
       {action === "map_instrument" && <InstrumentPicker initialId={row.instrumentId ?? ""} />}
       {action !== "skip" && (
         <>
+          <TextField
+            id="resolution-quantity"
+            name="quantity"
+            label={m.quantity}
+            inputMode="decimal"
+          />
           <TextField id="resolution-amount" name="amount" label={m.amount} inputMode="decimal" />
           <SelectField id="resolution-currency" name="currency" label={m.currency}>
             {["PLN", "USD", "EUR"].map((c) => (
