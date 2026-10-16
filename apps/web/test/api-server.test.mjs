@@ -1,12 +1,16 @@
 import { afterEach, expect, test, vi } from "vitest";
 
-const context = vi.hoisted(() => ({ headers: new Headers() }));
+const context = vi.hoisted(() => ({ headers: new Headers(), rotated: undefined }));
 vi.mock("server-only", () => ({}));
-vi.mock("next/headers", () => ({ headers: async () => context.headers }));
+vi.mock("next/headers", () => ({
+  headers: async () => context.headers,
+  cookies: async () => ({ toString: () => context.rotated ?? context.headers.get("cookie") ?? "" }),
+}));
 const { getApiClient, getHealthStatus } = await import("../src/api/server.ts");
 afterEach(() => {
   vi.unstubAllEnvs();
   vi.unstubAllGlobals();
+  context.rotated = undefined;
 });
 
 function setup() {
@@ -52,6 +56,13 @@ test("separate request contexts never reuse a session", async () => {
     "session=synthetic",
     "session=second",
   ]);
+});
+
+test("RSC after a Server Action forwards the rotated cookie instead of the revoked request token", async () => {
+  const fetch = setup();
+  context.rotated = "session=rotated";
+  await (await getApiClient()).GET("/health/live");
+  expect(fetch.mock.calls[0][0].headers.get("cookie")).toBe("session=rotated");
 });
 
 test("rejects caller overrides that would send credentials outside the API boundary", async () => {
