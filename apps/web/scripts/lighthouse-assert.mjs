@@ -60,6 +60,7 @@ export async function main() {
     import("@playwright/test"),
   ]);
   const chromePath = process.env.CHROME_PATH || chromium.executablePath();
+  if (process.env.CI && !process.env.CHROME_PATH) throw failure("LH_SYSTEM_CHROME_REQUIRED");
   if (!existsSync(chromePath)) throw failure("LH_CHROME_PATH_MISSING");
   phase = "next-start";
   const results = await withPerformanceServer(async (origin) => {
@@ -71,6 +72,16 @@ export async function main() {
       logLevel: "error",
     });
     try {
+      const version = await (
+        await fetch(`http://127.0.0.1:${chrome.port}/json/version`, {
+          signal: AbortSignal.timeout(5000),
+        })
+      ).json();
+      if (!/^(?:HeadlessChrome|Chrome)\/[0-9.]+$/.test(version.Browser ?? ""))
+        throw failure("LH_CHROME_VERSION_INVALID");
+      console.log(
+        `Lighthouse browser: ${version.Browser}; sandbox enabled; ${process.env.CHROME_PATH ? "CHROME_PATH" : "Playwright executable"}.`,
+      );
       phase = "audit";
       const rows = [];
       for (const route of routes) {
