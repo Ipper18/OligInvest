@@ -25,6 +25,7 @@ export class ProviderLimits {
     private readonly redis: Redis,
     private readonly cache: Redis,
     private readonly now = Date.now,
+    private readonly observe?: (provider: string, result: "ok" | "fail") => void,
   ) {}
   async run<T>(
     provider: string,
@@ -62,9 +63,11 @@ export class ProviderLimits {
       if (delay !== 0) throw new ProviderError("provider_quota", Math.max(delay, 1000));
       try {
         const result = await operation();
+        this.observe?.(provider, "ok");
         if (halfOpen) await this.redis.del(`${breaker}:errors`, `${breaker}:failed`);
         return result;
       } catch (error) {
+        this.observe?.(provider, "fail");
         const opened = await this.redis.eval(
           FAILURE,
           2,

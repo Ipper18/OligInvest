@@ -20,6 +20,7 @@ const optionsSchema = z
 export type DatabaseOptions = z.input<typeof optionsSchema>;
 type Work<T> = (transaction: DatabaseTransaction) => Promise<T>;
 export interface AppDatabase {
+  poolInUse?(): number;
   transaction<T>(context: DatabaseContext, work: Work<T>): Promise<T>;
   close(): Promise<void>;
 }
@@ -51,6 +52,7 @@ function createPool(input: DatabaseOptions, role: DatabaseRole): pg.Pool {
 export function createAppDatabase(options: DatabaseOptions): AppDatabase {
   const pool = createPool(options, "oliginvest_app");
   return Object.freeze({
+    poolInUse: () => pool.totalCount - pool.idleCount,
     transaction: <T>(context: DatabaseContext, work: Work<T>) =>
       runTransaction(pool, "oliginvest_app", context, work),
     close: () => pool.end(),

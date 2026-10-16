@@ -35,3 +35,13 @@ export const authSecurityEventSchema = z
     occurredAt: z.iso.datetime(),
   })
   .strict();
+
+export const applicationErrorSchema = z
+  .object({
+    source: z.enum(["api", "jobs"]),
+    operation: z.string().regex(/^[a-zA-Z0-9_/:.*{}-]{1,160}$/),
+    code: z.string().regex(/^[A-Z_]{1,80}$/),
+    occurredAt: z.iso.datetime(),
+    requestId: z.uuid().optional(),
+  })
+  .strict();

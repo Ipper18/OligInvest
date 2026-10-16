@@ -3,6 +3,7 @@ import { createLogger, type PlatformLogger } from "@oliginvest/platform";
 import { Queue, Worker } from "bullmq";
 import { z } from "zod";
 import type { createAuthMailer } from "./auth-mail.js";
+import { observeWorker, startMonitoring } from "./monitoring.js";
 import { createQueueRegistry } from "./registry.js";
 
 const settingsSchema = z
@@ -70,6 +71,7 @@ export async function startJobs(
     flagRuntime.flags.enabled(key, subject),
   );
   const queues = definitions.map(({ name }) => openQueue(name, runtime, logger));
+  let monitoring: Awaited<ReturnType<typeof startMonitoring>> | undefined;
   let mailer: ReturnType<typeof createAuthMailer> | undefined;
   let mailWorker: Worker | undefined;
   let marketWorker: { close(): Promise<void> } | undefined;
@@ -109,6 +111,7 @@ export async function startJobs(
       await mailWorker?.close();
       await portfolioWorker?.close();
       await marketWorker?.close();
+      await monitoring?.close();
       mailer?.close();
       await flagRuntime.close();
       await Promise.allSettled(queues.map((queue) => queue.close()));
@@ -116,6 +119,34 @@ export async function startJobs(
   };
   try {
     await Promise.all(queues.map((queue) => queue.waitUntilReady()));
+    if (runtime.mail) {
+      const { createAuthMailer } = await import("./auth-mail.js");
+      mailer = createAuthMailer(runtime.mail.config, runtime.mode, runtime.mail.port);
+    }
+    monitoring = await startMonitoring({
+      cache: flagRuntime.cache,
+      connection: runtime.connection,
+      queues,
+      database: flagRuntime.database,
+      logger,
+      host: z
+        .string()
+        .regex(/^[a-zA-Z0-9.:[\]_-]+$/)
+        .parse(env.JOBS_METRICS_HOST ?? "0.0.0.0"),
+      port: z.coerce
+        .number()
+        .int()
+        .min(0)
+        .max(65535)
+        .parse(env.JOBS_METRICS_PORT ?? (runtime.mode === "production" ? "3000" : "0")),
+      send: async (email, subject, text) => {
+        if (!mailer) throw new Error("SMTP_NOT_CONFIGURED");
+        await mailer.sendReport(email, subject, text);
+      },
+    });
+    const activeMonitoring = monitoring;
+    const observe = (worker: Worker) =>
+      observeWorker(worker, activeMonitoring.metrics, activeMonitoring.record, logger);
     const { startPortfolioWorker } = await import("./portfolio-runtime.js");
     portfolioWorker = await startPortfolioWorker({
       database: flagRuntime.database,
@@ -123,19 +154,21 @@ export async function startJobs(
       queues,
       connection: runtime.connection,
       logger,
+      observe,
     });
     const { startMarketWorker } = await import("./market-runtime.js");
     marketWorker = await startMarketWorker({
       updated: async (reason, fromDate) => portfolioWorker?.enqueueAll(reason, fromDate),
+      observeProvider: (provider, result) =>
+        monitoring?.metrics.add("provider_requests_total", { provider, result }),
       database: flagRuntime.database,
       cache: flagRuntime.cache,
       queue: healthQueue,
       connection: runtime.connection,
       logger,
+      observe,
     });
-    if (runtime.mail) {
-      const { createAuthMailer } = await import("./auth-mail.js");
-      mailer = createAuthMailer(runtime.mail.config, runtime.mode, runtime.mail.port);
+    {
       // The worker uses blocking reads; the producer's 1.5 s command deadline
       // would time them out while the queue is idle.
       const { commandTimeout: _producerTimeout, ...workerConnection } = runtime.connection;
@@ -143,7 +176,12 @@ export async function startJobs(
         "notify",
         async (job) => {
           try {
-            await mailer?.send(job.name, job.data);
+            if (["monitoring.error", "monitoring.daily-report"].includes(job.name))
+              await activeMonitoring.handle(job);
+            else {
+              if (!mailer) throw new Error("SMTP_NOT_CONFIGURED");
+              await mailer.send(job.name, job.data);
+            }
           } catch {
             logger.warn({ event: "auth.mail_delivery_failed" });
             throw new Error("AUTH_MAIL_DELIVERY_FAILED");
@@ -152,6 +190,7 @@ export async function startJobs(
         { connection: { ...workerConnection, maxRetriesPerRequest: null }, concurrency: 1 },
       );
       mailWorker.on("error", () => logger.error({ event: "jobs.mail_connection_failed" }));
+      observe(mailWorker);
       await mailWorker.waitUntilReady();
     }
     await pulse();
@@ -162,6 +201,7 @@ export async function startJobs(
     await portfolioWorker?.close();
     await mailWorker?.close();
     await marketWorker?.close();
+    await monitoring?.close();
     flagRuntime.cache.disconnect();
     mailer?.close();
     await flagRuntime.close();

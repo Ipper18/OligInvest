@@ -81,6 +81,12 @@ class HostConfigTests(unittest.TestCase):
         self.assertIn("fallback_policy reject", caddy)
         self.assertLess(caddy.index("proxy_protocol {"), caddy.index("\n   tls"))
 
+    def test_internal_monitoring_is_not_exposed_by_caddy(self):
+        for filename in ("Caddyfile", "Caddyfile.test"):
+            caddy = (ROOT / "infra/caddy" / filename).read_text()
+            self.assertIn("@internal path /internal /internal/*", caddy)
+            self.assertIn("respond @internal 404", caddy)
+
 
 if __name__ == "__main__":
     unittest.main()
