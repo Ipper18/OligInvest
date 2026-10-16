@@ -1,6 +1,6 @@
 import { createRoute, type OpenAPIHono, z } from "@hono/zod-openapi";
 import { realtimeSchemas } from "@oliginvest/contracts";
-import { type AppEnv, ProblemError } from "@oliginvest/platform";
+import { type AppEnv, type Metrics, ProblemError } from "@oliginvest/platform";
 import { streamSSE } from "hono/streaming";
 import { marketError } from "./modules.js";
 import type { StreamOwner, StreamStore } from "./stream-store.js";
@@ -15,7 +15,12 @@ export interface StreamDependencies {
   origin: string;
   now?: () => number;
 }
-export function mountStream(api: OpenAPIHono<AppEnv>, dependencies: StreamDependencies) {
+export function mountStream(
+  api: OpenAPIHono<AppEnv>,
+  dependencies: StreamDependencies,
+  metrics?: Metrics,
+) {
+  metrics?.gauge("sse_connections", {}, 0);
   const now = dependencies.now ?? Date.now;
   const object = <S extends z.ZodRawShape>(shape: S) =>
     z.object(shape).strict().openapi({ additionalProperties: true });
@@ -108,6 +113,7 @@ export function mountStream(api: OpenAPIHono<AppEnv>, dependencies: StreamDepend
       c.header("Cache-Control", "no-store");
       c.header("X-Accel-Buffering", "no");
       const response = streamSSE(c, async (stream) => {
+        metrics?.add("sse_connections", {}, 1);
         const subscriber = store.redis.duplicate({ lazyConnect: true });
         let closed = false,
           recheck = false,
@@ -282,6 +288,7 @@ export function mountStream(api: OpenAPIHono<AppEnv>, dependencies: StreamDepend
         } catch {
           /* Closing causes EventSource to reconnect and REST polling to take over. */
         } finally {
+          metrics?.add("sse_connections", {}, -1);
           clearTimeout(lifetime);
           stop();
           await store.release(owner, id).catch(() => {});

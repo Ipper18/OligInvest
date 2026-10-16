@@ -15,8 +15,8 @@ export type DataMeta = {
   asOf: string;
   delayMinutes: number;
   stale: boolean;
-  staleReason?: keyof typeof messages.data.reasons;
-  attribution?: string;
+  staleReason?: keyof typeof messages.data.reasons | undefined;
+  attribution?: string | undefined;
 };
 type FreshnessProps = { meta: DataMeta; timeZone?: string } & (
   | { kind: "delayed" }

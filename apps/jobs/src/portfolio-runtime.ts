@@ -20,6 +20,7 @@ export async function startPortfolioWorker(options: {
   queues: Queue[];
   connection: ReturnType<typeof readRuntime>["connection"];
   logger: PlatformLogger;
+  observe?: (worker: Worker) => void;
 }) {
   const recompute = options.queues.find((q) => q.name === "recompute")!;
   const portfolio = new PortfolioRepository(options.database, async (payload) => {
@@ -60,6 +61,7 @@ export async function startPortfolioWorker(options: {
     { connection: { ...connection, maxRetriesPerRequest: null }, concurrency: 1 },
   );
   worker.on("error", () => options.logger.warn({ event: "portfolio.worker_unavailable" }));
+  options.observe?.(worker);
   const enqueueAll = async (reason: "eod" | "fx" | "recompute", fromDate = "1970-01-01") => {
     z.iso.date().parse(fromDate);
     const users = await options.database.transaction(
@@ -119,6 +121,7 @@ export async function startPortfolioWorker(options: {
     { connection: { ...connection, maxRetriesPerRequest: null }, concurrency: 2 },
   );
   recomputeWorker.on("error", () => options.logger.warn({ event: "portfolio.worker_unavailable" }));
+  options.observe?.(recomputeWorker);
   try {
     await Promise.all([worker.waitUntilReady(), recomputeWorker.waitUntilReady()]);
     await recompute.upsertJobScheduler(

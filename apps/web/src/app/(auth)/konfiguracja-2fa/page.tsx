@@ -9,6 +9,6 @@ export default async function Page() {
   const gate = gatePath(me);
   if (!me) redirect("/logowanie");
   if (gate && gate !== "/konfiguracja-2fa") redirect(gate);
-  if (!gate) redirect("/");
-  return <AuthForm kind="enable" />;
+  // The mounted client preserves one-time recovery codes across cookie rotation.
+  return <AuthForm kind="enable" enrolled={!gate} />;
 }

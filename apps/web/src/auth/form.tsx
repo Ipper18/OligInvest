@@ -28,10 +28,12 @@ export const formTitles = {
 };
 export function AuthForm({
   kind,
+  enrolled = false,
   termsVersion = "2026-09",
   privacyVersion = "2026-09",
 }: {
   kind: FormKind;
+  enrolled?: boolean;
   termsVersion?: string;
   privacyVersion?: string;
 }) {
@@ -147,6 +149,9 @@ export function AuthForm({
       );
     else returnTo();
   }
+  useEffect(() => {
+    if (enrolled && !enabled) location.replace("/");
+  }, [enrolled, enabled]);
   const fieldError = (key: string) =>
     error?.errors.some((e) => e.path === key || e.path === `body.${key}`) ? t.required : undefined;
   const fieldErrors = {

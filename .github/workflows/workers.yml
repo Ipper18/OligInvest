@@ -48,6 +48,8 @@ jobs:
         run: pnpm queues:test
       - name: Test synthetic seed against real PostgreSQL
         run: pnpm db:seed:test
+      - name: Test application monitoring and daily error mail
+        run: node apps/jobs/scripts/test-monitoring.mjs
       - name: Test four applications with Compose services
         run: pnpm dev:test
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

@@ -1,6 +1,6 @@
 import "server-only";
 import { loadConfig } from "@oliginvest/config";
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import createClient from "openapi-fetch";
 import { cache } from "react";
 import { z } from "zod";
@@ -12,7 +12,10 @@ export const getApiClient = cache(async () => {
   const origin = new URL(config.API_INTERNAL_URL).origin;
   const incoming = await headers();
   const forwarded = new Headers();
-  for (const name of ["cookie", "x-request-id", "accept-language"]) {
+  // The cookie store includes rotations made by a Server Action. Request
+  // headers still contain the revoked token during the subsequent RSC render.
+  forwarded.set("cookie", (await cookies()).toString());
+  for (const name of ["x-request-id", "accept-language"]) {
     const value = incoming.get(name);
     if (value) forwarded.set(name, value);
   }

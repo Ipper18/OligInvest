@@ -14,6 +14,8 @@ export async function startMarketWorker(options: {
   queue: Queue;
   connection: ReturnType<typeof readRuntime>["connection"];
   logger: PlatformLogger;
+  observe?: (worker: Worker) => void;
+  observeProvider?: (provider: string, result: "ok" | "fail") => void;
   updated?(reason: "eod" | "fx", fromDate: string): Promise<void>;
 }) {
   const redis = new Redis(options.connection);
@@ -76,6 +78,7 @@ export async function startMarketWorker(options: {
     });
   };
   const market = createMarketJobs({
+    ...(options.observeProvider ? { observeProvider: options.observeProvider } : {}),
     database: options.database,
     cache: options.cache,
     queue: redis,
@@ -134,6 +137,7 @@ export async function startMarketWorker(options: {
     { connection: { ...connection, maxRetriesPerRequest: null }, concurrency: 2 },
   );
   worker.on("error", () => options.logger.warn({ event: "market.worker_unavailable" }));
+  options.observe?.(worker);
   await worker.waitUntilReady();
   return {
     close: async () => {

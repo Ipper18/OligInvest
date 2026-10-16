@@ -1,6 +1,7 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
 import {
   type AppEnv,
+  Metrics,
   type PlatformLogger,
   ProblemError,
   withRequestContext,
@@ -44,9 +45,17 @@ export function createApp(
     market?: MarketDependencies;
     portfolio?: PortfolioDependencies;
     stream?: StreamDependencies;
+    recordError?: (input: unknown) => Promise<void>;
   }>,
 ) {
   const app = new OpenAPIHono<AppEnv>();
+  const metrics = new Metrics();
+  app.get("/internal/metrics", (context) =>
+    context.text(metrics.render(), 200, {
+      "Content-Type": "text/plain; version=0.0.4; charset=utf-8",
+      "Cache-Control": "no-store",
+    }),
+  );
   type HealthResult = z.infer<typeof healthSchema>;
   let cached: { result: HealthResult; expiresAt: number } | undefined;
   let inFlight: Promise<HealthResult> | undefined;
@@ -77,6 +86,7 @@ export function createApp(
     return inFlight;
   }
   app.use("*", async (context, next) => {
+    const started = performance.now();
     const response = await withRequestContext(
       context.req.raw,
       {
@@ -107,6 +117,41 @@ export function createApp(
     response.headers.set("Cross-Origin-Resource-Policy", "same-origin");
     if (!response.headers.has("Cache-Control")) response.headers.set("Cache-Control", "no-store");
     context.res = response;
+    const route = context.req.routePath === "*" ? "/unmatched" : context.req.routePath;
+    const method = ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"].includes(
+      context.req.method,
+    )
+      ? context.req.method
+      : "OTHER";
+    metrics.add("http_requests_total", { route, method, status: String(response.status) });
+    metrics.duration(
+      "http_request_duration_seconds",
+      { route, method },
+      (performance.now() - started) / 1000,
+    );
+    if (response.status === 429) metrics.add("rate_limit_rejections_total", { group: route });
+    if (route.startsWith("/api/auth/"))
+      metrics.add("auth_events_total", {
+        type: route,
+        result: response.status < 400 ? "ok" : "fail",
+      });
+    if (response.status >= 500 && options.recordError) {
+      const body = response.headers.get("Content-Type")?.includes("application/problem+json")
+        ? ((await response.clone().json()) as { code?: string })
+        : {};
+      void options
+        .recordError({
+          source: "api",
+          operation: route,
+          code: body.code && /^[A-Z_]{1,80}$/.test(body.code) ? body.code : "HTTP_SERVER_ERROR",
+          occurredAt: new Date().toISOString(),
+          requestId: response.headers.get("X-Request-Id"),
+        })
+        .catch(() => {
+          metrics.add("monitoring_record_failures_total");
+          options.logger.error({ event: "monitoring.record_failed", code: "INTERNAL" });
+        });
+    }
     return response;
   });
   // Let the platform boundary catch Hono errors inside its AsyncLocalStorage scope.
@@ -293,6 +338,7 @@ export function createApp(
       },
       ownedInstruments: async () => [],
     },
+    metrics,
   );
   app.route("/api/v1", api);
   return app;

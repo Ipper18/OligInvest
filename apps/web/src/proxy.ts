@@ -4,7 +4,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { meSchema } from "./api/validation";
 import { gatePath, safeReturnTo } from "./auth/navigation";
-import { uiModules } from "./modules";
+import { uiModules } from "./ui-registry";
 
 export async function proxy(request: NextRequest) {
   const nonce = randomBytes(16).toString("base64");

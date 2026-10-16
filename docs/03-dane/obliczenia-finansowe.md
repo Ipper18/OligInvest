@@ -242,6 +242,26 @@ $$\Delta_{\text{dzień}} = V(t) - V(\text{zamknięcie } D{-}1) - F_{\text{dzień
 
 Przykład: 53 120,55 − 52 340,10 − 500,00 (wpłata dziś) = **280,45 PLN (0,53%)**; procent względem `V(D−1) + F_dzień` = 52 840,10 — ta sama baza co stopa dnia w TWR (§ 6.2), więc duża wpłata nie zawyża procentu (decyzja właściciela 2026-09-24, przegląd C-13; wcześniej `V(D−1)` i 0,54%).
 
+**Rozbicie na instrumenty (decyzja właściciela 2026-10-13, BL-147):**
+`Δ_i = V_i(t) − V_i(D−1) + C_i − F_i`, gdzie `C_i` to podpisane przepływy
+gotówki operacji instrumentu w dniu (kupno, sprzedaż, dywidenda, przypisane opłaty,
+podatki i gotówka za resztę po splicie), a `F_i` to wartość zewnętrznych transferów
+papierów (wejście dodatnie, wyjście ujemne). Kwota operacji brokera już zawiera
+wbudowane koszty — nie odejmujemy ich ponownie. Oddzielne opłaty powiązane
+`relatedTransactionId` przypisujemy instrumentowi operacji głównej.
+Wyceny w PLN używają kursów odpowiednio D−1 i dnia bieżącego; przepływy kwot
+ekonomicznych brokera przeliczamy do PLN kursem dnia. Wartość transferu jak w
+`F_dzień` (wycena bieżąca). Uwzględniamy rachunki z filtra oraz instrumenty
+posiadane D−1, obecnie lub występujące w operacjach dnia, także zamknięte dziś.
+Split zmienia ilość i cenę, nie tworzy sam w sobie zysku.
+
+`contributionRatio_i = Δ_i / (V(D−1) + F_dzień)`; baza ≤ 0 → `null`.
+`residualChange = Δ_dzień − Σ Δ_i`, w UI „Gotówka i pozostałe”: m.in. efekt FX
+gotówki i koszty bez instrumentu. Brak ceny, kursu lub wyceny transferu daje
+`null` zależnego wkładu; jakikolwiek brak wkładu lub sumy dnia daje `null` reszty.
+Brak pozycji na jednej granicy oznacza znane zero, nie brak ceny. Agregacja przed
+zaokrągleniem prezentacji; wektory `F_day_change_positions` sprawdzają te reguły.
+
 ---
 
 ## 6. Stopy zwrotu

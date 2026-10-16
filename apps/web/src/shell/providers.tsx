@@ -2,11 +2,12 @@
 import { appMessages } from "@oliginvest/i18n";
 import { AppShell, Button } from "@oliginvest/ui";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import type { Me } from "../api/validation";
 import { submitAction } from "../auth/actions";
 import { clearPrivateState, onLogout, onRemoteLogout } from "../auth/logout";
+import { updateImportCache, updatePortfolioCache } from "../portfolio/stream-cache";
 import { connectStream, type StreamState } from "../sse/transport";
 import { Navigation } from "./navigation";
 export const queryKey = (userId: string, ...parts: unknown[]) => [userId, ...parts];
@@ -32,6 +33,26 @@ export function Providers({
   const pausedRef = useRef(false);
   const stream = useRef<ReturnType<typeof connectStream> | null>(null);
   const router = useRouter();
+  const pathname = usePathname();
+  const [connectionId, setConnectionId] = useState<string | null>(null);
+  useEffect(() => {
+    if (!connectionId) return;
+    const id = /^\/rynek\/([0-9a-f-]{36})$/i.exec(pathname)?.[1];
+    const abort = new AbortController();
+    void fetch(`/api/v1/stream/connections/${connectionId}/instruments`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ instrumentIds: id ? [id] : [] }),
+      signal: abort.signal,
+    })
+      .then((response) => {
+        if (!response.ok) setState("polling");
+      })
+      .catch(() => {
+        if (!abort.signal.aborted) setState("polling");
+      });
+    return () => abort.abort();
+  }, [connectionId, pathname]);
   useEffect(() => {
     setMe(initialMe);
     client.setQueryData(queryKey(initialMe.id, "me"), initialMe);
@@ -75,30 +96,26 @@ export function Providers({
             const schema = realtimeSchemas[frame.event as keyof typeof realtimeSchemas];
             const event = schema.parse(JSON.parse(frame.data));
             const data = event as unknown as Record<string, unknown>;
+            if (frame.event === "ready") setConnectionId(data.connectionId as string);
             if ((frame.event === "ready" && data.resumed === false) || frame.event === "resync")
               void client.invalidateQueries({ queryKey: [me.id] });
             if (frame.event === "flags.changed") {
               await client.invalidateQueries({ queryKey: queryKey(me.id, "me") });
               router.refresh();
             }
-            if (frame.event === "market.quotes.updated")
+            if (frame.event === "market.quotes.updated") {
+              void client.invalidateQueries({ queryKey: queryKey(me.id, "market") });
               for (const quote of data.quotes as { instrumentId: string }[])
                 client.setQueryData(queryKey(me.id, "market", "quote", quote.instrumentId), quote);
-            if (frame.event === "portfolio.valuation.updated") {
-              if (data.reason === "quotes" && data.summary)
-                client.setQueryData(
-                  queryKey(me.id, "portfolio", "summary"),
-                  (previous: Record<string, unknown> | undefined) =>
-                    previous
-                      ? { ...previous, ...(data.summary as Record<string, unknown>) }
-                      : undefined,
-                );
-              else void client.invalidateQueries({ queryKey: queryKey(me.id, "portfolio") });
             }
+            if (frame.event === "portfolio.valuation.updated")
+              updatePortfolioCache(
+                client,
+                me.id,
+                data as unknown as Parameters<typeof updatePortfolioCache>[2],
+              );
             if (frame.event === "portfolio.import.parsed")
-              void client.invalidateQueries({
-                queryKey: queryKey(me.id, "portfolio", "import", data.importId),
-              });
+              updateImportCache(client, me.id, data.importId as string);
             if (frame.event.startsWith("analytics.run."))
               void client.invalidateQueries({ queryKey: queryKey(me.id, "analytics", data.runId) });
             if (frame.event === "identity.export.ready")

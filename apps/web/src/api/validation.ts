@@ -191,5 +191,10 @@ export const actionSchemas = {
       .strict(),
     output: preferencesSchema,
   },
+  stepUp: {
+    path: "/api/v1/me/step-up",
+    input: z.object({ code: z.string().regex(/^\d{6}$/) }).strict(),
+    output: z.object({ validUntil: z.string().datetime() }).strict(),
+  },
 } as const;
 export type ActionName = keyof typeof actionSchemas;
