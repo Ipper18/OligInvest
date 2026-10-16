@@ -60,11 +60,13 @@ Powiązane: [`roadmapa.md`](roadmapa.md), [`backlog.md`](backlog.md), [`../06-be
 
 | **R-36** | Sporadyczny timeout oczekiwania na start SSE w WebKit | M1-4a: jeden lokalny timeout, następnie 10/10 tego przypadku i 30/30 macierzy PASS; przyczyna niepotwierdzona | 2 | 2 | 4 | zachować asercję i limit; przy nawrocie zebrać trace sieci/hydratacji przed zmianą kodu | status wstrzymany zamiast live po 5 s | agent, CI | M1-4a, otwarte do wyjaśnienia nawrotu lub stabilnego CI |
 
-| **R-37** | Kontrakt odczytów portfela nie reprezentuje wszystkich luk wyceny i danych podatkowych; mapowanie może tworzyć pozorne zera/wyniki lub ukrywać pozycje | BL-147, [propozycja M1-4b](m1-4b-valuation-contract-proposal.md) | 2 | 2 | 4 | uzgodnić nullable i jawne wyłączenia w OpenAPI, następnie testy braku ceny/FX/kosztu i IKE/IKZE; nie zmieniać rdzenia ani zastępować braków zerem | core/SQL zwracają null, a wymagane Money w REST go nie dopuszcza | agent, właściciel | M1-4b, otwarte |
+| **R-37** | Kontrakt odczytów portfela nie reprezentuje wszystkich luk wyceny i danych podatkowych; mapowanie może tworzyć pozorne zera/wyniki lub ukrywać pozycje | BL-147, [propozycja M1-4b](m1-4b-valuation-contract-proposal.md) | 2 | 2 | 4 | zatwierdzone nullable i jawne wyłączenia wdrożone w OpenAPI/REST/UI; regresje braku ceny/FX/kosztu i IKE/IKZE; braków nie zastępować zerem | core/SQL zwracają null, a wymagane Money w REST go nie dopuszcza | agent, właściciel | M1-4b, ograniczone implementacją i lokalnymi testami 2026-10-16; zamknięcie po CI/DoD |
+
+| **R-38** | Agregat dziennego raportu błędów może być niepełny podczas awarii Valkey; awaria po akceptacji SMTP przed potwierdzeniem może powtórzyć wiadomość | BL-152, [monitoring § 5](../07-wdrozenie/monitoring.md) | 2 | 2 | 4 | ograniczone czasowo próby zapisu, licznik i bezpieczny log niepowodzenia; retry SMTP i znacznik doręczenia; raport nie zastępuje logów i zewnętrznych sond Kuma | monitoring_record_failures_total rośnie, brak raportu lub duplikat | agent, monitoring, właściciel | M1-4b, otwarte; integracja restart/retry/Mailpit PASS, odbiór operacyjny u właściciela |
 
 ## 3. Podsumowanie
 
-37 ryzyk: **5 wysokich** (R-01, R-07, R-11, R-16, R-28), 27 średnich, 5 niskich; brak krytycznych.
+38 ryzyk: **5 wysokich** (R-01, R-07, R-11, R-16, R-28), 27 średnich, 6 niskich; brak krytycznych.
 
 | Ryzyko wysokie | Działanie przed końcem etapu |
 |---|---|
