@@ -125,7 +125,12 @@ RESET ROLE;
 \echo '== analytics_ro: market yes, portfolio/watchlists no =='
 SET ROLE oliginvest_analytics_ro;
 SELECT count(*) AS analytics_sees_bars FROM market.bars_daily;
+-- R-38: the worker reads the § 14 gate itself; data-quality findings stay read-only for it.
+SELECT count(*) AS analytics_sees_quality_issues FROM market.data_quality_issues;
 DO $$ BEGIN
+  BEGIN UPDATE market.data_quality_issues SET status = 'resolved'; RAISE EXCEPTION 'ANALYTICS RESOLVES QUALITY ISSUES';
+  EXCEPTION WHEN insufficient_privilege THEN RAISE NOTICE 'OK: analytics cannot change quality issues';
+  END;
   BEGIN PERFORM 1 FROM portfolio.transactions; RAISE EXCEPTION 'ANALYTICS READS PORTFOLIO';
   EXCEPTION WHEN insufficient_privilege THEN RAISE NOTICE 'OK: analytics has no access to portfolio';
   END;

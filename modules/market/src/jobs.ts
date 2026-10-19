@@ -1,5 +1,10 @@
 import { addDays } from "@oliginvest/core";
-import { createProviderFetch, ProviderError, ProviderLimits } from "@oliginvest/data-providers";
+import {
+  CurrencyMismatchError,
+  createProviderFetch,
+  ProviderError,
+  ProviderLimits,
+} from "@oliginvest/data-providers";
 import {
   FrankfurterProvider,
   fetchGpw,
@@ -9,17 +14,35 @@ import {
 } from "@oliginvest/data-providers/adapters";
 import type { AppDatabase } from "@oliginvest/db";
 import type { Redis } from "ioredis";
+import {
+  BENCHMARK_CONTINUE_MS,
+  BENCHMARK_HISTORY_DAYS,
+  BENCHMARK_REFRESH_DAYS,
+  BENCHMARKS,
+  BENCHMARKS_PER_RUN,
+} from "./benchmarks.js";
 import { marketJobSchema } from "./contracts.js";
+import {
+  formatGpwCompleteness,
+  GPW_COMPLETENESS_SESSIONS,
+  type GpwCompletenessReport,
+  summarizeGpwCompleteness,
+} from "./gpw-completeness.js";
 import { IngestionStore } from "./ingestion-store.js";
 import { QUOTE_ATTEMPT_MS, QUOTES_PER_RUN, YAHOO_PER_MINUTE } from "./quote-cadence.js";
 import { MarketRepository } from "./server/repository.js";
 
+export * from "./gpw-completeness.js";
 export { IngestionStore } from "./ingestion-store.js";
 export const marketSchedules = [
   { job: "market.fx", cron: "20 12 * * 1-5", tz: "Europe/Warsaw" },
   { job: "market.gpw", cron: "30 18 * * 1-5", tz: "Europe/Warsaw" },
   { job: "market.quotes", cron: "* * * * *", tz: "Europe/Warsaw" },
   { job: "market.us-eod", cron: "30 23 * * 1-5", tz: "Europe/Warsaw" },
+  // An hour after the archive fetch; the report covers the latest 20 GPW sessions (BL-213).
+  { job: "market.gpw-completeness", cron: "30 19 * * 1-5", tz: "Europe/Warsaw" },
+  // After both GPW (17:05) and US (22:00 Warsaw) closes; outside every quote session.
+  { job: "market.benchmarks", cron: "45 23 * * 1-5", tz: "Europe/Warsaw" },
 ] as const;
 export function createMarketJobs(options: {
   observeProvider?: (provider: string, result: "ok" | "fail") => void;
@@ -28,6 +51,8 @@ export function createMarketJobs(options: {
   cache: Redis;
   observed(): Promise<string[]>;
   enqueue(name: string, payload: unknown, delay?: number): Promise<void>;
+  /** Receives job reports (BL-213), e.g. for a structured log line. */
+  report?(name: string, report: GpwCompletenessReport): void;
   now?: () => Date;
   transport?: typeof fetch;
 }) {
@@ -56,6 +81,19 @@ export function createMarketJobs(options: {
   );
   const nbp = new NbpProvider(request("nbp", 6), now);
   const ecb = new FrankfurterProvider(request("ecb", 6), now);
+  /** A currency drift is a § 14 BLOCK on the series; the drifted bars are never stored. */
+  async function saveYahooBars(id: string, from: string, to: string) {
+    try {
+      await repository.saveBars(
+        await limits.singleFlight(`bars:${id}:${from}:${to}`, () =>
+          yahoo.getEodBars(id, { from, to }),
+        ),
+      );
+    } catch (error) {
+      if (!(error instanceof CurrencyMismatchError)) throw error;
+      await store.recordCurrencyChange(id, to, error.expected, error.received);
+    }
+  }
   async function dispatch(name: string, raw: unknown, failures = 0): Promise<void> {
     const payload = marketJobSchema.parse(raw);
     const date = payload.date ?? repository.today();
@@ -151,12 +189,54 @@ export function createMarketJobs(options: {
           if (!payload.from && !(await store.sessionDates(instrument.mic, date, date)).length)
             continue;
           const from = payload.from ?? (await store.correctionStart(instrument.mic, date));
-          await repository.saveBars(
-            await limits.singleFlight(`bars:${id}:${from}:${payload.to ?? date}`, () =>
-              yahoo.getEodBars(id, { from, to: payload.to ?? date }),
-            ),
-          );
+          await saveYahooBars(id, from, payload.to ?? date);
         }
+        return;
+      }
+      case "market.gpw-completeness": {
+        const counts = await store.gpwSessionCounts(date, GPW_COMPLETENESS_SESSIONS);
+        const rows = [];
+        for (const row of counts)
+          rows.push({
+            ...row,
+            requested: Boolean(await options.queue.get(`quota:gpw:archive:${row.date}`)),
+          });
+        const report = summarizeGpwCompleteness(rows, date);
+        // AOF-backed: the latest report and one per day for 90 days, readable without SQL.
+        const text = JSON.stringify({ ...report, markdown: formatGpwCompleteness(report) });
+        await options.queue.set("report:gpw-completeness:latest", text);
+        await options.queue.set(`report:gpw-completeness:${date}`, text, "PX", 90 * 86_400_000);
+        options.report?.(name, report);
+        return;
+      }
+      case "market.benchmarks": {
+        // Backfill ≥ 5 years once (AOF marker), then refresh a week; one marker per day keeps
+        // continuation runs from re-reading finished series (holidays have no new bar).
+        const due = [];
+        for (const item of await store.ensureBenchmarks(BENCHMARKS, date))
+          if (!(await options.queue.get(`benchmark:done:${item.id}:${date}`))) due.push(item);
+        let failure: unknown;
+        for (const item of due.slice(0, BENCHMARKS_PER_RUN)) {
+          const backfilled = await options.queue.get(`benchmark:backfill:${item.id}`);
+          const from =
+            backfilled && item.last
+              ? addDays(item.last, -BENCHMARK_REFRESH_DAYS)
+              : addDays(date, -BENCHMARK_HISTORY_DAYS);
+          try {
+            await saveYahooBars(item.id, from, date);
+            if (!backfilled) await options.queue.set(`benchmark:backfill:${item.id}`, from);
+          } catch (error) {
+            // Quota delays the whole job. Other failures (also 404 for an unknown symbol) end
+            // the series for today, so continuations always progress; the job then fails
+            // visibly and tomorrow's run retries from the same backfill or refresh start.
+            if (error instanceof ProviderError && error.reason === "provider_quota") throw error;
+            failure ??= error;
+          }
+          await options.queue.set(`benchmark:done:${item.id}:${date}`, "1", "PX", 2 * 86_400_000);
+        }
+        if (due.length > BENCHMARKS_PER_RUN)
+          await options.enqueue("market.benchmarks", { date }, BENCHMARK_CONTINUE_MS);
+        if (failure) throw failure;
         return;
       }
       case "market.backfill":

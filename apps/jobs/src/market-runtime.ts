@@ -84,6 +84,13 @@ export async function startMarketWorker(options: {
     queue: redis,
     observed,
     enqueue,
+    // Verdict only; the full table stays in valkey-queue `report:gpw-completeness:latest`.
+    report: (_name, report) =>
+      options.logger.info({
+        event: "market.gpw_completeness",
+        module_id: "market",
+        code: `GPW_COMPLETENESS_${report.verdict.toUpperCase()}`,
+      }),
   });
   for (const schedule of marketSchedules)
     await options.queue.upsertJobScheduler(

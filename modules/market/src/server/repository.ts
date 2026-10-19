@@ -2,18 +2,25 @@ import { createHash } from "node:crypto";
 import {
   addDays,
   aggregateMarketBars,
-  inspectMarketBar,
+  DATA_QUALITY_RULES,
+  type DataQualityCode,
+  DEAD_CANDLE_SESSIONS,
+  type MarketBar,
+  scanMarketSeries,
   settlementCycleDays,
   settlementDate,
   settlementRegionForMic,
+  VOLUME_MEDIAN_SESSIONS,
 } from "@oliginvest/core";
 import { type Bar, barSchema, type Quote, quoteSchema } from "@oliginvest/data-providers";
 import type { AppDatabase, DatabaseContext, DatabaseTransaction } from "@oliginvest/db";
 import { ProblemError } from "@oliginvest/platform";
 import { sql } from "drizzle-orm";
 import { z } from "zod";
+import { BENCHMARKS } from "../benchmarks.js";
 import {
   apiQuoteSchema,
+  benchmarkSchema,
   chartSchema,
   fxResponseSchema,
   instrumentSchema,
@@ -28,6 +35,18 @@ const columns = sql`id::text,coalesce(ticker,isin,id::text) AS ticker,name,isin,
 const clean = (value: Record<string, unknown>) =>
   Object.fromEntries(Object.entries(value).filter(([, item]) => item !== null));
 const dateText = z.string().date();
+const HISTORY_SESSIONS = VOLUME_MEDIAN_SESSIONS + DEAD_CANDLE_SESSIONS;
+export interface AnalysisHold {
+  instrumentId: string;
+  issues: Array<{ id: string; checkCode: string; sessionDate?: string }>;
+}
+/** Job-side refusal; analytics reports it as `DATA_QUALITY_HOLD` (realtime `analytics.run.failed`). */
+export class DataQualityHoldError extends Error {
+  readonly code = "DATA_QUALITY_HOLD";
+  constructor(readonly holds: AnalysisHold[]) {
+    super("DATA_QUALITY_HOLD");
+  }
+}
 export class MarketRepository {
   constructor(
     readonly database: AppDatabase,
@@ -340,19 +359,57 @@ export class MarketRepository {
     });
     return statusSchema.parse({ asOf: this.now().toISOString(), categories });
   }
+  /** FR-01.09: catalog order; only benchmarks whose instrument exists (created by the job). */
+  async benchmarks(context: DatabaseContext) {
+    const rows = await this.database.transaction(
+      context,
+      async (tx) =>
+        (
+          await tx.execute(sql`SELECT s.symbol,i.id::text AS "instrumentId",i.currency,
+          (SELECT min(session_date)::text FROM market.bars_daily b WHERE b.instrument_id=i.id) AS "dataAvailableFrom"
+          FROM market.universe_members m JOIN market.universes u ON u.id=m.universe_id AND u.code='benchmarks'
+          JOIN market.instruments i ON i.id=m.instrument_id
+          JOIN market.instrument_provider_symbols s ON s.instrument_id=i.id AND s.provider='yahoo'
+          WHERE m.valid_to IS NULL AND s.symbol=ANY(${sql.param(BENCHMARKS.map((item) => item.yahoo))}::text[])`)
+        ).rows,
+    );
+    return BENCHMARKS.flatMap((definition) => {
+      const row = rows.find((item) => item.symbol === definition.yahoo);
+      if (!row) return [];
+      return [
+        benchmarkSchema.parse(
+          clean({
+            code: definition.code,
+            name: definition.name,
+            kind: definition.kind,
+            proxyFor: definition.proxyFor ?? null,
+            instrumentId: row.instrumentId,
+            currency: row.currency,
+            dataAvailableFrom: row.dataAvailableFrom,
+          }),
+        ),
+      ];
+    });
+  }
   async resolve(id: string) {
     const row = await this.database.transaction(
       system,
       async (tx) =>
         (
           await tx.execute(
-            sql`SELECT i.id::text,i.currency,i.mic,s.symbol FROM market.instruments i JOIN market.instrument_provider_symbols s ON s.instrument_id=i.id AND s.provider='yahoo' WHERE i.id=${id}::uuid`,
+            sql`SELECT i.id::text,i.currency,i.mic,i.type,s.symbol FROM market.instruments i JOIN market.instrument_provider_symbols s ON s.instrument_id=i.id AND s.provider='yahoo' WHERE i.id=${id}::uuid`,
           )
         ).rows[0],
     );
     if (!row) throw new ProblemError("NOT_FOUND");
     return z
-      .object({ id: z.uuid(), currency: z.string(), mic: z.string(), symbol: z.string() })
+      .object({
+        id: z.uuid(),
+        currency: z.string(),
+        mic: z.string(),
+        type: z.string(),
+        symbol: z.string(),
+      })
       .strict()
       .parse(row);
   }
@@ -385,57 +442,128 @@ export class MarketRepository {
   }
   async saveBar(tx: DatabaseTransaction, input: Bar) {
     const bar = barSchema.parse(input);
+    await this.saveSeries(tx, bar.instrumentId, [bar]);
+  }
+  /**
+   * Stores one instrument's date-sorted batch after the § 14 checks. Findings are deduplicated
+   * per (instrument, date, check) whatever their status, so re-fetching the correction window
+   * never reopens a decision; only a calendar gap closes itself once its session arrives.
+   */
+  private async saveSeries(tx: DatabaseTransaction, id: string, sorted: Bar[]) {
     // Serialize writers per instrument, so concurrent batches cannot lose a quality report.
-    await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtextextended(${bar.instrumentId},0))`);
-    const previous = (
-      await tx.execute(
-        sql`SELECT close::text FROM market.bars_daily WHERE instrument_id=${bar.instrumentId}::uuid AND session_date<${bar.date}::date AND NOT no_trades ORDER BY session_date DESC LIMIT 1`,
-      )
-    ).rows[0];
-    const action =
+    await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtextextended(${id},0))`);
+    const bars: Bar[] = [];
+    for (const bar of sorted) {
+      if (bars.at(-1)?.date === bar.date) {
+        await this.recordQualityIssue(tx, id, bar.date, "duplicate");
+        continue;
+      }
+      bars.push(bar);
+    }
+    const first = bars[0]?.date;
+    const last = bars.at(-1)?.date;
+    if (!first || !last) return;
+    // Enough history for the volume median and dead-candle runs, plus the last traded close.
+    const history = (
+      await tx.execute(sql`SELECT * FROM (
+        (SELECT session_date::text AS date,open::text,high::text,low::text,close::text,volume::text,no_trades AS "noTrades" FROM market.bars_daily
+          WHERE instrument_id=${id}::uuid AND session_date<${first}::date ORDER BY session_date DESC LIMIT ${HISTORY_SESSIONS})
+        UNION
+        (SELECT session_date::text,open::text,high::text,low::text,close::text,volume::text,no_trades FROM market.bars_daily
+          WHERE instrument_id=${id}::uuid AND session_date<${first}::date AND NOT no_trades ORDER BY session_date DESC LIMIT 1)
+      ) h ORDER BY date`)
+    ).rows as unknown as MarketBar[];
+    const actions = new Set(
       (
         await tx.execute(
-          sql`SELECT 1 FROM market.corporate_actions WHERE instrument_id=${bar.instrumentId}::uuid AND ex_date=${bar.date}::date LIMIT 1`,
+          sql`SELECT ex_date::text AS date FROM market.corporate_actions WHERE instrument_id=${id}::uuid AND ex_date BETWEEN ${first}::date AND ${last}::date`,
         )
-      ).rows.length > 0;
-    for (const code of inspectMarketBar(bar, previous ? String(previous.close) : null, action))
-      await this.recordQualityIssue(tx, bar.instrumentId, bar.date, code);
-    // SQL forbids negative volume. Keep last good data and the persistent hold instead.
-    if (bar.volume.startsWith("-")) return;
-    await tx.execute(sql`INSERT INTO market.bars_daily(instrument_id,session_date,open,high,low,close,volume,turnover,no_trades,adjustment_factor,source,ingested_at)
-      VALUES(${bar.instrumentId}::uuid,${bar.date}::date,${bar.open},${bar.high},${bar.low},${bar.close},${bar.volume},${bar.turnover ?? null},${bar.noTrades},${bar.adjustmentFactor},${bar.meta.source},${bar.fetchedAt}::timestamptz)
+      ).rows.map((row) => String(row.date)),
+    );
+    for (const finding of scanMarketSeries(history, bars, actions))
+      await this.recordQualityIssue(tx, id, finding.date, finding.code, finding.details);
+    for (const bar of bars) {
+      // SQL forbids negative volume. Keep last good data and the persistent hold instead.
+      if (bar.volume.startsWith("-")) continue;
+      await tx.execute(sql`INSERT INTO market.bars_daily(instrument_id,session_date,open,high,low,close,volume,turnover,no_trades,adjustment_factor,source,ingested_at)
+      VALUES(${id}::uuid,${bar.date}::date,${bar.open},${bar.high},${bar.low},${bar.close},${bar.volume},${bar.turnover ?? null},${bar.noTrades},${bar.adjustmentFactor},${bar.meta.source},${bar.fetchedAt}::timestamptz)
       ON CONFLICT(instrument_id,session_date) DO UPDATE SET open=EXCLUDED.open,high=EXCLUDED.high,low=EXCLUDED.low,close=EXCLUDED.close,volume=EXCLUDED.volume,turnover=EXCLUDED.turnover,no_trades=EXCLUDED.no_trades,source=EXCLUDED.source,ingested_at=EXCLUDED.ingested_at`);
+    }
+    await this.recordGaps(tx, id, first, last);
   }
-  async recordQualityIssue(tx: DatabaseTransaction, id: string, date: string, code: string) {
+  /**
+   * WARN for each open session of the instrument's calendar in [from, to] without a bar, counted
+   * from the first stored bar and up to delisting. Days without a calendar entry are unknown, not
+   * gaps. A gap closes itself when its bar arrives; that is a fact, not a decision.
+   */
+  async recordGaps(tx: DatabaseTransaction, id: string, from: string, to: string) {
+    await tx.execute(sql`UPDATE market.data_quality_issues d SET status='resolved',resolved_at=now(),details=d.details||'{"resolution":"bar_received"}'::jsonb
+      WHERE d.instrument_id=${id}::uuid AND d.check_code='gap' AND d.status='open' AND d.session_date BETWEEN ${from}::date AND ${to}::date
+      AND EXISTS(SELECT 1 FROM market.bars_daily b WHERE b.instrument_id=d.instrument_id AND b.session_date=d.session_date)`);
     await tx.execute(sql`INSERT INTO market.data_quality_issues(instrument_id,session_date,check_code,severity)
-      SELECT ${id}::uuid,${date}::date,${code},'BLOCK' WHERE NOT EXISTS(SELECT 1 FROM market.data_quality_issues WHERE instrument_id=${id}::uuid AND session_date=${date}::date AND check_code=${code})`);
+      SELECT i.id,c.session_date,'gap',${DATA_QUALITY_RULES.gap} FROM market.instruments i
+      JOIN market.trading_calendar c ON c.mic=i.mic AND c.is_open
+        AND c.session_date BETWEEN greatest(${from}::date,(SELECT min(session_date) FROM market.bars_daily WHERE instrument_id=i.id))
+        AND least(${to}::date,coalesce(i.delisted_on-1,${to}::date))
+      WHERE i.id=${id}::uuid
+      AND NOT EXISTS(SELECT 1 FROM market.bars_daily b WHERE b.instrument_id=i.id AND b.session_date=c.session_date)
+      AND NOT EXISTS(SELECT 1 FROM market.data_quality_issues d WHERE d.instrument_id=i.id AND d.session_date=c.session_date AND d.check_code='gap')`);
+  }
+  async recordQualityIssue(
+    tx: DatabaseTransaction,
+    id: string,
+    date: string,
+    code: DataQualityCode,
+    details: Record<string, string | number> = {},
+  ) {
+    await tx.execute(sql`INSERT INTO market.data_quality_issues(instrument_id,session_date,check_code,severity,details)
+      SELECT ${id}::uuid,${date}::date,${code},${DATA_QUALITY_RULES[code]},${JSON.stringify(details)}::jsonb WHERE NOT EXISTS(SELECT 1 FROM market.data_quality_issues WHERE instrument_id=${id}::uuid AND session_date=${date}::date AND check_code=${code})`);
   }
   async saveBars(input: Bar[]) {
     const bars = z.array(barSchema).max(50_000).parse(input);
+    const series = new Map<string, Bar[]>();
+    for (const bar of bars) {
+      const list = series.get(bar.instrumentId) ?? [];
+      list.push(bar);
+      series.set(bar.instrumentId, list);
+    }
     await this.database.transaction(system, async (tx) => {
-      const seen = new Set<string>();
-      for (const bar of bars.sort(
-        (a, b) => a.instrumentId.localeCompare(b.instrumentId) || a.date.localeCompare(b.date),
-      )) {
-        const key = `${bar.instrumentId}:${bar.date}`;
-        if (seen.has(key)) {
-          await this.recordQualityIssue(tx, bar.instrumentId, bar.date, "duplicate");
-          continue;
-        }
-        seen.add(key);
-        await this.saveBar(tx, bar);
-      }
+      for (const id of [...series.keys()].sort())
+        await this.saveSeries(
+          tx,
+          id,
+          (series.get(id) ?? []).sort((a, b) => a.date.localeCompare(b.date)),
+        );
     });
   }
-  async analysisEligible(context: DatabaseContext, id: string) {
-    return this.database.transaction(
+  /**
+   * FR-04 gate (§ 14): open BLOCK issues per instrument. WARN and INFO never block; quotes,
+   * valuation and charts keep showing the data with `data_quality_hold`.
+   */
+  async analysisHolds(context: DatabaseContext, ids: string[]): Promise<AnalysisHold[]> {
+    const unique = [...new Set(z.array(z.uuid()).max(1000).parse(ids))];
+    const rows = await this.database.transaction(
       context,
       async (tx) =>
-        !(
+        (
           await tx.execute(
-            sql`SELECT 1 FROM market.data_quality_issues WHERE instrument_id=${id}::uuid AND status='open' AND severity='BLOCK' LIMIT 1`,
+            sql`SELECT instrument_id::text AS "instrumentId",id::text,check_code AS "checkCode",session_date::text AS "sessionDate" FROM market.data_quality_issues WHERE instrument_id=ANY(${sql.param(unique)}::uuid[]) AND status='open' AND severity='BLOCK' ORDER BY instrument_id,session_date NULLS FIRST,id`,
           )
-        ).rows.length,
+        ).rows,
     );
+    return unique.flatMap((instrumentId) => {
+      const issues = rows
+        .filter((row) => row.instrumentId === instrumentId)
+        .map(({ instrumentId: _i, ...row }) => clean(row) as AnalysisHold["issues"][number]);
+      return issues.length ? [{ instrumentId, issues }] : [];
+    });
+  }
+  /** Throws before an FR-04 analysis touches a series with an open BLOCK issue. */
+  async assertAnalysisEligible(context: DatabaseContext, ids: string[]) {
+    const holds = await this.analysisHolds(context, ids);
+    if (holds.length) throw new DataQualityHoldError(holds);
+  }
+  async analysisEligible(context: DatabaseContext, id: string) {
+    return !(await this.analysisHolds(context, [id])).length;
   }
 }

@@ -24,6 +24,8 @@ GRANT EXECUTE ON FUNCTION platform.current_user_id(), platform.current_app_role(
 GRANT SELECT ON market.instruments, market.bars_daily, market.fx_rates, market.corporate_actions, market.trading_calendar,
                 market.sectors, market.sector_memberships, market.universes, market.universe_members,
                 market.macro_series, market.macro_observations TO oliginvest_analytics_ro;
+-- Zgłoszenia jakości to metadane danych rynkowych (ADR-003, R-38): worker sam sprawdza blokadę BLOCK przed analizą FR-04.
+GRANT SELECT ON market.data_quality_issues TO oliginvest_analytics_ro;
 
 -- Funkcje: domyślnie wykonywalne przez PUBLIC — zawężamy funkcje SECURITY DEFINER
 REVOKE EXECUTE ON FUNCTION identity.find_invitation(text), identity.consume_invitation(text, uuid) FROM PUBLIC;
