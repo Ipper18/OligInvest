@@ -40,6 +40,7 @@
   "price": "Cena",
   "averageCost": "Średni koszt",
   "costBasis": "Koszt nabycia",
+  "unknownCost": "Koszt nieznany",
   "valueBase": "Wartość w PLN",
   "weight": "Udział",
   "priceEffect": "Efekt ceny",

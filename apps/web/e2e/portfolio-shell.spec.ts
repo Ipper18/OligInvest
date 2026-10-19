@@ -37,6 +37,7 @@ test("portfolio gaps remain visible with quantity and an accessible tax view", a
   await expect(page.getByRole("heading", { name: "Pozycje", exact: true })).toBeVisible();
   await expect(page.getByText("Wycena częściowa", { exact: false })).toBeVisible();
   await expect(page.getByText("Brak danych").first()).toBeVisible();
+  await expect(page.getByText("Koszt nieznany", { exact: true })).toHaveCount(2);
   await page.getByLabel("Widok wyniku").selectOption("tax");
   await page.getByRole("button", { name: "Zastosuj", exact: true }).click();
   await expect(page.locator('[data-disclaimer-key="tax_view"]')).toBeVisible();
@@ -67,9 +68,10 @@ test("MVP portfolio routes render at phone width", async ({ page }) => {
   ]) {
     await page.goto(route);
     await expect(page.locator("h1")).toHaveCount(1);
-    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
-      true,
-    );
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+      route,
+    ).toBe(true);
     expect(
       (await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze())
         .violations,
@@ -88,7 +90,14 @@ for (const broker of ["xtb", "mbank"])
     });
     const started = Date.now();
     await page.getByRole("button", { name: "Wczytaj plik" }).click();
-    await expect(page.getByRole("button", { name: "Zatwierdź import" })).toBeDisabled();
+    await expect(
+      page
+        .getByRole("status", { name: "", exact: true })
+        .filter({ hasText: "Przetwarzanie pliku" }),
+    ).toBeVisible();
+    await expect(page.getByRole("button", { name: "Zatwierdź import" })).toBeDisabled({
+      timeout: 15000,
+    });
     await page.getByRole("button", { name: "Edytuj", exact: true }).click();
     await page.getByLabel("Nazwa, ticker lub ISIN", { exact: true }).fill("TEST");
     await page.getByRole("button", { name: "Wyszukaj instrument", exact: true }).click();

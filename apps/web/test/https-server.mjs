@@ -5,6 +5,7 @@ import { createServer } from "node:https";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import next from "next";
+import { proxyTarget } from "./proxy-target.mjs";
 import { uiFixture } from "./ui-fixture.mjs";
 
 // Ephemeral self-signed TLS keeps the production upgrade-insecure-requests CSP intact.
@@ -42,7 +43,13 @@ try {
   const handler = app.getRequestHandler();
   const server = createServer(credentials, async (request, response) => {
     if (process.env.E2E_REAL_API && request.url?.startsWith("/api/")) {
-      const target = new URL(request.url, process.env.E2E_REAL_API);
+      let target;
+      try {
+        target = proxyTarget(request.url, process.env.E2E_REAL_API);
+      } catch {
+        response.writeHead(400).end();
+        return;
+      }
       const upstream = proxyRequest(
         target,
         { method: request.method, headers: request.headers },

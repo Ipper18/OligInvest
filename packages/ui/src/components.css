@@ -308,6 +308,15 @@
   display: inline-flex;
   align-items: center;
 }
+.oi-filters > label {
+  min-width: 0;
+  max-width: 100%;
+}
+.oi-filters select,
+.oi-filters input {
+  min-width: 0;
+  max-width: 100%;
+}
 .oi-kpis {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));

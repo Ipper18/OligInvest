@@ -5,7 +5,7 @@ import { DataTable } from "@oliginvest/ui/table";
 import { useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { mutateResource, uploadFile } from "./actions";
 import { FormError, InstrumentPicker } from "./forms";
 import { Amount } from "./presentation";
@@ -228,6 +228,14 @@ export function ImportPreview({
     key = useRef<string | null>(null);
   const editable = batch.status === "parsed",
     unresolved = (counts.error ?? 0) + (counts.needs_mapping ?? 0) > 0;
+  useEffect(() => {
+    if (batch.status === "parsed") {
+      void cache.invalidateQueries({
+        queryKey: [userId, "portfolio", "rows"],
+        predicate: (query) => (query.queryKey[3] as ReadArgs | undefined)?.id === batch.id,
+      });
+    }
+  }, [cache, userId, batch.id, batch.status]);
   async function run(kind: "row" | "commit" | "import", body: unknown, rowId?: string) {
     if (busy) return;
     setBusy(true);

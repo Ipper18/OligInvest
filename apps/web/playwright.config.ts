@@ -1,6 +1,9 @@
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "@playwright/test";
 
+// The real-import harness needs the seeded local API, never the image gateway.
+const realImport = Boolean(process.env.E2E_API_URL && !process.env.E2E_BASE_URL);
+
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: false,
@@ -27,7 +30,7 @@ export default defineConfig({
       testMatch: ["**/shell-auth.spec.ts", "**/portfolio-shell.spec.ts"],
       use: { browserName, baseURL: "https://127.0.0.1:3197" },
     },
-    ...(process.env.E2E_API_URL
+    ...(realImport
       ? [
           {
             name: `${browserName}-real`,
@@ -40,7 +43,7 @@ export default defineConfig({
   // Synthetic sessions belong only to the local production build and fixture API.
   // Image integration projects keep E2E_BASE_URL and the real API (no auth bypass).
   webServer: [
-    ...(process.env.E2E_API_URL
+    ...(realImport
       ? [
           {
             command: "node test/https-server.mjs",
@@ -50,8 +53,8 @@ export default defineConfig({
             env: {
               NODE_ENV: "production",
               PUBLIC_BASE_URL: "https://127.0.0.1:3196",
-              API_INTERNAL_URL: process.env.E2E_API_URL,
-              E2E_REAL_API: process.env.E2E_API_URL,
+              API_INTERNAL_URL: process.env.E2E_API_URL ?? "",
+              E2E_REAL_API: process.env.E2E_API_URL ?? "",
               E2E_WEB_PORT: "3196",
             },
           },

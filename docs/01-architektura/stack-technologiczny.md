@@ -159,6 +159,8 @@ Syft tworzy CycloneDX ze **wszystkich pakietów obu lockfile**, także wariantó
 | Analiza kodu | **CodeQL**, skanowanie sekretów z push protection | — | — | Darmowe dla repozytoriów publicznych ([ADR-013](../09-decyzje/ADR-013-repozytorium-publiczne.md)). | — |
 | Rejestr obrazów | **GitHub Container Registry** | — | — | Darmowy dla pakietów publicznych; alternatywnie budowa obrazów lokalnie na serwerze. | Docker Hub (limity pobrań). |
 
+M1-4b (2026-10-19): uzupełnienia Syft dla `trim-lines@3.0.1`, `tsx@4.23.13` i `unist-util-position-from-estree@2.0.0` po sprawdzeniu pola `license: MIT` w zainstalowanych z lockfile `node_modules/.pnpm/<pakiet>@<wersja>/node_modules/<pakiet>/package.json`. Źródła publikacji: [trim-lines](https://registry.npmjs.org/trim-lines/3.0.1), [tsx](https://registry.npmjs.org/tsx/4.23.13), [unist-util-position-from-estree](https://registry.npmjs.org/unist-util-position-from-estree/2.0.0). Mapa `NPM_METADATA` w `scripts/deps-audit.py` dotyczy wyłącznie tych wersji i ekosystemu npm; uzupełnia brak/UNKNOWN w CycloneDX, nie zastępuje jawnej licencji i nie tworzy wyjątków.
+
 ## 8. Usługi zewnętrzne (darmowe)
 
 | Usługa | Rola | Limit darmowy | Szczegóły |

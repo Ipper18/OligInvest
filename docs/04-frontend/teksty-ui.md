@@ -197,6 +197,7 @@ Błędy pól formularza: „Podaj wartość”, „Wartość musi być większa 
 | Nagłówek założeń | Założenia tej analizy |
 | Nagłówek objaśnienia wyniku | Jak czytać ten wynik |
 | Widok podatkowy | Widok podatkowy — dzień przychodu: {basis}; koszt przewalutowania: {fxMode} |
+| Nieznany koszt nabycia (`null`, decyzja 2026-10-08) | Koszt nieznany |
 | Uzgodnienie po imporcie | Salda zgadzają się co do grosza. / Różnica {value} — sprawdź wiersze oznaczone do rozstrzygnięcia. |
 
 Wyniki analiz zawsze podajemy jako przedział albo rozkład („od {low} do {high}, mediana {median}”), nigdy jako jedną liczbę opisującą przyszłość (LAW § 4.1).

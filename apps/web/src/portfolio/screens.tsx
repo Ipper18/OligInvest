@@ -75,8 +75,8 @@ export function PositionsScreen({
             instrumentLink(p.instrument.id, p.instrument.ticker),
             accountName(accounts, p.accountId),
             formatQuantity(p.quantity),
-            <Amount key="average" value={p.averageCost} />,
-            <Amount key="cost" value={p.costBasis} />,
+            <Amount key="average" value={p.averageCost} unknownCost />,
+            <Amount key="cost" value={p.costBasis} unknownCost />,
             <Amount key="market" value={p.marketValue} />,
             <Amount key="value" value={p.marketValueBase} />,
             ratio(p.weight),
@@ -94,7 +94,7 @@ export function PositionsScreen({
           <div key={key} className="oi-kpi">
             <dt>{key === "marketValueBase" ? m.valueBase : m[key]}</dt>
             <dd>
-              <Amount value={data.totals[key]} />
+              <Amount value={data.totals[key]} unknownCost={key === "costBasis"} />
             </dd>
           </div>
         ))}
@@ -218,7 +218,7 @@ export function LotsScreen({ userId, args, initial, accounts }: Props<"lots">) {
             formatDate(lot.acquiredOn),
             formatQuantity(lot.quantityOpen),
             formatQuantity(lot.quantityRemaining),
-            <Amount key="cost" value={lot.costTotal} />,
+            <Amount key="cost" value={lot.costTotal} unknownCost />,
             <Disclosure key="history" summary={m.consumptions}>
               <DataTable
                 caption={m.consumptions}
@@ -228,7 +228,7 @@ export function LotsScreen({ userId, args, initial, accounts }: Props<"lots">) {
                   cells: [
                     formatDate(c.closedOn),
                     formatQuantity(c.quantity),
-                    <Amount key="cost" value={c.costEconomic} />,
+                    <Amount key="cost" value={c.costEconomic} unknownCost />,
                     <Amount key="pl" value={c.realizedPlEconomic} signed />,
                   ],
                 }))}
@@ -261,7 +261,7 @@ export function RealizedScreen({ userId, args, initial }: Props<"realized">) {
           cells: [
             r.label,
             <Amount key="proceeds" value={r.proceeds} />,
-            <Amount key="cost" value={r.cost} />,
+            <Amount key="cost" value={r.cost} unknownCost />,
             <Amount key="pl" value={r.realizedPl} signed />,
             <Amount key="fx" value={r.fxCosts} />,
             m[r.status],
@@ -273,7 +273,7 @@ export function RealizedScreen({ userId, args, initial }: Props<"realized">) {
           <div key={key} className="oi-kpi">
             <dt>{m[key]}</dt>
             <dd>
-              <Amount value={data.totals[key]} />
+              <Amount value={data.totals[key]} unknownCost={key === "cost"} />
             </dd>
           </div>
         ))}

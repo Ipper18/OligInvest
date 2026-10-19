@@ -2,6 +2,7 @@
 import { portfolioMessages as m } from "@oliginvest/i18n";
 import { Button } from "@oliginvest/ui";
 import { useQuery } from "@tanstack/react-query";
+import { importRefreshInterval } from "./import-refresh";
 import { readResource } from "./read-action";
 import type { ReadArgs, ReadKey, Resource } from "./resources";
 export function useResource<K extends ReadKey>(
@@ -19,6 +20,7 @@ export function useResource<K extends ReadKey>(
     ],
     queryFn: () => readResource(key, args),
     initialData: initial,
+    refetchInterval: (query) => importRefreshInterval(key, query.state.data),
     meta: { pollSeconds: key === "import" || key === "rows" ? 5 : 60 },
   });
   return { ...query, data: query.data ?? initial };

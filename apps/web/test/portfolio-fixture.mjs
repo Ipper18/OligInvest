@@ -229,6 +229,7 @@ export async function portfolioFixture(request, response, key) {
     });
   if (path === "/portfolio/imports" && request.method === "POST") {
     state.source = body.includes("\r\nmbank\r\n") ? "mbank" : "xtb";
+    state.awaitingParse = true;
   }
   const row = {
     id: "01900000-0000-7000-8000-000000000106",
@@ -272,6 +273,11 @@ export async function portfolioFixture(request, response, key) {
   if (path.endsWith("/commit")) {
     state.committed = true;
     return send({ ...batch, status: "committed" });
+  }
+  if (path.startsWith("/portfolio/imports/") && request.method === "GET" && state.awaitingParse) {
+    // Completion happens before the screen subscribes; no SSE event is replayed.
+    state.awaitingParse = false;
+    return send({ ...batch, status: "parsing", summary: undefined, reconciliation: undefined });
   }
   if (path.startsWith("/portfolio/imports/"))
     return request.method === "DELETE" ? send(undefined, 204) : send(batch);

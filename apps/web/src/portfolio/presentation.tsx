@@ -10,14 +10,21 @@ import type { Resource } from "./resources";
 export function Amount({
   value,
   signed = false,
+  unknownCost = false,
 }: {
   value: { amount: string; currency: string } | null | undefined;
   signed?: boolean;
+  unknownCost?: boolean;
 }) {
-  if (!value) return <span>{m.unavailable}</span>;
+  if (!value) return <span>{unknownCost ? m.unknownCost : m.unavailable}</span>;
   const supported = ["PLN", "USD", "EUR"].includes(value.currency);
+  const nonzero = /[1-9]/.test(value.amount);
   return (
-    <span className={signed ? (value.amount.startsWith("-") ? "oi-loss" : "oi-gain") : undefined}>
+    <span
+      className={
+        signed && nonzero ? (value.amount.startsWith("-") ? "oi-loss" : "oi-gain") : undefined
+      }
+    >
       {supported
         ? formatMoney(value.amount, value.currency as CurrencyCode, { signed })
         : `${value.amount} ${value.currency}`}

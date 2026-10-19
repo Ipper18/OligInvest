@@ -115,6 +115,8 @@ Bez biblioteki stanu globalnego (stos § 4).
 
 `SseProvider` w `(app)/layout.tsx` otwiera jedno `fetch/ReadableStream` na kartę po przejściu bramki MFA, mapuje zdarzenia na unieważnienia zapytań i przełącza się na odpytywanie według [`realtime.md`](../02-api/realtime.md) § 6–7. Karta instrumentu zgłasza dodatkowe instrumenty przez `PUT /stream/connections/{connectionId}/instruments`.
 
+Podgląd importu w stanach `uploaded`/`parsing` dodatkowo odczytuje status co 5 s, również przy aktywnym SSE: zakończenie parsowania może nastąpić przed subskrypcją ekranu. Po otrzymaniu `parsed` odświeża wiersze i zatrzymuje to odpytywanie; stany końcowe nie uruchamiają timera.
+
 ## 8. PWA i service worker
 
 - **Manifest** (`app/manifest.ts`): `name` „OligInvest”, `display: standalone`, `start_url: /`, ikony 192/512 i `maskable`, `theme_color` z tokenów, `shortcuts` dla Androida: „Dodaj transakcję”, „Wynik dnia”, „Alerty” (FR-09.06).
