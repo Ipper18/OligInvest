@@ -3,7 +3,10 @@ export function proxyTarget(requestUrl, baseUrl) {
     typeof requestUrl !== "string" ||
     !requestUrl.startsWith("/") ||
     requestUrl.startsWith("//") ||
-    /[a-z][a-z0-9+.-]*:|[\\\s#]/i.test(requestUrl)
+    // Linear checks only (no backtracking on request input): embedded schemes, backslashes,
+    // whitespace and fragments are rejected; a single leading "/" already rules out a scheme.
+    requestUrl.includes("://") ||
+    /[\\\s#]/.test(requestUrl)
   )
     throw new Error("Invalid proxy request target");
   const base = new URL(baseUrl);
