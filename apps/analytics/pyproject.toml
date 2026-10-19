@@ -3,7 +3,11 @@ name = "oliginvest-analytics"
 version = "0.0.0"
 description = "Szkielet workera analitycznego OligInvest"
 requires-python = ">=3.13,<3.14"
-dependencies = ["bullmq==3.2.2", "psycopg[binary]==3.3.5"]
+dependencies = [
+    "bullmq==3.2.2",
+    "jsonschema==4.26.0",
+    "psycopg[binary]==3.3.5",
+]
 
 [build-system]
 requires = ["setuptools==84.0.0"]
@@ -24,6 +28,9 @@ exclude-newer = "3 days"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+oliginvest_analytics = ["schemas/*.json"]
 
 [tool.pytest.ini_options]
 testpaths = ["test"]

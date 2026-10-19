@@ -1,6 +1,6 @@
-# Szkielet analityki
+# Worker analityki
 
-**Cel:** opisać konsumenta testowej kolejki BL-014, konfigurację i lokalną weryfikację bez logiki analitycznej.
+**Cel:** opisać konsumenta kolejek `analytics-smoke` (BL-014) i `analytics` (kontrakty BL-311), konfigurację i lokalną weryfikację; logika analiz przychodzi od BL-313.
 
 Wymagane Python 3.13 i uv 0.12.16. Pierwsza instalacja przypiętych wheels i lokalnego pakietu (z katalogu repozytorium):
 
@@ -15,9 +15,13 @@ pnpm --filter @oliginvest/analytics build
 
 Pierwszy krok instaluje także przypięty backend setuptools; drugi buduje wyłącznie lokalny pakiet z tym backendem. Karencja wynosi 3 dni, bez wyjątków. Build sdist i wheel działa offline, bez izolowanego rozwiązywania zależności.
 
-`pnpm dev` uruchamia proces Python na hoście z przygotowaną konfiguracją. Samodzielnie: `python -m oliginvest_analytics`; sonda: to samo polecenie z `--health`. Wymagane jawne `NODE_ENV`, `VALKEY_QUEUE_HOST/PORT/USER`, `ANALYTICS_INSTANCE_ID`, `DB_ANALYTICS_RO_PASSWORD` i `VALKEY_QUEUE_ANALYTICS_PASSWORD` (w produkcji wyłącznie odpowiedniki `*_FILE`). M0 nie łączy się z bazą. Tryby development/test konsumują tylko `analytics-smoke`, nazwę `ping` i zamknięty payload `{ version: 1, requestId: UUID }`; wynik potwierdza odbiór. Production nie uruchamia konsumenta testowego. SIGINT/SIGTERM zamyka połączenia; sonda sprawdza Valkey oraz heartbeat instancji młodszy niż 10 s.
+`pnpm dev` uruchamia proces Python na hoście z przygotowaną konfiguracją. Samodzielnie: `python -m oliginvest_analytics`; sonda: to samo polecenie z `--health`. Wymagane jawne `NODE_ENV`, `VALKEY_QUEUE_HOST/PORT/USER`, `ANALYTICS_INSTANCE_ID`, `DB_ANALYTICS_RO_PASSWORD` i `VALKEY_QUEUE_ANALYTICS_PASSWORD` (w produkcji wyłącznie odpowiedniki `*_FILE`). Worker nie łączy się jeszcze z bazą. Tryby development/test konsumują dodatkowo `analytics-smoke`, nazwę `ping` i zamknięty payload `{ version: 1, requestId: UUID }`; wynik potwierdza odbiór. Production nie uruchamia konsumenta testowego. SIGINT/SIGTERM zamyka połączenia; sonda sprawdza Valkey oraz heartbeat instancji młodszy niż 10 s.
 
-`pnpm queues:test` uruchamia prawdziwy Valkey z `compose.dev.yaml`, wysyła zadanie z Node i sprawdza wynik z Pythona. Fixture pytest blokuje TCP, UDP i rozwiązywanie nazw poza skonfigurowanym endpointem Valkey (z wyjątkiem lokalnej pary gniazd wymaganej przez asyncio w Windows). Nie dodano klienta HTTP ani nowych zależności Pythona. To ochrona procesu testowego; izolacja systemowa analytics należy do M3 zgodnie z ADR-003 i [instrukcją dev](../../docs/07-wdrozenie/srodowisko-deweloperskie.md).
+`pnpm queues:test` uruchamia prawdziwy Valkey z `compose.dev.yaml`, wysyła zadanie z Node i sprawdza wynik z Pythona. Fixture pytest blokuje TCP, UDP i rozwiązywanie nazw poza skonfigurowanym endpointem Valkey (z wyjątkiem lokalnej pary gniazd wymaganej przez asyncio w Windows). Nie dodano klienta HTTP. To ochrona procesu testowego; izolację systemową sprawdza `scripts/ci-images.mjs` na obrazach produkcyjnych: sonda [`infra/tests/analytics-isolation-probe.py`](../../infra/tests/analytics-isolation-probe.py) próbuje HTTP i TCP na zewnątrz oraz odczytów i zapisów poza danymi rynkowymi jako `oliginvest_analytics_ro`.
+
+## Kontrakty zadań (BL-311)
+
+Kontrakt: [moduly.md § 5.2.1](../../docs/01-architektura/moduly.md). `contracts.py` ładuje `schemas/analytics-jobs.schema.json` — eksport Zod z `packages/contracts` (`pnpm gen:analytics-schema`; plik generowany, nie edytować) — i dla każdego zadania kolejki `analytics`, przed jakimkolwiek przetwarzaniem, sprawdza kształt JSON (NaN, znaki sterujące, zagnieżdżenie), rozmiar, JSON Schema (`jsonschema`, draft 2020-12) i odpowiedniki `.refine`. Kwoty czyta `read_money` jako `Decimal`. `execution.py` uruchamia `python -I -m oliginvest_analytics.runner` bez sekretów w środowisku i zabija go po limicie czasu typu zadania; `runner.HANDLERS` jest puste do BL-313, więc poprawne zadanie kończy się wynikiem `failed`/`INTERNAL`. Wynik trafia do `analytics-results` z `jobId` = `runId`. Bez `eval`, `exec` i `pickle` (żądanie i wynik procesu potomnego to JSON).
 
 ## Wektory referencyjne (BL-015)
 

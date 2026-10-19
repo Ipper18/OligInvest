@@ -7,7 +7,9 @@
     "lint": "biome check .",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
-    "build": "tsc -p tsconfig.json"
+    "build": "tsc -p tsconfig.json",
+    "gen:analytics-schema": "node scripts/analytics-schema.mjs write",
+    "check:analytics-schema": "node scripts/analytics-schema.mjs check"
   },
   "exports": {
     ".": {
@@ -17,6 +19,10 @@
     "./realtime": {
       "types": "./dist/realtime.d.ts",
       "import": "./dist/realtime.js"
+    },
+    "./analytics-jobs": {
+      "types": "./dist/analytics-jobs.d.ts",
+      "import": "./dist/analytics-jobs.js"
     }
   },
   "dependencies": {

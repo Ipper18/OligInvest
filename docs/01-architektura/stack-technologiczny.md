@@ -136,6 +136,8 @@ M1-2: moduł `market` korzysta z już przypiętego `ioredis` 6.0.0 (MIT) do trwa
 | Walidacja wejścia | **jsonschema** | 4.26 | MIT | Walidacja treści zadań schematami eksportowanymi z Zod — jedno źródło prawdy kontraktu. | Ręczne modele Pydantic (duplikacja kontraktu). |
 | Tylko testy | **TA-Lib** (python), **empyrical-reloaded** (≥ 0.5.12 — starsze używają `np.NINF`, usuniętego w NumPy 2) | 0.8 / 0.5.12 | BSD / Apache-2.0 | Wartości referencyjne dla wektorów testowych `packages/core` i analityki. | pandas-ta (repozytorium autora zniknęło z GitHuba). |
 
+BL-311 (2026-10-19): `jsonschema` **4.26.0** (MIT, wydanie 2026-01-07) w zależnościach runtime workera, zgodnie z tabelą powyżej; przechodnio dochodzą `attrs` 26.1.0, `referencing` 0.37.0, `jsonschema-specifications` 2025.9.1 i `rpds-py` 2026.9.1 (wszystkie MIT, wheels cp313). Bez dodatku `format` — formaty `date-time` egzekwują wzorce z Zod, `uuid` i `date` sprawdza wbudowany `FORMAT_CHECKER`. Źródło: [PyPI jsonschema](https://pypi.org/project/jsonschema/4.26.0/), sprawdzone 2026-10-19.
+
 ## 7. Infrastruktura, CI/CD i łańcuch dostaw
 
 BL-017, przegląd licencji 2026-09-30: właściciel zatwierdził **Python-2.0 wyłącznie dla argparse**, **PSF-2.0 dla typing-extensions** i **CC-BY-4.0 dla caniuse-lite**. Pozostała allowlista z §1 i SEC §4.4 bez rozszerzeń. LGPL w istniejących psycopg/psycopg-binary i pakietach @img/sharp-* dotyczy niezmodyfikowanych bibliotek: natywne libvips są linkowane dynamicznie, opcjonalny wariant WASM występuje w lockfile, ale nie jest używany przez aplikację. Nie jest to ogólna zgoda na LGPL w innych pakietach; zmiana sposobu dystrybucji wymaga ponownego przeglądu.
