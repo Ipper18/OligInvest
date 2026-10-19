@@ -241,6 +241,13 @@ try {
   console.log(
     "Market schedules: observed-only sessions, holiday, missing calendar and US/Europe DST mismatch PASS",
   );
+  const { testMarketQualityStorage } = await import(
+    "../../../modules/market/integration/quality.mjs"
+  );
+  await testMarketQualityStorage({ host, port, database: migrated, passwords });
+  console.log(
+    "Market data quality § 14: gaps, dead candles, volume spikes, jumps, ISIN/currency BLOCK and FR-04 gate PASS",
+  );
   const roleSettings = () =>
     withClient(
       migrated,

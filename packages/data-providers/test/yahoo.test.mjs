@@ -1,7 +1,12 @@
 import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { YahooProvider } from "../dist/adapters/index.js";
-import { createProviderFetch, ProviderError, ProviderRegistry } from "../dist/index.js";
+import {
+  CurrencyMismatchError,
+  createProviderFetch,
+  ProviderError,
+  ProviderRegistry,
+} from "../dist/index.js";
 
 const UA = "OligInvest/0.0.0 (+https://invest.oligi.pl)";
 const id = "0192f0c4-7b1e-7c3a-9f00-3d2a1b4c5d6e";
@@ -205,4 +210,31 @@ test("Yahoo outage degrades to the last known quote flagged stale, never a made-
   expect(await registry.quotes("XNAS", [id], async () => [last])).toEqual([
     { ...last, meta: { ...last.meta, stale: true, staleReason: "provider_error" } },
   ]);
+});
+test("index levels with zero volume are not no-trade candles; other types keep the flag", async () => {
+  const body = JSON.parse(fixture("chart-eod"));
+  body.chart.result[0].indicators.quote[0].close[1] = 10.1;
+  const transport = network([[/\/v8\/finance\/chart\/SYNTH$/u, () => Response.json(body)]]);
+  const range = { from: "2026-10-01", to: "2026-10-05" };
+  const flags = async (type) =>
+    (await provider(transport, async () => ({ ...usd, type })).getEodBars(id, range)).map(
+      (bar) => bar.noTrades,
+    );
+  expect(await flags("index")).toEqual([false, false, false]);
+  expect(await flags("stock")).toEqual([false, true, false]);
+});
+test("EOD currency drift names both currencies for the § 14 BLOCK", async () => {
+  const transport = network([
+    [/\/v8\/finance\/chart\/SYNTH$/u, () => new Response(fixture("chart-eod"))],
+  ]);
+  const failure = provider(transport, async () => ({ ...usd, currency: "EUR" })).getEodBars(id, {
+    from: "2026-10-01",
+    to: "2026-10-05",
+  });
+  await expect(failure).rejects.toBeInstanceOf(CurrencyMismatchError);
+  await expect(failure).rejects.toMatchObject({
+    reason: "provider_error",
+    expected: "EUR",
+    received: "USD",
+  });
 });

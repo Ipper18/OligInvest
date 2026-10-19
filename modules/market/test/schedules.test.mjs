@@ -1,4 +1,4 @@
-import { ProviderError, ProviderLimits } from "@oliginvest/data-providers";
+import { CurrencyMismatchError, ProviderError, ProviderLimits } from "@oliginvest/data-providers";
 import {
   FrankfurterProvider,
   NbpProvider,
@@ -135,4 +135,25 @@ test("scheduled US EOD skips holidays and requests only the five-session correct
   await jobs.dispatch("market.us-eod", {});
   expect(correction).toHaveBeenCalledWith("XNAS", "2026-10-07");
   expect(bars).toHaveBeenCalledWith(id, { from: "2026-10-01", to: "2026-10-07" });
+});
+test("US EOD currency drift records a BLOCK instead of storing the drifted bars", async () => {
+  const jobs = fixture("2026-10-07T21:30:00Z");
+  vi.spyOn(jobs.store, "eodIds").mockResolvedValue([id]);
+  vi.spyOn(jobs.repository, "resolve").mockResolvedValue({
+    id,
+    mic: "XNAS",
+    type: "stock",
+    symbol: "SYN",
+    currency: "USD",
+  });
+  vi.spyOn(jobs.store, "sessionDates").mockResolvedValue(["2026-10-07"]);
+  vi.spyOn(jobs.store, "correctionStart").mockResolvedValue("2026-10-01");
+  vi.spyOn(YahooProvider.prototype, "getEodBars").mockRejectedValue(
+    new CurrencyMismatchError("USD", "EUR"),
+  );
+  const save = vi.spyOn(jobs.repository, "saveBars").mockResolvedValue();
+  const record = vi.spyOn(jobs.store, "recordCurrencyChange").mockResolvedValue();
+  await jobs.dispatch("market.us-eod", {});
+  expect(save).not.toHaveBeenCalled();
+  expect(record).toHaveBeenCalledWith(id, "2026-10-07", "USD", "EUR");
 });

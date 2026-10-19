@@ -8,6 +8,7 @@ import {
   symbolSchema,
 } from "@oliginvest/data-providers";
 import type { GpwRecord } from "@oliginvest/data-providers/adapters";
+import type { DatabaseTransaction } from "@oliginvest/db";
 import { sql } from "drizzle-orm";
 import { z } from "zod";
 import type { MarketRepository } from "./server/repository.js";
@@ -40,13 +41,17 @@ export class IngestionStore {
         // The archive's short name is not a ticker; identify by ISIN + MIC.
         const found = (
           await tx.execute(
-            sql`INSERT INTO market.instruments(isin,mic,exchange_short_name,name,type,currency,country) VALUES(${row.isin},'XWAR',${row.name},${row.name},'stock',${row.currency},'PL') ON CONFLICT(isin,mic) WHERE isin IS NOT NULL DO UPDATE SET exchange_short_name=EXCLUDED.exchange_short_name RETURNING id::text,currency`,
+            sql`INSERT INTO market.instruments(isin,mic,exchange_short_name,name,type,currency,country) VALUES(${row.isin},'XWAR',${row.name},${row.name},'stock',${row.currency},'PL') ON CONFLICT(isin,mic) WHERE isin IS NOT NULL DO UPDATE SET exchange_short_name=EXCLUDED.exchange_short_name RETURNING id::text,currency,(xmax=0) AS inserted`,
           )
         ).rows[0];
         if (!found) throw new Error("GPW_CATALOG_WRITE_FAILED");
         const id = String(found.id);
+        if (found.inserted) await this.recordIsinChange(tx, id, row);
         if (found.currency !== row.currency) {
-          await this.repository.recordQualityIssue(tx, id, row.date, "currency_change");
+          await this.repository.recordQualityIssue(tx, id, row.date, "currency_change", {
+            expected: String(found.currency),
+            received: row.currency,
+          });
           continue;
         }
         await tx.execute(
@@ -69,6 +74,51 @@ export class IngestionStore {
       }
     });
     await this.repository.saveBars(bars);
+    const dates = [...new Set(rows.map((row) => row.date))];
+    if (dates.length) await this.recordMissingGpwSessions(dates);
+  }
+  /**
+   * A new ISIN under the short name of another listed XWAR instrument is an ISIN change (or a
+   * reused name) until an administrator links or dismisses it: BLOCK both series (§ 14).
+   */
+  private async recordIsinChange(tx: DatabaseTransaction, id: string, row: GpwRecord) {
+    const previous = (
+      await tx.execute(
+        sql`SELECT id::text,isin FROM market.instruments WHERE mic='XWAR' AND exchange_short_name=${row.name} AND id<>${id}::uuid AND isin IS NOT NULL AND isin<>${row.isin} AND is_active`,
+      )
+    ).rows;
+    for (const other of previous) {
+      await this.repository.recordQualityIssue(tx, String(other.id), row.date, "isin_change", {
+        isin: String(other.isin),
+        newIsin: row.isin,
+      });
+      await this.repository.recordQualityIssue(tx, id, row.date, "isin_change", {
+        isin: row.isin,
+        previousIsin: String(other.isin),
+      });
+    }
+  }
+  /**
+   * GPW instruments whose latest earlier bar came from the archive but which are missing from
+   * this session's file (suspension, delisting or an incomplete file) get a calendar gap.
+   */
+  async recordMissingGpwSessions(dates: string[]) {
+    await this.repository.database.transaction(system, async (tx) => {
+      for (const day of z.array(z.iso.date()).parse(dates)) {
+        const missing = (
+          await tx.execute(sql`SELECT i.id::text FROM market.instruments i
+          JOIN LATERAL (SELECT source FROM market.bars_daily WHERE instrument_id=i.id AND session_date<${day}::date ORDER BY session_date DESC LIMIT 1) b ON b.source='gpw'
+          WHERE i.mic='XWAR' AND i.is_active AND (i.delisted_on IS NULL OR i.delisted_on>${day}::date)
+          AND NOT EXISTS(SELECT 1 FROM market.bars_daily x WHERE x.instrument_id=i.id AND x.session_date=${day}::date)`)
+        ).rows;
+        for (const row of missing) await this.repository.recordGaps(tx, String(row.id), day, day);
+      }
+    });
+  }
+  async recordCurrencyChange(id: string, date: string, expected: string, received: string) {
+    await this.repository.database.transaction(system, (tx) =>
+      this.repository.recordQualityIssue(tx, id, date, "currency_change", { expected, received }),
+    );
   }
   async saveSymbols(input: SymbolHit[]) {
     await this.repository.database.transaction(system, async (tx) => {

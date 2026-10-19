@@ -1,5 +1,10 @@
 import { addDays } from "@oliginvest/core";
-import { createProviderFetch, ProviderError, ProviderLimits } from "@oliginvest/data-providers";
+import {
+  CurrencyMismatchError,
+  createProviderFetch,
+  ProviderError,
+  ProviderLimits,
+} from "@oliginvest/data-providers";
 import {
   FrankfurterProvider,
   fetchGpw,
@@ -50,6 +55,19 @@ export function createMarketJobs(options: {
   );
   const nbp = new NbpProvider(request("nbp", 6), now);
   const ecb = new FrankfurterProvider(request("ecb", 6), now);
+  /** A currency drift is a § 14 BLOCK on the series; the drifted bars are never stored. */
+  async function saveYahooBars(id: string, from: string, to: string) {
+    try {
+      await repository.saveBars(
+        await limits.singleFlight(`bars:${id}:${from}:${to}`, () =>
+          yahoo.getEodBars(id, { from, to }),
+        ),
+      );
+    } catch (error) {
+      if (!(error instanceof CurrencyMismatchError)) throw error;
+      await store.recordCurrencyChange(id, to, error.expected, error.received);
+    }
+  }
   async function dispatch(name: string, raw: unknown, failures = 0): Promise<void> {
     const payload = marketJobSchema.parse(raw);
     const date = payload.date ?? repository.today();
@@ -145,11 +163,7 @@ export function createMarketJobs(options: {
           if (!payload.from && !(await store.sessionDates(instrument.mic, date, date)).length)
             continue;
           const from = payload.from ?? (await store.correctionStart(instrument.mic, date));
-          await repository.saveBars(
-            await limits.singleFlight(`bars:${id}:${from}:${payload.to ?? date}`, () =>
-              yahoo.getEodBars(id, { from, to: payload.to ?? date }),
-            ),
-          );
+          await saveYahooBars(id, from, payload.to ?? date);
         }
         return;
       }
