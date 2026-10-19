@@ -193,6 +193,21 @@ export async function testMarketQualityStorage(settings) {
       ["2031-03-05", "BLOCK", { expected: "PLN", received: "EUR" }],
     );
     assert.equal(await repository.analysisEligible(context, gpwId(ISINS[1])), false);
+
+    // BL-213 counts: archive rows per open XWAR session, newest first; manual rows apart.
+    await repository.saveBars([
+      bar(flat, "2031-03-07", "5", "1000", {
+        meta: { source: "gpw_manual", asOf: "2031-03-07T16:00:00Z", delayMinutes: 0, stale: false },
+      }),
+    ]);
+    assert.deepEqual((await store.gpwSessionCounts("2031-03-07", 20)).slice(0, 5), [
+      { date: "2031-03-07", automatic: 0, manual: 1 },
+      { date: "2031-03-06", automatic: 1, manual: 0 },
+      { date: "2031-03-05", automatic: 2, manual: 0 },
+      { date: "2031-03-04", automatic: 4, manual: 0 },
+      { date: "2031-03-03", automatic: 4, manual: 0 },
+    ]);
+    assert.equal((await store.gpwSessionCounts("2031-03-04", 1)).length, 1);
   } finally {
     await db.transaction(context, async (tx) => {
       await tx.execute(

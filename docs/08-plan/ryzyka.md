@@ -60,6 +60,9 @@ Powiązane: [`roadmapa.md`](roadmapa.md), [`backlog.md`](backlog.md), [`../06-be
 
 | **R-36** | Sporadyczny timeout oczekiwania na start SSE w WebKit | M1-4a: jeden lokalny timeout, następnie 10/10 tego przypadku i 30/30 macierzy PASS; przyczyna niepotwierdzona | 2 | 2 | 4 | zachować asercję i limit; przy nawrocie zebrać trace sieci/hydratacji przed zmianą kodu | status wstrzymany zamiast live po 5 s | agent, CI | M1-4a, otwarte do wyjaśnienia nawrotu lub stabilnego CI |
 
+| **R-37** | Niezweryfikowane symbole Yahoo benchmarków (WIG, mWIG40, sWIG80, Nasdaq-100, ETF-y) | BL-206, [raport M2](m2-market-backend-session-report.md); kontener sesji bez dostępu do Yahoo | 3 | 2 | 6 | symbole oznaczone **NIEZWERYFIKOWANE** w `zrodla-danych.md`; nieznany symbol (404) kończy serię na dzień z błędem w logu, `listBenchmarks` nie podaje `dataAvailableFrom`; właściciel potwierdza symbole na instancji po pierwszym przebiegu `market.benchmarks` | brak `dataAvailableFrom` po pierwszej nocy, `market.ingestion_failed` dla `market.benchmarks` | właściciel, agent | M2, otwarte do pierwszego przebiegu na instancji |
+| **R-38** | Worker Python (rola `oliginvest_analytics_ro`) nie widzi `market.data_quality_issues` | BL-209: bramka FR-04 w `MarketRepository.assertAnalysisEligible`; `grants.sql` daje roli analityki tylko dane rynkowe bez tabeli zgłoszeń | 2 | 4 | 8 | zadanie analizy musi sprawdzić bramkę w `jobs` przed przekazaniem serii do workera (kod `DATA_QUALITY_HOLD`); przy budowie BL-3xx zdecydować: grant `SELECT` na `data_quality_issues` dla roli analityki albo przekazywanie listy dozwolonych instrumentów | analiza FR-04 uruchomiona na serii z otwartym BLOCK | agent, właściciel | M3, otwarte do pierwszej analizy FR-04 |
+
 ## 3. Podsumowanie
 
 36 ryzyk: **5 wysokich** (R-01, R-07, R-11, R-16, R-28), 26 średnich, 5 niskich; brak krytycznych.

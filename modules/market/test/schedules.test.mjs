@@ -36,12 +36,13 @@ function fixture(instant = "2026-10-07T10:20:00Z") {
   });
   return { ...jobs, transport };
 }
-test("five idempotent schedules use Warsaw civil time", () => {
+test("six idempotent schedules use Warsaw civil time", () => {
   expect(marketSchedules.map((s) => [s.job, s.cron, s.tz])).toEqual([
     ["market.fx", "20 12 * * 1-5", "Europe/Warsaw"],
     ["market.gpw", "30 18 * * 1-5", "Europe/Warsaw"],
     ["market.quotes", "* * * * *", "Europe/Warsaw"],
     ["market.us-eod", "30 23 * * 1-5", "Europe/Warsaw"],
+    ["market.gpw-completeness", "30 19 * * 1-5", "Europe/Warsaw"],
     ["market.benchmarks", "45 23 * * 1-5", "Europe/Warsaw"],
   ]);
 });

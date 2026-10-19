@@ -116,6 +116,22 @@ export class IngestionStore {
       }
     });
   }
+  /** Rows per source for the last `limit` open XWAR sessions up to `date` (BL-213). */
+  async gpwSessionCounts(date: string, limit: number) {
+    return this.repository.database.transaction(system, async (tx) =>
+      (
+        await tx.execute(sql`SELECT c.session_date::text AS date,
+          (SELECT count(*)::int FROM market.bars_daily b WHERE b.session_date=c.session_date AND b.source='gpw') AS automatic,
+          (SELECT count(*)::int FROM market.bars_daily b WHERE b.session_date=c.session_date AND b.source='gpw_manual') AS manual
+          FROM market.trading_calendar c WHERE c.mic='XWAR' AND c.is_open AND c.session_date<=${date}::date
+          ORDER BY c.session_date DESC LIMIT ${limit}`)
+      ).rows.map((row) => ({
+        date: String(row.date),
+        automatic: Number(row.automatic),
+        manual: Number(row.manual),
+      })),
+    );
+  }
   async recordCurrencyChange(id: string, date: string, expected: string, received: string) {
     await this.repository.database.transaction(system, (tx) =>
       this.repository.recordQualityIssue(tx, id, date, "currency_change", { expected, received }),

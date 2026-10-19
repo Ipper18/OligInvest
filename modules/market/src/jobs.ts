@@ -22,16 +22,25 @@ import {
   BENCHMARKS_PER_RUN,
 } from "./benchmarks.js";
 import { marketJobSchema } from "./contracts.js";
+import {
+  formatGpwCompleteness,
+  GPW_COMPLETENESS_SESSIONS,
+  type GpwCompletenessReport,
+  summarizeGpwCompleteness,
+} from "./gpw-completeness.js";
 import { IngestionStore } from "./ingestion-store.js";
 import { QUOTE_ATTEMPT_MS, QUOTES_PER_RUN, YAHOO_PER_MINUTE } from "./quote-cadence.js";
 import { MarketRepository } from "./server/repository.js";
 
+export * from "./gpw-completeness.js";
 export { IngestionStore } from "./ingestion-store.js";
 export const marketSchedules = [
   { job: "market.fx", cron: "20 12 * * 1-5", tz: "Europe/Warsaw" },
   { job: "market.gpw", cron: "30 18 * * 1-5", tz: "Europe/Warsaw" },
   { job: "market.quotes", cron: "* * * * *", tz: "Europe/Warsaw" },
   { job: "market.us-eod", cron: "30 23 * * 1-5", tz: "Europe/Warsaw" },
+  // An hour after the archive fetch; the report covers the latest 20 GPW sessions (BL-213).
+  { job: "market.gpw-completeness", cron: "30 19 * * 1-5", tz: "Europe/Warsaw" },
   // After both GPW (17:05) and US (22:00 Warsaw) closes; outside every quote session.
   { job: "market.benchmarks", cron: "45 23 * * 1-5", tz: "Europe/Warsaw" },
 ] as const;
@@ -41,6 +50,8 @@ export function createMarketJobs(options: {
   cache: Redis;
   observed(): Promise<string[]>;
   enqueue(name: string, payload: unknown, delay?: number): Promise<void>;
+  /** Receives job reports (BL-213), e.g. for a structured log line. */
+  report?(name: string, report: GpwCompletenessReport): void;
   now?: () => Date;
   transport?: typeof fetch;
 }) {
@@ -174,6 +185,22 @@ export function createMarketJobs(options: {
           const from = payload.from ?? (await store.correctionStart(instrument.mic, date));
           await saveYahooBars(id, from, payload.to ?? date);
         }
+        return;
+      }
+      case "market.gpw-completeness": {
+        const counts = await store.gpwSessionCounts(date, GPW_COMPLETENESS_SESSIONS);
+        const rows = [];
+        for (const row of counts)
+          rows.push({
+            ...row,
+            requested: Boolean(await options.queue.get(`quota:gpw:archive:${row.date}`)),
+          });
+        const report = summarizeGpwCompleteness(rows, date);
+        // AOF-backed: the latest report and one per day for 90 days, readable without SQL.
+        const text = JSON.stringify({ ...report, markdown: formatGpwCompleteness(report) });
+        await options.queue.set("report:gpw-completeness:latest", text);
+        await options.queue.set(`report:gpw-completeness:${date}`, text, "PX", 90 * 86_400_000);
+        options.report?.(name, report);
         return;
       }
       case "market.benchmarks": {
