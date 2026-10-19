@@ -4,6 +4,7 @@ import type { DatabaseContext } from "@oliginvest/db";
 import { type AppEnv, PROBLEM_DEFINITIONS, ProblemError } from "@oliginvest/platform";
 import {
   apiQuoteSchema,
+  benchmarkSchema,
   chartSchema,
   fxResponseSchema,
   instrumentResponseSchema,
@@ -229,6 +230,25 @@ export function mountMarket(api: OpenAPIHono<AppEnv>, dependencies: MarketDepend
         await (await dependencies.repository()).status(
           await dependencies.authorize(context.req.raw),
         ),
+        200,
+      ),
+  );
+  api.openapi(
+    createRoute({
+      method: "get",
+      path: "/market/benchmarks",
+      operationId: "listBenchmarks",
+      tags: ["market"],
+      security,
+      responses: { 200: json(object({ data: z.array(benchmarkSchema) })), 401: marketError },
+    }),
+    async (context) =>
+      context.json(
+        {
+          data: await (await dependencies.repository()).benchmarks(
+            await dependencies.authorize(context.req.raw),
+          ),
+        },
         200,
       ),
   );

@@ -131,6 +131,18 @@ export const fxResponseSchema = object({
   ),
   meta: metaSchema,
 }).openapi("FxRatesResponse");
+export const benchmarkSchema = object({
+  code: z.string().openapi({ example: "WIG20" }),
+  name: z.string(),
+  kind: z.enum(["index", "etf_proxy"]),
+  proxyFor: z
+    .string()
+    .optional()
+    .openapi({ description: "Kod indeksu, który zastępuje ETF (gdy indeks niedostępny)." }),
+  instrumentId: z.uuid(),
+  currency: z.string().regex(/^[A-Z]{3}$/),
+  dataAvailableFrom: z.string().date().optional(),
+}).openapi("Benchmark");
 export const marketJobSchema = z
   .object({
     scheduledAt: z.iso.datetime().optional(),

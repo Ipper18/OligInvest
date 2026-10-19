@@ -3,6 +3,7 @@ import { z } from "zod";
 import {
   type Bar,
   barSchema,
+  CurrencyMismatchError,
   type DataProvider,
   decimalText,
   ProviderError,
@@ -13,7 +14,13 @@ import {
 } from "../contracts.js";
 import { limitedText, parseDecimalJson } from "../transport.js";
 
-export type YahooInstrument = { id: string; symbol: string; currency: string; mic: string };
+export type YahooInstrument = {
+  id: string;
+  symbol: string;
+  currency: string;
+  mic: string;
+  type?: string;
+};
 type Resolve = (id: string) => Promise<YahooInstrument>;
 const HOST = "https://query2.finance.yahoo.com";
 // Yahoo tickers only (PKO.WA, ^GSPC, BRK-B); anything else never reaches the URL path.
@@ -197,7 +204,8 @@ export class YahooProvider implements DataProvider {
       interval: "1d",
       includePrePost: "false",
     });
-    if (data.meta.currency !== instrument.currency) throw new ProviderError("provider_error");
+    if (data.meta.currency !== instrument.currency)
+      throw new CurrencyMismatchError(instrument.currency, data.meta.currency);
     const timestamps = data.timestamp ?? [];
     const values = data.indicators.quote[0];
     const column = (name: "open" | "high" | "low" | "close" | "volume") => {
@@ -228,7 +236,8 @@ export class YahooProvider implements DataProvider {
           low: low?.[index] ?? null,
           close: last,
           volume: volume?.[index] ?? "0",
-          noTrades: volume?.[index] === "0",
+          // Index volume is absent or zero on Yahoo; an index level is never a no-trade candle.
+          noTrades: instrument.type !== "index" && volume?.[index] === "0",
           currency: instrument.currency,
           meta: {
             source: "yahoo",

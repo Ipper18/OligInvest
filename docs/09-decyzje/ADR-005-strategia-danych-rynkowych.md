@@ -48,3 +48,5 @@ Wariant **A**, z zasadami:
 ## Weryfikacja
 
 Przez 20 kolejnych dni sesyjnych po M2: ≥ 95 % dni z kompletem danych EOD GPW pobranych automatycznie; każda awaria dostawcy intraday skutkuje flagą `stale` zamiast błędu (test chaos).
+
+Pomiar (BL-213): zadanie `market.gpw-completeness` (dni robocze 19:30 Europe/Warsaw) liczy dla ostatnich 20 sesji XWAR z `trading_calendar` wiersze archiwum (`source = gpw`) i importu ręcznego oraz znacznik żądania archiwum; dzień jest kompletny, gdy wiersze automatyczne osiągają 95 % mediany niepustych dni okna. Wynik (tabela Markdown i JSON) trafia do `valkey-queue` pod `report:gpw-completeness:latest` oraz w log `market.gpw_completeness` z kodem `GPW_COMPLETENESS_PASS|FAIL|INSUFFICIENT`; tabelę wkleja się do raportu sesji.

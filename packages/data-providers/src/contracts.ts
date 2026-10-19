@@ -135,3 +135,12 @@ export class ProviderError extends Error {
     super(reason);
   }
 }
+/** The provider reports another currency than the catalog: a § 14 BLOCK, never a silent switch. */
+export class CurrencyMismatchError extends ProviderError {
+  constructor(
+    readonly expected: string,
+    readonly received: string,
+  ) {
+    super("provider_error");
+  }
+}

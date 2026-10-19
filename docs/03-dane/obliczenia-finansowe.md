@@ -481,15 +481,23 @@ Pytania do właściciela rozstrzygnięte domyślnie (do zmiany decyzją w ADR): 
 
 Każda seria EOD przechodzi przy zapisie kontrole; wynik trafia do `market.data_quality_issues`. `BLOCK` wyklucza serię wyłącznie z analiz FR-04. Notowania, wycena i wykres nadal pokazują dane ze znacznikiem „do weryfikacji” (`staleReason = data_quality_hold`); administrator potwierdza skok albo oznacza split. Samo odświeżenie danych nie rozwiązuje zgłoszenia (decyzja właściciela 2026-10-06).
 
-| Kontrola | Warunek | Ważność |
-|---|---|---|
-| Integralność OHLC | `L ≤ min(O, C)`, `H ≥ max(O, C)`, `L ≤ H`, wolumen ≥ 0 | BLOCK |
-| Duplikaty i monotoniczność | jedna świeca na (instrument, data) | BLOCK |
-| Luki | brak świecy w dniu sesyjnym wg `trading_calendar` przy notowaniu instrumentu | WARN |
-| Świece „martwe” | wolumen 0 i `O = H = L = C` przez > 5 sesji | WARN |
-| Skoki | `|r| > 25 %` bez zdarzenia korporacyjnego tego dnia | BLOCK do wyjaśnienia (admin: potwierdź / oznacz split) |
-| Wolumen | > 20× mediany z 30 sesji | INFO |
-| Waluta / ISIN | zmiana waluty lub ISIN instrumentu | BLOCK |
+| Kontrola | Kod (`check_code`) | Warunek | Ważność |
+|---|---|---|---|
+| Integralność OHLC | `ohlc_integrity` | `L ≤ min(O, C)`, `H ≥ max(O, C)`, `L ≤ H`, wolumen ≥ 0 | BLOCK |
+| Duplikaty i monotoniczność | `duplicate` | jedna świeca na (instrument, data) | BLOCK |
+| Luki | `gap` | brak świecy w dniu sesyjnym wg `trading_calendar` przy notowaniu instrumentu | WARN |
+| Świece „martwe” | `dead_candles` | wolumen 0 i `O = H = L = C` przez > 5 sesji | WARN |
+| Skoki | `jump_without_action` | `|r| > 25 %` bez zdarzenia korporacyjnego tego dnia | BLOCK do wyjaśnienia (admin: potwierdź / oznacz split) |
+| Wolumen | `volume_spike` | > 20× mediany z 30 sesji | INFO |
+| Waluta / ISIN | `currency_change`, `isin_change` | zmiana waluty lub ISIN instrumentu | BLOCK |
+
+Doprecyzowanie implementacji (BL-209, 2026-10-19; reguły i progi bez zmian, kod w `packages/core` — `scanMarketSeries`, `DATA_QUALITY_RULES` — i `modules/market`):
+
+- Zgłoszenie jest unikalne dla (instrument, data, kod) niezależnie od statusu — ponowne pobranie okna korekt nie duplikuje go ani nie otwiera ponownie decyzji administratora. `details` zawiera fakty jako ciągi dziesiętne (np. `previousClose`, `close`, `change` dla skoku; `volume`, `median30` dla wolumenu; `expected`, `received` dla waluty; `isin`, `newIsin`/`previousIsin` dla ISIN).
+- Skok liczymy względem ostatniego zamknięcia z obrotem (świece bez transakcji i wiersze odrzucone nie są punktem odniesienia); mediana wolumenu wymaga pełnych 30 poprzednich sesji, a mediana 0 nie daje progu. Seria „martwych” świec jest zgłaszana raz — w szóstej sesji z rzędu.
+- Luka dotyczy wyłącznie dni z wpisem `is_open` w `trading_calendar`, od pierwszej zapisanej świecy do dnia przed `delisted_on`; dzień bez wpisu kalendarza jest nieznany, a nie luką. Dla archiwum GPW luką jest też brak w pliku sesji instrumentu, którego ostatnia świeca pochodzi z archiwum. Luka (WARN) zamyka się sama (`resolved`, `details.resolution = bar_received`), gdy świeca dotrze — to fakt, nie decyzja; zasada „samo odświeżenie nie rozwiązuje zgłoszenia” obowiązuje dla BLOCK.
+- `isin_change`: nowy ISIN w archiwum GPW pod skróconą nazwą innego aktywnego instrumentu XWAR blokuje obie serie do decyzji administratora (powiązanie zdarzeniem `isin_change` albo odrzucenie). `currency_change`: GPW — waluta wiersza ≠ waluta katalogu; Yahoo — waluta wykresu ≠ waluta katalogu; świece w obcej walucie nie są zapisywane.
+- Bramka FR-04: `MarketRepository.analysisHolds()` / `assertAnalysisEligible()` zwraca otwarte BLOCK per instrument; zadanie analizy kończy się kodem `DATA_QUALITY_HOLD` (zdarzenie `analytics.run.failed`). WARN i INFO nigdy nie blokują.
 
 ---
 

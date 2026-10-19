@@ -68,6 +68,7 @@ Kolejka `notify` obsługuje też `auth.invitation` (`email`, `token`, `expiresAt
 | Kiedy | Czynność |
 |---|---|
 | codziennie (automatycznie) | raport błędów e-mailem; sondy Uptime Kuma; `ct-check` (certyfikaty dla `invest.oligi.pl` i `*.oligi.pl`) |
+| przez 20 sesji po wdrożeniu M2 (potem co miesiąc) | raport kompletności EOD GPW (ADR-005, BL-213): log `market.gpw_completeness` (kod `GPW_COMPLETENESS_PASS`/`FAIL`/`INSUFFICIENT`) i tabela w `valkey-queue` pod `report:gpw-completeness:latest` (pole `markdown`); odczyt `GET` przez `valkey-cli` w kontenerze `valkey-queue` z hasłem z pliku sekretu, bez wklejania hasła do historii powłoki; tabelę wklej do raportu etapu. Przy `FAIL` sprawdź dni ze stanem „brak” i „żądanie archiwum: tak” — awaria po wysłaniu żądania wymaga ręcznego importu XLS (FR-08.09), bez ponownego automatycznego pobierania |
 | co tydzień | przegląd PR-ów Renovate; weryfikacja repozytoriów kopii (automatyczna — sprawdź alerty) |
 | co miesiąc | aktualizacje hosta Proxmox (po kopii VM); raport miesięczny z [`../07-wdrozenie/monitoring.md`](../07-wdrozenie/monitoring.md) § 9; automatyczny test odtworzenia — sprawdź wynik |
 | co kwartał | ćwiczenie odtworzenia z protokołem (scenariusze A → C → D → E); przegląd drzewa zależności; przegląd sesji i tokenów administratorów |

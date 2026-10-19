@@ -7,7 +7,8 @@ DECLARE
   function_row record;
   expected_market_tables text[] := ARRAY[
     'instruments', 'bars_daily', 'fx_rates', 'corporate_actions', 'trading_calendar',
-    'sectors', 'sector_memberships', 'universes', 'universe_members', 'macro_series', 'macro_observations'
+    'sectors', 'sector_memberships', 'universes', 'universe_members', 'macro_series', 'macro_observations',
+    'data_quality_issues'
   ];
 BEGIN
   FOREACH role_name IN ARRAY ARRAY['oliginvest_owner', 'oliginvest_auth', 'oliginvest_app', 'oliginvest_analytics_ro', 'oliginvest_backup'] LOOP
