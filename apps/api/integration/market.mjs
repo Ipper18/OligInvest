@@ -84,6 +84,10 @@ export async function testMarketStorage(settings) {
       401,
     );
     assert.equal((await get(`instruments/${id}`)).status, 200);
+    const benchmarks = await get("benchmarks");
+    assert.equal(benchmarks.status, 200);
+    assert.ok(Array.isArray((await benchmarks.json()).data));
+    assert.equal((await app.request("/api/v1/market/benchmarks")).status, 401);
     assert.equal((await get(`instruments/${id}/chart?maxPoints=3001`)).status, 422);
     assert.equal((await get(`instruments/${randomUUID()}`)).status, 404);
     const first = await (await get("instruments?q=SYNMARKET&limit=1")).json();

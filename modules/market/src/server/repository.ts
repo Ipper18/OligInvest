@@ -17,8 +17,10 @@ import type { AppDatabase, DatabaseContext, DatabaseTransaction } from "@oliginv
 import { ProblemError } from "@oliginvest/platform";
 import { sql } from "drizzle-orm";
 import { z } from "zod";
+import { BENCHMARKS } from "../benchmarks.js";
 import {
   apiQuoteSchema,
+  benchmarkSchema,
   chartSchema,
   fxResponseSchema,
   instrumentSchema,
@@ -356,6 +358,38 @@ export class MarketRepository {
       };
     });
     return statusSchema.parse({ asOf: this.now().toISOString(), categories });
+  }
+  /** FR-01.09: catalog order; only benchmarks whose instrument exists (created by the job). */
+  async benchmarks(context: DatabaseContext) {
+    const rows = await this.database.transaction(
+      context,
+      async (tx) =>
+        (
+          await tx.execute(sql`SELECT s.symbol,i.id::text AS "instrumentId",i.currency,
+          (SELECT min(session_date)::text FROM market.bars_daily b WHERE b.instrument_id=i.id) AS "dataAvailableFrom"
+          FROM market.universe_members m JOIN market.universes u ON u.id=m.universe_id AND u.code='benchmarks'
+          JOIN market.instruments i ON i.id=m.instrument_id
+          JOIN market.instrument_provider_symbols s ON s.instrument_id=i.id AND s.provider='yahoo'
+          WHERE m.valid_to IS NULL AND s.symbol=ANY(${sql.param(BENCHMARKS.map((item) => item.yahoo))}::text[])`)
+        ).rows,
+    );
+    return BENCHMARKS.flatMap((definition) => {
+      const row = rows.find((item) => item.symbol === definition.yahoo);
+      if (!row) return [];
+      return [
+        benchmarkSchema.parse(
+          clean({
+            code: definition.code,
+            name: definition.name,
+            kind: definition.kind,
+            proxyFor: definition.proxyFor ?? null,
+            instrumentId: row.instrumentId,
+            currency: row.currency,
+            dataAvailableFrom: row.dataAvailableFrom,
+          }),
+        ),
+      ];
+    });
   }
   async resolve(id: string) {
     const row = await this.database.transaction(

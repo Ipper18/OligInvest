@@ -5,6 +5,7 @@ import {
   YahooProvider,
 } from "@oliginvest/data-providers/adapters";
 import { afterEach, expect, test, vi } from "vitest";
+import { BENCHMARK_HISTORY_DAYS, BENCHMARKS, BENCHMARKS_PER_RUN } from "../dist/src/benchmarks.js";
 import { createMarketJobs, IngestionStore, marketSchedules } from "../dist/src/jobs.js";
 import {
   MAX_QUOTED_INSTRUMENTS,
@@ -35,12 +36,13 @@ function fixture(instant = "2026-10-07T10:20:00Z") {
   });
   return { ...jobs, transport };
 }
-test("four idempotent schedules use Warsaw civil time", () => {
+test("five idempotent schedules use Warsaw civil time", () => {
   expect(marketSchedules.map((s) => [s.job, s.cron, s.tz])).toEqual([
     ["market.fx", "20 12 * * 1-5", "Europe/Warsaw"],
     ["market.gpw", "30 18 * * 1-5", "Europe/Warsaw"],
     ["market.quotes", "* * * * *", "Europe/Warsaw"],
     ["market.us-eod", "30 23 * * 1-5", "Europe/Warsaw"],
+    ["market.benchmarks", "45 23 * * 1-5", "Europe/Warsaw"],
   ]);
 });
 test("NBP fallback starts at the third failed attempt; no calls after 14:00", async () => {
@@ -156,4 +158,69 @@ test("US EOD currency drift records a BLOCK instead of storing the drifted bars"
   await jobs.dispatch("market.us-eod", {});
   expect(save).not.toHaveBeenCalled();
   expect(record).toHaveBeenCalledWith(id, "2026-10-07", "USD", "EUR");
+});
+test("benchmark catalog covers FR-01.09 with ETF proxies naming their index", () => {
+  const codes = BENCHMARKS.map((item) => item.code);
+  for (const code of ["WIG20", "WIG", "MWIG40", "SWIG80", "SPX", "NDX"])
+    expect(codes).toContain(code);
+  for (const item of BENCHMARKS.filter((entry) => entry.kind === "etf_proxy"))
+    expect(codes).toContain(item.proxyFor);
+  expect(new Set(BENCHMARKS.map((item) => item.yahoo)).size).toBe(BENCHMARKS.length);
+  expect(BENCHMARK_HISTORY_DAYS).toBeGreaterThanOrEqual(5 * 366);
+  expect(BENCHMARKS_PER_RUN).toBeLessThanOrEqual(Math.floor(YAHOO_PER_MINUTE * 0.2));
+});
+test("benchmarks backfill five years once, then refresh a week, two series per run", async () => {
+  const ids = BENCHMARKS.slice(0, 3).map(
+    (_, n) => `0192f0c4-7b1e-7c3a-9f00-3d2a1b4c5d${(0x70 + n).toString(16)}`,
+  );
+  const keys = new Map([[`benchmark:backfill:${ids[1]}`, "2021-10-14"]]);
+  const queue = {
+    get: vi.fn(async (key) => keys.get(key) ?? null),
+    set: vi.fn(async (key, value) => keys.set(key, value)),
+  };
+  vi.spyOn(ProviderLimits.prototype, "singleFlight").mockImplementation((_key, work) => work());
+  const enqueue = vi.fn();
+  const jobs = createMarketJobs({
+    database: { transaction: vi.fn() },
+    queue,
+    cache: {},
+    observed: async () => [],
+    enqueue,
+    now: () => new Date("2026-10-19T21:45:00Z"),
+    transport: vi.fn(),
+  });
+  const ensure = vi.spyOn(jobs.store, "ensureBenchmarks").mockResolvedValue(
+    ids.map((id, n) => ({
+      definition: BENCHMARKS[n],
+      id,
+      ...(n === 1 ? { first: "2021-10-14", last: "2026-10-16" } : {}),
+    })),
+  );
+  const bars = vi.spyOn(YahooProvider.prototype, "getEodBars").mockResolvedValue([]);
+  vi.spyOn(jobs.repository, "saveBars").mockResolvedValue();
+  await jobs.dispatch("market.benchmarks", { date: "2026-10-19" });
+  expect(ensure).toHaveBeenCalledWith(BENCHMARKS, "2026-10-19");
+  expect(bars.mock.calls).toEqual([
+    [ids[0], { from: "2021-10-15", to: "2026-10-19" }],
+    [ids[1], { from: "2026-10-09", to: "2026-10-19" }],
+  ]);
+  expect(keys.get(`benchmark:backfill:${ids[0]}`)).toBe("2021-10-15");
+  expect(enqueue).toHaveBeenCalledWith("market.benchmarks", { date: "2026-10-19" }, 60_000);
+  // The continuation only reads the remaining series; a 404 ends it for the day, visibly.
+  bars.mockClear();
+  enqueue.mockClear();
+  bars.mockRejectedValueOnce(new ProviderError("no_data"));
+  await expect(jobs.dispatch("market.benchmarks", { date: "2026-10-19" })).rejects.toThrow();
+  expect(bars.mock.calls).toEqual([[ids[2], { from: "2021-10-15", to: "2026-10-19" }]]);
+  expect(enqueue).not.toHaveBeenCalled();
+  expect(keys.has(`benchmark:backfill:${ids[2]}`)).toBe(false);
+  bars.mockClear();
+  await jobs.dispatch("market.benchmarks", { date: "2026-10-19" });
+  expect(bars).not.toHaveBeenCalled();
+  // Quota delays the job without marking the series done.
+  bars.mockRejectedValueOnce(new ProviderError("provider_quota"));
+  await expect(jobs.dispatch("market.benchmarks", { date: "2026-10-20" })).rejects.toMatchObject({
+    reason: "provider_quota",
+  });
+  expect(keys.has(`benchmark:done:${ids[0]}:2026-10-20`)).toBe(false);
 });

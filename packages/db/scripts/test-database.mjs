@@ -248,6 +248,11 @@ try {
   console.log(
     "Market data quality § 14: gaps, dead candles, volume spikes, jumps, ISIN/currency BLOCK and FR-04 gate PASS",
   );
+  const { testMarketBenchmarkStorage } = await import(
+    "../../../modules/market/integration/benchmarks.mjs"
+  );
+  await testMarketBenchmarkStorage({ host, port, database: migrated, passwords });
+  console.log("Benchmarks: idempotent catalog, existing mappings, universe and listing PASS");
   const roleSettings = () =>
     withClient(
       migrated,

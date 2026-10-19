@@ -83,6 +83,15 @@ test("series scan flags the first dead candle beyond five sessions only once", (
   expect(scanMarketSeries(history, batch, new Set())).toEqual([
     { date: day(6), code: "dead_candles", severity: "WARN", details: { sessions: 6 } },
   ]);
+  // Flat zero-volume index levels (stored with noTrades false) are not dead candles.
+  const level = (index) => candle(index, "10", "0", { noTrades: false });
+  expect(
+    scanMarketSeries(
+      [],
+      Array.from({ length: 7 }, (_, n) => level(n)),
+      new Set(),
+    ),
+  ).toEqual([]);
   // A continuing run in the next batch does not report again; a candle with a range is alive.
   expect(scanMarketSeries([...history, ...batch.slice(0, 3)], [dead(7)], new Set())).toEqual([]);
   expect(

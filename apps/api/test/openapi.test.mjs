@@ -61,6 +61,7 @@ test("Zod document matches all implemented operations and pending is the exact r
     "getQuotes",
     "getTransaction",
     "listAccounts",
+    "listBenchmarks",
     "listImportRows",
     "listImports",
     "listTransactions",

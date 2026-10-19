@@ -11,6 +11,7 @@ import type { GpwRecord } from "@oliginvest/data-providers/adapters";
 import type { DatabaseTransaction } from "@oliginvest/db";
 import { sql } from "drizzle-orm";
 import { z } from "zod";
+import type { BenchmarkDefinition } from "./benchmarks.js";
 import type { MarketRepository } from "./server/repository.js";
 
 const system = { userId: null, role: "system" } as const;
@@ -119,6 +120,60 @@ export class IngestionStore {
     await this.repository.database.transaction(system, (tx) =>
       this.repository.recordQualityIssue(tx, id, date, "currency_change", { expected, received }),
     );
+  }
+  /**
+   * Idempotent catalog of FR-01.09 benchmarks: an existing Yahoo mapping wins (never two
+   * instruments for one symbol); otherwise the instrument is upserted by (MIC, ticker) and joins
+   * the `benchmarks` universe. Returns each benchmark's instrument and stored bar range.
+   */
+  async ensureBenchmarks(definitions: readonly BenchmarkDefinition[], today: string) {
+    return this.repository.database.transaction(system, async (tx) => {
+      const universe = (
+        await tx.execute(
+          sql`INSERT INTO market.universes(code,name,description) VALUES('benchmarks','Indeksy i benchmarki','FR-01.09: indeksy i zamienniki ETF') ON CONFLICT(code) DO UPDATE SET name=EXCLUDED.name RETURNING id::text`,
+        )
+      ).rows[0];
+      if (!universe) throw new Error("BENCHMARK_UNIVERSE_WRITE_FAILED");
+      const output: Array<{
+        definition: BenchmarkDefinition;
+        id: string;
+        first?: string;
+        last?: string;
+      }> = [];
+      for (const definition of definitions) {
+        let id = (
+          await tx.execute(
+            sql`SELECT instrument_id::text AS id FROM market.instrument_provider_symbols WHERE provider='yahoo' AND symbol=${definition.yahoo}`,
+          )
+        ).rows[0]?.id;
+        if (!id) {
+          id = (
+            await tx.execute(
+              sql`INSERT INTO market.instruments(mic,ticker,name,type,currency,country) VALUES(${definition.mic},${definition.ticker},${definition.name},${definition.type},${definition.currency},${definition.country}) ON CONFLICT(mic,ticker) WHERE ticker IS NOT NULL DO UPDATE SET updated_at=now() RETURNING id::text,currency`,
+            )
+          ).rows[0]?.id;
+          if (!id) throw new Error("BENCHMARK_CATALOG_WRITE_FAILED");
+          await tx.execute(
+            sql`INSERT INTO market.instrument_provider_symbols(provider,symbol,instrument_id) VALUES('yahoo',${definition.yahoo},${String(id)}::uuid) ON CONFLICT(provider,symbol) DO NOTHING`,
+          );
+        }
+        await tx.execute(sql`INSERT INTO market.universe_members(universe_id,instrument_id,valid_from)
+          SELECT ${String(universe.id)}::uuid,${String(id)}::uuid,${today}::date WHERE NOT EXISTS(
+            SELECT 1 FROM market.universe_members WHERE universe_id=${String(universe.id)}::uuid AND instrument_id=${String(id)}::uuid AND valid_to IS NULL)
+          ON CONFLICT DO NOTHING`);
+        const range = (
+          await tx.execute(
+            sql`SELECT min(session_date)::text AS first,max(session_date)::text AS last FROM market.bars_daily WHERE instrument_id=${String(id)}::uuid`,
+          )
+        ).rows[0];
+        output.push({
+          definition,
+          id: z.uuid().parse(id),
+          ...(range?.first ? { first: String(range.first), last: String(range.last) } : {}),
+        });
+      }
+      return output;
+    });
   }
   async saveSymbols(input: SymbolHit[]) {
     await this.repository.database.transaction(system, async (tx) => {

@@ -40,6 +40,24 @@ Data weryfikacji: **2026-09-18**. Oznaczenia: ✅ zweryfikowane bezpośrednio (s
 
 **Yahoo — sposób dostępu (BL-159, 2026-10-12):** adapter `yahoo` woła wyłącznie `query2.finance.yahoo.com`: `v8/finance/chart` (EOD oraz ostatnia cena opóźniona z pól `meta`) i `v1/finance/search`; nie pobiera ciasteczek ani crumb i nie używa `v7/finance/quote`. Klient przedstawia się `User-Agent: OligInvest/<wersja> (+kontakt)`, nie podąża za przekierowaniami, nie zmienia automatycznie tożsamości ani nagłówków po 429/403 — odpowiedź blokująca otwiera breaker, a dane degradują do „nieaktualne”/„tylko EOD” ([ADR-016](../09-decyzje/ADR-016-cienki-adapter-yahoo.md)). Warunki Yahoo („personal use only”, brak redystrybucji) bez zmian: dane tylko dla zalogowanych, atrybucja „Dane: Yahoo Finance”; pełna treść ToS **NIEZWERYFIKOWANE** (jak w tabeli).
 
+**Indeksy i benchmarki (BL-206, 2026-10-19):** katalog w `modules/market/src/benchmarks.ts`, uniwersum `benchmarks` w `market.universes`. Archiwum GPW `type=10` zawiera tylko akcje, więc poziomy indeksów i ETF-y pobiera adapter `yahoo` (chart v8, ta sama kwota 12/min). Backfill ≥ 5 lat (1830 dni) jednym żądaniem na serię, potem codziennie tydzień wstecz; najwyżej 2 serie na minutę (20 % kwoty, `strategia-cache.md` § 5).
+
+| Kod | Nazwa | Rodzaj | Symbol Yahoo | MIC | Waluta | Weryfikacja symbolu |
+|---|---|---|---|---|---|---|
+| WIG20 | WIG20 | indeks | `WIG20.WA` | XWAR | PLN | ✅ 2026-09-18 (tabela § 2) |
+| WIG | WIG | indeks | `WIG.WA` | XWAR | PLN | **NIEZWERYFIKOWANE** |
+| MWIG40 | mWIG40 | indeks | `MWIG40.WA` | XWAR | PLN | **NIEZWERYFIKOWANE** |
+| SWIG80 | sWIG80 | indeks | `SWIG80.WA` | XWAR | PLN | **NIEZWERYFIKOWANE** |
+| SPX | S&P 500 | indeks | `^GSPC` | XNYS | USD | ✅ 2026-09-18 (§ 4) |
+| NDX | Nasdaq-100 | indeks | `^NDX` | XNAS | USD | **NIEZWERYFIKOWANE** |
+| ETFBW20TR | Beta ETF WIG20TR | zamiennik WIG20 | `ETFBW20TR.WA` | XWAR | PLN | **NIEZWERYFIKOWANE** |
+| ETFBM40TR | Beta ETF mWIG40TR | zamiennik mWIG40 | `ETFBM40TR.WA` | XWAR | PLN | **NIEZWERYFIKOWANE** |
+| ETFBS80TR | Beta ETF sWIG80TR | zamiennik sWIG80 | `ETFBS80TR.WA` | XWAR | PLN | **NIEZWERYFIKOWANE** |
+| SPY | SPDR S&P 500 ETF Trust | zamiennik S&P 500 | `SPY` | ARCX | USD | **NIEZWERYFIKOWANE** |
+| QQQ | Invesco QQQ Trust | zamiennik Nasdaq-100 | `QQQ` | XNAS | USD | **NIEZWERYFIKOWANE** |
+
+Symbole oznaczone **NIEZWERYFIKOWANE** nie zostały sprawdzone z sesji (2026-10-19: brak dostępu do Yahoo z kontenera). Nieznany symbol zwraca 404: zadanie kończy tę serię na dany dzień z błędem w logu, a `listBenchmarks` nie podaje `dataAvailableFrom`. Zastrzeżenia: zamienniki ETF śledzą indeksy dochodowe (TR) albo zawierają koszty funduszu — to przybliżenie, nie ten sam indeks; licencja danych indeksowych GPW Benchmark pozostaje ❓ (tabela § 2), dane tylko dla zalogowanych.
+
 ## 3. Źródła przejrzane i odrzucone
 
 | Źródło | Powód |

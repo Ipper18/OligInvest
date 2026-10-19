@@ -69,7 +69,9 @@ const median = (values: readonly Decimal[]) => {
   const upper = sorted[middle] ?? new Decimal("0");
   return sorted.length % 2 ? upper : upper.plus(sorted[middle - 1] ?? upper).div(2);
 };
+// Index levels are stored with `noTrades: false` and no volume; they are never dead candles.
 const isDeadCandle = (bar: MarketBar) =>
+  bar.noTrades !== false &&
   toDecimal(bar.volume).isZero() &&
   [bar.open, bar.high, bar.low].every((price) => price === null || toDecimal(price).eq(bar.close));
 /**

@@ -14,6 +14,13 @@ import {
 } from "@oliginvest/data-providers/adapters";
 import type { AppDatabase } from "@oliginvest/db";
 import type { Redis } from "ioredis";
+import {
+  BENCHMARK_CONTINUE_MS,
+  BENCHMARK_HISTORY_DAYS,
+  BENCHMARK_REFRESH_DAYS,
+  BENCHMARKS,
+  BENCHMARKS_PER_RUN,
+} from "./benchmarks.js";
 import { marketJobSchema } from "./contracts.js";
 import { IngestionStore } from "./ingestion-store.js";
 import { QUOTE_ATTEMPT_MS, QUOTES_PER_RUN, YAHOO_PER_MINUTE } from "./quote-cadence.js";
@@ -25,6 +32,8 @@ export const marketSchedules = [
   { job: "market.gpw", cron: "30 18 * * 1-5", tz: "Europe/Warsaw" },
   { job: "market.quotes", cron: "* * * * *", tz: "Europe/Warsaw" },
   { job: "market.us-eod", cron: "30 23 * * 1-5", tz: "Europe/Warsaw" },
+  // After both GPW (17:05) and US (22:00 Warsaw) closes; outside every quote session.
+  { job: "market.benchmarks", cron: "45 23 * * 1-5", tz: "Europe/Warsaw" },
 ] as const;
 export function createMarketJobs(options: {
   database: AppDatabase;
@@ -165,6 +174,36 @@ export function createMarketJobs(options: {
           const from = payload.from ?? (await store.correctionStart(instrument.mic, date));
           await saveYahooBars(id, from, payload.to ?? date);
         }
+        return;
+      }
+      case "market.benchmarks": {
+        // Backfill ≥ 5 years once (AOF marker), then refresh a week; one marker per day keeps
+        // continuation runs from re-reading finished series (holidays have no new bar).
+        const due = [];
+        for (const item of await store.ensureBenchmarks(BENCHMARKS, date))
+          if (!(await options.queue.get(`benchmark:done:${item.id}:${date}`))) due.push(item);
+        let failure: unknown;
+        for (const item of due.slice(0, BENCHMARKS_PER_RUN)) {
+          const backfilled = await options.queue.get(`benchmark:backfill:${item.id}`);
+          const from =
+            backfilled && item.last
+              ? addDays(item.last, -BENCHMARK_REFRESH_DAYS)
+              : addDays(date, -BENCHMARK_HISTORY_DAYS);
+          try {
+            await saveYahooBars(item.id, from, date);
+            if (!backfilled) await options.queue.set(`benchmark:backfill:${item.id}`, from);
+          } catch (error) {
+            // Quota delays the whole job. Other failures (also 404 for an unknown symbol) end
+            // the series for today, so continuations always progress; the job then fails
+            // visibly and tomorrow's run retries from the same backfill or refresh start.
+            if (error instanceof ProviderError && error.reason === "provider_quota") throw error;
+            failure ??= error;
+          }
+          await options.queue.set(`benchmark:done:${item.id}:${date}`, "1", "PX", 2 * 86_400_000);
+        }
+        if (due.length > BENCHMARKS_PER_RUN)
+          await options.enqueue("market.benchmarks", { date }, BENCHMARK_CONTINUE_MS);
+        if (failure) throw failure;
         return;
       }
       case "market.backfill":
