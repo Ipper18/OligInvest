@@ -6,7 +6,10 @@ import { createRuntime } from "./runtime.js";
 const logger = createLogger();
 try {
   const { app, hostname, port, close } = createRuntime(process.env, logger);
-  const server = serve({ fetch: app.fetch, hostname, port });
+  // Readiness signal for supervisors and tests: emitted once the socket accepts connections.
+  const server = serve({ fetch: app.fetch, hostname, port }, () =>
+    logger.info({ event: "api.listening" }),
+  );
   server.on("error", () => {
     logger.error({ event: "api.server.failed", code: "INTERNAL" });
     process.exitCode = 1;
