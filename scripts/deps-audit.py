@@ -38,14 +38,20 @@ REVIEWED = {
     ("argparse", "Python-2.0"),
     ("typing-extensions", "PSF-2.0"),
     ("caniuse-lite", "CC-BY-4.0"),
+    # Owner decision 2026-10-19 (BL-317): Zlib component of numpy's SPDX expression.
+    ("numpy", "Zlib"),
 }
 # License declarations missing/ambiguous in upstream PyPI metadata; see STACK §7.
 METADATA = {
+    ("bottleneck", "1.6.0"): "BSD-2-Clause",
     ("bullmq", "3.2.2"): "MIT",
     ("colorama", "0.4.6"): "BSD-3-Clause",
+    ("empyrical-reloaded", "0.5.12"): "Apache-2.0",
     ("mypy-extensions", "1.1.0"): "MIT",
+    ("pandas", "3.0.6"): "BSD-3-Clause",
     ("pathspec", "1.1.1"): "MPL-2.0",
     ("python-dateutil", "2.9.0.post0"): "Apache-2.0 OR BSD-3-Clause",
+    ("scipy", "1.18.1"): "BSD-3-Clause",
 }
 SHEETJS_URL = "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
 SHEETJS_INTEGRITY = "sha512-oLDq3jw7AcLqKWH2AhCpVTZl8mf6X2YReP+Neh0SJUzV/BdZYjth94tG5toiMB1PPrYtxOCfaoUCkvtuH+3AJA=="

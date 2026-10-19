@@ -138,7 +138,9 @@ def test_node_to_python_real_valkey():
                 # Node asserts the analytics-results payloads after this run.
                 analytics = Queue("analytics", {"connection": config.connection})
                 try:
-                    pending = json.loads(os.environ.get("OLIGINVEST_ANALYTICS_TEST", "[]"))
+                    pending = json.loads(
+                        os.environ.get("OLIGINVEST_ANALYTICS_TEST", "[]")
+                    )
                     for job_id in pending:
                         while True:
                             job = await Job.fromId(analytics, job_id)
