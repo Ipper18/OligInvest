@@ -72,7 +72,8 @@ export function AuthForm({
     }
     return () => {};
   }, [kind]);
-  const returnTo = () => location.assign(safeReturnTo(search.get("returnTo")));
+  const destination = safeReturnTo(search.get("returnTo"));
+  const returnTo = () => location.assign(destination);
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (busy) return;
@@ -144,14 +145,12 @@ export function AuthForm({
       setToken("");
       location.assign("/konfiguracja-2fa");
     } else if (kind === "signIn" && result.data.twoFactorRedirect)
-      location.assign(
-        `/logowanie/2fa?returnTo=${encodeURIComponent(safeReturnTo(search.get("returnTo")))}`,
-      );
+      location.assign(`/logowanie/2fa?returnTo=${encodeURIComponent(destination)}`);
     else returnTo();
   }
   useEffect(() => {
-    if (enrolled && !enabled) location.replace("/");
-  }, [enrolled, enabled]);
+    if (enrolled && !enabled) location.replace(destination);
+  }, [enrolled, enabled, destination]);
   const fieldError = (key: string) =>
     error?.errors.some((e) => e.path === key || e.path === `body.${key}`) ? t.required : undefined;
   const fieldErrors = {

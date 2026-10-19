@@ -208,3 +208,37 @@ test("fresh legal and MFA gates never render the private shell", async ({ page, 
     await expect(page.locator(".oi-shell")).toHaveCount(0);
   }
 });
+
+test("auth pages retain only a validated returnTo when the session is already verified", async ({
+  page,
+  context,
+}) => {
+  await session(context, "return-to");
+  for (const path of [
+    "/logowanie",
+    "/logowanie/2fa",
+    "/konfiguracja-2fa",
+    "/akceptacja-regulaminu",
+  ]) {
+    for (const [returnTo, destination] of [
+      ["/ustawienia?tab=security", "/ustawienia?tab=security"],
+      ["//outside.example.test/", "/"],
+    ] as const) {
+      await page.goto(`${path}?${new URLSearchParams({ returnTo })}`);
+      await expect(page).toHaveURL(destination);
+    }
+  }
+});
+
+test("a pending legal gate preserves the destination from the MFA page", async ({
+  page,
+  context,
+}) => {
+  await session(context, "legal");
+  await page.goto("/logowanie/2fa?returnTo=%2Fustawienia");
+  await expect(page).toHaveURL("/akceptacja-regulaminu?returnTo=%2Fustawienia");
+  await page.getByLabel("Akceptuję regulamin.").check();
+  await page.getByLabel("Potwierdzam zapoznanie się").check();
+  await page.getByRole("button", { name: "Potwierdź akceptację" }).click();
+  await expect(page).toHaveURL("/ustawienia");
+});
