@@ -17,6 +17,7 @@ import type { AppDatabase } from "@oliginvest/db";
 import type { Redis } from "ioredis";
 import {
   BENCHMARK_CONTINUE_MS,
+  BENCHMARK_FULL_HISTORY_FROM,
   BENCHMARK_HISTORY_DAYS,
   BENCHMARK_REFRESH_DAYS,
   BENCHMARKS,
@@ -236,14 +237,20 @@ export function createMarketJobs(options: {
           if (!(await options.queue.get(`benchmark:done:${item.id}:${date}`))) due.push(item);
         let failure: unknown;
         for (const item of due.slice(0, BENCHMARKS_PER_RUN)) {
-          const backfilled = await options.queue.get(`benchmark:backfill:${item.id}`);
+          // A separate marker lets series backfilled for five years fetch their full history once.
+          const marker = item.definition.fullHistory
+            ? `benchmark:backfill-full:${item.id}`
+            : `benchmark:backfill:${item.id}`;
+          const backfilled = await options.queue.get(marker);
           const from =
             backfilled && item.last
               ? addDays(item.last, -BENCHMARK_REFRESH_DAYS)
-              : addDays(date, -BENCHMARK_HISTORY_DAYS);
+              : item.definition.fullHistory
+                ? BENCHMARK_FULL_HISTORY_FROM
+                : addDays(date, -BENCHMARK_HISTORY_DAYS);
           try {
             await saveYahooBars(item.id, from, date);
-            if (!backfilled) await options.queue.set(`benchmark:backfill:${item.id}`, from);
+            if (!backfilled) await options.queue.set(marker, from);
           } catch (error) {
             // Quota delays the whole job. Other failures (also 404 for an unknown symbol) end
             // the series for today, so continuations always progress; the job then fails

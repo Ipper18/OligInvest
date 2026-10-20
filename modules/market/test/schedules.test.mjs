@@ -202,10 +202,12 @@ test("benchmarks backfill five years once, then refresh a week, two series per r
   vi.spyOn(jobs.repository, "saveBars").mockResolvedValue();
   await jobs.dispatch("market.benchmarks", { date: "2026-10-19" });
   expect(ensure).toHaveBeenCalledWith(BENCHMARKS, "2026-10-19");
+  // WIG (ids[1]) is a Monte Carlo proxy: its five-year marker does not stop the full backfill.
   expect(bars.mock.calls).toEqual([
     [ids[0], { from: "2021-10-15", to: "2026-10-19" }],
-    [ids[1], { from: "2026-10-09", to: "2026-10-19" }],
+    [ids[1], { from: "1970-01-01", to: "2026-10-19" }],
   ]);
+  expect(keys.get(`benchmark:backfill-full:${ids[1]}`)).toBe("1970-01-01");
   expect(keys.get(`benchmark:backfill:${ids[0]}`)).toBe("2021-10-15");
   expect(enqueue).toHaveBeenCalledWith("market.benchmarks", { date: "2026-10-19" }, 60_000);
   // The continuation only reads the remaining series; a 404 ends it for the day, visibly.
@@ -225,4 +227,31 @@ test("benchmarks backfill five years once, then refresh a week, two series per r
     reason: "provider_quota",
   });
   expect(keys.has(`benchmark:done:${ids[0]}:2026-10-20`)).toBe(false);
+});
+test("Monte Carlo proxies (WIG, S&P 500) backfill full history once, then refresh a week", async () => {
+  const proxies = BENCHMARKS.filter((b) => b.fullHistory);
+  expect(proxies.map((b) => b.code)).toEqual(["WIG", "SPX"]);
+  const id = "0192f0c4-7b1e-7c3a-9f00-3d2a1b4c5d80";
+  const keys = new Map([[`benchmark:backfill-full:${id}`, "1970-01-01"]]);
+  const queue = {
+    get: vi.fn(async (key) => keys.get(key) ?? null),
+    set: vi.fn(async (key, value) => keys.set(key, value)),
+  };
+  vi.spyOn(ProviderLimits.prototype, "singleFlight").mockImplementation((_key, work) => work());
+  const jobs = createMarketJobs({
+    database: { transaction: vi.fn() },
+    queue,
+    cache: {},
+    observed: async () => [],
+    enqueue: vi.fn(),
+    now: () => new Date("2026-10-20T21:45:00Z"),
+    transport: vi.fn(),
+  });
+  vi.spyOn(jobs.store, "ensureBenchmarks").mockResolvedValue([
+    { definition: proxies[1], id, first: "1970-01-02", last: "2026-10-19" },
+  ]);
+  const bars = vi.spyOn(YahooProvider.prototype, "getEodBars").mockResolvedValue([]);
+  vi.spyOn(jobs.repository, "saveBars").mockResolvedValue();
+  await jobs.dispatch("market.benchmarks", { date: "2026-10-20" });
+  expect(bars.mock.calls).toEqual([[id, { from: "2026-10-12", to: "2026-10-20" }]]);
 });

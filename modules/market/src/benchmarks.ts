@@ -14,8 +14,15 @@ export interface BenchmarkDefinition {
   currency: "PLN" | "USD";
   country: "PL" | "US";
   verified: boolean;
+  /** Monte Carlo proxy (§ 12.1, ≥ 20 years): backfill the whole available history once. */
+  fullHistory?: true;
 }
-const gpwIndex = (code: string, name: string, verified = false): BenchmarkDefinition => ({
+const gpwIndex = (
+  code: string,
+  name: string,
+  verified = false,
+  fullHistory = false,
+): BenchmarkDefinition => ({
   code,
   name,
   kind: "index",
@@ -26,6 +33,7 @@ const gpwIndex = (code: string, name: string, verified = false): BenchmarkDefini
   currency: "PLN",
   country: "PL",
   verified,
+  ...(fullHistory ? { fullHistory: true as const } : {}),
 });
 const gpwEtf = (ticker: string, name: string, proxyFor: string): BenchmarkDefinition => ({
   code: ticker,
@@ -42,7 +50,7 @@ const gpwEtf = (ticker: string, name: string, proxyFor: string): BenchmarkDefini
 });
 export const BENCHMARKS: readonly BenchmarkDefinition[] = [
   gpwIndex("WIG20", "WIG20", true),
-  gpwIndex("WIG", "WIG"),
+  gpwIndex("WIG", "WIG", false, true),
   gpwIndex("MWIG40", "mWIG40"),
   gpwIndex("SWIG80", "sWIG80"),
   {
@@ -56,6 +64,7 @@ export const BENCHMARKS: readonly BenchmarkDefinition[] = [
     currency: "USD",
     country: "US",
     verified: true,
+    fullHistory: true,
   },
   {
     code: "NDX",
@@ -101,6 +110,11 @@ export const BENCHMARKS: readonly BenchmarkDefinition[] = [
 ];
 /** FR-01.09: at least five years of EOD history; 1830 days cover five years with leap days. */
 export const BENCHMARK_HISTORY_DAYS = 1830;
+/**
+ * Full history of the Monte Carlo proxies (owner decision 2026-10-20): Yahoo `period1 = 0`, still
+ * one chart request per series; the source decides how far back the series actually goes.
+ */
+export const BENCHMARK_FULL_HISTORY_FROM = "1970-01-01";
 /**
  * Backfill takes at most 20 % of a provider's budget (strategia-cache § 5.7): 2 of the 12 Yahoo
  * chart requests per minute. The job continues itself a minute later until every series is due.
