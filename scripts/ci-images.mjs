@@ -267,9 +267,11 @@ try {
     "import socket,sys\ntry:\n socket.create_connection((sys.argv[1],3456),timeout=1.5)\nexcept OSError:\n sys.exit(0)\nelse:\n sys.exit(1)",
     endpoint,
   ]);
-  const query =
-    "import os,psycopg; c=psycopg.connect(host='postgres',dbname='oliginvest',user='oliginvest_analytics_ro',password=open(os.environ['DB_ANALYTICS_RO_PASSWORD_FILE']).read());\ntry:\n c.execute('SELECT * FROM portfolio.transactions LIMIT 1')\nexcept psycopg.errors.InsufficientPrivilege:\n print('PASS: analytics denied user data')\nelse:\n raise RuntimeError('Analytics read user data')";
-  compose(["exec", "-T", "analytics", "python", "-c", query], { log: "analytics-isolation.log" });
+  // BL-311: HTTP egress and the analytics_ro privilege matrix from the production image.
+  compose(["exec", "-T", "analytics", "python", "-I", "-"], {
+    input: readFileSync(resolve(root, "infra/tests/analytics-isolation-probe.py")),
+    log: "analytics-isolation.log",
+  });
   const env = {
     ...environment,
     E2E_BASE_URL: `https://localhost:${port}`,

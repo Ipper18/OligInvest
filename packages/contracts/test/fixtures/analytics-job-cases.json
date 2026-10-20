@@ -1,0 +1,1623 @@
+{
+  "$comment": "Shared BL-311 cases: Vitest validates them with Zod, pytest with the exported JSON Schema and semantic checks.",
+  "bases": {
+    "monte_carlo": {
+      "v": 1,
+      "runId": "0192f0c4-7b1e-7c3a-9f00-000000000001",
+      "type": "monte_carlo",
+      "requestedAt": "2026-10-19T08:30:00Z",
+      "params": {
+        "horizonYears": 20,
+        "paths": 5000,
+        "model": "stationary_bootstrap",
+        "meanBlockMonths": 6,
+        "historyWindow": "full",
+        "contributions": [
+          {
+            "amount": {
+              "amount": "1000.00",
+              "currency": "PLN"
+            },
+            "frequency": "monthly",
+            "startYear": 0,
+            "endYear": 20,
+            "indexToInflation": true
+          }
+        ],
+        "withdrawals": [],
+        "inflationRate": 0.025,
+        "taxMode": "belka_simplified",
+        "goal": {
+          "amount": "1000000",
+          "currency": "PLN"
+        }
+      },
+      "portfolio": {
+        "asOf": "2026-10-16",
+        "positions": [
+          {
+            "instrumentId": "0192f0c4-7b1e-7c3a-9f00-000000000002",
+            "proxyInstrumentId": "0192f0c4-7b1e-7c3a-9f00-00000000000a",
+            "value": {
+              "amount": "60000.00",
+              "currency": "PLN"
+            }
+          },
+          {
+            "instrumentId": "0192f0c4-7b1e-7c3a-9f00-000000000003",
+            "proxyInstrumentId": "0192f0c4-7b1e-7c3a-9f00-000000000003",
+            "value": {
+              "amount": "40000.00",
+              "currency": "PLN"
+            }
+          }
+        ],
+        "cash": {
+          "amount": "1250.50",
+          "currency": "PLN"
+        }
+      },
+      "seed": 42
+    },
+    "optimization": {
+      "v": 1,
+      "runId": "0192f0c4-7b1e-7c3a-9f00-000000000001",
+      "type": "optimization",
+      "requestedAt": "2026-10-19T08:30:00Z",
+      "params": {
+        "method": "min_variance",
+        "instrumentIds": [
+          "0192f0c4-7b1e-7c3a-9f00-000000000002",
+          "0192f0c4-7b1e-7c3a-9f00-000000000003",
+          "0192f0c4-7b1e-7c3a-9f00-000000000004"
+        ],
+        "window": {
+          "from": "2016-01-01",
+          "to": "2026-01-01"
+        },
+        "frequency": "weekly",
+        "covariance": "ledoit_wolf",
+        "minWeight": 0,
+        "maxWeight": 0.4,
+        "resamples": 200
+      },
+      "seed": 7
+    },
+    "stress_test": {
+      "v": 1,
+      "runId": "0192f0c4-7b1e-7c3a-9f00-000000000001",
+      "type": "stress_test",
+      "requestedAt": "2026-10-19T08:30:00Z",
+      "params": {
+        "historical": [
+          {
+            "key": "covid_2020",
+            "from": "2020-02-19",
+            "to": "2020-03-23"
+          }
+        ],
+        "hypothetical": [
+          {
+            "kind": "fx_shock",
+            "currency": "USD",
+            "shock": -0.1
+          },
+          {
+            "kind": "correlation_shock",
+            "correlation": 0.9
+          }
+        ]
+      },
+      "portfolio": {
+        "asOf": "2026-10-16",
+        "positions": [
+          {
+            "instrumentId": "0192f0c4-7b1e-7c3a-9f00-000000000002",
+            "proxyInstrumentId": "0192f0c4-7b1e-7c3a-9f00-00000000000a",
+            "value": {
+              "amount": "60000.00",
+              "currency": "PLN"
+            }
+          },
+          {
+            "instrumentId": "0192f0c4-7b1e-7c3a-9f00-000000000003",
+            "proxyInstrumentId": "0192f0c4-7b1e-7c3a-9f00-000000000003",
+            "value": {
+              "amount": "40000.00",
+              "currency": "PLN"
+            }
+          }
+        ],
+        "cash": {
+          "amount": "1250.50",
+          "currency": "PLN"
+        }
+      }
+    },
+    "what_if": {
+      "v": 1,
+      "runId": "0192f0c4-7b1e-7c3a-9f00-000000000001",
+      "type": "what_if",
+      "requestedAt": "2026-10-19T08:30:00Z",
+      "params": {
+        "changes": [
+          {
+            "instrumentId": "0192f0c4-7b1e-7c3a-9f00-000000000004",
+            "proxyInstrumentId": "0192f0c4-7b1e-7c3a-9f00-000000000004",
+            "amount": {
+              "amount": "-1500.00",
+              "currency": "PLN"
+            }
+          }
+        ],
+        "windowYears": 3,
+        "frequency": "weekly"
+      },
+      "portfolio": {
+        "asOf": "2026-10-16",
+        "positions": [
+          {
+            "instrumentId": "0192f0c4-7b1e-7c3a-9f00-000000000002",
+            "proxyInstrumentId": "0192f0c4-7b1e-7c3a-9f00-00000000000a",
+            "value": {
+              "amount": "60000.00",
+              "currency": "PLN"
+            }
+          },
+          {
+            "instrumentId": "0192f0c4-7b1e-7c3a-9f00-000000000003",
+            "proxyInstrumentId": "0192f0c4-7b1e-7c3a-9f00-000000000003",
+            "value": {
+              "amount": "40000.00",
+              "currency": "PLN"
+            }
+          }
+        ],
+        "cash": {
+          "amount": "1250.50",
+          "currency": "PLN"
+        }
+      }
+    },
+    "backtest": {
+      "v": 1,
+      "runId": "0192f0c4-7b1e-7c3a-9f00-000000000001",
+      "type": "backtest",
+      "requestedAt": "2026-10-19T08:30:00Z",
+      "params": {
+        "strategy": {
+          "version": 1,
+          "entry": {
+            "all": [
+              {
+                "left": {
+                  "indicator": "sma",
+                  "params": [50]
+                },
+                "operator": "crosses_above",
+                "right": {
+                  "indicator": "sma",
+                  "params": [200]
+                }
+              }
+            ]
+          },
+          "exit": {
+            "any": [
+              {
+                "left": {
+                  "indicator": "rsi",
+                  "params": [14]
+                },
+                "operator": "gt",
+                "right": {
+                  "value": 70
+                }
+              }
+            ]
+          },
+          "maxHoldingDays": 120
+        },
+        "universe": {
+          "kind": "index_members_pit",
+          "indexCode": "WIG20"
+        },
+        "period": {
+          "from": "2010-01-04",
+          "to": "2025-12-31"
+        },
+        "initialCapital": {
+          "amount": "100000",
+          "currency": "PLN"
+        },
+        "costs": {
+          "broker": "xtb",
+          "commissionRatio": 0,
+          "commissionMin": {
+            "amount": "10",
+            "currency": "EUR"
+          },
+          "fxCostRatio": 0.005,
+          "slippage": {
+            "kind": "liquidity_buckets"
+          }
+        },
+        "tax": {
+          "enabled": true,
+          "rate": 0.19
+        },
+        "sizing": {
+          "method": "equal_weight",
+          "maxPositions": 10
+        },
+        "validation": {
+          "mode": "walk_forward",
+          "fitYears": 3,
+          "testYears": 1,
+          "stepYears": 1
+        },
+        "optimization": {
+          "enabled": true,
+          "grid": {
+            "fast": [20, 50, 100, 150, 200],
+            "slow": [100, 150, 200, 250, 300],
+            "rsiExit": [
+              60, 65, 70, 75, 80, 85, 90, 95, 96, 97, 98, 99, 100, 55, 50, 45, 40, 35, 30, 25
+            ]
+          }
+        },
+        "liquidity": {
+          "maxAdvRatio": 0.05,
+          "minMedianTurnover": {
+            "amount": "100000",
+            "currency": "PLN"
+          }
+        }
+      },
+      "seed": 11
+    },
+    "goal": {
+      "v": 1,
+      "runId": "0192f0c4-7b1e-7c3a-9f00-000000000001",
+      "type": "goal",
+      "requestedAt": "2026-10-19T08:30:00Z",
+      "params": {
+        "target": {
+          "amount": "500000.00",
+          "currency": "PLN"
+        },
+        "horizonYears": 15,
+        "probabilities": [0.5, 0.75, 0.9],
+        "paths": 10000,
+        "inflationRate": 0.03
+      },
+      "portfolio": {
+        "asOf": "2026-10-16",
+        "positions": [
+          {
+            "instrumentId": "0192f0c4-7b1e-7c3a-9f00-000000000002",
+            "proxyInstrumentId": "0192f0c4-7b1e-7c3a-9f00-00000000000a",
+            "value": {
+              "amount": "60000.00",
+              "currency": "PLN"
+            }
+          },
+          {
+            "instrumentId": "0192f0c4-7b1e-7c3a-9f00-000000000003",
+            "proxyInstrumentId": "0192f0c4-7b1e-7c3a-9f00-000000000003",
+            "value": {
+              "amount": "40000.00",
+              "currency": "PLN"
+            }
+          }
+        ],
+        "cash": {
+          "amount": "1250.50",
+          "currency": "PLN"
+        }
+      },
+      "seed": 3
+    }
+  },
+  "cases": [
+    {
+      "name": "monte_carlo: canonical example",
+      "base": "monte_carlo",
+      "valid": true,
+      "set": [],
+      "delete": []
+    },
+    {
+      "name": "optimization: canonical example",
+      "base": "optimization",
+      "valid": true,
+      "set": [],
+      "delete": []
+    },
+    {
+      "name": "stress_test: canonical example",
+      "base": "stress_test",
+      "valid": true,
+      "set": [],
+      "delete": []
+    },
+    {
+      "name": "what_if: canonical example",
+      "base": "what_if",
+      "valid": true,
+      "set": [],
+      "delete": []
+    },
+    {
+      "name": "backtest: canonical example",
+      "base": "backtest",
+      "valid": true,
+      "set": [],
+      "delete": []
+    },
+    {
+      "name": "goal: canonical example",
+      "base": "goal",
+      "valid": true,
+      "set": [],
+      "delete": []
+    },
+    {
+      "name": "paths at the 10 000 limit",
+      "base": "monte_carlo",
+      "valid": true,
+      "set": [
+        {
+          "path": ["params", "paths"],
+          "value": 10000
+        }
+      ],
+      "delete": []
+    },
+    {
+      "name": "paths above the 10 000 limit",
+      "base": "monte_carlo",
+      "valid": false,
+      "set": [
+        {
+          "path": ["params", "paths"],
+          "value": 10001
+        }
+      ],
+      "delete": []
+    },
+    {
+      "name": "paths below 100",
+      "base": "monte_carlo",
+      "valid": false,
+      "set": [
+        {
+          "path": ["params", "paths"],
+          "value": 99
+        }
+      ],
+      "delete": []
+    },
+    {
+      "name": "paths as boolean",
+      "base": "monte_carlo",
+      "valid": false,
+      "set": [
+        {
+          "path": ["params", "paths"],
+          "value": true
+        }
+      ],
+      "delete": []
+    },
+    {
+      "name": "paths as fraction",
+      "base": "monte_carlo",
+      "valid": false,
+      "set": [
+        {
+          "path": ["params", "paths"],
+          "value": 5000.5
+        }
+      ],
+      "delete": []
+    },
+    {
+      "name": "horizon above 40 years",
+      "base": "monte_carlo",
+      "valid": false,
+      "set": [
+        {
+          "path": ["params", "horizonYears"],
+          "value": 41
+        }
+      ],
+      "delete": []
+    },
+    {
+      "name": "unknown top-level field",
+      "base": "monte_carlo",
+      "valid": false,
+      "set": [
+        {
+          "path": ["callback"],
+          "value": "https://example.test"
+        }
+      ],
+      "delete": []
+    },
+    {
+      "name": "unknown params field",
+      "base": "monte_carlo",
+      "valid": false,
+      "set": [
+        {
+          "path": ["params", "code"],
+          "value": "__import__('os')"
+        }
+      ],
+      "delete": []
+    },
+    {
+      "name": "unknown portfolio position field",
+      "base": "monte_carlo",
+      "valid": false,
+      "set": [
+        {
+          "path": ["portfolio", "positions", 0, "userId"],
+          "value": "0192f0c4-7b1e-7c3a-9f00-000000000001"
+        }
+      ],
+      "delete": []
+    },
+    {
+      "name": "unsupported version",
+      "base": "monte_carlo",
+      "valid": false,
+      "set": [
+        {
+          "path": ["v"],
+          "value": 2
+        }
+      ],
+      "delete": []
+    },
+    {
+      "name": "missing seed",
+      "base": "monte_carlo",
+      "valid": false,
+      "set": [],
+      "delete": [["seed"]]
+    },
+    {
+      "name": "negative seed",
+      "base": "monte_carlo",
+      "valid": false,
+      "set": [
+        {
+          "path": ["seed"],
+          "value": -1
+        }
+      ],
+      "delete": []
+    },
+    {
+      "name": "runId is not a UUID",
+      "base": "monte_carlo",
+      "valid": false,
+      "set": [
+        {
+          "path": ["runId"],
+          "value": "run-1"
+        }
+      ],
+      "delete": []
+    },
+    {
+      "name": "timestamp with offset",
+      "base": "monte_carlo",
+      "valid": false,
+      "set": [
+        {
+          "path": ["requestedAt"],
+          "value": "2026-10-19T10:30:00+02:00"
+        }
+      ],
+      "delete": []
+    },
+    {
+      "name": "timestamp with trailing newline",
+      "base": "monte_carlo",
+      "valid": false,
+      "set": [
+        {
+          "path": ["requestedAt"],
+          "value": "2026-10-19T08:30:00Z\n"
+        }
+      ],
+      "delete": []
+    },
+    {
+      "name": "amount as JSON number",
+      "base": "monte_carlo",
+      "valid": false,
+      "set": [
+        {
+          "path": ["portfolio", "cash", "amount"],
+          "value": 1250.5
+        }
+      ],
+      "delete": []
+    },
+    {
+      "name": "amount with trailing newline",
+      "base": "monte_carlo",
+      "valid": false,
+      "set": [
+        {
+          "path": ["portfolio", "cash", "amount"],
+          "value": "1250.50\n"
+        }
+      ],
+      "delete": []
+    },
+    {
+      "name": "amount with non-ASCII digits",
+      "base": "monte_carlo",
+      "valid": false,
+      "set": [
+        {
+          "path": ["portfolio", "cash", "amount"],
+          "value": "١٢"
+        }
+      ],
+      "delete": []
+    },
+    {
+      "name": "amount with more than 8 decimals",
+      "base": "monte_carlo",
+      "valid": false,
+      "set": [
+        {
+          "path": ["portfolio", "cash", "amount"],
+          "value": "1.123456789"
+        }
+      ],
+      "delete": []
+    },
+    {
+      "name": "snapshot in a foreign currency",
+      "base": "monte_carlo",
+      "valid": false,
+      "set": [
+        {
+          "path": ["portfolio", "cash", "currency"],
+          "value": "USD"
+        }
+      ],
+      "delete": []
+    },
+    {
+      "name": "negative position value",
+      "base": "monte_carlo",
+      "valid": false,
+      "set": [
+        {
+          "path": ["portfolio", "positions", 0, "value", "amount"],
+          "value": "-1.00"
+        }
+      ],
+      "delete": []
+    },
+    {
+      "name": "zero contribution",
+      "base": "monte_carlo",
+      "valid": false,
+      "set": [
+        {
+          "path": ["params", "contributions", 0, "amount", "amount"],
+          "value": "0.00"
+        }
+      ],
+      "delete": []
+    },
+    {
+      "name": "cash flow beyond the horizon",
+      "base": "monte_carlo",
+      "valid": false,
+      "set": [
+        {
+          "path": ["params", "contributions", 0, "endYear"],
+          "value": 21
+        }
+      ],
+      "delete": []
+    },
+    {
+      "name": "cash flow ending before it starts",
+      "base": "monte_carlo",
+      "valid": false,
+      "set": [
+        {
+          "path": ["params", "contributions", 0, "startYear"],
+          "value": 5
+        },
+        {
+          "path": ["params", "contributions", 0, "endYear"],
+          "value": 4
+        }
+      ],
+      "delete": []
+    },
+    {
+      "name": "duplicate snapshot instrument",
+      "base": "monte_carlo",
+      "valid": false,
+      "set": [
+        {
+          "path": ["portfolio", "positions", 1, "instrumentId"],
+          "value": "0192f0c4-7b1e-7c3a-9f00-000000000002"
+        }
+      ],
+      "delete": []
+    },
+    {
+      "name": "empty snapshot",
+      "base": "monte_carlo",
+      "valid": false,
+      "set": [
+        {
+          "path": ["portfolio", "positions"],
+          "value": []
+        }
+      ],
+      "delete": []
+    },
+    {
+      "name": "too many cash flows",
+      "base": "monte_carlo",
+      "valid": false,
+      "set": [
+        {
+          "path": ["params", "withdrawals"],
+          "value": [
+            {
+              "amount": {
+                "amount": "10",
+                "currency": "PLN"
+              },
+              "frequency": "monthly",
+              "startYear": 0,
+              "endYear": 1,
+              "indexToInflation": true
+            },
+            {
+              "amount": {
+                "amount": "10",
+                "currency": "PLN"
+              },
+              "frequency": "monthly",
+              "startYear": 0,
+              "endYear": 1,
+              "indexToInflation": true
+            },
+            {
+              "amount": {
+                "amount": "10",
+                "currency": "PLN"
+              },
+              "frequency": "monthly",
+              "startYear": 0,
+              "endYear": 1,
+              "indexToInflation": true
+            },
+            {
+              "amount": {
+                "amount": "10",
+                "currency": "PLN"
+              },
+              "frequency": "monthly",
+              "startYear": 0,
+              "endYear": 1,
+              "indexToInflation": true
+            },
+            {
+              "amount": {
+                "amount": "10",
+                "currency": "PLN"
+              },
+              "frequency": "monthly",
+              "startYear": 0,
+              "endYear": 1,
+              "indexToInflation": true
+            },
+            {
+              "amount": {
+                "amount": "10",
+                "currency": "PLN"
+              },
+              "frequency": "monthly",
+              "startYear": 0,
+              "endYear": 1,
+              "indexToInflation": true
+            },
+            {
+              "amount": {
+                "amount": "10",
+                "currency": "PLN"
+              },
+              "frequency": "monthly",
+              "startYear": 0,
+              "endYear": 1,
+              "indexToInflation": true
+            },
+            {
+              "amount": {
+                "amount": "10",
+                "currency": "PLN"
+              },
+              "frequency": "monthly",
+              "startYear": 0,
+              "endYear": 1,
+              "indexToInflation": true
+            },
+            {
+              "amount": {
+                "amount": "10",
+                "currency": "PLN"
+              },
+              "frequency": "monthly",
+              "startYear": 0,
+              "endYear": 1,
+              "indexToInflation": true
+            },
+            {
+              "amount": {
+                "amount": "10",
+                "currency": "PLN"
+              },
+              "frequency": "monthly",
+              "startYear": 0,
+              "endYear": 1,
+              "indexToInflation": true
+            },
+            {
+              "amount": {
+                "amount": "10",
+                "currency": "PLN"
+              },
+              "frequency": "monthly",
+              "startYear": 0,
+              "endYear": 1,
+              "indexToInflation": true
+            }
+          ]
+        }
+      ],
+      "delete": []
+    },
+    {
+      "name": "inflation above 20 %",
+      "base": "monte_carlo",
+      "valid": false,
+      "set": [
+        {
+          "path": ["params", "inflationRate"],
+          "value": 0.21
+        }
+      ],
+      "delete": []
+    },
+    {
+      "name": "51 instruments",
+      "base": "optimization",
+      "valid": false,
+      "set": [
+        {
+          "path": ["params", "instrumentIds"],
+          "value": [
+            "0192f0c4-7b1e-7c3a-9f00-000000000064",
+            "0192f0c4-7b1e-7c3a-9f00-000000000065",
+            "0192f0c4-7b1e-7c3a-9f00-000000000066",
+            "0192f0c4-7b1e-7c3a-9f00-000000000067",
+            "0192f0c4-7b1e-7c3a-9f00-000000000068",
+            "0192f0c4-7b1e-7c3a-9f00-000000000069",
+            "0192f0c4-7b1e-7c3a-9f00-00000000006a",
+            "0192f0c4-7b1e-7c3a-9f00-00000000006b",
+            "0192f0c4-7b1e-7c3a-9f00-00000000006c",
+            "0192f0c4-7b1e-7c3a-9f00-00000000006d",
+            "0192f0c4-7b1e-7c3a-9f00-00000000006e",
+            "0192f0c4-7b1e-7c3a-9f00-00000000006f",
+            "0192f0c4-7b1e-7c3a-9f00-000000000070",
+            "0192f0c4-7b1e-7c3a-9f00-000000000071",
+            "0192f0c4-7b1e-7c3a-9f00-000000000072",
+            "0192f0c4-7b1e-7c3a-9f00-000000000073",
+            "0192f0c4-7b1e-7c3a-9f00-000000000074",
+            "0192f0c4-7b1e-7c3a-9f00-000000000075",
+            "0192f0c4-7b1e-7c3a-9f00-000000000076",
+            "0192f0c4-7b1e-7c3a-9f00-000000000077",
+            "0192f0c4-7b1e-7c3a-9f00-000000000078",
+            "0192f0c4-7b1e-7c3a-9f00-000000000079",
+            "0192f0c4-7b1e-7c3a-9f00-00000000007a",
+            "0192f0c4-7b1e-7c3a-9f00-00000000007b",
+            "0192f0c4-7b1e-7c3a-9f00-00000000007c",
+            "0192f0c4-7b1e-7c3a-9f00-00000000007d",
+            "0192f0c4-7b1e-7c3a-9f00-00000000007e",
+            "0192f0c4-7b1e-7c3a-9f00-00000000007f",
+            "0192f0c4-7b1e-7c3a-9f00-000000000080",
+            "0192f0c4-7b1e-7c3a-9f00-000000000081",
+            "0192f0c4-7b1e-7c3a-9f00-000000000082",
+            "0192f0c4-7b1e-7c3a-9f00-000000000083",
+            "0192f0c4-7b1e-7c3a-9f00-000000000084",
+            "0192f0c4-7b1e-7c3a-9f00-000000000085",
+            "0192f0c4-7b1e-7c3a-9f00-000000000086",
+            "0192f0c4-7b1e-7c3a-9f00-000000000087",
+            "0192f0c4-7b1e-7c3a-9f00-000000000088",
+            "0192f0c4-7b1e-7c3a-9f00-000000000089",
+            "0192f0c4-7b1e-7c3a-9f00-00000000008a",
+            "0192f0c4-7b1e-7c3a-9f00-00000000008b",
+            "0192f0c4-7b1e-7c3a-9f00-00000000008c",
+            "0192f0c4-7b1e-7c3a-9f00-00000000008d",
+            "0192f0c4-7b1e-7c3a-9f00-00000000008e",
+            "0192f0c4-7b1e-7c3a-9f00-00000000008f",
+            "0192f0c4-7b1e-7c3a-9f00-000000000090",
+            "0192f0c4-7b1e-7c3a-9f00-000000000091",
+            "0192f0c4-7b1e-7c3a-9f00-000000000092",
+            "0192f0c4-7b1e-7c3a-9f00-000000000093",
+            "0192f0c4-7b1e-7c3a-9f00-000000000094",
+            "0192f0c4-7b1e-7c3a-9f00-000000000095",
+            "0192f0c4-7b1e-7c3a-9f00-000000000096"
+          ]
+        }
+      ],
+      "delete": []
+    },
+    {
+      "name": "50 instruments",
+      "base": "optimization",
+      "valid": true,
+      "set": [
+        {
+          "path": ["params", "instrumentIds"],
+          "value": [
+            "0192f0c4-7b1e-7c3a-9f00-000000000064",
+            "0192f0c4-7b1e-7c3a-9f00-000000000065",
+            "0192f0c4-7b1e-7c3a-9f00-000000000066",
+            "0192f0c4-7b1e-7c3a-9f00-000000000067",
+            "0192f0c4-7b1e-7c3a-9f00-000000000068",
+            "0192f0c4-7b1e-7c3a-9f00-000000000069",
+            "0192f0c4-7b1e-7c3a-9f00-00000000006a",
+            "0192f0c4-7b1e-7c3a-9f00-00000000006b",
+            "0192f0c4-7b1e-7c3a-9f00-00000000006c",
+            "0192f0c4-7b1e-7c3a-9f00-00000000006d",
+            "0192f0c4-7b1e-7c3a-9f00-00000000006e",
+            "0192f0c4-7b1e-7c3a-9f00-00000000006f",
+            "0192f0c4-7b1e-7c3a-9f00-000000000070",
+            "0192f0c4-7b1e-7c3a-9f00-000000000071",
+            "0192f0c4-7b1e-7c3a-9f00-000000000072",
+            "0192f0c4-7b1e-7c3a-9f00-000000000073",
+            "0192f0c4-7b1e-7c3a-9f00-000000000074",
+            "0192f0c4-7b1e-7c3a-9f00-000000000075",
+            "0192f0c4-7b1e-7c3a-9f00-000000000076",
+            "0192f0c4-7b1e-7c3a-9f00-000000000077",
+            "0192f0c4-7b1e-7c3a-9f00-000000000078",
+            "0192f0c4-7b1e-7c3a-9f00-000000000079",
+            "0192f0c4-7b1e-7c3a-9f00-00000000007a",
+            "0192f0c4-7b1e-7c3a-9f00-00000000007b",
+            "0192f0c4-7b1e-7c3a-9f00-00000000007c",
+            "0192f0c4-7b1e-7c3a-9f00-00000000007d",
+            "0192f0c4-7b1e-7c3a-9f00-00000000007e",
+            "0192f0c4-7b1e-7c3a-9f00-00000000007f",
+            "0192f0c4-7b1e-7c3a-9f00-000000000080",
+            "0192f0c4-7b1e-7c3a-9f00-000000000081",
+            "0192f0c4-7b1e-7c3a-9f00-000000000082",
+            "0192f0c4-7b1e-7c3a-9f00-000000000083",
+            "0192f0c4-7b1e-7c3a-9f00-000000000084",
+            "0192f0c4-7b1e-7c3a-9f00-000000000085",
+            "0192f0c4-7b1e-7c3a-9f00-000000000086",
+            "0192f0c4-7b1e-7c3a-9f00-000000000087",
+            "0192f0c4-7b1e-7c3a-9f00-000000000088",
+            "0192f0c4-7b1e-7c3a-9f00-000000000089",
+            "0192f0c4-7b1e-7c3a-9f00-00000000008a",
+            "0192f0c4-7b1e-7c3a-9f00-00000000008b",
+            "0192f0c4-7b1e-7c3a-9f00-00000000008c",
+            "0192f0c4-7b1e-7c3a-9f00-00000000008d",
+            "0192f0c4-7b1e-7c3a-9f00-00000000008e",
+            "0192f0c4-7b1e-7c3a-9f00-00000000008f",
+            "0192f0c4-7b1e-7c3a-9f00-000000000090",
+            "0192f0c4-7b1e-7c3a-9f00-000000000091",
+            "0192f0c4-7b1e-7c3a-9f00-000000000092",
+            "0192f0c4-7b1e-7c3a-9f00-000000000093",
+            "0192f0c4-7b1e-7c3a-9f00-000000000094",
+            "0192f0c4-7b1e-7c3a-9f00-000000000095"
+          ]
+        }
+      ],
+      "delete": []
+    },
+    {
+      "name": "duplicate instruments",
+      "base": "optimization",
+      "valid": false,
+      "set": [
+        {
+          "path": ["params", "instrumentIds"],
+          "value": [
+            "0192f0c4-7b1e-7c3a-9f00-000000000002",
+            "0192f0c4-7b1e-7c3a-9f00-000000000002",
+            "0192f0c4-7b1e-7c3a-9f00-000000000003"
+          ]
+        }
+      ],
+      "delete": []
+    },
+    {
+      "name": "empty window",
+      "base": "optimization",
+      "valid": false,
+      "set": [
+        {
+          "path": ["params", "window", "to"],
+          "value": "2016-01-01"
+        }
+      ],
+      "delete": []
+    },
+    {
+      "name": "invalid calendar date",
+      "base": "optimization",
+      "valid": false,
+      "set": [
+        {
+          "path": ["params", "window", "to"],
+          "value": "2026-02-30"
+        }
+      ],
+      "delete": []
+    },
+    {
+      "name": "minWeight above maxWeight",
+      "base": "optimization",
+      "valid": false,
+      "set": [
+        {
+          "path": ["params", "minWeight"],
+          "value": 0.5
+        },
+        {
+          "path": ["params", "maxWeight"],
+          "value": 0.3
+        }
+      ],
+      "delete": []
+    },
+    {
+      "name": "resamples above 500",
+      "base": "optimization",
+      "valid": false,
+      "set": [
+        {
+          "path": ["params", "resamples"],
+          "value": 501
+        }
+      ],
+      "delete": []
+    },
+    {
+      "name": "max_sharpe without expected returns",
+      "base": "optimization",
+      "valid": false,
+      "set": [
+        {
+          "path": ["params", "method"],
+          "value": "max_sharpe"
+        }
+      ],
+      "delete": []
+    },
+    {
+      "name": "max_sharpe with explicit assumptions",
+      "base": "optimization",
+      "valid": true,
+      "set": [
+        {
+          "path": ["params", "method"],
+          "value": "max_sharpe"
+        },
+        {
+          "path": ["params", "expectedReturns"],
+          "value": "shrinkage"
+        },
+        {
+          "path": ["params", "riskFreeRate"],
+          "value": 0.05
+        }
+      ],
+      "delete": []
+    },
+    {
+      "name": "views outside black_litterman",
+      "base": "optimization",
+      "valid": false,
+      "set": [
+        {
+          "path": ["params", "views"],
+          "value": []
+        }
+      ],
+      "delete": []
+    },
+    {
+      "name": "black_litterman with views",
+      "base": "optimization",
+      "valid": true,
+      "set": [
+        {
+          "path": ["params", "method"],
+          "value": "black_litterman"
+        },
+        {
+          "path": ["params", "riskFreeRate"],
+          "value": 0.05
+        },
+        {
+          "path": ["params", "views"],
+          "value": [
+            {
+              "instrumentId": "0192f0c4-7b1e-7c3a-9f00-000000000002",
+              "expectedReturn": 0.06,
+              "confidence": 0.5
+            }
+          ]
+        }
+      ],
+      "delete": []
+    },
+    {
+      "name": "no scenarios",
+      "base": "stress_test",
+      "valid": false,
+      "set": [
+        {
+          "path": ["params", "historical"],
+          "value": []
+        },
+        {
+          "path": ["params", "hypothetical"],
+          "value": []
+        }
+      ],
+      "delete": []
+    },
+    {
+      "name": "historical range reversed",
+      "base": "stress_test",
+      "valid": false,
+      "set": [
+        {
+          "path": ["params", "historical", 0, "from"],
+          "value": "2020-03-24"
+        }
+      ],
+      "delete": []
+    },
+    {
+      "name": "scenario key with path characters",
+      "base": "stress_test",
+      "valid": false,
+      "set": [
+        {
+          "path": ["params", "historical", 0, "key"],
+          "value": "../covid"
+        }
+      ],
+      "delete": []
+    },
+    {
+      "name": "fx shock in PLN",
+      "base": "stress_test",
+      "valid": false,
+      "set": [
+        {
+          "path": ["params", "hypothetical", 0, "currency"],
+          "value": "PLN"
+        }
+      ],
+      "delete": []
+    },
+    {
+      "name": "index shock without instrument",
+      "base": "stress_test",
+      "valid": false,
+      "set": [
+        {
+          "path": ["params", "hypothetical", 0],
+          "value": {
+            "kind": "index_shock",
+            "shock": -0.3
+          }
+        }
+      ],
+      "delete": []
+    },
+    {
+      "name": "shock beyond 90 %",
+      "base": "stress_test",
+      "valid": false,
+      "set": [
+        {
+          "path": ["params", "hypothetical", 0, "shock"],
+          "value": -0.95
+        }
+      ],
+      "delete": []
+    },
+    {
+      "name": "zero change",
+      "base": "what_if",
+      "valid": false,
+      "set": [
+        {
+          "path": ["params", "changes", 0, "amount", "amount"],
+          "value": "0.00"
+        }
+      ],
+      "delete": []
+    },
+    {
+      "name": "positive change",
+      "base": "what_if",
+      "valid": true,
+      "set": [
+        {
+          "path": ["params", "changes", 0, "amount", "amount"],
+          "value": "2500"
+        }
+      ],
+      "delete": []
+    },
+    {
+      "name": "no changes",
+      "base": "what_if",
+      "valid": false,
+      "set": [
+        {
+          "path": ["params", "changes"],
+          "value": []
+        }
+      ],
+      "delete": []
+    },
+    {
+      "name": "window above 10 years",
+      "base": "what_if",
+      "valid": false,
+      "set": [
+        {
+          "path": ["params", "windowYears"],
+          "value": 11
+        }
+      ],
+      "delete": []
+    },
+    {
+      "name": "grid of 800 combinations",
+      "base": "backtest",
+      "valid": false,
+      "set": [
+        {
+          "path": ["params", "optimization", "grid", "fast"],
+          "value": [20, 50, 100, 150, 200, 250, 300, 350]
+        }
+      ],
+      "delete": []
+    },
+    {
+      "name": "grid of 400 combinations",
+      "base": "backtest",
+      "valid": true,
+      "set": [
+        {
+          "path": ["params", "optimization", "grid", "fast"],
+          "value": [20, 50, 100, 150]
+        }
+      ],
+      "delete": []
+    },
+    {
+      "name": "grid with 21 values",
+      "base": "backtest",
+      "valid": false,
+      "set": [
+        {
+          "path": ["params", "optimization", "grid"],
+          "value": {
+            "fast": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
+          }
+        }
+      ],
+      "delete": []
+    },
+    {
+      "name": "grid with 11 parameters",
+      "base": "backtest",
+      "valid": false,
+      "set": [
+        {
+          "path": ["params", "optimization", "grid"],
+          "value": {
+            "p0": [1],
+            "p1": [1],
+            "p2": [1],
+            "p3": [1],
+            "p4": [1],
+            "p5": [1],
+            "p6": [1],
+            "p7": [1],
+            "p8": [1],
+            "p9": [1],
+            "p10": [1]
+          }
+        }
+      ],
+      "delete": []
+    },
+    {
+      "name": "empty grid",
+      "base": "backtest",
+      "valid": false,
+      "set": [
+        {
+          "path": ["params", "optimization", "grid"],
+          "value": {}
+        }
+      ],
+      "delete": []
+    },
+    {
+      "name": "grid parameter name with spaces",
+      "base": "backtest",
+      "valid": false,
+      "set": [
+        {
+          "path": ["params", "optimization", "grid"],
+          "value": {
+            "fast window": [1, 2]
+          }
+        }
+      ],
+      "delete": []
+    },
+    {
+      "name": "grid while optimization is disabled",
+      "base": "backtest",
+      "valid": false,
+      "set": [
+        {
+          "path": ["params", "optimization", "enabled"],
+          "value": false
+        }
+      ],
+      "delete": []
+    },
+    {
+      "name": "optimization disabled",
+      "base": "backtest",
+      "valid": true,
+      "set": [
+        {
+          "path": ["params", "optimization"],
+          "value": {
+            "enabled": false
+          }
+        }
+      ],
+      "delete": []
+    },
+    {
+      "name": "empty rule group",
+      "base": "backtest",
+      "valid": false,
+      "set": [
+        {
+          "path": ["params", "strategy", "entry"],
+          "value": {}
+        }
+      ],
+      "delete": []
+    },
+    {
+      "name": "rule group with empty lists",
+      "base": "backtest",
+      "valid": false,
+      "set": [
+        {
+          "path": ["params", "strategy", "entry"],
+          "value": {
+            "all": [],
+            "any": []
+          }
+        }
+      ],
+      "delete": []
+    },
+    {
+      "name": "unknown indicator",
+      "base": "backtest",
+      "valid": false,
+      "set": [
+        {
+          "path": ["params", "strategy", "entry", "all", 0, "left", "indicator"],
+          "value": "eval"
+        }
+      ],
+      "delete": []
+    },
+    {
+      "name": "operand with code",
+      "base": "backtest",
+      "valid": false,
+      "set": [
+        {
+          "path": ["params", "strategy", "exit", "any", 0, "right"],
+          "value": {
+            "value": 70,
+            "expr": "1+1"
+          }
+        }
+      ],
+      "delete": []
+    },
+    {
+      "name": "strategy reference instead of definition",
+      "base": "backtest",
+      "valid": false,
+      "set": [
+        {
+          "path": ["params", "strategyId"],
+          "value": "0192f0c4-7b1e-7c3a-9f00-000000000002"
+        }
+      ],
+      "delete": []
+    },
+    {
+      "name": "duplicate universe instruments",
+      "base": "backtest",
+      "valid": false,
+      "set": [
+        {
+          "path": ["params", "universe"],
+          "value": {
+            "kind": "instruments",
+            "instrumentIds": [
+              "0192f0c4-7b1e-7c3a-9f00-000000000002",
+              "0192f0c4-7b1e-7c3a-9f00-000000000002"
+            ]
+          }
+        }
+      ],
+      "delete": []
+    },
+    {
+      "name": "101 universe instruments",
+      "base": "backtest",
+      "valid": false,
+      "set": [
+        {
+          "path": ["params", "universe"],
+          "value": {
+            "kind": "instruments",
+            "instrumentIds": [
+              "0192f0c4-7b1e-7c3a-9f00-00000000012c",
+              "0192f0c4-7b1e-7c3a-9f00-00000000012d",
+              "0192f0c4-7b1e-7c3a-9f00-00000000012e",
+              "0192f0c4-7b1e-7c3a-9f00-00000000012f",
+              "0192f0c4-7b1e-7c3a-9f00-000000000130",
+              "0192f0c4-7b1e-7c3a-9f00-000000000131",
+              "0192f0c4-7b1e-7c3a-9f00-000000000132",
+              "0192f0c4-7b1e-7c3a-9f00-000000000133",
+              "0192f0c4-7b1e-7c3a-9f00-000000000134",
+              "0192f0c4-7b1e-7c3a-9f00-000000000135",
+              "0192f0c4-7b1e-7c3a-9f00-000000000136",
+              "0192f0c4-7b1e-7c3a-9f00-000000000137",
+              "0192f0c4-7b1e-7c3a-9f00-000000000138",
+              "0192f0c4-7b1e-7c3a-9f00-000000000139",
+              "0192f0c4-7b1e-7c3a-9f00-00000000013a",
+              "0192f0c4-7b1e-7c3a-9f00-00000000013b",
+              "0192f0c4-7b1e-7c3a-9f00-00000000013c",
+              "0192f0c4-7b1e-7c3a-9f00-00000000013d",
+              "0192f0c4-7b1e-7c3a-9f00-00000000013e",
+              "0192f0c4-7b1e-7c3a-9f00-00000000013f",
+              "0192f0c4-7b1e-7c3a-9f00-000000000140",
+              "0192f0c4-7b1e-7c3a-9f00-000000000141",
+              "0192f0c4-7b1e-7c3a-9f00-000000000142",
+              "0192f0c4-7b1e-7c3a-9f00-000000000143",
+              "0192f0c4-7b1e-7c3a-9f00-000000000144",
+              "0192f0c4-7b1e-7c3a-9f00-000000000145",
+              "0192f0c4-7b1e-7c3a-9f00-000000000146",
+              "0192f0c4-7b1e-7c3a-9f00-000000000147",
+              "0192f0c4-7b1e-7c3a-9f00-000000000148",
+              "0192f0c4-7b1e-7c3a-9f00-000000000149",
+              "0192f0c4-7b1e-7c3a-9f00-00000000014a",
+              "0192f0c4-7b1e-7c3a-9f00-00000000014b",
+              "0192f0c4-7b1e-7c3a-9f00-00000000014c",
+              "0192f0c4-7b1e-7c3a-9f00-00000000014d",
+              "0192f0c4-7b1e-7c3a-9f00-00000000014e",
+              "0192f0c4-7b1e-7c3a-9f00-00000000014f",
+              "0192f0c4-7b1e-7c3a-9f00-000000000150",
+              "0192f0c4-7b1e-7c3a-9f00-000000000151",
+              "0192f0c4-7b1e-7c3a-9f00-000000000152",
+              "0192f0c4-7b1e-7c3a-9f00-000000000153",
+              "0192f0c4-7b1e-7c3a-9f00-000000000154",
+              "0192f0c4-7b1e-7c3a-9f00-000000000155",
+              "0192f0c4-7b1e-7c3a-9f00-000000000156",
+              "0192f0c4-7b1e-7c3a-9f00-000000000157",
+              "0192f0c4-7b1e-7c3a-9f00-000000000158",
+              "0192f0c4-7b1e-7c3a-9f00-000000000159",
+              "0192f0c4-7b1e-7c3a-9f00-00000000015a",
+              "0192f0c4-7b1e-7c3a-9f00-00000000015b",
+              "0192f0c4-7b1e-7c3a-9f00-00000000015c",
+              "0192f0c4-7b1e-7c3a-9f00-00000000015d",
+              "0192f0c4-7b1e-7c3a-9f00-00000000015e",
+              "0192f0c4-7b1e-7c3a-9f00-00000000015f",
+              "0192f0c4-7b1e-7c3a-9f00-000000000160",
+              "0192f0c4-7b1e-7c3a-9f00-000000000161",
+              "0192f0c4-7b1e-7c3a-9f00-000000000162",
+              "0192f0c4-7b1e-7c3a-9f00-000000000163",
+              "0192f0c4-7b1e-7c3a-9f00-000000000164",
+              "0192f0c4-7b1e-7c3a-9f00-000000000165",
+              "0192f0c4-7b1e-7c3a-9f00-000000000166",
+              "0192f0c4-7b1e-7c3a-9f00-000000000167",
+              "0192f0c4-7b1e-7c3a-9f00-000000000168",
+              "0192f0c4-7b1e-7c3a-9f00-000000000169",
+              "0192f0c4-7b1e-7c3a-9f00-00000000016a",
+              "0192f0c4-7b1e-7c3a-9f00-00000000016b",
+              "0192f0c4-7b1e-7c3a-9f00-00000000016c",
+              "0192f0c4-7b1e-7c3a-9f00-00000000016d",
+              "0192f0c4-7b1e-7c3a-9f00-00000000016e",
+              "0192f0c4-7b1e-7c3a-9f00-00000000016f",
+              "0192f0c4-7b1e-7c3a-9f00-000000000170",
+              "0192f0c4-7b1e-7c3a-9f00-000000000171",
+              "0192f0c4-7b1e-7c3a-9f00-000000000172",
+              "0192f0c4-7b1e-7c3a-9f00-000000000173",
+              "0192f0c4-7b1e-7c3a-9f00-000000000174",
+              "0192f0c4-7b1e-7c3a-9f00-000000000175",
+              "0192f0c4-7b1e-7c3a-9f00-000000000176",
+              "0192f0c4-7b1e-7c3a-9f00-000000000177",
+              "0192f0c4-7b1e-7c3a-9f00-000000000178",
+              "0192f0c4-7b1e-7c3a-9f00-000000000179",
+              "0192f0c4-7b1e-7c3a-9f00-00000000017a",
+              "0192f0c4-7b1e-7c3a-9f00-00000000017b",
+              "0192f0c4-7b1e-7c3a-9f00-00000000017c",
+              "0192f0c4-7b1e-7c3a-9f00-00000000017d",
+              "0192f0c4-7b1e-7c3a-9f00-00000000017e",
+              "0192f0c4-7b1e-7c3a-9f00-00000000017f",
+              "0192f0c4-7b1e-7c3a-9f00-000000000180",
+              "0192f0c4-7b1e-7c3a-9f00-000000000181",
+              "0192f0c4-7b1e-7c3a-9f00-000000000182",
+              "0192f0c4-7b1e-7c3a-9f00-000000000183",
+              "0192f0c4-7b1e-7c3a-9f00-000000000184",
+              "0192f0c4-7b1e-7c3a-9f00-000000000185",
+              "0192f0c4-7b1e-7c3a-9f00-000000000186",
+              "0192f0c4-7b1e-7c3a-9f00-000000000187",
+              "0192f0c4-7b1e-7c3a-9f00-000000000188",
+              "0192f0c4-7b1e-7c3a-9f00-000000000189",
+              "0192f0c4-7b1e-7c3a-9f00-00000000018a",
+              "0192f0c4-7b1e-7c3a-9f00-00000000018b",
+              "0192f0c4-7b1e-7c3a-9f00-00000000018c",
+              "0192f0c4-7b1e-7c3a-9f00-00000000018d",
+              "0192f0c4-7b1e-7c3a-9f00-00000000018e",
+              "0192f0c4-7b1e-7c3a-9f00-00000000018f",
+              "0192f0c4-7b1e-7c3a-9f00-000000000190"
+            ]
+          }
+        }
+      ],
+      "delete": []
+    },
+    {
+      "name": "fixed slippage without ratio",
+      "base": "backtest",
+      "valid": false,
+      "set": [
+        {
+          "path": ["params", "costs", "slippage"],
+          "value": {
+            "kind": "fixed"
+          }
+        }
+      ],
+      "delete": []
+    },
+    {
+      "name": "fixed slippage with ratio",
+      "base": "backtest",
+      "valid": true,
+      "set": [
+        {
+          "path": ["params", "costs", "slippage"],
+          "value": {
+            "kind": "fixed",
+            "ratio": 0.001
+          }
+        }
+      ],
+      "delete": []
+    },
+    {
+      "name": "fixed fraction without fraction",
+      "base": "backtest",
+      "valid": false,
+      "set": [
+        {
+          "path": ["params", "sizing"],
+          "value": {
+            "method": "fixed_fraction",
+            "maxPositions": 5
+          }
+        }
+      ],
+      "delete": []
+    },
+    {
+      "name": "backtest period reversed",
+      "base": "backtest",
+      "valid": false,
+      "set": [
+        {
+          "path": ["params", "period", "from"],
+          "value": "2026-01-01"
+        }
+      ],
+      "delete": []
+    },
+    {
+      "name": "duplicate probability",
+      "base": "goal",
+      "valid": false,
+      "set": [
+        {
+          "path": ["params", "probabilities"],
+          "value": [0.5, 0.5]
+        }
+      ],
+      "delete": []
+    },
+    {
+      "name": "unsupported probability",
+      "base": "goal",
+      "valid": false,
+      "set": [
+        {
+          "path": ["params", "probabilities"],
+          "value": [0.6]
+        }
+      ],
+      "delete": []
+    },
+    {
+      "name": "rebalance is not a worker job",
+      "base": "monte_carlo",
+      "valid": false,
+      "set": [
+        {
+          "path": ["type"],
+          "value": "rebalance"
+        }
+      ],
+      "delete": []
+    },
+    {
+      "name": "type mismatch with params",
+      "base": "monte_carlo",
+      "valid": false,
+      "set": [
+        {
+          "path": ["type"],
+          "value": "goal"
+        }
+      ],
+      "delete": []
+    }
+  ]
+}

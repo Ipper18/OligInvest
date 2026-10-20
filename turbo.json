@@ -49,7 +49,19 @@
     },
     "@oliginvest/analytics#test": {
       "dependsOn": ["build"],
-      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/packages/test-vectors/src/**"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/packages/test-vectors/src/**",
+        "$TURBO_ROOT$/packages/contracts/test/fixtures/**"
+      ],
+      "outputs": []
+    },
+    "@oliginvest/contracts#test": {
+      "dependsOn": ["build"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/apps/analytics/src/oliginvest_analytics/schemas/**"
+      ],
       "outputs": []
     },
     "@oliginvest/i18n#test": {
