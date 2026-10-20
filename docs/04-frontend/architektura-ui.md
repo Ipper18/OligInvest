@@ -92,6 +92,7 @@ BL-011: `pnpm gen:api-client` uruchamia odizolowany generator w `tools/openapi-c
 | `INTERNAL`, `SERVICE_UNAVAILABLE` | `error.tsx` z identyfikatorem żądania (`instance`) do zgłoszenia |
 
 - **Stany ekranu:** każdy segment ma `loading.tsx` (szkielet o wymiarach docelowych — CLS), `error.tsx`, `not-found.tsx`; widoki danych rynkowych pokazują `<DataFreshness/>` z przyczyną nieaktualności (FR-01.15).
+- **Powrót po uwierzytelnieniu:** formularze i przekierowania serwerowe bramek zachowują zwalidowane `returnTo`, także przy ponownym renderowaniu po rotacji ciasteczka przez Server Action. Po przejściu bramek kierują do tego samego celu. `safeReturnTo` dopuszcza wyłącznie ścieżkę tej aplikacji, bez przejść do API lub pętli ekranów uwierzytelnienia; odrzucony albo brakujący cel daje `/`.
 
 ## 5. Renderowanie
 
@@ -114,6 +115,8 @@ Bez biblioteki stanu globalnego (stos § 4).
 ## 7. Realtime
 
 `SseProvider` w `(app)/layout.tsx` otwiera jedno `fetch/ReadableStream` na kartę po przejściu bramki MFA, mapuje zdarzenia na unieważnienia zapytań i przełącza się na odpytywanie według [`realtime.md`](../02-api/realtime.md) § 6–7. Karta instrumentu zgłasza dodatkowe instrumenty przez `PUT /stream/connections/{connectionId}/instruments`.
+
+Podgląd importu w stanach `uploaded`/`parsing` dodatkowo odczytuje status co 5 s, również przy aktywnym SSE: zakończenie parsowania może nastąpić przed subskrypcją ekranu. Po otrzymaniu `parsed` odświeża wiersze i zatrzymuje to odpytywanie; stany końcowe nie uruchamiają timera.
 
 ## 8. PWA i service worker
 

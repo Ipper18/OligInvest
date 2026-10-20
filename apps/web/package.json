@@ -20,6 +20,8 @@
     "lighthouse:assert": "node scripts/lighthouse-assert.mjs --assert"
   },
   "dependencies": {
+    "@oliginvest/mod-portfolio": "workspace:*",
+    "@oliginvest/mod-market": "workspace:*",
     "@oliginvest/config": "workspace:*",
     "@oliginvest/i18n": "workspace:*",
     "@oliginvest/ui": "workspace:*",

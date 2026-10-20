@@ -5,6 +5,7 @@ import { ProblemError } from "@oliginvest/platform";
 import { sql } from "drizzle-orm";
 import { createApp } from "../dist/app.js";
 import { PortfolioRepository } from "../dist/modules.js";
+import { testPortfolioReads } from "./portfolio-reads.mjs";
 
 export async function testPortfolioStorage(settings) {
   const options = { host: settings.host, port: settings.port, database: settings.database };
@@ -16,13 +17,17 @@ export async function testPortfolioStorage(settings) {
   const events = [];
   const owner = { userId, role: "user" },
     other = { userId: otherId, role: "admin" };
-  const repository = new PortfolioRepository(database, async (payload) => {
-    // The enqueue callback must observe committed data from a separate connection.
-    await database.transaction(owner, async (tx) => {
-      await tx.execute(sql`SELECT count(*) FROM portfolio.transactions`);
-    });
-    events.push(payload);
-  });
+  const repository = new PortfolioRepository(
+    database,
+    async (payload) => {
+      // The enqueue callback must observe committed data from a separate connection.
+      await database.transaction(owner, async (tx) => {
+        await tx.execute(sql`SELECT count(*) FROM portfolio.transactions`);
+      });
+      events.push(payload);
+    },
+    () => new Date("2026-10-13T12:00:00Z"),
+  );
   const app = createApp({
     checks: {},
     logger: { info() {}, warn() {}, error() {} },
@@ -217,6 +222,33 @@ export async function testPortfolioStorage(settings) {
       { "Idempotency-Key": randomUUID() },
     );
     assert.equal(rejected.status, 422);
+    // BL-147: real HTTP/DB reads preserve missing prices and enforce both grouping variants.
+    const unpricedResponse = await request("positions");
+    assert.equal(unpricedResponse.status, 200);
+    assert.equal(unpricedResponse.headers.get("cache-control"), "no-store");
+    const unpriced = await unpricedResponse.json();
+    assert.equal(unpriced.isComplete, false);
+    assert.equal(unpriced.data[0].accountId, account.id);
+    assert.equal(unpriced.data[0].quantity, "6");
+    assert.equal(unpriced.data[0].marketValueBase, null);
+    assert.equal(unpriced.data[0].weight, null);
+    const aggregate = await (await request("positions?groupBy=instrument")).json();
+    assert.equal(Object.hasOwn(aggregate.data[0], "accountId"), false);
+    for (const path of ["summary", "day-change", "positions", "cash", "lots", "realized"]) {
+      assert.equal((await request(path, "GET", undefined, { "x-owner": "" })).status, 401);
+      const otherRead = await request(path, "GET", undefined, { "x-owner": "b" });
+      assert.equal(otherRead.status, 200);
+      const data = await otherRead.json();
+      assert(!JSON.stringify(data).includes(account.id));
+      assert(!JSON.stringify(data).includes(instrumentId));
+    }
+    assert.equal((await request("positions?groupBy=other")).status, 422);
+    assert.equal((await request("positions?view=tax&view=economic")).status, 422);
+    const day = await (await request("day-change")).json();
+    assert.equal(day.change, null);
+    const realized = await (await request("realized?view=economic")).json();
+    assert.equal(realized.isComplete, true);
+    assert.equal(realized.totals.realizedPl.amount, "20.00000000");
     assert.equal((await request(`accounts/${account.id}`, "DELETE")).status, 403);
     assert.equal(
       (await request(`accounts/${account.id}`, "DELETE", undefined, { "x-step-up": "yes" })).status,
@@ -224,6 +256,7 @@ export async function testPortfolioStorage(settings) {
     );
     assert.equal((await request(`transactions/${first.id}`)).status, 404);
     assert.equal(events.length, responses.filter((r) => r.status === 201).length + 3);
+    await testPortfolioReads({ request, database, owner, instrumentId });
   } finally {
     await auth.transaction(async (tx) => {
       await tx.execute(

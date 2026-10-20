@@ -165,6 +165,8 @@ BL-317, przegląd licencji 2026-10-19: właściciel zatwierdził **Zlib wyłącz
 | Analiza kodu | **CodeQL**, skanowanie sekretów z push protection | — | — | Darmowe dla repozytoriów publicznych ([ADR-013](../09-decyzje/ADR-013-repozytorium-publiczne.md)). | — |
 | Rejestr obrazów | **GitHub Container Registry** | — | — | Darmowy dla pakietów publicznych; alternatywnie budowa obrazów lokalnie na serwerze. | Docker Hub (limity pobrań). |
 
+M1-4b (2026-10-19): uzupełnienia Syft dla `trim-lines@3.0.1`, `tsx@4.23.13` i `unist-util-position-from-estree@2.0.0` po sprawdzeniu pola `license: MIT` w zainstalowanych z lockfile `node_modules/.pnpm/<pakiet>@<wersja>/node_modules/<pakiet>/package.json`. Źródła publikacji: [trim-lines](https://registry.npmjs.org/trim-lines/3.0.1), [tsx](https://registry.npmjs.org/tsx/4.23.13), [unist-util-position-from-estree](https://registry.npmjs.org/unist-util-position-from-estree/2.0.0). Mapa `NPM_METADATA` w `scripts/deps-audit.py` dotyczy wyłącznie tych wersji i ekosystemu npm; uzupełnia brak/UNKNOWN w CycloneDX, nie zastępuje jawnej licencji i nie tworzy wyjątków.
+
 ## 8. Usługi zewnętrzne (darmowe)
 
 | Usługa | Rola | Limit darmowy | Szczegóły |
@@ -207,6 +209,11 @@ M1-1: `.pnpmfile.cjs` usuwa z metadanych Better Auth 1.7.5 wyłącznie opcjonaln
 M1-3 (BL-144/145): moduł portfolio deklaruje bezpośrednio istniejące pakiety workspace core/db/platform/contracts oraz Hono 4.13.8, Zod 4.6.5, @hono/zod-openapi 1.6.3 i SheetJS CE 0.20.3 z tego samego tarballa CDN. Hono/Zod obsługują granice HTTP, Drizzle transakcje RLS, SheetJS wyłącznie parsowanie w jobs i lokalną anonimizację. Bez nowych wersji ani dostawców; API i jobs składają moduł przez publiczne eksporty.
 
 M1-4a (2026-10-11): TanStack Query 5.103.1 w powłoce; qrcode 1.5.4 (MIT) wyłącznie na serwerze do lokalnego QR TOTP, bez usług zewnętrznych. Zaufane dokumenty MDX kompiluje @next/mdx 16.3.8 z @mdx-js/loader i @mdx-js/react 3.1.1 (MIT); bez kompilacji treści użytkownika i bez ewaluacji w runtime. Typy @types/qrcode i @types/mdx (MIT) tylko do budowy.
+
+M1-4b (2026-10-13): `packages/ui` używa Lightweight Charts 5.2.1 (Apache-2.0)
+do świec i wolumenu oraz TanStack Virtual 3.14.13 (MIT) do tabel ponad 100 wierszy.
+Oba moduły ładowane dynamicznie; atrybucja TradingView widoczna na wykresie i stronie
+źródeł. To realizacja przyjętych wyborów z ADR-009 i tabeli powyżej.
 
 BL-116: narzędzia budowania i kontroli stron prawnych: `@mdx-js/mdx` 3.1.1 i `remark-gfm` 4.0.1 (MIT). Parser działa wyłącznie podczas generowania/testu; do przeglądarki trafia HTML, bez kompilatora Markdown.
 

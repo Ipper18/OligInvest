@@ -53,6 +53,12 @@ METADATA = {
     ("python-dateutil", "2.9.0.post0"): "Apache-2.0 OR BSD-3-Clause",
     ("scipy", "1.18.1"): "BSD-3-Clause",
 }
+# Exact installed npm package.json declarations, verified 2026-10-19; STACK §7.
+NPM_METADATA = {
+    ("trim-lines", "3.0.1"): "MIT",
+    ("tsx", "4.23.13"): "MIT",
+    ("unist-util-position-from-estree", "2.0.0"): "MIT",
+}
 SHEETJS_URL = "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
 SHEETJS_INTEGRITY = "sha512-oLDq3jw7AcLqKWH2AhCpVTZl8mf6X2YReP+Neh0SJUzV/BdZYjth94tG5toiMB1PPrYtxOCfaoUCkvtuH+3AJA=="
 # CDN advisories, verified 2026-10-07; npm's open-ended ranges describe the
@@ -277,6 +283,14 @@ def licenses(sbom, expected, metadata=None):
         ]
         if ecosystem == "PyPI" and (name, version) in METADATA:
             expressions = [METADATA[(name, version)]]
+            normalized.append(f"{name}@{version}: {expressions[0]}")
+        if (
+            ecosystem == "npm"
+            and (name, version) in NPM_METADATA
+            and (not expressions or all(value in {"", "UNKNOWN"} for value in expressions))
+        ):
+            expressions = [NPM_METADATA[(name, version)]]
+            component["licenses"] = [{"license": {"id": expressions[0]}}]
             normalized.append(f"{name}@{version}: {expressions[0]}")
         if not expressions or not all(
             license_allowed(value, name) for value in expressions

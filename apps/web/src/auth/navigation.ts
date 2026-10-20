@@ -33,3 +33,8 @@ export function gatePath(
   if (me.legal.termsAcceptanceRequired) return "/akceptacja-regulaminu";
   return null;
 }
+
+export function authDestination(gate: ReturnType<typeof gatePath>, returnTo: unknown): string {
+  const destination = safeReturnTo(returnTo);
+  return gate ? `${gate}?${new URLSearchParams({ returnTo: destination })}` : destination;
+}

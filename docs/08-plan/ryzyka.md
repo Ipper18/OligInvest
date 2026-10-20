@@ -63,9 +63,13 @@ Powiązane: [`roadmapa.md`](roadmapa.md), [`backlog.md`](backlog.md), [`../06-be
 | **R-37** | Niezweryfikowane symbole Yahoo benchmarków (WIG, mWIG40, sWIG80, Nasdaq-100, ETF-y) | BL-206, [raport M2](m2-market-backend-session-report.md); kontener sesji bez dostępu do Yahoo | 3 | 2 | 6 | symbole oznaczone **NIEZWERYFIKOWANE** w `zrodla-danych.md`; nieznany symbol (404) kończy serię na dzień z błędem w logu, `listBenchmarks` nie podaje `dataAvailableFrom`; właściciel potwierdza symbole na instancji po pierwszym przebiegu `market.benchmarks` | brak `dataAvailableFrom` po pierwszej nocy, `market.ingestion_failed` dla `market.benchmarks` | właściciel, agent | M2, otwarte do pierwszego przebiegu na instancji |
 | **R-38** | Worker Python (rola `oliginvest_analytics_ro`) nie widzi `market.data_quality_issues` | BL-209: bramka FR-04 w `MarketRepository.assertAnalysisEligible`; rola analityki miała tylko dane rynkowe bez tabeli zgłoszeń | 2 | 4 | 8 | decyzja właściciela 2026-10-19: `GRANT SELECT` na `data_quality_issues` dla `oliginvest_analytics_ro` (metadane danych rynkowych, ADR-003); worker sam sprawdza BLOCK przed analizą; migracja `0006_analytics-quality-read`, `schema.sql`, `testy-rls.sql` i katalog uprawnień | analiza FR-04 uruchomiona na serii z otwartym BLOCK | agent, właściciel | zamknięte 2026-10-19: grant w migracji i `schema.sql`, `pnpm db:test` PASS (RLS, katalog, schemat ZERO DIFFERENCES); sprawdzenie bramki w workerze — BL-3xx |
 
+| **R-39** | Kontrakt odczytów portfela nie reprezentuje wszystkich luk wyceny i danych podatkowych; mapowanie może tworzyć pozorne zera/wyniki lub ukrywać pozycje | BL-147, [propozycja M1-4b](m1-4b-valuation-contract-proposal.md) | 2 | 2 | 4 | zatwierdzone nullable i jawne wyłączenia wdrożone w OpenAPI/REST/UI; regresje braku ceny/FX/kosztu i IKE/IKZE; braków nie zastępować zerem | core/SQL zwracają null, a wymagane Money w REST go nie dopuszcza | agent, właściciel | M1-4b, ograniczone implementacją i lokalnymi testami 2026-10-16; zamknięcie po CI/DoD |
+
+| **R-40** | Agregat dziennego raportu błędów może być niepełny podczas awarii Valkey; awaria po akceptacji SMTP przed potwierdzeniem może powtórzyć wiadomość | BL-152, [monitoring § 5](../07-wdrozenie/monitoring.md) | 2 | 2 | 4 | ograniczone czasowo próby zapisu, licznik i bezpieczny log niepowodzenia; retry SMTP i znacznik doręczenia; raport nie zastępuje logów i zewnętrznych sond Kuma | monitoring_record_failures_total rośnie, brak raportu lub duplikat | agent, monitoring, właściciel | M1-4b, otwarte; integracja restart/retry/Mailpit PASS, odbiór operacyjny u właściciela |
+
 ## 3. Podsumowanie
 
-36 ryzyk: **5 wysokich** (R-01, R-07, R-11, R-16, R-28), 26 średnich, 5 niskich; brak krytycznych.
+38 ryzyk: **5 wysokich** (R-01, R-07, R-11, R-16, R-28), 27 średnich, 6 niskich; brak krytycznych.
 
 | Ryzyko wysokie | Działanie przed końcem etapu |
 |---|---|

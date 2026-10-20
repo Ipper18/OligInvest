@@ -61,6 +61,27 @@ Szczegóły (wersje, zasoby) pokazuje wyłącznie panel admina (`/admin/system/h
 
 ## 5. Metryki aplikacji
 
+BL-152 (część aplikacji): odczyt `/internal/metrics` w API i jobs jest wewnętrzny;
+Caddy odrzuca `/internal` i `/internal/*`. Jobs nasłuchuje na porcie 3000 w kontenerze
+(bez publikacji portu na hoście). Liczniki i histogramy mają czas życia procesu;
+restart zeruje je. Ścieżki HTTP są wzorcami routera, nigdy adresem żądania.
+Dzienny raport agreguje błędy API 5xx i nieudane próby zadań w `valkey-queue`
+pod `bull:notify:monitoring:*` (retencja 7 dni). Zawiera liczby według wzorca
+trasy/typu zadania i symbolicznego kodu oraz najwyżej 3 przykładowe identyfikatory
+żądań. Nie zawiera payloadów, komunikatów wyjątków ani danych użytkowników.
+Zadanie `monitoring.daily-report` na kolejce `notify` o 07:00 Europe/Warsaw wysyła
+raport poprzedniego dnia UTC do aktywnych administratorów z katalogu kont.
+Nieudana wysyłka podlega ponowieniom; oznaczenie doręczenia per dzień i odbiorca
+ogranicza duplikaty (awaria między SMTP a zapisem potwierdzenia może je spowodować).
+Brak SMTP/odbiorcy jest błędem operacyjnym, a nie potwierdzeniem wysyłki.
+Przy niedostępności Valkey zapis raportu może się nie udać: oryginalny błąd
+pozostaje w logach, a `monitoring_record_failures_total` i zdarzenie
+`monitoring.record_failed` ujawniają niekompletność agregatu. Raport nie zastępuje
+logów ani monitorów dostępności. Test `apps/jobs/scripts/test-monitoring.mjs`
+sprawdza agregację współbieżną, restart, retry SMTP, deduplikację doręczenia,
+Mailpit i metryki na rzeczywistych PostgreSQL/Valkey. Panel metryk i RUM należą
+do BL-507/124; aktywacja 13 sond i odbiór alarmów wymagają serwera właściciela.
+
 `api` i `jobs` wystawiają metryki w formacie Prometheus na `/internal/metrics` — trasa dostępna tylko w sieci wewnętrznej Dockera (nie przez Caddy). Panel admina pokazuje wartości bieżące i p95 z okna 15 minut liczone w procesie.
 
 | Metryka | Etykiety | Po co |

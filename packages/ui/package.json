@@ -10,6 +10,14 @@
     "build": "tsc -p tsconfig.json"
   },
   "exports": {
+    "./chart": {
+      "types": "./dist/candlestick-chart.d.ts",
+      "import": "./dist/candlestick-chart.js"
+    },
+    "./table": {
+      "types": "./dist/data-table.d.ts",
+      "import": "./dist/data-table.js"
+    },
     "./tokens.css": "./src/tokens.css",
     ".": {
       "types": "./dist/index.d.ts",
@@ -18,6 +26,8 @@
     "./components.css": "./src/components.css"
   },
   "dependencies": {
+    "lightweight-charts": "5.2.1",
+    "@tanstack/react-virtual": "3.14.13",
     "@oliginvest/i18n": "workspace:*",
     "react": "19.3.0"
   },

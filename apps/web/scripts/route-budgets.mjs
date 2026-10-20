@@ -109,13 +109,21 @@ export function assessShell(row, frameworkFiles, limitKb) {
   );
   return { bytes, failed: bytes > limitKb * 1024 };
 }
+export function performanceFixtures() {
+  return JSON.parse(
+    process.env.PERF_FIXTURES ||
+      (process.env.BASE_URL
+        ? "{}"
+        : '{"instrumentId":"01900000-0000-7000-8000-000000000101","accountId":"01900000-0000-7000-8000-000000000102","transactionId":"01900000-0000-7000-8000-000000000103","importId":"01900000-0000-7000-8000-000000000104"}'),
+  );
+}
 export function currentPlan() {
   const config = readJson("budgets.json");
   if (config.compression !== "gzip-9") throw new Error("Expected gzip-9");
   return planRoutes(
     readJson(".next/server/app-paths-manifest.json"),
     config,
-    JSON.parse(process.env.PERF_FIXTURES || "{}"),
+    performanceFixtures(),
   );
 }
 export async function measureRoute(origin, route, budget) {

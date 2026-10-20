@@ -2,17 +2,23 @@ import { messages } from "@oliginvest/i18n";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { AuthForm } from "../../../../auth/form";
-import { gatePath } from "../../../../auth/navigation";
+import { authDestination, gatePath } from "../../../../auth/navigation";
 import { getMe } from "../../../../auth/session";
 export const metadata = { title: messages.app.code + " — " + messages.app.brand };
-export default async function Page() {
+export default async function Page({
+  searchParams,
+}: {
+  searchParams: Promise<{ returnTo?: string | string[] }>;
+}) {
+  const { returnTo } = await searchParams;
   const me = await getMe();
   const gate = gatePath(me);
   if (!me) {
-    if (!(await cookies()).has("__Host-oliginvest.two_factor")) redirect("/logowanie");
+    if (!(await cookies()).has("__Host-oliginvest.two_factor"))
+      redirect(authDestination(gate, returnTo));
     return <AuthForm kind="totp" />;
   }
-  if (gate && gate !== "/logowanie/2fa") redirect(gate);
-  if (!gate) redirect("/");
+  // Cookie rotation re-renders this page before the client's navigation completes.
+  if (gate !== "/logowanie/2fa") redirect(authDestination(gate, returnTo));
   return <AuthForm kind="totp" />;
 }

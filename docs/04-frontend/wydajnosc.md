@@ -217,7 +217,9 @@ process.exit(failed ? 1 : 0);
 
 `pnpm budgets` sprawdza dodatkowo powłokę `/`: sumę gzip-9 wszystkich początkowych chunków poza `rootMainFiles` bieżącego frameworka; limit 30 KiB, brak bazowych chunków lub przekroczenie blokuje CI. Nie odejmujemy komponentów aplikacji ani TanStack Query. Zod klienta SSE ładuje się dynamicznie. Lokalne pomiary renderowania i axe korzystają z syntetycznych odpowiedzi granicy API, bez obejścia bramek w kodzie web; nie zastępują testów rzeczywistego uwierzytelniania i RLS. Pełny scenariusz z bazą i portfelem pozostaje w M1-4b (BL-155). `PERF_ROUTE_COOKIES` pozwala przekazać sesje per trasa przy zewnętrznym `BASE_URL`, bez zapisywania ich w raportach.
 
-CI uruchamia `--assert-available`: twarde progi Lighthouse dla wdrożonych tras z listy § 6.3. `--assert` nadal wymaga całego zestawu czterech tras na bramę M1. Brakujące trasy nie otrzymują wyniku PASS.
+Od M1-4b CI uruchamia `--assert`: wymaga wszystkich czterech tras MVP z § 6.3 i egzekwuje niezmienione progi. Lokalny serwer pomiarowy dostarcza identyfikatory syntetycznych fixtures; przy zewnętrznym `BASE_URL` identyfikatory trzeba jawnie podać przez `PERF_FIXTURES`. Brakujące trasy nie otrzymują wyniku PASS.
+
+M1-4b: wejścia `@oliginvest/ui/table` i `@oliginvest/ui/chart` oddzielają zależności tabel i wykresów od wspólnego UI. Start renderuje dane na serwerze, a obsługę odświeżania ładuje po hydratacji. Limit powłoki nadal obejmuje wszystkie początkowe chunki Start poza `rootMainFiles`; nie odejmujemy kodu aplikacji. Pomiar lokalny: 29,44 KiB / 30 KiB (progi bez zmian).
 
 M1-4a: mały wspólny arkusz CSS jest kompilowany przez PostCSS/Tailwind podczas budowania i osadzany w serwerowym układzie jako `<style nonce={nonce}>`. Usuwa dodatkowe żądanie blokujące pierwsze wyświetlenie, kosztem ponownego przesłania arkusza w HTML. Plik wynikowy jest artefaktem buildu, objętym cache Turbo. Nie używamy `experimental.inlineCss`: w przypiętym Next.js/React nonce znikał przy hoistowaniu arkusza z `precedence`. Test produkcyjny sprawdza nonce stylów, działanie CSS i brak `unsafe-inline`. Regresje LCP i CSP blokują CI.
 

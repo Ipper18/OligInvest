@@ -45,6 +45,7 @@ export const marketSchedules = [
   { job: "market.benchmarks", cron: "45 23 * * 1-5", tz: "Europe/Warsaw" },
 ] as const;
 export function createMarketJobs(options: {
+  observeProvider?: (provider: string, result: "ok" | "fail") => void;
   database: AppDatabase;
   queue: Redis;
   cache: Redis;
@@ -58,7 +59,12 @@ export function createMarketJobs(options: {
   const now = options.now ?? (() => new Date());
   const repository = new MarketRepository(options.database, now);
   const store = new IngestionStore(repository);
-  const limits = new ProviderLimits(options.queue, options.cache, () => now().getTime());
+  const limits = new ProviderLimits(
+    options.queue,
+    options.cache,
+    () => now().getTime(),
+    options.observeProvider,
+  );
   const guarded = createProviderFetch(
     "OligInvest/0.0.0 (+https://invest.oligi.pl)",
     options.transport,

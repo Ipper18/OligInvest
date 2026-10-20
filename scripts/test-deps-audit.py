@@ -10,6 +10,27 @@ audit = runpy.run_path(str(Path(__file__).with_name("deps-audit.py")))
 
 
 class PolicyTests(unittest.TestCase):
+    def test_npm_metadata_is_version_scoped_and_does_not_override_a_license(self):
+        for name, version in audit["NPM_METADATA"]:
+            for ecosystem, release, declared, rejected in [
+                ("npm", version, None, False),
+                ("npm", version, "UNKNOWN", False),
+                ("npm", "999.0.0", None, True),
+                ("PyPI", version, None, True),
+                ("npm", version, "GPL-3.0", True),
+            ]:
+                with self.subTest(name=name, ecosystem=ecosystem, release=release, declared=declared):
+                    kind = "npm" if ecosystem == "npm" else "pypi"
+                    component = {"name": name, "version": release, "purl": f"pkg:{kind}/{name}@{release}"}
+                    if declared:
+                        component["licenses"] = [{"license": {"id": declared}}]
+                    failures, _ = audit["licenses"](
+                        {"bomFormat": "CycloneDX", "components": [component]}, {(ecosystem, name, release)}
+                    )
+                    self.assertEqual(bool(failures), rejected)
+                    if not rejected:
+                        self.assertEqual(component["licenses"], [{"license": {"id": "MIT"}}])
+
     def report(self, score="7.0"):
         package = {
             "package": {"ecosystem": "npm", "name": "sample", "version": "1"},

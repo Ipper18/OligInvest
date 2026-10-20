@@ -68,6 +68,20 @@ export function createAuthMailer(
 ) {
   const transport = nodemailer.createTransport(mailOptions(config, mode, port));
   return {
+    sendReport: async (email: string, subject: string, text: string) => {
+      try {
+        await transport.sendMail({
+          from: config.SMTP_FROM,
+          to: z.email().parse(email),
+          subject,
+          text,
+          disableFileAccess: true,
+          disableUrlAccess: true,
+        });
+      } catch {
+        throw new Error("REPORT_DELIVERY_FAILED");
+      }
+    },
     send: async (name: string, input: unknown) => {
       if (
         !["auth.password-reset", "auth.invitation", "auth.two-factor-reset"].includes(name) ||

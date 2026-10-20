@@ -37,7 +37,7 @@ export const portfolioDate = (now: Date) =>
     month: "2-digit",
     day: "2-digit",
   }).format(now);
-async function valuationState(tx: DatabaseTransaction, to: string) {
+export async function valuationState(tx: DatabaseTransaction, to: string) {
   const state = await loadLedger(tx);
   const instrumentIds = [
     ...new Set(state.rows.flatMap((r) => (r.instrumentId ? [r.instrumentId] : []))),
@@ -144,7 +144,7 @@ async function valuationState(tx: DatabaseTransaction, to: string) {
       taxRates,
       ...(taxSettings ? { taxSettings } : {}),
     });
-  return { ...state, transactions, fx, ledgerOn, quotesOn };
+  return { ...state, transactions, fx, taxSettings, bars, ledgerOn, quotesOn };
 }
 function transferValue(
   t: Transaction,

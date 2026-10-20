@@ -5,6 +5,8 @@ import common from "./pl/common.json" with { type: "json" };
 import data from "./pl/data.json" with { type: "json" };
 import disclaimerCatalog from "./pl/disclaimers.json" with { type: "json" };
 import errors from "./pl/errors.json" with { type: "json" };
+import portfolio from "./pl/portfolio.json" with { type: "json" };
+export const portfolioMessages = portfolio;
 
 export const appMessages = app;
 export const commonMessages = common;

@@ -1,4 +1,5 @@
 import { loadConfig } from "@oliginvest/config";
+import { applicationErrorSchema } from "@oliginvest/contracts";
 import { createLogger, type PlatformLogger } from "@oliginvest/platform";
 import { sql } from "drizzle-orm";
 import { z } from "zod";
@@ -62,6 +63,37 @@ export function createRuntime(
   let portfolio: PortfolioRepository | undefined;
   let stream: StreamStore | undefined;
   const app = createApp({
+    recordError: async (input) => {
+      // A failed health probe must not initialize authentication or DB pools.
+      const { Queue } = await import("bullmq");
+      const queue = new Queue("notify", {
+        connection: {
+          host: runtime.VALKEY_QUEUE_HOST,
+          port: runtime.VALKEY_QUEUE_PORT,
+          username: runtime.VALKEY_QUEUE_USER,
+          password: config.VALKEY_QUEUE_API_PASSWORD,
+          connectTimeout: 500,
+          commandTimeout: 500,
+          maxRetriesPerRequest: 0,
+          retryStrategy: () => null,
+        },
+      });
+      queue.on("error", () => logger.error({ event: "monitoring.queue_unavailable" }));
+      const deadline = setTimeout(() => {
+        void queue.disconnect();
+      }, 750);
+      try {
+        await queue.add("monitoring.error", applicationErrorSchema.parse(input), {
+          attempts: 3,
+          backoff: { type: "exponential", delay: 1000 },
+          removeOnComplete: true,
+          removeOnFail: { age: 604800 },
+        });
+      } finally {
+        clearTimeout(deadline);
+        await queue.disconnect();
+      }
+    },
     portfolio: {
       imports: async () => {
         const runtime = await getAuth();
