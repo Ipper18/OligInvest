@@ -86,7 +86,7 @@ Reguły (egzekwowane skryptem `pnpm check:deps` w CI na podstawie `package.json`
 1. Warstwa 0 nie zależy od modułów. `core` nie zależy od niczego poza `decimal.js` (zero I/O).
 2. Moduł fundamentowy może zależeć od warstwy 0 i od modułów fundamentowych niżej w kolejności: `identity` → `notifications` → `market` → `portfolio`.
 3. Moduł funkcjonalny może zależeć od warstwy 0 i **kontraktów** (`/contracts`, `/server` — tylko publiczne serwisy) modułów fundamentowych. **Nie zależy od innych modułów funkcjonalnych.** Interakcje między modułami funkcjonalnymi — wyłącznie przez zdarzenia.
-4. Aplikacje (`apps/*`) są korzeniami kompozycji: importują moduły przez rejestry (`apps/api/src/modules.ts`, `apps/jobs/src/modules.ts`, `apps/web/src/modules.ts`).
+4. Aplikacje (`apps/*`) są korzeniami kompozycji: importują moduły przez rejestry (`apps/api/src/modules.ts`, `apps/jobs/src/modules.ts`, `apps/web/src/modules.ts`). Moduł funkcjonalny aplikacja deklaruje wyłącznie w `optionalDependencies`, a rejestr ładuje go dynamicznym importem tolerującym brak pakietu (`ERR_MODULE_NOT_FOUND` → moduł niezamontowany: brak tras, handlerów i workera); `check:deps` odrzuca moduł funkcjonalny w `dependencies` aplikacji i dopuszcza jego brak tylko jako zależności opcjonalnej. Dzięki temu zadanie CI „build bez modułu” buduje aplikacje bez zmian w rejestrach (BL-312, 2026-10-20).
 5. `apps/web` nie importuje `modules/*/server` ani `packages/db` (brak dostępu do bazy z warstwy UI — [ADR-012](../09-decyzje/ADR-012-api-jako-granica-domenowa.md)).
 
 `check:deps` kontroluje wszystkie sekcje zależności manifestów, cykle workspace oraz importy

@@ -4,7 +4,7 @@ import type { PlatformLogger } from "@oliginvest/platform";
 import { QueueEvents, Worker } from "bullmq";
 import type { Redis } from "ioredis";
 import { z } from "zod";
-import { createAnalyticsResults } from "./modules.js";
+import { analyticsJobs } from "./modules.js";
 import type { readRuntime } from "./runtime.js";
 
 /**
@@ -35,7 +35,8 @@ export async function startAnalyticsWorker(options: {
     await options.cache.xtrim(key, "MINID", `${Date.now() - 600000}-0`);
     await options.cache.expire(key, 600);
   };
-  const results = createAnalyticsResults({ database: options.database, publish });
+  if (!analyticsJobs) return { close: async () => {} };
+  const results = analyticsJobs.createAnalyticsResults({ database: options.database, publish });
   const { commandTimeout: _timeout, ...connection } = options.connection;
   const blocking = { ...connection, maxRetriesPerRequest: null };
   const worker = new Worker(

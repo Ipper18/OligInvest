@@ -36,7 +36,7 @@ function fixture(t) {
   const analytics = pkg("modules/analytics", { [market]: "workspace:*" });
   const db = pkg("packages/db");
   pkg("packages/core", { "decimal.js": "10.6.0" });
-  pkg("apps/web", { [alerts]: "workspace:*" });
+  pkg("apps/web", {}, { optionalDependencies: { [alerts]: "workspace:*" } });
   return { root, write, pkg, identity, market, alerts, analytics, db };
 }
 
@@ -115,7 +115,11 @@ test("rejects inverted layers, apps as dependencies, web DB and workspace cycles
   f.pkg("modules/identity", { [f.market]: "workspace:*" });
   f.pkg("packages/db", { [f.identity]: "workspace:*" });
   f.pkg("packages/core", { "@oliginvest/web": "workspace:*" });
-  f.pkg("apps/web", { [f.db]: "workspace:*" });
+  f.pkg(
+    "apps/web",
+    { [f.db]: "workspace:*" },
+    { optionalDependencies: { [f.alerts]: "workspace:*" } },
+  );
   const errors = checkDependencies(f.root).join("\n");
   for (const pattern of [/layer/, /core/, /web/, /cycle/]) assert.match(errors, pattern);
 });
@@ -207,3 +211,24 @@ for (const path of ["apps/web", "modules/analytics", "packages/ui"]) {
     assert.match(checkDependencies(f.root).join("\n"), /relative boundary/);
   });
 }
+
+test("functional modules in apps are optional and may be absent (build without a module)", (t) => {
+  const f = fixture(t);
+  f.pkg("apps/api", {}, { optionalDependencies: { [f.analytics]: "workspace:*" } });
+  f.write(
+    "apps/api/src/modules.ts",
+    `export const analytics = await import('${f.analytics}/server').catch(() => undefined);`,
+  );
+  assert.deepEqual(checkDependencies(f.root), []);
+  rmSync(join(f.root, "modules/analytics"), { recursive: true, force: true });
+  assert.deepEqual(checkDependencies(f.root), [], "absent optional functional module");
+  f.pkg("apps/api", { [f.alerts]: "workspace:*" });
+  assert.match(checkDependencies(f.root).join("\n"), /must be an optional dependency/);
+  f.pkg("apps/api", {}, { optionalDependencies: { "@oliginvest/mod-identity": "workspace:*" } });
+  rmSync(join(f.root, "modules/identity"), { recursive: true, force: true });
+  assert.match(checkDependencies(f.root).join("\n"), /unknown workspace/);
+  f.write("apps/api/src/other.ts", `import('${f.analytics}/server');`);
+  f.pkg("apps/api", {}, { optionalDependencies: { [f.alerts]: "workspace:*" } });
+  f.write("apps/api/src/other.ts", `import('${f.alerts}/server');`);
+  assert.match(checkDependencies(f.root).join("\n"), /outside composition registry/);
+});

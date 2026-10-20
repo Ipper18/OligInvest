@@ -13,8 +13,8 @@ import { type AuthRouteDependencies, createAuthRouter, mountStepUp } from "./aut
 import { SESSION_COOKIE } from "./auth/session.js";
 import {
   type AnalyticsDependencies,
+  analyticsModule,
   type MarketDependencies,
-  mountAnalytics,
   mountMarket,
   mountPortfolio,
   type PortfolioDependencies,
@@ -257,19 +257,19 @@ export function createApp(
       },
     },
   );
-  mountAnalytics(
-    api,
-    options.analytics ?? {
-      authorize: async (request) => {
-        const principal = await (await authDependencies.service()).requireData(request);
-        return { userId: principal.user_id, role: principal.role };
-      },
-      assertOrigin: async (request) => (await authDependencies.service()).assertOrigin(request),
-      repository: () => {
-        throw new ProblemError("SERVICE_UNAVAILABLE");
-      },
+  // Optional functional module: mounted only when the package is part of the build.
+  const analyticsDependencies: AnalyticsDependencies = options.analytics ?? {
+    authorize: async (request: Request) => {
+      const principal = await (await authDependencies.service()).requireData(request);
+      return { userId: principal.user_id, role: principal.role };
     },
-  );
+    assertOrigin: async (request: Request) =>
+      (await authDependencies.service()).assertOrigin(request),
+    repository: () => {
+      throw new ProblemError("SERVICE_UNAVAILABLE");
+    },
+  };
+  analyticsModule?.mountAnalytics(api, analyticsDependencies);
   function document() {
     const metadata = {
       openapi: "3.1.0",

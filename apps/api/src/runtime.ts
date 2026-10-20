@@ -1,13 +1,14 @@
 import { loadConfig } from "@oliginvest/config";
 import { applicationErrorSchema } from "@oliginvest/contracts";
-import { createLogger, type PlatformLogger } from "@oliginvest/platform";
+import { createLogger, type PlatformLogger, ProblemError } from "@oliginvest/platform";
 import { sql } from "drizzle-orm";
 import { z } from "zod";
 import { createApp } from "./app.js";
 import { requestClientIp } from "./auth/client-ip.js";
 import type { createAuthRuntime } from "./auth/runtime.js";
 import {
-  AnalyticsRepository,
+  type AnalyticsRepository,
+  analyticsModule,
   ImportRepository,
   livePortfolioValuation,
   MarketRepository,
@@ -120,7 +121,11 @@ export function createRuntime(
     analytics: {
       repository: async () => {
         const runtime = await getAuth();
-        analytics ??= new AnalyticsRepository(runtime.appDatabase, () => runtime.analyticsQueue);
+        if (!analyticsModule) throw new ProblemError("NOT_FOUND");
+        analytics ??= new analyticsModule.AnalyticsRepository(
+          runtime.appDatabase,
+          () => runtime.analyticsQueue,
+        );
         return analytics;
       },
       authorize: async (request) => {

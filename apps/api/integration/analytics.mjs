@@ -5,7 +5,7 @@ import { createAnalyticsResults } from "@oliginvest/mod-analytics/jobs";
 import { ProblemError } from "@oliginvest/platform";
 import { sql } from "drizzle-orm";
 import { createApp } from "../dist/app.js";
-import { AnalyticsRepository } from "../dist/modules.js";
+import { analyticsModule } from "../dist/modules.js";
 
 const series = (n, start) => Array.from({ length: n }, (_, i) => start + i);
 /** Synthetic distribution with the shape of the worker result (values are not meaningful). */
@@ -67,7 +67,7 @@ export async function testAnalyticsStorage(settings) {
       cancels.push(runId);
     },
   };
-  const repository = new AnalyticsRepository(
+  const repository = new analyticsModule.AnalyticsRepository(
     database,
     () => queue,
     () => new Date("2026-10-20T10:00:00Z"),

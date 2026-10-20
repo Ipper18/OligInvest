@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, relative, isAbsolute } from "node:path";
+import { isAbsolute, join, relative } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 import { checkCommit, checkFixturePaths, checkPullRequestTitle } from "./check-repository.mjs";
@@ -21,7 +21,22 @@ test("no commit SHA bypasses the commit subject rule", () => {
 test("CLI validates actual commit ranges and independently blocks invalid PR titles", () => {
   const parent = tmpdir();
   const directory = mkdtempSync(join(parent, "oliginvest-commit-test-"));
-  const git = (args) => execFileSync("git", ["-C", directory, "-c", "user.name=CI Test", "-c", "user.email=ci@example.test", "-c", "commit.gpgsign=false", ...args], { encoding: "utf8" }).trim();
+  const git = (args) =>
+    execFileSync(
+      "git",
+      [
+        "-C",
+        directory,
+        "-c",
+        "user.name=CI Test",
+        "-c",
+        "user.email=ci@example.test",
+        "-c",
+        "commit.gpgsign=false",
+        ...args,
+      ],
+      { encoding: "utf8" },
+    ).trim();
   const script = fileURLToPath(new URL("./check-repository.mjs", import.meta.url));
   try {
     git(["init", "--quiet"]);
@@ -42,17 +57,31 @@ test("CLI validates actual commit ranges and independently blocks invalid PR tit
     git(["checkout", "--quiet", "--detach", merged]);
     git(["merge", "--quiet", "--no-ff", "--no-edit", "HEAD@{1}"]);
     const mergedBad = git(["rev-parse", "HEAD"]);
-    for (const [head, title, status] of [[good, "ci: valid PR", 0], [bad, "ci: valid PR", 1], [good, "Invalid PR title", 1], [merged, "ci: valid PR", 0], [mergedBad, "ci: valid PR", 1]]) {
+    for (const [head, title, status] of [
+      [good, "ci: valid PR", 0],
+      [bad, "ci: valid PR", 1],
+      [good, "Invalid PR title", 1],
+      [merged, "ci: valid PR", 0],
+      [mergedBad, "ci: valid PR", 1],
+    ]) {
       const result = spawnSync(process.execPath, [script], {
         cwd: directory,
-        env: { ...process.env, COMMIT_BASE_REF: base, COMMIT_HEAD_REF: head, GITHUB_EVENT_NAME: "pull_request", PR_TITLE: title },
+        env: {
+          ...process.env,
+          COMMIT_BASE_REF: base,
+          COMMIT_HEAD_REF: head,
+          GITHUB_EVENT_NAME: "pull_request",
+          PR_TITLE: title,
+        },
         encoding: "utf8",
       });
       assert.equal(result.status, status, result.stderr);
     }
   } finally {
     const inside = relative(parent, directory);
-    assert.ok(inside.startsWith("oliginvest-commit-test-") && !isAbsolute(inside) && !inside.includes(".."));
+    assert.ok(
+      inside.startsWith("oliginvest-commit-test-") && !isAbsolute(inside) && !inside.includes(".."),
+    );
     rmSync(directory, { recursive: true, force: true });
   }
 });
@@ -65,12 +94,15 @@ test("rejects broker files outside anonymized fixtures regardless of extension c
 });
 
 test("accepts only the complete fixtures/anonymized directory boundary", () => {
-  assert.deepEqual(checkFixturePaths([
-    "modules/portfolio/test/fixtures/anonymized/example.csv",
-    "fixtures/anonymized/example.xlsx",
-    "fixtures/anonymized-backup/statement.csv",
-    "not-fixtures/anonymized/statement.csv",
-  ]), ["fixtures/anonymized-backup/statement.csv", "not-fixtures/anonymized/statement.csv"]);
+  assert.deepEqual(
+    checkFixturePaths([
+      "modules/portfolio/test/fixtures/anonymized/example.csv",
+      "fixtures/anonymized/example.xlsx",
+      "fixtures/anonymized-backup/statement.csv",
+      "not-fixtures/anonymized/statement.csv",
+    ]),
+    ["fixtures/anonymized-backup/statement.csv", "not-fixtures/anonymized/statement.csv"],
+  );
 });
 
 test("normalizes Windows separators before checking a fixture path", () => {
@@ -82,34 +114,65 @@ test("does not mistake a source filename containing csv for financial data", () 
 });
 
 test("accepts Conventional Commit titles, including scoped breaking changes", () => {
-  for (const title of ["docs(plan): record bootstrap readiness", "docs(ui,data): document shared contracts", "feat(api)!: change contract", "ci: add checks"]) {
+  for (const title of [
+    "docs(plan): record bootstrap readiness",
+    "docs(ui,data): document shared contracts",
+    "feat(api)!: change contract",
+    "ci: add checks",
+  ]) {
     assert.equal(checkPullRequestTitle(title), true);
   }
 });
 
 test("rejects missing descriptions, unknown types, and multiline PR titles", () => {
-  for (const title of ["", "Fix code", "unknown: add code", "feat: ", "feat: add code\nrun commands", "feat: add code\n"]) {
+  for (const title of [
+    "",
+    "Fix code",
+    "unknown: add code",
+    "feat: ",
+    "feat: add code\nrun commands",
+    "feat: add code\n",
+  ]) {
     assert.equal(checkPullRequestTitle(title), false);
   }
 });
 
 test("style and revert are valid types without bypassing subject validation", () => {
-  for (const title of ["style(db): format MFA migration metadata", "revert(auth): restore session handling", "style: format files", "revert!: restore the previous contract"]) {
+  for (const title of [
+    "style(db): format MFA migration metadata",
+    "revert(auth): restore session handling",
+    "style: format files",
+    "revert!: restore the previous contract",
+  ]) {
     assert.equal(checkPullRequestTitle(title), true);
     assert.equal(checkCommit("a".repeat(40), title), true);
   }
-  for (const title of ["style:", "revert: ", "style: format\nextra", "revert: restore\rmalformed", "styles: format", 'Revert "previous commit"']) {
+  for (const title of [
+    "style:",
+    "revert: ",
+    "style: format\nextra",
+    "revert: restore\rmalformed",
+    "styles: format",
+    'Revert "previous commit"',
+  ]) {
     assert.equal(checkPullRequestTitle(title), false);
     assert.equal(checkCommit("a".repeat(40), title), false);
   }
 });
 
 test("push events do not need a PR title, while PR events reject an empty title", () => {
-  for (const [event, expectedStatus] of [["push", 0], ["pull_request", 1]]) {
-    const result = spawnSync(process.execPath, [fileURLToPath(new URL("./check-repository.mjs", import.meta.url))], {
-      env: { ...process.env, GITHUB_EVENT_NAME: event, PR_TITLE: "" },
-      encoding: "utf8",
-    });
+  for (const [event, expectedStatus] of [
+    ["push", 0],
+    ["pull_request", 1],
+  ]) {
+    const result = spawnSync(
+      process.execPath,
+      [fileURLToPath(new URL("./check-repository.mjs", import.meta.url))],
+      {
+        env: { ...process.env, GITHUB_EVENT_NAME: event, PR_TITLE: "" },
+        encoding: "utf8",
+      },
+    );
     assert.equal(result.status, expectedStatus, result.stderr);
   }
 });

@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { readFileSync, existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { posix, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -9,7 +9,8 @@ const MATRIX = "docs/00-przeglad/macierz-pokrycia.md";
 
 export function expandIds(text) {
   const ids = new Set();
-  const pattern = /\b(N?FR-\d{2}\.|BL-)(\d{2,3})\b(?:\s*[–—-]\s*(?:(N?FR-\d{2}\.|BL-))?(\d{2,3})\b)?/g;
+  const pattern =
+    /\b(N?FR-\d{2}\.|BL-)(\d{2,3})\b(?:\s*[–—-]\s*(?:(N?FR-\d{2}\.|BL-))?(\d{2,3})\b)?/g;
   for (const [, prefix, first, endPrefix, last] of text.matchAll(pattern)) {
     if (last && endPrefix && endPrefix !== prefix) {
       throw new Error(`Zakres między różnymi grupami: ${prefix}${first}–${endPrefix}${last}`);
@@ -27,16 +28,23 @@ export function expandIds(text) {
 
 function withoutFences(text) {
   let fence;
-  return text.split(/\r?\n/).map((line) => {
-    const marker = /^ {0,3}(`{3,}|~{3,})/.exec(line)?.[1];
-    if (marker && !fence) { fence = marker; return ""; }
-    if (fence) {
-      if (marker?.[0] === fence[0] && marker.length >= fence.length
-        && line.trim() === marker) fence = undefined;
-      return "";
-    }
-    return line;
-  }).join("\n").replace(/<!--[\s\S]*?-->/g, "");
+  return text
+    .split(/\r?\n/)
+    .map((line) => {
+      const marker = /^ {0,3}(`{3,}|~{3,})/.exec(line)?.[1];
+      if (marker && !fence) {
+        fence = marker;
+        return "";
+      }
+      if (fence) {
+        if (marker?.[0] === fence[0] && marker.length >= fence.length && line.trim() === marker)
+          fence = undefined;
+        return "";
+      }
+      return line;
+    })
+    .join("\n")
+    .replace(/<!--[\s\S]*?-->/g, "");
 }
 
 // Split Markdown table cells without treating pipes in code spans as separators.
@@ -95,9 +103,15 @@ function linkTargets(text) {
     let depth = 0;
     for (; i < text.length; i++) {
       const ch = text[i];
-      if (ch === "\\" && i + 1 < text.length) { target += text[++i]; continue; }
-      if (ch === "(" ) depth++;
-      if (ch === ")") { if (!depth) break; depth--; }
+      if (ch === "\\" && i + 1 < text.length) {
+        target += text[++i];
+        continue;
+      }
+      if (ch === "(") depth++;
+      if (ch === ")") {
+        if (!depth) break;
+        depth--;
+      }
       if (/\s/.test(ch) && !depth) break;
       target += ch;
     }
@@ -115,10 +129,13 @@ export function checkDocumentation(documents, files) {
       errors.push(`${path}: dokument musi zaczynać się niepustym zdaniem Cel:`);
     }
     for (const target of linkTargets(text)) {
-      if (!target || target.startsWith("#") || /^(?:[a-z][a-z\d+.-]*:|\/\/)/i.test(target)) continue;
+      if (!target || target.startsWith("#") || /^(?:[a-z][a-z\d+.-]*:|\/\/)/i.test(target))
+        continue;
       try {
         const destination = decodeURIComponent(target.split(/[?#]/)[0]);
-        const resolved = posix.normalize(posix.join(posix.dirname(path), destination)).replace(/\/$/, "");
+        const resolved = posix
+          .normalize(posix.join(posix.dirname(path), destination))
+          .replace(/\/$/, "");
         if (destination.startsWith("/") || resolved.startsWith("../") || !files.has(resolved)) {
           errors.push(`${path}: niedziałający lokalny link ${target}`);
         }
@@ -131,19 +148,33 @@ export function checkDocumentation(documents, files) {
     if (!documents.has(path)) errors.push(`Brak dokumentu źródłowego: ${path}`);
   }
   if ([REQUIREMENTS, BACKLOG, MATRIX].some((path) => !documents.has(path))) return errors;
-  const requirements = rows(documents.get(REQUIREMENTS), /^N?FR-\d{2}\.\d{2}$/, REQUIREMENTS, errors);
+  const requirements = rows(
+    documents.get(REQUIREMENTS),
+    /^N?FR-\d{2}\.\d{2}$/,
+    REQUIREMENTS,
+    errors,
+  );
   const tasks = rows(documents.get(BACKLOG), /^BL-\d{3}$/, BACKLOG, errors);
   const matrix = rows(documents.get(MATRIX), /^N?FR-\d{2}\.\d{2}$/, MATRIX, errors);
   const expected = new Map([...requirements.keys()].map((id) => [id, new Set()]));
-  const matrixTaskIds = expandIds(withoutFences(documents.get(MATRIX)).split("\n")
-    .filter((line) => line.trim().startsWith("|")).join("\n"));
+  const matrixTaskIds = expandIds(
+    withoutFences(documents.get(MATRIX))
+      .split("\n")
+      .filter((line) => line.trim().startsWith("|"))
+      .join("\n"),
+  );
   for (const id of matrixTaskIds) {
-    if (id.startsWith("BL-") && !tasks.has(id)) errors.push(`${MATRIX}: nieznane zadanie ${id} w tabelach`);
+    if (id.startsWith("BL-") && !tasks.has(id))
+      errors.push(`${MATRIX}: nieznane zadanie ${id} w tabelach`);
   }
   for (const [task, row] of tasks) {
-    if (row.length !== 7) { errors.push(`${BACKLOG}: ${task} wymaga 7 kolumn`); continue; }
+    if (row.length !== 7) {
+      errors.push(`${BACKLOG}: ${task} wymaga 7 kolumn`);
+      continue;
+    }
     const ids = expandIds(row[2]);
-    if (!ids.size && row[2] !== "—") errors.push(`${BACKLOG}: ${task} nie wskazuje FR/NFR ani jawnego braku przypisania (—)`);
+    if (!ids.size && row[2] !== "—")
+      errors.push(`${BACKLOG}: ${task} nie wskazuje FR/NFR ani jawnego braku przypisania (—)`);
     if (!matrixTaskIds.has(task)) errors.push(`${MATRIX}: brak zadania ${task} w tabelach`);
     for (const id of ids) {
       if (!requirements.has(id)) errors.push(`${BACKLOG}: ${task}, nieznane wymaganie ${id}`);
@@ -153,12 +184,16 @@ export function checkDocumentation(documents, files) {
   const actual = new Map();
   for (const [id, row] of matrix) {
     if (!requirements.has(id)) errors.push(`${MATRIX}: nieznane wymaganie ${id}`);
-    if (row.length !== 7) { errors.push(`${MATRIX}: ${id} wymaga 7 kolumn`); continue; }
+    if (row.length !== 7) {
+      errors.push(`${MATRIX}: ${id} wymaga 7 kolumn`);
+      continue;
+    }
     const ids = expandIds(row[4]);
     actual.set(id, ids);
     for (const task of ids) {
       if (!tasks.has(task)) errors.push(`${MATRIX}: ${id}, nieznane zadanie ${task}`);
-      else if (!expected.get(id)?.has(task)) errors.push(`${MATRIX}: ${id} nie jest przypisane do ${task} w backlogu`);
+      else if (!expected.get(id)?.has(task))
+        errors.push(`${MATRIX}: ${id} nie jest przypisane do ${task} w backlogu`);
     }
   }
   for (const [id, expectedTasks] of expected) {
@@ -172,17 +207,29 @@ export function checkDocumentation(documents, files) {
 }
 
 function main() {
-  const paths = execFileSync("git", ["ls-files", "--cached", "--others", "--exclude-standard", "-z"], {
-    encoding: "utf8",
-  }).split("\0").filter((path) => path && existsSync(path));
+  const paths = execFileSync(
+    "git",
+    ["ls-files", "--cached", "--others", "--exclude-standard", "-z"],
+    {
+      encoding: "utf8",
+    },
+  )
+    .split("\0")
+    .filter((path) => path && existsSync(path));
   const files = new Set(paths);
   // Links to directories are valid too. Untracked, nonignored new documents are checked.
   for (const path of paths) {
     let parent = posix.dirname(path);
-    while (parent !== ".") { files.add(parent); parent = posix.dirname(parent); }
+    while (parent !== ".") {
+      files.add(parent);
+      parent = posix.dirname(parent);
+    }
   }
-  const docs = paths.filter((path) => path.endsWith(".md")
-    && (path.startsWith("docs/") || !path.includes("/") || /^\.github\/.*README\.md$/.test(path)));
+  const docs = paths.filter(
+    (path) =>
+      path.endsWith(".md") &&
+      (path.startsWith("docs/") || !path.includes("/") || /^\.github\/.*README\.md$/.test(path)),
+  );
   const documents = new Map(docs.map((path) => [path, readFileSync(path, "utf8")]));
   const errors = checkDocumentation(documents, files);
   if (errors.length) {

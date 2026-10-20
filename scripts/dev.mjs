@@ -6,6 +6,7 @@ import { isIP } from "node:net";
 import { resolve } from "node:path";
 import { parseEnv } from "node:util";
 import { prepareDevelopment } from "../packages/db/scripts/prepare-development.mjs";
+import { childEnvironment } from "./dev-environment.mjs";
 import {
   applicationEnvironment,
   compose,
@@ -13,7 +14,6 @@ import {
   repository,
   run,
 } from "./dev-services.mjs";
-import { childEnvironment } from "./dev-environment.mjs";
 import { testMailpit } from "./test-mailpit.mjs";
 
 const checking = process.argv[2] === "--check";
@@ -21,7 +21,6 @@ if (process.argv.length > (checking ? 3 : 2)) throw new Error("Unexpected argume
 const children = [];
 let stopping = false;
 let dev;
-
 
 function start(command, args, env, service) {
   const child = spawn(command, args, {

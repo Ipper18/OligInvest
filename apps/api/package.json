@@ -30,11 +30,13 @@
     "bullmq": "6.3.6",
     "@oliginvest/contracts": "workspace:*",
     "@oliginvest/mod-market": "workspace:*",
-    "@oliginvest/mod-portfolio": "workspace:*",
-    "@oliginvest/mod-analytics": "workspace:*"
+    "@oliginvest/mod-portfolio": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "24.13.5",
     "@types/pg": "8.23.1"
+  },
+  "optionalDependencies": {
+    "@oliginvest/mod-analytics": "workspace:*"
   }
 }

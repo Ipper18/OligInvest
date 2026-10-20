@@ -218,9 +218,6 @@ importers:
       '@oliginvest/db':
         specifier: workspace:*
         version: link:../../packages/db
-      '@oliginvest/mod-analytics':
-        specifier: workspace:*
-        version: link:../../modules/analytics
       '@oliginvest/mod-identity':
         specifier: workspace:*
         version: link:../../modules/identity
@@ -261,6 +258,10 @@ importers:
       '@types/pg':
         specifier: 8.23.1
         version: 8.23.1
+    optionalDependencies:
+      '@oliginvest/mod-analytics':
+        specifier: workspace:*
+        version: link:../../modules/analytics
 
   apps/jobs:
     dependencies:
@@ -279,9 +280,6 @@ importers:
       '@oliginvest/i18n':
         specifier: workspace:*
         version: link:../../packages/i18n
-      '@oliginvest/mod-analytics':
-        specifier: workspace:*
-        version: link:../../modules/analytics
       '@oliginvest/mod-market':
         specifier: workspace:*
         version: link:../../modules/market
@@ -313,6 +311,10 @@ importers:
       '@types/nodemailer':
         specifier: 8.0.2
         version: 8.0.2
+    optionalDependencies:
+      '@oliginvest/mod-analytics':
+        specifier: workspace:*
+        version: link:../../modules/analytics
 
   apps/web:
     dependencies:

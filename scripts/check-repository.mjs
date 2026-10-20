@@ -9,14 +9,17 @@ export function checkCommit(sha, subject) {
 export function checkFixturePaths(paths) {
   return paths.filter((path) => {
     const normalized = path.replaceAll("\\", "/");
-    return /\.(xlsx|csv)$/i.test(normalized)
-      && !/(^|\/)fixtures\/anonymized\//.test(normalized);
+    return /\.(xlsx|csv)$/i.test(normalized) && !/(^|\/)fixtures\/anonymized\//.test(normalized);
   });
 }
 
 export function checkPullRequestTitle(title) {
-  return !/[\r\n]/.test(title)
-    && /^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([a-z0-9,-]+\))?!?: [^\s\r\n][^\r\n]*$/.test(title);
+  return (
+    !/[\r\n]/.test(title) &&
+    /^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([a-z0-9,-]+\))?!?: [^\s\r\n][^\r\n]*$/.test(
+      title,
+    )
+  );
 }
 
 function main() {
@@ -27,7 +30,14 @@ function main() {
     if (![base, head].every((value) => /^[a-f0-9]{40}$/.test(value ?? ""))) {
       throw new Error("Commit range must use full Git SHAs");
     }
-    const commits = execFileSync("git", ["log", "--no-merges", "--format=%H%x00%s", `${base}..${head}`], { encoding: "utf8" }).trimEnd().split("\n").filter(Boolean);
+    const commits = execFileSync(
+      "git",
+      ["log", "--no-merges", "--format=%H%x00%s", `${base}..${head}`],
+      { encoding: "utf8" },
+    )
+      .trimEnd()
+      .split("\n")
+      .filter(Boolean);
     invalidCommits = commits.some((entry) => {
       const separator = entry.indexOf("\0");
       return separator < 0 || !checkCommit(entry.slice(0, separator), entry.slice(separator + 1));
@@ -36,15 +46,16 @@ function main() {
   }
   const paths = execFileSync("git", ["ls-files", "--cached", "-z"], {
     encoding: "utf8",
-  }).split("\0").filter(Boolean);
+  })
+    .split("\0")
+    .filter(Boolean);
   const invalidPaths = checkFixturePaths(paths);
   for (const path of invalidPaths) {
     console.error(`Niedozwolona lokalizacja pliku danych: ${JSON.stringify(path)}`);
   }
   const titleRequired = process.env.GITHUB_EVENT_NAME === "pull_request";
   const title = process.env.PR_TITLE;
-  const invalidTitle = (titleRequired || Boolean(title))
-    && !checkPullRequestTitle(title ?? "");
+  const invalidTitle = (titleRequired || Boolean(title)) && !checkPullRequestTitle(title ?? "");
   if (invalidTitle) {
     // Do not echo untrusted PR text or interpolate it into shell commands.
     console.error("Tytuł PR musi być zgodny z Conventional Commits.");

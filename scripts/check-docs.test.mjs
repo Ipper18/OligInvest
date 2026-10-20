@@ -5,10 +5,24 @@ import { checkDocumentation, expandIds } from "./check-docs.mjs";
 const purpose = "# Dokument\n\n**Cel:** sprawdzić dokumentację.\n\n";
 function fixture() {
   return new Map([
-    ["docs/00-przeglad/wymagania.md", purpose + "| FR-01.01 | Wymaganie |\n| NFR-01.01 | Wymaganie |"],
-    ["docs/08-plan/backlog.md", purpose + "| BL-001 | Zadanie `a|b` | FR-01.01, NFR-01.01 | DOC | — | 1 | todo |"],
-    ["docs/00-przeglad/macierz-pokrycia.md", purpose + "| FR-01.01 | Opis | P0 | DOC | BL-001 | M0 | ✅ |\n| NFR-01.01 | Opis | P0 | DOC | BL-001 | M0 | ✅ |"],
-    ["docs/example.md", purpose + "[wymagania](00-przeglad/wymagania.md#sekcja)\n[plik][ref]\n\n[ref]: <../some%20file.json> \"Tytuł\"\n[www](https://example.org/path)\n```md\n[przykład](missing.md)\n```"],
+    [
+      "docs/00-przeglad/wymagania.md",
+      purpose + "| FR-01.01 | Wymaganie |\n| NFR-01.01 | Wymaganie |",
+    ],
+    [
+      "docs/08-plan/backlog.md",
+      purpose + "| BL-001 | Zadanie `a|b` | FR-01.01, NFR-01.01 | DOC | — | 1 | todo |",
+    ],
+    [
+      "docs/00-przeglad/macierz-pokrycia.md",
+      purpose +
+        "| FR-01.01 | Opis | P0 | DOC | BL-001 | M0 | ✅ |\n| NFR-01.01 | Opis | P0 | DOC | BL-001 | M0 | ✅ |",
+    ],
+    [
+      "docs/example.md",
+      purpose +
+        '[wymagania](00-przeglad/wymagania.md#sekcja)\n[plik][ref]\n\n[ref]: <../some%20file.json> "Tytuł"\n[www](https://example.org/path)\n```md\n[przykład](missing.md)\n```',
+    ],
   ]);
 }
 function check(docs) {
@@ -19,18 +33,38 @@ test("accepts complete coverage, code-span pipes, links, references and fenced e
   assert.deepEqual(check(fixture()), []);
 });
 test("expands full requirement ranges and abbreviated task ranges", () => {
-  assert.deepEqual([...expandIds("FR-01.01–FR-01.03 NFR-02.01 BL-001–003 BL-010–BL-011")],
-    ["FR-01.01", "FR-01.02", "FR-01.03", "NFR-02.01", "BL-001", "BL-002", "BL-003", "BL-010", "BL-011"]);
+  assert.deepEqual(
+    [...expandIds("FR-01.01–FR-01.03 NFR-02.01 BL-001–003 BL-010–BL-011")],
+    [
+      "FR-01.01",
+      "FR-01.02",
+      "FR-01.03",
+      "NFR-02.01",
+      "BL-001",
+      "BL-002",
+      "BL-003",
+      "BL-010",
+      "BL-011",
+    ],
+  );
 });
 test("requires a nonempty purpose at the beginning, not a later heading", () => {
-  for (const content of ["# Tytuł\n\nTreść\n\n**Cel:** za późno.", "# Tytuł\n\n**Cel:**\n\nTreść"]) {
+  for (const content of [
+    "# Tytuł\n\nTreść\n\n**Cel:** za późno.",
+    "# Tytuł\n\n**Cel:**\n\nTreść",
+  ]) {
     const docs = fixture();
     docs.set("docs/example.md", content);
     assert.ok(check(docs).some((error) => error.includes("Cel:")));
   }
 });
 test("rejects broken inline, image and reference links and paths escaping the repository", () => {
-  for (const link of ["[x](missing.md)", "![x](missing.png)", "[x][ref]\n\n[ref]: missing.md", "[x](../../outside.md)"]) {
+  for (const link of [
+    "[x](missing.md)",
+    "![x](missing.png)",
+    "[x][ref]\n\n[ref]: missing.md",
+    "[x](../../outside.md)",
+  ]) {
     const docs = fixture();
     docs.set("docs/example.md", purpose + link);
     assert.ok(check(docs).some((error) => error.includes("link")));
@@ -39,7 +73,10 @@ test("rejects broken inline, image and reference links and paths escaping the re
 test("validates paths containing parentheses and encoded spaces", () => {
   const docs = fixture();
   docs.set("docs/example.md", purpose + "[plik](<../some%20file.json>)\n[opis](folder/a(b).md)");
-  assert.deepEqual(checkDocumentation(docs, new Set([...docs.keys(), "some file.json", "docs/folder/a(b).md"])), []);
+  assert.deepEqual(
+    checkDocumentation(docs, new Set([...docs.keys(), "some file.json", "docs/folder/a(b).md"])),
+    [],
+  );
 });
 test("accepts directory links with trailing slash and explicitly unmapped proposal tasks", () => {
   const docs = fixture();
