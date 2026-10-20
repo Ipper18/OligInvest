@@ -12,7 +12,9 @@ import { mountPreferences } from "./auth/preferences-routes.js";
 import { type AuthRouteDependencies, createAuthRouter, mountStepUp } from "./auth/routes.js";
 import { SESSION_COOKIE } from "./auth/session.js";
 import {
+  type AnalyticsDependencies,
   type MarketDependencies,
+  mountAnalytics,
   mountMarket,
   mountPortfolio,
   type PortfolioDependencies,
@@ -44,6 +46,7 @@ export function createApp(
     auth?: AuthRouteDependencies & Partial<Pick<IdentityDependencies, "administration">>;
     market?: MarketDependencies;
     portfolio?: PortfolioDependencies;
+    analytics?: AnalyticsDependencies;
     stream?: StreamDependencies;
     recordError?: (input: unknown) => Promise<void>;
   }>,
@@ -246,6 +249,19 @@ export function createApp(
     options.portfolio ?? {
       authorize: async (request, stepUp) => {
         const principal = await (await authDependencies.service()).requireData(request, stepUp);
+        return { userId: principal.user_id, role: principal.role };
+      },
+      assertOrigin: async (request) => (await authDependencies.service()).assertOrigin(request),
+      repository: () => {
+        throw new ProblemError("SERVICE_UNAVAILABLE");
+      },
+    },
+  );
+  mountAnalytics(
+    api,
+    options.analytics ?? {
+      authorize: async (request) => {
+        const principal = await (await authDependencies.service()).requireData(request);
         return { userId: principal.user_id, role: principal.role };
       },
       assertOrigin: async (request) => (await authDependencies.service()).assertOrigin(request),

@@ -1,4 +1,9 @@
 export {
+  type AnalyticsDependencies,
+  AnalyticsRepository,
+  mountAnalytics,
+} from "@oliginvest/mod-analytics/server";
+export {
   authAccounts,
   authApiKeys,
   authRateLimits,

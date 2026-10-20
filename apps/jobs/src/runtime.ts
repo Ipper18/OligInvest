@@ -75,6 +75,7 @@ export async function startJobs(
   let mailer: ReturnType<typeof createAuthMailer> | undefined;
   let mailWorker: Worker | undefined;
   let marketWorker: { close(): Promise<void> } | undefined;
+  let analyticsWorker: { close(): Promise<void> } | undefined;
   let portfolioWorker:
     | {
         close(): Promise<void>;
@@ -111,6 +112,7 @@ export async function startJobs(
       await mailWorker?.close();
       await portfolioWorker?.close();
       await marketWorker?.close();
+      await analyticsWorker?.close();
       await monitoring?.close();
       mailer?.close();
       await flagRuntime.close();
@@ -152,6 +154,14 @@ export async function startJobs(
       database: flagRuntime.database,
       cache: flagRuntime.cache,
       queues,
+      connection: runtime.connection,
+      logger,
+      observe,
+    });
+    const { startAnalyticsWorker } = await import("./analytics-runtime.js");
+    analyticsWorker = await startAnalyticsWorker({
+      database: flagRuntime.database,
+      cache: flagRuntime.cache,
       connection: runtime.connection,
       logger,
       observe,

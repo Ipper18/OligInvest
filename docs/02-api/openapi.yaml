@@ -6116,7 +6116,7 @@ components:
           type: object
           required: [code, message]
           properties:
-            code: {type: string, enum: [TIMEOUT, MEMORY_LIMIT, INSUFFICIENT_DATA, COVERAGE_TOO_LOW, INVALID_PARAMS, INTERNAL]}
+            code: {type: string, enum: [TIMEOUT, MEMORY_LIMIT, INSUFFICIENT_DATA, COVERAGE_TOO_LOW, INVALID_PARAMS, INTERNAL, DATA_QUALITY_HOLD], description: '`DATA_QUALITY_HOLD` — otwarte zgłoszenie BLOCK na serii wejściowej (obliczenia-finansowe.md § 14).'}
             message: {type: string}
         createdAt: {$ref: '#/components/schemas/Timestamp'}
         startedAt: {$ref: '#/components/schemas/Timestamp'}

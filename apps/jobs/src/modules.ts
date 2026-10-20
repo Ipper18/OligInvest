@@ -1,3 +1,4 @@
+export { createAnalyticsResults } from "@oliginvest/mod-analytics/jobs";
 export { createMarketJobs, marketSchedules } from "@oliginvest/mod-market/jobs";
 export { parseImport, portfolioDate, recomputePortfolio } from "@oliginvest/mod-portfolio/jobs";
 export {

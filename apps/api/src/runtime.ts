@@ -7,6 +7,7 @@ import { createApp } from "./app.js";
 import { requestClientIp } from "./auth/client-ip.js";
 import type { createAuthRuntime } from "./auth/runtime.js";
 import {
+  AnalyticsRepository,
   ImportRepository,
   livePortfolioValuation,
   MarketRepository,
@@ -61,6 +62,7 @@ export function createRuntime(
   };
   let market: MarketRepository | undefined;
   let portfolio: PortfolioRepository | undefined;
+  let analytics: AnalyticsRepository | undefined;
   let stream: StreamStore | undefined;
   const app = createApp({
     recordError: async (input) => {
@@ -111,6 +113,18 @@ export function createRuntime(
       },
       authorize: async (request, stepUp) => {
         const principal = await (await getAuth()).service.requireData(request, stepUp);
+        return { userId: principal.user_id, role: principal.role };
+      },
+      assertOrigin: async (request) => (await getAuth()).service.assertOrigin(request),
+    },
+    analytics: {
+      repository: async () => {
+        const runtime = await getAuth();
+        analytics ??= new AnalyticsRepository(runtime.appDatabase, () => runtime.analyticsQueue);
+        return analytics;
+      },
+      authorize: async (request) => {
+        const principal = await (await getAuth()).service.requireData(request);
         return { userId: principal.user_id, role: principal.role };
       },
       assertOrigin: async (request) => (await getAuth()).service.assertOrigin(request),

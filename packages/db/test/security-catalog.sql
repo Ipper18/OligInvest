@@ -61,10 +61,11 @@ BEGIN
   END LOOP;
   FOR function_row IN
     SELECT p.* FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
-    WHERE n.nspname = 'identity' AND p.prosecdef
+    WHERE n.nspname IN ('identity', 'analytics') AND p.prosecdef
   LOOP
     IF function_row.proowner <> 'oliginvest_owner'::regrole
-      OR NOT ('search_path=pg_catalog, identity' = ANY(coalesce(function_row.proconfig, ARRAY[]::text[])))
+      OR NOT (('search_path=pg_catalog, ' || function_row.pronamespace::regnamespace::text)
+              = ANY(coalesce(function_row.proconfig, ARRAY[]::text[])))
       OR EXISTS (SELECT 1 FROM aclexplode(coalesce(function_row.proacl, acldefault('f', function_row.proowner))) a
                  WHERE a.grantee = 0 AND a.privilege_type = 'EXECUTE')
     THEN RAISE EXCEPTION 'Unsafe SECURITY DEFINER function: %', function_row.proname; END IF;

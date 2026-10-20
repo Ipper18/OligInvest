@@ -49,6 +49,8 @@ CREATE POLICY admin_all ON identity.invitations FOR ALL TO oliginvest_app
 -- Funkcje SECURITY DEFINER działają jako właściciel; przy FORCE RLS właściciel bez polityki nie widzi wierszy.
 -- Rola oliginvest_owner jest używana wyłącznie przez migracje i te funkcje (zasada dla każdej nowej funkcji DEFINER).
 CREATE POLICY definer_functions ON identity.invitations FOR ALL TO oliginvest_owner USING (true) WITH CHECK (true);
+-- analytics.run_owner (BL-312): właściciel czyta wyłącznie user_id uruchomienia, bez zapisu.
+CREATE POLICY definer_functions ON analytics.analytics_runs FOR SELECT TO oliginvest_owner USING (true);
 
 -- 12.4 Audyt: dopisywanie przez każdego, odczyt — admin lub własne wpisy; brak UPDATE/DELETE (brak uprawnień).
 ALTER TABLE platform.audit_log ENABLE ROW LEVEL SECURITY;
