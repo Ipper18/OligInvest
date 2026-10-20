@@ -218,6 +218,22 @@ Pełna lista zakazanych zwrotów i ich test w CI: [`../11-zgodnosc-prawna.md`](.
 
 ## 10. Gdzie to żyje w kodzie
 
+### M2 — rynek i waluty
+
+Ekran rynku przedstawia indeksy i zamienniki ETF bez rankingu. Etykiety:
+„Rynek”, „Indeksy i benchmarki”, „Indeks”, „Zamiennik ETF”, „Historia od”,
+„Stan dostawców”, „Źródło danych”, „Ostatni udany odczyt”, „Brak notowania”,
+„Dane dostępne”, „Dane ograniczone”, „Dostawca niedostępny”, „Źródło wyłączone”.
+Nawigacja sekcji: „Instrumenty”, „Watchlisty”, „Kursy walut”.
+
+Ekran walut: „Kursy walut”, „Historia kursów względem PLN”, „Waluta”, „Od”, „Do”,
+„Pokaż”, „Data”, „Kurs”, „Tabela NBP”. Gdy odpowiedź pochodzi z ECB, interfejs
+podaje „Kurs zapasowy EBC (Frankfurter)”; nie przypisuje go do tabeli NBP.
+Puste odpowiedzi: „Brak danych dla wybranego okresu”.
+
+Oznaczenie blokady jakości: „BLOCK — dane wyłączone z analiz”.
+Notowanie pozostaje widoczne wraz z przyczyną `data_quality_hold`, źródłem i czasem.
+
 - Teksty z tego dokumentu trafiają do `packages/i18n/src/pl/<obszar>.json`; komponenty nie zawierają literałów (lint sprawdza to w BL-012).
 - Disclaimery mają osobne, wersjonowane źródło ([`../11-zgodnosc-prawna.md`](../11-zgodnosc-prawna.md) § 4.3 → `packages/i18n/src/pl/disclaimers.json`) i własny test zgodności — nie powtarzamy ich tutaj.
 - Zmiana tekstu w aplikacji zaczyna się od zmiany w tym dokumencie (zasada „dokumentacja przed kodem”, [`../../CONTRIBUTING.md`](../../CONTRIBUTING.md) § 1).
