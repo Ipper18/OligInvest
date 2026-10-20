@@ -233,6 +233,9 @@ Puste odpowiedzi: „Brak danych dla wybranego okresu”.
 
 Oznaczenie blokady jakości: „BLOCK — dane wyłączone z analiz”.
 Notowanie pozostaje widoczne wraz z przyczyną `data_quality_hold`, źródłem i czasem.
+Ostrzeżenie: „WARN — ostrzeżenie o jakości danych”. Źródłem jest `DataMeta.qualityStatus`
+(zmiana zatwierdzona przez właściciela 2026-10-20); BLOCK ma pierwszeństwo przed WARN.
+Stan dostawcy nie jest podstawą do wyznaczania jakości instrumentu.
 
 - Teksty z tego dokumentu trafiają do `packages/i18n/src/pl/<obszar>.json`; komponenty nie zawierają literałów (lint sprawdza to w BL-012).
 - Disclaimery mają osobne, wersjonowane źródło ([`../11-zgodnosc-prawna.md`](../11-zgodnosc-prawna.md) § 4.3 → `packages/i18n/src/pl/disclaimers.json`) i własny test zgodności — nie powtarzamy ich tutaj.

@@ -99,6 +99,19 @@ export const chartSchema = object({
     .optional(),
   meta: metaSchema,
 }).openapi("OhlcvSeries");
+export const indicatorSeriesSchema = object({
+  instrumentId: z.uuid(),
+  interval: chartSchema.shape.interval,
+  t: z.array(z.number().int()),
+  indicators: z.array(
+    object({
+      spec: z.string(),
+      kind: z.enum(["overlay", "panel"]),
+      outputs: z.record(z.string(), z.array(z.number().nullable())),
+    }),
+  ),
+  meta: metaSchema,
+}).openapi("IndicatorSeries");
 export const statusSchema = object({
   asOf: z.string().datetime(),
   categories: z.array(

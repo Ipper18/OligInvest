@@ -14,7 +14,9 @@ export function useResource<K extends ReadKey>(
   const query = useQuery<Resource<K>, Error>({
     queryKey: [
       userId,
-      key === "instrument" || key === "chart" || key === "search" ? "market" : "portfolio",
+      ["instrument", "chart", "search", "benchmarks", "quotes", "marketStatus", "fx"].includes(key)
+        ? "market"
+        : "portfolio",
       key,
       args,
     ],

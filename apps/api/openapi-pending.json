@@ -72,7 +72,6 @@
   "getDeletionRequest",
   "getDemoPortfolio",
   "getDrawdown",
-  "getInstrumentIndicators",
   "getJournalEntry",
   "getMacroSeries",
   "getMarketCalendar",

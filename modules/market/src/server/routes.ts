@@ -7,6 +7,7 @@ import {
   benchmarkSchema,
   chartSchema,
   fxResponseSchema,
+  indicatorSeriesSchema,
   instrumentResponseSchema,
   instrumentType,
   object,
@@ -14,6 +15,7 @@ import {
   statusSchema,
   summarySchema,
 } from "../contracts.js";
+import { INDICATOR_PATTERN, indicatorSpec } from "../indicator-spec.js";
 import type { MarketRepository } from "./repository.js";
 
 export interface MarketDependencies {
@@ -95,6 +97,48 @@ export function mountMarket(api: OpenAPIHono<AppEnv>, dependencies: MarketDepend
     if (!result.success) throw new ProblemError("VALIDATION_FAILED");
     return undefined;
   };
+  api.openapi(
+    createRoute({
+      method: "get",
+      path: "/market/instruments/{instrumentId}/indicators",
+      operationId: "getInstrumentIndicators",
+      tags: ["market"],
+      security,
+      request: {
+        params,
+        query: chartQuery
+          .omit({ adjusted: true })
+          .extend({
+            spec: z
+              .array(z.string().regex(INDICATOR_PATTERN))
+              .min(1)
+              .max(8)
+              .openapi({ param: { style: "form", explode: true } }),
+          })
+          .strict(),
+      },
+      responses: {
+        200: json(indicatorSeriesSchema),
+        401: marketError,
+        404: marketError,
+        422: marketError,
+      },
+    }),
+    async (context) => {
+      const query = context.req.valid("query");
+      if (!query.spec.every((spec) => indicatorSpec.safeParse(spec).success))
+        throw new ProblemError("PARAMETERS_OUT_OF_BOUNDS");
+      return context.json(
+        await (await dependencies.repository()).indicators(
+          await dependencies.authorize(context.req.raw),
+          context.req.valid("param").instrumentId,
+          query,
+        ),
+        200,
+      );
+    },
+    hook,
+  );
   api.openapi(
     createRoute({
       method: "get",

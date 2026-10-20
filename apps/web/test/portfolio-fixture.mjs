@@ -1,5 +1,6 @@
 // Synthetic HTTP boundary data for rendering, accessibility and performance only.
 import { randomUUID } from "node:crypto";
+import { marketFixture } from "./market-fixture.mjs";
 export const instrumentId = "01900000-0000-7000-8000-000000000101";
 export const accountId = "01900000-0000-7000-8000-000000000102";
 export const transactionId = "01900000-0000-7000-8000-000000000103";
@@ -53,6 +54,7 @@ export async function portfolioFixture(request, response, key) {
       },
       401,
     );
+  if (marketFixture(path, url, send, instrumentId, instant)) return true;
   if (!users.has(key))
     users.set(key, {
       accounts: [

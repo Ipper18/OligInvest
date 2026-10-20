@@ -5,9 +5,12 @@ import * as z from "zod";
 import { problemSchema } from "../api/validation";
 import {
   accountSchema,
+  apiQuoteSchema,
+  benchmarkSchema,
   cashBalanceSchema,
   chartSchema,
   dayChangeResponse,
+  fxResponseSchema,
   importBatchPage,
   importBatchSchema,
   importRowPage,
@@ -17,11 +20,22 @@ import {
   portfolioSummary,
   positionsResponse,
   realizedResponse,
+  statusSchema,
   transactionPage,
   transactionSchema,
 } from "../modules";
 
 export const readSpecs = {
+  benchmarks: {
+    path: "/market/benchmarks",
+    output: z.object({ data: z.array(benchmarkSchema) }).strict(),
+  },
+  quotes: {
+    path: "/market/quotes",
+    output: z.object({ data: z.array(apiQuoteSchema) }).strict(),
+  },
+  marketStatus: { path: "/market/status", output: statusSchema },
+  fx: { path: "/market/fx/rates", output: fxResponseSchema },
   accounts: {
     path: "/portfolio/accounts",
     output: z.object({ data: z.array(accountSchema) }).strict(),
@@ -52,6 +66,12 @@ export const readArgs = z
     id: z.uuid().optional(),
     accountId: z.uuid().optional(),
     instrumentId: z.uuid().optional(),
+    instrumentIds: z.array(z.uuid()).min(1).max(100).optional(),
+    currency: z
+      .array(z.enum(["USD", "EUR"]))
+      .min(1)
+      .max(2)
+      .optional(),
     view: z.enum(["economic", "tax"]).optional(),
     groupBy: z
       .enum(["account_instrument", "instrument", "account", "day", "month", "year"])
@@ -108,12 +128,14 @@ export async function fetchResource<K extends ReadKey>(
   raw: ReadArgs = {},
 ): Promise<Resource<K>> {
   if (!Object.hasOwn(readSpecs, key)) throw new Error("INVALID_RESOURCE");
-  const { id, ...args } = readArgs.parse(raw);
+  const { id, instrumentIds, currency, ...args } = readArgs.parse(raw);
   const spec = readSpecs[key];
   const path = spec.path.includes(":id") ? spec.path.replace(":id", z.uuid().parse(id)) : spec.path;
   const query = new URLSearchParams(
     Object.entries(args).filter((entry): entry is [string, string] => entry[1] !== undefined),
   );
+  for (const value of instrumentIds ?? []) query.append("instrumentId", value);
+  for (const value of currency ?? []) query.append("currency", value);
   if (key === "rows" && args.status === "unresolved") {
     query.delete("status");
     query.append("status", "needs_mapping");

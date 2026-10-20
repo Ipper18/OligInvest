@@ -2,7 +2,15 @@ import "server-only";
 
 // Foundation DTOs enter the web application only through its composition root.
 // Functional modules remain optional and are discovered by generate-ui-registry.
-export { chartSchema, instrumentSchema, pageSchema } from "@oliginvest/mod-market/contracts";
+export {
+  apiQuoteSchema,
+  benchmarkSchema,
+  chartSchema,
+  fxResponseSchema,
+  instrumentSchema,
+  pageSchema,
+  statusSchema,
+} from "@oliginvest/mod-market/contracts";
 export {
   accountInput,
   accountPatch,
