@@ -45,6 +45,18 @@ const valuesSchema = z.discriminatedUnion("command", [
     .strict(),
   z
     .object({
+      // BL-319: NBP reference rate as an annual fraction (0.0575 = 5.75 %), from its effective date.
+      command: z.literal("risk-free-rate"),
+      effective: z.iso.date(),
+      rate: z
+        .string()
+        .regex(/^0(\.\d{1,6})?$/u)
+        .refine((value) => Number(value) <= 0.5, "Rate above 50 %"),
+      reason,
+    })
+    .strict(),
+  z
+    .object({
       command: z.literal("maintenance-audit"),
       action: z.enum(["on", "off"]),
       outcome: z.enum(["started", "success", "error"]),
@@ -162,6 +174,41 @@ export async function executeAdminCommand(
         );
       } else if (data.command === "revoke-all-pats") {
         await tx.execute(sql`UPDATE auth.api_keys SET enabled=false,updated_at=now()`);
+      } else if (data.command === "risk-free-rate") {
+        // Announced decisions may apply from a near future date; older corrections are allowed.
+        const today = new Date().toISOString().slice(0, 10);
+        if (
+          data.effective > new Date(Date.parse(today) + 31 * 86_400_000).toISOString().slice(0, 10)
+        )
+          throw new ProblemError("VALIDATION_FAILED");
+        resourceType = "macro_observation";
+        resourceId = `NBP:REF_RATE:${data.effective}`;
+        const written = await options.appDatabase.transaction(system, async (appTx) => {
+          const series = (
+            await appTx.execute(
+              sql`INSERT INTO market.macro_series(code,name,unit,frequency,source) VALUES('NBP:REF_RATE','Stopa referencyjna NBP','percent','event','admin') ON CONFLICT(code) DO UPDATE SET name=EXCLUDED.name RETURNING id`,
+            )
+          ).rows[0];
+          const seriesId = z.uuid().parse(series?.id);
+          const previous = (
+            await appTx.execute(
+              sql`SELECT trim_scale(value)::text AS value FROM market.macro_observations WHERE series_id=${seriesId}::uuid AND obs_date=${data.effective}::date`,
+            )
+          ).rows[0];
+          const stored = (
+            await appTx.execute(
+              sql`INSERT INTO market.macro_observations(series_id,obs_date,value) VALUES(${seriesId}::uuid,${data.effective}::date,${data.rate}::numeric*100) ON CONFLICT(series_id,obs_date) DO UPDATE SET value=EXCLUDED.value RETURNING trim_scale(value)::text AS value`,
+            )
+          ).rows[0];
+          return {
+            previous: previous ? z.string().parse(previous.value) : undefined,
+            value: z.string().parse(stored?.value),
+          };
+        });
+        before = written.previous
+          ? { ratePercent: written.previous, effectiveDate: data.effective }
+          : null;
+        after = { ratePercent: written.value, effectiveDate: data.effective };
       } else if (data.command === "flag") {
         if (
           [

@@ -246,7 +246,7 @@ M3 nie zależy od M4 (etapy mogą iść równolegle).
 | BL-316 | Bramkowanie roli `pro` dla analiz ciężkich, komunikaty w UI | FR-07.06 | MOD | BL-312 | 1 | todo |
 | BL-317 | Wektory B–D w pytest kontra empyrical-reloaded | NFR-02.06, NFR-08.02 | OBL | BL-311 | 1 | w toku (Claude Code, `feat/m3-analytics-worker`, [PR #16](https://github.com/Ipper18/OligInvest/pull/16); estymacja bez zmian, nakład niezmierzony) |
 | BL-318 | Przegląd metodologiczny Monte Carlo i rebalancingu (checklisty z AGENTS.md) zapisany w PR | NFR-07.02 | LAW, OBL | BL-314, BL-315 | 0,5 | todo |
-| BL-319 | Stopa wolna od ryzyka: FRED `DGS3MO` i szereg stopy referencyjnej NBP wpisywany przez admina | FR-03.10 | OBL, SRC | BL-131 | 1 | todo |
+| BL-319 | Stopa wolna od ryzyka: FRED `DGS3MO` i szereg stopy referencyjnej NBP wpisywany przez admina | FR-03.10 | OBL, SRC | BL-131 | 1 | w toku (Claude Code, `feat/m3-analytics-backend`; `market.macro` + `oli-admin risk-free-rate` + `riskFreeRateOn`; klucz `FRED_API_KEY` zakłada właściciel; nakład niezmierzony) |
 | | **Suma etapu** | | | | **38,5** | |
 
 ### 4.1 Postęp i odchylenia

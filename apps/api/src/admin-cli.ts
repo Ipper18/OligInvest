@@ -81,6 +81,8 @@ async function main(): Promise<void> {
           user: { type: "string" },
           queue: { type: "string" },
           outcome: { type: "string" },
+          effective: { type: "string" },
+          rate: { type: "string" },
         },
       });
       if (args.positionals[0] === "create-owner") {

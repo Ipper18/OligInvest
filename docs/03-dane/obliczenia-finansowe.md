@@ -337,7 +337,7 @@ Wejście: dzienne stopy zwrotu `r_t` z indeksu TWR (w PLN); `N` obserwacji; `P =
 | VaR 95 % 1D parametryczny | `−(mean − z·σ)` (rozkład normalny); z = 1,6449 dla 95 %, dla innego poziomu ufności kwantyl rozkładu normalnego z(c) (przegląd C-08) | 1,2203 % |
 | Calmar | `CAGR / |max DD|` | — |
 
-- **Stopa wolna od ryzyka** jest zawsze pokazywanym założeniem. Domyślnie: dla PLN — stopa referencyjna NBP wprowadzana przez admina jako szereg z datami obowiązywania; dla USD — rentowność 3M bonów skarbowych z FRED (`DGS3MO`). ❓ Źródło szeregu stopy referencyjnej NBP w formie API — do ustalenia w M3 (w razie braku: wpis ręczny).
+- **Stopa wolna od ryzyka** jest zawsze pokazywanym założeniem. Domyślnie: dla PLN — stopa referencyjna NBP wprowadzana przez admina jako szereg z datami obowiązywania; dla USD — rentowność 3M bonów skarbowych z FRED (`DGS3MO`). Rozstrzygnięcie BL-319 (decyzja właściciela 2026-10-20): NBP nie publikuje tej stopy w API JSON, więc wpis ręczny poleceniem `oli-admin risk-free-rate` (seria `NBP:REF_RATE`, `source = admin`, częstotliwość `event`); `DGS3MO` pobiera zadanie `market.macro` (06:00, pierwsze uruchomienie od 1981-09-01, potem ostatnie 14 dni; dzień z wartością `.` FRED pomijany). Obie serie w `market.macro_observations` w procentach rocznych. `riskFreeRateOn` (`packages/core`) zwraca stopę obowiązującą w dniu `d` — ostatnią obserwację ≤ `d` (stopa NBP obowiązuje do następnej decyzji; `DGS3MO` starsza niż 7 dni → `stale`); brak obserwacji → `null`, nigdy domyślne 0 %.
 - VaR skalowany do innych horyzontów regułą `√h` tylko z ostrzeżeniem („zakłada niezależność dziennych zwrotów”).
 - Metryki liczone w `packages/core`; `analytics` liczy je tylko w raportach symulacji i jest weryfikowany tymi samymi wektorami.
 

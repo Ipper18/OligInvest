@@ -14,6 +14,12 @@ const stateSchema = z
     count: z.number().int().nonnegative().optional(),
     roles: z.array(z.enum(["user", "pro", "admin"])).optional(),
     users: z.array(z.uuid()).max(50).optional(),
+    // Market reference data (BL-319): percent per year as decimal text, never user data.
+    ratePercent: z
+      .string()
+      .regex(/^\d{1,3}(\.\d{1,8})?$/u)
+      .optional(),
+    effectiveDate: z.iso.date().optional(),
   })
   .strict();
 export type AuditState = z.infer<typeof stateSchema>;
