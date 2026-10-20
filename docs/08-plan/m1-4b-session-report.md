@@ -18,7 +18,7 @@ Ekrany i odczyty REST są wdrożone; zatwierdzone kontrakty zaimplementowane. Za
 - Poprawki SSRF proxy, metadanych licencji MIT, szerokości filtrów WebKit, odczytu statusu importu po pominiętym SSE, konfiguracji testów obrazów, nieznanego kosztu i neutralnego zera.
 - BL-155: serwerowe przekierowania zachowują `returnTo` po rotacji ciasteczka MFA; `safeReturnTo` i pierwotny test bez zmian. Przed merge: błąd odtworzony na produkcyjnym WebKit (1/20 FAIL), po poprawce 20/20 PASS; `shell-auth.spec.ts` w trzech przeglądarkach 36/36 PASS. Trace i logi: `.git/m1-4b-return-to-*`. Budżety JS PASS, powłoka 29,45/30 KiB.
 
-## Stabilizacja `webkit-shell` (2026-10-20, `fix/webkit-shell-readiness` → PR #14)
+## Stabilizacja `webkit-shell` po scaleniu PR #14 (2026-10-20, `fix/webkit-shell-readiness`)
 
 - Przyczyna: operacje sesji jako Server Actions. Zmiana ciasteczka wymuszała ponowne renderowanie trasy, a przekierowanie bramki uruchamiało drugą nawigację, konkurującą z `location.assign/replace`. WebKit anuluje fetch RSC na starcie nawigacji, a Next zamienia go w kolejną nawigację dokumentu (przerwane `goto`, w logu „The destination stream closed early”). Poprawka: przekaźnik `POST /auth/action` ([architektura UI § 4](../04-frontend/architektura-ui.md)), ryzyko R-41.
 - Testy: podmiana sesji z `about:blank` (żywa powłoka po 401 SSE nawiguje do `/logowanie`); wykrycie przeładowania znacznikiem `window` zamiast `timeOrigin`; potwierdzenie uzgodnienia importu aktywne dopiero po mutacji i odświeżeniu trasy; trace przy błędzie. Bez `retries`, timeoutów i wyłączania WebKit.
