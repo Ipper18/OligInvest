@@ -18,6 +18,13 @@ Ekrany i odczyty REST są wdrożone; zatwierdzone kontrakty zaimplementowane. Za
 - Poprawki SSRF proxy, metadanych licencji MIT, szerokości filtrów WebKit, odczytu statusu importu po pominiętym SSE, konfiguracji testów obrazów, nieznanego kosztu i neutralnego zera.
 - BL-155: serwerowe przekierowania zachowują `returnTo` po rotacji ciasteczka MFA; `safeReturnTo` i pierwotny test bez zmian. Przed merge: błąd odtworzony na produkcyjnym WebKit (1/20 FAIL), po poprawce 20/20 PASS; `shell-auth.spec.ts` w trzech przeglądarkach 36/36 PASS. Trace i logi: `.git/m1-4b-return-to-*`. Budżety JS PASS, powłoka 29,45/30 KiB.
 
+## Stabilizacja `webkit-shell` (2026-10-20, `fix/webkit-shell-readiness` → PR #14)
+
+- Przyczyna: operacje sesji jako Server Actions. Zmiana ciasteczka wymuszała ponowne renderowanie trasy, a przekierowanie bramki uruchamiało drugą nawigację, konkurującą z `location.assign/replace`. WebKit anuluje fetch RSC na starcie nawigacji, a Next zamienia go w kolejną nawigację dokumentu (przerwane `goto`, w logu „The destination stream closed early”). Poprawka: przekaźnik `POST /auth/action` ([architektura UI § 4](../04-frontend/architektura-ui.md)), ryzyko R-41.
+- Testy: podmiana sesji z `about:blank` (żywa powłoka po 401 SSE nawiguje do `/logowanie`); wykrycie przeładowania znacznikiem `window` zamiast `timeOrigin`; potwierdzenie uzgodnienia importu aktywne dopiero po mutacji i odświeżeniu trasy; trace przy błędzie. Bez `retries`, timeoutów i wyłączania WebKit.
+- Dowody (Linux, Playwright 1.63, build produkcyjny, 4 vCPU + 8 pętli obciążenia, `webkit-shell --repeat-each=10`): przed 188/190 (`timeOrigin`, przerwane `goto`), 1× błąd strumienia, 34 zerwane ładowania dokumentu/RSC; po 190/190, 0 błędów strumienia, 0 zerwanych nawigacji. Pełna macierz trzech przeglądarek 93 PASS, 3 pominięte (`production.spec` bez Compose). Web lint/typecheck/test 34/34 PASS.
+- Nieodtworzone lokalnie (≥ 115 powtórzeń): checkbox mBank i „internal error” w teście 212 z CI; rozstrzyga przebieg CI z trace.
+
 ## Pozostałe warunki
 
 W sesji scalania nie ponawiano E2E, obrazów, integracji bazodanowych, Lighthouse ani skanów; pełną macierz uruchamia CI. BL-152: aktywacja/odbiór sond i SMTP u właściciela. Realny eksport XTB, telefon/SSE, VoiceOver, procedury serwerowe i ocena nakładu ADR-001 pozostają do odbioru według raportu bramy A. Etap nie jest zamykany.
