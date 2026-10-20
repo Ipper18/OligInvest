@@ -253,6 +253,10 @@ M3 nie zależy od M4 (etapy mogą iść równolegle).
 
 - **2026-10-19, BL-311:** kontrakty zadań `analytics` (Zod → JSON Schema w paczce workera, kontrola aktualności w CI), walidacja `jsonschema` przed przetwarzaniem, limity Z-19, limity czasu per typ (proces potomny bez sekretów), wynik `failed` do `analytics-results`; sonda izolacji na obrazach produkcyjnych (egress, macierz `analytics_ro`). Kontrakt: [moduly.md § 5.2.1](../01-architektura/moduly.md). Decyzje właściciela: limity czasu `goal`/`stress_test`/`what_if`, wyjątek licencyjny numpy/Zlib, wykluczenie `peewee`. [Stan](m3-analytics-worker-session-report.md).
 - **2026-10-19, BL-317:** wektory B–D kontra empyrical-reloaded 0.5.12 (dev) w pytest, tolerancje § 0.5; XIRR, korelacja i VaR parametryczny z definicji (scipy/numpy), bo empyrical ich nie ma.
+- **2026-10-20, BL-302:** luki wycen jako `NULL` (migracja 0007, decyzja właściciela), przepływy per rachunek i dzień, `portfolioHistory` w `packages/core`, `GET /portfolio/history`; wykres uPlot u Codex. [Stan](m3-analytics-backend-session-report.md).
+- **2026-10-20, BL-319:** FRED `DGS3MO` (`market.macro`, 06:00), stopa NBP przez `oli-admin risk-free-rate` z audytem, `riskFreeRateOn`; G-10 rozstrzygnięte.
+- **2026-10-20, BL-312:** trasy `/analytics/*` zgodne z OpenAPI, limity roli, idempotencja, anulowanie; właściciel z `analytics_runs.user_id` przez `analytics.run_owner` (migracja 0008), zapis wyników i postępu w RLS właściciela, SSE.
+- **2026-10-20, BL-313/BL-318:** Monte Carlo w workerze (bootstrap stacjonarny, t-Student, przepływy, inflacja, podatek, wrażliwość), `DATA_QUALITY_HOLD`, pełny backfill WIG i S&P 500; przegląd `strategy-critique` (MEDIUM) i `backtest-review` (FIX) w PR #19.
 
 ## 5. M4 — Alerty, PWA i Skróty
 

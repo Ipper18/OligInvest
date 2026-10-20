@@ -4733,8 +4733,11 @@ export interface components {
                 };
             };
             error?: {
-                /** @enum {string} */
-                code: "TIMEOUT" | "MEMORY_LIMIT" | "INSUFFICIENT_DATA" | "COVERAGE_TOO_LOW" | "INVALID_PARAMS" | "INTERNAL";
+                /**
+                 * @description `DATA_QUALITY_HOLD` — otwarte zgłoszenie BLOCK na serii wejściowej (obliczenia-finansowe.md § 14).
+                 * @enum {string}
+                 */
+                code: "TIMEOUT" | "MEMORY_LIMIT" | "INSUFFICIENT_DATA" | "COVERAGE_TOO_LOW" | "INVALID_PARAMS" | "INTERNAL" | "DATA_QUALITY_HOLD";
                 message: string;
             };
             createdAt: components["schemas"]["Timestamp"];
