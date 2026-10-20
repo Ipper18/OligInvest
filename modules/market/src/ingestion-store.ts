@@ -26,6 +26,43 @@ export class IngestionStore {
       ).rows.map((row) => String(row.date)),
     );
   }
+  async latestMacroDate(code: string) {
+    return this.repository.database.transaction(system, async (tx) => {
+      const row = (
+        await tx.execute(
+          sql`SELECT max(o.obs_date)::text AS date FROM market.macro_observations o JOIN market.macro_series s ON s.id=o.series_id WHERE s.code=${code}`,
+        )
+      ).rows[0];
+      return row?.date ? z.iso.date().parse(row.date) : undefined;
+    });
+  }
+  /** Upsert a macro series (catalog row + observations); a revised value replaces the old one. */
+  async saveMacroObservations(
+    series: { code: string; name: string; unit: string; frequency: string; source: string },
+    input: { date: string; value: string }[],
+  ) {
+    const rows = z
+      .array(
+        z
+          .object({ date: z.iso.date(), value: z.string().regex(/^-?\d{1,12}(\.\d{1,8})?$/) })
+          .strict(),
+      )
+      .parse(input);
+    await this.repository.database.transaction(system, async (tx) => {
+      const found = (
+        await tx.execute(
+          sql`INSERT INTO market.macro_series(code,name,unit,frequency,source) VALUES(${series.code},${series.name},${series.unit},${series.frequency},${series.source}) ON CONFLICT(code) DO UPDATE SET name=EXCLUDED.name RETURNING id::text`,
+        )
+      ).rows[0];
+      const id = z.uuid().parse(found?.id);
+      for (let i = 0; i < rows.length; i += 500) {
+        const chunk = rows.slice(i, i + 500);
+        await tx.execute(
+          sql`INSERT INTO market.macro_observations(series_id,obs_date,value) SELECT ${id}::uuid,d::date,v::numeric FROM unnest(${sql.param(chunk.map((r) => r.date))}::text[],${sql.param(chunk.map((r) => r.value))}::text[]) AS t(d,v) ON CONFLICT(series_id,obs_date) DO UPDATE SET value=EXCLUDED.value`,
+        );
+      }
+    });
+  }
   async saveFx(input: FxRate[]) {
     const rates = z.array(fxSchema).parse(input);
     await this.repository.database.transaction(system, async (tx) => {

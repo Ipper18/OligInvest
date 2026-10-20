@@ -17,6 +17,7 @@ export async function startMarketWorker(options: {
   observe?: (worker: Worker) => void;
   observeProvider?: (provider: string, result: "ok" | "fail") => void;
   updated?(reason: "eod" | "fx", fromDate: string): Promise<void>;
+  fredApiKey?: string | undefined;
 }) {
   const redis = new Redis(options.connection);
   redis.on("error", () => options.logger.warn({ event: "market.queue_unavailable" }));
@@ -77,8 +78,11 @@ export async function startMarketWorker(options: {
       removeOnFail: { age: 604800 },
     });
   };
+  if (!options.fredApiKey)
+    options.logger.info({ event: "market.fred_disabled", module_id: "market" });
   const market = createMarketJobs({
     ...(options.observeProvider ? { observeProvider: options.observeProvider } : {}),
+    fredApiKey: options.fredApiKey,
     database: options.database,
     cache: options.cache,
     queue: redis,

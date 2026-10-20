@@ -36,7 +36,7 @@ function fixture(instant = "2026-10-07T10:20:00Z") {
   });
   return { ...jobs, transport };
 }
-test("six idempotent schedules use Warsaw civil time", () => {
+test("seven idempotent schedules use Warsaw civil time", () => {
   expect(marketSchedules.map((s) => [s.job, s.cron, s.tz])).toEqual([
     ["market.fx", "20 12 * * 1-5", "Europe/Warsaw"],
     ["market.gpw", "30 18 * * 1-5", "Europe/Warsaw"],
@@ -44,6 +44,7 @@ test("six idempotent schedules use Warsaw civil time", () => {
     ["market.us-eod", "30 23 * * 1-5", "Europe/Warsaw"],
     ["market.gpw-completeness", "30 19 * * 1-5", "Europe/Warsaw"],
     ["market.benchmarks", "45 23 * * 1-5", "Europe/Warsaw"],
+    ["market.macro", "0 6 * * *", "Europe/Warsaw"],
   ]);
 });
 test("NBP fallback starts at the third failed attempt; no calls after 14:00", async () => {

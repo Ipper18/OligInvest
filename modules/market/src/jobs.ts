@@ -7,6 +7,7 @@ import {
 } from "@oliginvest/data-providers";
 import {
   FrankfurterProvider,
+  FredProvider,
   fetchGpw,
   NbpProvider,
   nbpRanges,
@@ -43,7 +44,20 @@ export const marketSchedules = [
   { job: "market.gpw-completeness", cron: "30 19 * * 1-5", tz: "Europe/Warsaw" },
   // After both GPW (17:05) and US (22:00 Warsaw) closes; outside every quote session.
   { job: "market.benchmarks", cron: "45 23 * * 1-5", tz: "Europe/Warsaw" },
+  // Risk-free rate FRED DGS3MO (BL-319): one request at 06:00 (strategia-cache § 5).
+  { job: "market.macro", cron: "0 6 * * *", tz: "Europe/Warsaw" },
 ] as const;
+/** DGS3MO starts on 1981-09-01; a first run backfills it in one request, later runs re-read 14 days. */
+export const FRED_DGS3MO = {
+  code: "FRED:DGS3MO",
+  seriesId: "DGS3MO",
+  name: "3-Month Treasury Bill Secondary Market Rate",
+  unit: "percent",
+  frequency: "daily",
+  source: "fred",
+  start: "1981-09-01",
+  refreshDays: 14,
+} as const;
 export function createMarketJobs(options: {
   observeProvider?: (provider: string, result: "ok" | "fail") => void;
   database: AppDatabase;
@@ -55,6 +69,8 @@ export function createMarketJobs(options: {
   report?(name: string, report: GpwCompletenessReport): void;
   now?: () => Date;
   transport?: typeof fetch;
+  /** Optional free FRED key (FRED_API_KEY); without it `market.macro` is skipped. */
+  fredApiKey?: string | undefined;
 }) {
   const now = options.now ?? (() => new Date());
   const repository = new MarketRepository(options.database, now);
@@ -81,6 +97,9 @@ export function createMarketJobs(options: {
   );
   const nbp = new NbpProvider(request("nbp", 6), now);
   const ecb = new FrankfurterProvider(request("ecb", 6), now);
+  const fred = options.fredApiKey
+    ? new FredProvider(request("fred", 10), options.fredApiKey)
+    : undefined;
   /** A currency drift is a § 14 BLOCK on the series; the drifted bars are never stored. */
   async function saveYahooBars(id: string, from: string, to: string) {
     try {
@@ -237,6 +256,17 @@ export function createMarketJobs(options: {
         if (due.length > BENCHMARKS_PER_RUN)
           await options.enqueue("market.benchmarks", { date }, BENCHMARK_CONTINUE_MS);
         if (failure) throw failure;
+        return;
+      }
+      case "market.macro": {
+        if (!fred) return;
+        const latest = await store.latestMacroDate(FRED_DGS3MO.code);
+        const from =
+          payload.from ?? (latest ? addDays(latest, -FRED_DGS3MO.refreshDays) : FRED_DGS3MO.start);
+        const observations = await limits.singleFlight(`fred:${FRED_DGS3MO.seriesId}:${from}`, () =>
+          fred.getObservations(FRED_DGS3MO.seriesId, from, payload.to ?? date),
+        );
+        await store.saveMacroObservations(FRED_DGS3MO, observations);
         return;
       }
       case "market.backfill":

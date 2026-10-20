@@ -167,6 +167,7 @@ export async function startJobs(
       connection: runtime.connection,
       logger,
       observe,
+      fredApiKey: runtime.config.FRED_API_KEY,
     });
     {
       // The worker uses blocking reads; the producer's 1.5 s command deadline

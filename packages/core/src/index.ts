@@ -17,5 +17,6 @@ export * from "./money.js";
 export * from "./rebalance.js";
 export * from "./returns.js";
 export * from "./risk.js";
+export * from "./risk-free.js";
 export * from "./transactions.js";
 export * from "./valuation.js";
