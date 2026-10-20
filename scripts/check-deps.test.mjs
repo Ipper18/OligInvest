@@ -227,7 +227,6 @@ test("functional modules in apps are optional and may be absent (build without a
   f.pkg("apps/api", {}, { optionalDependencies: { "@oliginvest/mod-identity": "workspace:*" } });
   rmSync(join(f.root, "modules/identity"), { recursive: true, force: true });
   assert.match(checkDependencies(f.root).join("\n"), /unknown workspace/);
-  f.write("apps/api/src/other.ts", `import('${f.analytics}/server');`);
   f.pkg("apps/api", {}, { optionalDependencies: { [f.alerts]: "workspace:*" } });
   f.write("apps/api/src/other.ts", `import('${f.alerts}/server');`);
   assert.match(checkDependencies(f.root).join("\n"), /outside composition registry/);

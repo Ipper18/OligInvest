@@ -3,30 +3,10 @@ import test from "node:test";
 import { checkContexts } from "./check-ci.mjs";
 
 const workflow = {
-  on: { pull_request: null },
-  permissions: { contents: "read" },
-  jobs: {
-    build: {
-      name: "${{ matrix.name }}",
-      strategy: {
-        matrix: { include: [{ name: "build (all)" }, { name: "build (without education)" }] },
-      },
-    },
-    workers: {},
-  },
+  on: { pull_request: null }, permissions: { contents: "read" },
+  jobs: { build: { name: "${{ matrix.name }}", strategy: { matrix: { include: [{ name: "build (all)" }, { name: "build (without education)" }] } } }, workers: {} },
 };
-const ruleset = {
-  rules: [
-    {
-      type: "required_status_checks",
-      parameters: {
-        required_status_checks: ["build (all)", "build (without education)", "workers"].map(
-          (context) => ({ context }),
-        ),
-      },
-    },
-  ],
-};
+const ruleset = { rules: [{ type: "required_status_checks", parameters: { required_status_checks: ["build (all)", "build (without education)", "workers"].map((context) => ({ context })) } }] };
 test("matrix names are expanded and match the ruleset exactly", () => {
   assert.equal(checkContexts([workflow], ruleset).length, 3);
 });
@@ -37,8 +17,7 @@ test("missing workers and fictional budgets checks fail", () => {
   for (const name of ["workers", "budgets"]) {
     const changed = structuredClone(ruleset);
     const checks = changed.rules[0].parameters.required_status_checks;
-    if (name === "workers") checks.pop();
-    else checks.push({ context: name });
+    if (name === "workers") checks.pop(); else checks.push({ context: name });
     assert.throws(() => checkContexts([workflow], changed), /Ruleset/);
   }
 });
@@ -60,12 +39,7 @@ test("write permissions are restricted to the guarded tag release job", () => {
   changed.jobs.release = {
     if: "github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')",
     needs: "images",
-    permissions: {
-      contents: "write",
-      packages: "write",
-      "id-token": "write",
-      attestations: "write",
-    },
+    permissions: { contents: "write", packages: "write", "id-token": "write", attestations: "write" },
   };
   assert.equal(checkContexts([changed], ruleset).length, 3);
   changed.jobs.release.if = "always()";
