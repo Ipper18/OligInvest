@@ -40,13 +40,18 @@ test("preferences persist without document reload and system follows OS", async 
 }) => {
   await session(context, "preferences");
   await page.goto("/ustawienia");
-  const time = await page.evaluate(() => performance.timeOrigin);
+  // WebKit recomputes performance.timeOrigin from the wall clock, so a window marker detects reloads.
+  await page.evaluate(() => {
+    (window as { documentMarker?: boolean }).documentMarker = true;
+  });
   await page.getByLabel("Motyw", { exact: true }).selectOption("light");
   await page.getByLabel("Paleta zysku i straty").selectOption("colorblind");
   await page.getByRole("button", { name: "Zapisz", exact: true }).click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
   await expect(page.locator("html")).toHaveAttribute("data-palette", "colorblind");
-  expect(await page.evaluate(() => performance.timeOrigin)).toBe(time);
+  expect(await page.evaluate(() => (window as { documentMarker?: boolean }).documentMarker)).toBe(
+    true,
+  );
   const response = await page.reload();
   expect(await response?.text()).toContain('data-theme="light"');
   await page.getByLabel("Motyw", { exact: true }).selectOption("system");
@@ -166,7 +171,7 @@ test("logout waits for cookie removal before navigation and notifies other tabs 
   const requestArrived = new Promise<void>((resolve) => {
     received = resolve;
   });
-  await page.route("**/ustawienia", async (route) => {
+  await page.route("**/auth/action", async (route) => {
     if (route.request().method() !== "POST") return route.continue();
     received();
     await responseGate;
