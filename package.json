@@ -24,6 +24,8 @@
     "lint:openapi": "redocly lint --format=summary",
     "gen:api-client": "pnpm --filter @oliginvest/openapi-client generate",
     "check:api-client": "pnpm --filter @oliginvest/openapi-client check",
+    "gen:analytics-schema": "pnpm turbo run build --filter=@oliginvest/contracts --output-logs=new-only && pnpm --filter @oliginvest/contracts gen:analytics-schema",
+    "check:analytics-schema": "pnpm turbo run build --filter=@oliginvest/contracts --output-logs=new-only && pnpm --filter @oliginvest/contracts check:analytics-schema",
     "check:contracts": "pnpm lint:openapi && pnpm turbo run build --filter=@oliginvest/api --output-logs=new-only && pnpm --filter @oliginvest/api exec vitest run test/openapi.test.mjs --reporter=dot && node apps/api/scripts/openapi.mjs check",
     "gen:openapi-pending": "pnpm turbo run build --filter=@oliginvest/api --output-logs=new-only && node apps/api/scripts/openapi.mjs pending",
     "gen:module": "node scripts/gen-module.mjs",

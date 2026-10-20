@@ -10,6 +10,7 @@
       "**",
       "!docs/08-plan/audits",
       "!apps/web/src/api/schema.d.ts",
+      "!apps/analytics/src/oliginvest_analytics/schemas/analytics-jobs.schema.json",
       "!**/dist",
       "!**/.next",
       "!**/coverage"

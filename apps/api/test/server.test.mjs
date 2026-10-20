@@ -53,8 +53,13 @@ test("Node entrypoint starts during outages and bounds actual TCP readiness prob
     stdio: ["ignore", "pipe", "pipe"],
   });
   let output = "";
+  let markListening;
+  const listening = new Promise((resolve) => {
+    markListening = resolve;
+  });
   child.stdout.on("data", (chunk) => {
     output += chunk;
+    if (output.includes('"event":"api.listening"')) markListening(true);
   });
   child.stderr.on("data", (chunk) => {
     output += chunk;
@@ -62,17 +67,11 @@ test("Node entrypoint starts during outages and bounds actual TCP readiness prob
   const exited = once(child, "exit");
   try {
     const base = `http://localhost:${port}/api/v1`;
-    let live;
-    for (let attempt = 0; attempt < 100; attempt++) {
-      try {
-        live = await fetch(`${base}/health/live`, { signal: AbortSignal.timeout(500) });
-        break;
-      } catch {
-        if (child.exitCode !== null) throw new Error("API exited before listening");
-        await delay(25);
-      }
-    }
-    expect(live?.status).toBe(200);
+    // Wait for the server's own signal, not a guessed number of connection attempts:
+    // a loaded CI runner may need several seconds to load the entrypoint.
+    expect(await Promise.race([listening, exited.then(() => false)])).toBe(true);
+    const live = await fetch(`${base}/health/live`, { signal: AbortSignal.timeout(2000) });
+    expect(live.status).toBe(200);
     await live.body.cancel();
     const id = randomUUID();
     const started = performance.now();

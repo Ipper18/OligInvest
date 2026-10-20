@@ -5,9 +5,13 @@ import socket
 from uuid import uuid4
 
 import pytest
+from test_contracts import base
 
+from oliginvest_analytics.contracts import InvalidJob, ValidatedJob, check_result
+from oliginvest_analytics.execution import Outcome
 from oliginvest_analytics.worker import (
     check_health,
+    process_analytics,
     process_ping,
     read_config,
     run_worker,
@@ -73,6 +77,39 @@ def test_strict_ping():
             process_ping(name, data)
 
 
+def test_analytics_job_flow_validates_before_running():
+    calls: list[ValidatedJob] = []
+
+    async def timeout(job: ValidatedJob) -> Outcome:
+        calls.append(job)
+        return Outcome("failed", code="TIMEOUT")
+
+    job = base()
+    result = asyncio.run(process_analytics("monte_carlo", job, timeout))
+    assert len(calls) == 1 and result["runId"] == str(calls[0].run_id)
+    assert result["error"] == {"code": "TIMEOUT"}
+    assert check_result(result)
+
+    calls.clear()
+    over_limit = {**job, "params": {**job["params"], "paths": 10001}}
+    rejected = asyncio.run(process_analytics("monte_carlo", over_limit, timeout))
+    assert calls == []
+    assert rejected["error"] == {"code": "INVALID_PARAMS"} and check_result(rejected)
+
+    with pytest.raises(InvalidJob):
+        asyncio.run(process_analytics("monte_carlo", {"runId": "x"}, timeout))
+    assert calls == []
+
+
+def test_unknown_result_shapes_never_leave_the_worker():
+    async def done(job: ValidatedJob) -> Outcome:
+        return Outcome("done", result={"percentiles": [1, 2, 3]})
+
+    result = asyncio.run(process_analytics("goal", base("goal"), done))
+    assert result["status"] == "failed" and result["error"] == {"code": "INTERNAL"}
+    assert "result" not in result and check_result(result)
+
+
 @pytest.mark.skipif(
     not os.environ.get("OLIGINVEST_QUEUE_TEST"), reason="requires Compose runner"
 )
@@ -98,6 +135,21 @@ def test_node_to_python_real_valkey():
                         await asyncio.sleep(0.05)
                 finally:
                     await queue.close()
+                # Node asserts the analytics-results payloads after this run.
+                analytics = Queue("analytics", {"connection": config.connection})
+                try:
+                    pending = json.loads(
+                        os.environ.get("OLIGINVEST_ANALYTICS_TEST", "[]")
+                    )
+                    for job_id in pending:
+                        while True:
+                            job = await Job.fromId(analytics, job_id)
+                            state = await job.getState() if job else None
+                            if state in ("completed", "failed"):
+                                break
+                            await asyncio.sleep(0.05)
+                finally:
+                    await analytics.close()
         finally:
             stop.set()
             await asyncio.wait_for(worker, 5)
