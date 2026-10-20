@@ -9,6 +9,7 @@ export * from "./effects.js";
 export * from "./errors.js";
 export * from "./format.js";
 export * from "./fx.js";
+export * from "./history.js";
 export * from "./indicators.js";
 export * from "./ledger.js";
 export * from "./market.js";

@@ -256,7 +256,7 @@ export async function testPortfolioStorage(settings) {
     );
     assert.equal((await request(`transactions/${first.id}`)).status, 404);
     assert.equal(events.length, responses.filter((r) => r.status === 201).length + 3);
-    await testPortfolioReads({ request, database, owner, instrumentId });
+    await testPortfolioReads({ request, database, owner, instrumentId, repository });
   } finally {
     await auth.transaction(async (tx) => {
       await tx.execute(

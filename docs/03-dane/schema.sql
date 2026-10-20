@@ -867,9 +867,9 @@ CREATE TABLE portfolio.valuations_daily (
   market_value       numeric(20,8) NOT NULL,                  -- waluta rachunku
   cash               numeric(20,8) NOT NULL,
   total_value        numeric(20,8) NOT NULL,
-  total_value_pln    numeric(20,8) NOT NULL,
-  external_flow      numeric(20,8) NOT NULL DEFAULT 0,        -- F_d (obliczenia-finansowe.md § 6.2)
-  external_flow_pln  numeric(20,8) NOT NULL DEFAULT 0,
+  total_value_pln    numeric(20,8),                           -- NULL: brak kursu do PLN (luka, nigdy 0)
+  external_flow      numeric(20,8) DEFAULT 0,                 -- F_d (obliczenia-finansowe.md § 6.2); NULL: przepływ nieznany
+  external_flow_pln  numeric(20,8) DEFAULT 0,                 -- NULL: przepływ lub kurs nieznany
   fx_rate_to_pln     numeric(18,8),
   as_of              timestamptz   NOT NULL,
   is_complete        boolean       NOT NULL DEFAULT true,     -- false: brak ceny/kursu dla części pozycji

@@ -236,6 +236,8 @@ Wartość portfela zbiorczego w PLN: `V(t) = Σ_a V_a(t)·kurs_{CCY_a→PLN}(t)`
 
 **Wycena dzienna** (`portfolio.valuations_daily`): po zamknięciu sesji, kursy zamknięcia (EOD) i tabela A NBP z tego dnia (dla dni bez tabeli — ostatnia dostępna).
 
+**Luki i historia wartości (BL-302, decyzja właściciela 2026-10-20):** brak kursu do PLN zapisuje `total_value_pln = NULL`, a nieznany przepływ (brak kursu przepływu albo wyceny transferu papierów) — `external_flow = external_flow_pln = NULL`; nigdy 0. Przepływy rachunku zależą tylko od jego operacji z danego dnia, więc jedna luka nie unieważnia innych rachunków ani dni. `getPortfolioHistory` (`packages/core` — `portfolioHistory`) sumuje rachunki w `Decimal` bez zaokrągleń pośrednich; dzień z rachunkiem niekompletnym (`is_complete = false`) lub z `NULL` daje `null` wartości. „Wpłaty netto” to skumulowana suma przepływów zewnętrznych od pierwszej wyceny (także sprzed `from`); od pierwszego nieznanego przepływu są `null`. Interwał `1w`/`1mo` bierze punkt z końca okresu, decymacja (≤ `maxPoints`) — ostatni punkt każdego kubełka, więc najnowsza wartość zostaje. Kolumny wykresu to wartości prezentacyjne: zaokrąglenie do grosza (`ROUND_HALF_UP`) dopiero na wyjściu. Znacznik przepływu: jeden na dzień z niezerowym przepływem portfela, typ operacji, gdy dzień ma jeden typ przepływu, inaczej `DEPOSIT`/`WITHDRAWAL` wg znaku.
+
 ### 5.1 Wynik dnia (FR-02.09) — przykład F (wektor `F_day_change`)
 
 $$\Delta_{\text{dzień}} = V(t) - V(\text{zamknięcie } D{-}1) - F_{\text{dzień}}$$

@@ -59,6 +59,7 @@ test("Zod document matches all implemented operations and pending is the exact r
     "getMarketDataStatus",
     "getMe",
     "getOpenApiDocument",
+    "getPortfolioHistory",
     "getPortfolioSummary",
     "getPreferences",
     "getQuotes",
