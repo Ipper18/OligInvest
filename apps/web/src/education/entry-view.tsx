@@ -4,7 +4,9 @@ import type { EducationEntry } from "./catalog";
 
 const formulaLink = (entry: EducationEntry) => {
   const line =
-    ({ "9": 344, "6": 267, "5": 231, "4": 192 } as Record<string, number>)[entry.formula] ?? 13;
+    ({ "9": 344, "6": 267, "5": 231, "4": 192, "3": 122, "2": 88 } as Record<string, number>)[
+      entry.formula
+    ] ?? 13;
   return `https://github.com/Ipper18/OligInvest/blob/main/docs/03-dane/obliczenia-finansowe.md#L${line}`;
 };
 export function EntryView({ entry }: { entry: EducationEntry }) {

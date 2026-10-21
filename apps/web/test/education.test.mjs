@@ -1,9 +1,11 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { expect, test } from "vitest";
 import { entries, searchGlossary } from "../src/education/catalog.ts";
+import { metricKeys } from "../src/education/metric-keys.ts";
 
 test("contextual indicator and MVP metric keys have complete source content", () => {
   for (const key of [
+    ...Object.values(metricKeys),
     "sma",
     "ema",
     "bb",

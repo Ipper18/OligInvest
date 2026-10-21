@@ -1,20 +1,24 @@
 "use client";
 import { formatMessage } from "@oliginvest/i18n";
 import { educationMessages as m } from "@oliginvest/i18n/education";
-import { useId, useState } from "react";
+import { type ComponentType, useId, useState } from "react";
 import type { EducationEntry } from "./catalog";
-import { EntryView } from "./entry-view";
-import { readExplainer } from "./read-action";
 
 export function Explainer({ termKey, term }: { termKey: string; term: string }) {
   const id = useId();
   const [entry, setEntry] = useState<EducationEntry | null>(null);
   const [failed, setFailed] = useState(false);
+  const [View, setView] = useState<ComponentType<{ entry: EducationEntry }> | null>(null);
   const load = async () => {
     if (entry) return;
     setFailed(false);
     try {
+      const [{ readExplainer }, { EntryView }] = await Promise.all([
+        import("./read-action"),
+        import("./entry-view"),
+      ]);
       const result = await readExplainer(termKey);
+      setView(() => EntryView);
       setEntry(result);
       setFailed(!result);
     } catch {
@@ -33,8 +37,8 @@ export function Explainer({ termKey, term }: { termKey: string; term: string }) 
         ?
       </button>
       <div id={id} popover="auto" className="oi-popover">
-        {entry ? (
-          <EntryView entry={entry} />
+        {entry && View ? (
+          <View entry={entry} />
         ) : (
           <span role="status">{failed ? m.unavailable : m.loading}</span>
         )}

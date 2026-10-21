@@ -65,14 +65,14 @@ export function InstrumentScreen({
         <div>
           <dt>
             {m.price}
-            <Explainer termKey="wartosc" term={m.price} />
+            <Explainer termKey="cena" term={m.price} />
           </dt>
           <dd>{price(quote?.price)}</dd>
         </div>
         <div>
           <dt>
             {m.dayChange}
-            <Explainer termKey="pl" term={m.dayChange} />
+            <Explainer termKey="zmiana-kursu" term={m.dayChange} />
           </dt>
           <dd>
             {price(quote?.change)} ({ratio(quote?.changeRatio)})
@@ -88,7 +88,7 @@ export function InstrumentScreen({
         <div>
           <dt>
             {m.range52w}
-            <Explainer termKey="ohlcv" term={m.range52w} />
+            <Explainer termKey="zakres-52-tygodni" term={m.range52w} />
           </dt>
           <dd>
             {price(data.range52w?.low)} – {price(data.range52w?.high)}
@@ -97,7 +97,7 @@ export function InstrumentScreen({
         <div>
           <dt>
             {m.currency}
-            <Explainer termKey="przewalutowanie" term={m.currency} />
+            <Explainer termKey="waluta" term={m.currency} />
           </dt>
           <dd>{data.currency}</dd>
         </div>

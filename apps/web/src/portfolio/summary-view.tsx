@@ -1,8 +1,8 @@
 import { portfolioMessages as m } from "@oliginvest/i18n";
-import { DataTable } from "@oliginvest/ui/table";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { Explainer } from "../education/explainer";
+import { MetricTable as DataTable } from "../education/metric-table";
 import { Amount, Freshness, ratio, TaxDisclaimer } from "./presentation";
 import type { Resource } from "./resources";
 
@@ -34,12 +34,17 @@ export function SummaryView({
       )}
       <dl className="oi-kpis">
         {(["totalValue", "dayChange", "unrealizedPl", "cash"] as const).map((key) => (
-          <div key={key} className="oi-kpi">
+          <div key={key} className="oi-kpi" data-onboarding={key}>
             <dt>
               {m[key]}
               <Explainer
                 termKey={
-                  key === "dayChange" ? "wynik-dnia" : key === "unrealizedPl" ? "pl" : "wartosc"
+                  {
+                    totalValue: "wartosc",
+                    dayChange: "wynik-dnia",
+                    unrealizedPl: "pl",
+                    cash: "gotowka",
+                  }[key]
                 }
                 term={m[key]}
               />

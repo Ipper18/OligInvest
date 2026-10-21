@@ -50,6 +50,16 @@
     "pitfalls": "Inny skład i koszty ograniczają porównywalność."
   },
   {
+    "key": "cena",
+    "term": "Cena instrumentu",
+    "synonyms": [],
+    "formula": "5",
+    "href": "/portfel",
+    "definition": "Cena jednej jednostki instrumentu w walucie notowania.",
+    "reading": "Sprawdź źródło, czas i opóźnienie notowania.",
+    "pitfalls": "Cena nie jest wartością całej pozycji ani gwarantowaną ceną wykonania."
+  },
+  {
     "key": "cfd",
     "term": "CFD",
     "synonyms": ["contract for difference"],
@@ -68,6 +78,26 @@
     "definition": "Wypłata części środków spółki jej akcjonariuszom.",
     "reading": "Kwota brutto, potrącony podatek i kwota netto mają różne znaczenie.",
     "pitfalls": "Historyczna dywidenda nie oznacza identycznej wypłaty w przyszłości."
+  },
+  {
+    "key": "efekt-ceny",
+    "term": "Efekt ceny",
+    "synonyms": [],
+    "formula": "4",
+    "href": "/portfel",
+    "definition": "Część wyniku pozycji zagranicznej związana ze zmianą ceny instrumentu.",
+    "reading": "Razem z efektem waluty składa się na wynik w PLN według definicji obliczeń.",
+    "pitfalls": "Wynik zależy od danych partii i kursów; nie jest osobną stopą zwrotu."
+  },
+  {
+    "key": "efekt-waluty",
+    "term": "Efekt waluty",
+    "synonyms": [],
+    "formula": "4",
+    "href": "/portfel",
+    "definition": "Część wyniku pozycji zagranicznej związana ze zmianą kursu wymiany.",
+    "reading": "Uzupełnia efekt ceny do wyniku w PLN.",
+    "pitfalls": "Historyczny efekt nie określa przyszłego kierunku kursu."
   },
   {
     "key": "ema",
@@ -100,6 +130,16 @@
     "pitfalls": "Waluta notowania nie opisuje całego ryzyka walutowego funduszu."
   },
   {
+    "key": "gotowka",
+    "term": "Gotówka",
+    "synonyms": [],
+    "formula": "5",
+    "href": "/portfel",
+    "definition": "Saldo środków pieniężnych rachunku, z podaną walutą.",
+    "reading": "Saldo w walucie bazowej korzysta z kursu wymiany użytego do wyceny.",
+    "pitfalls": "Braki w historii lub kursach walut mogą uniemożliwić pełne uzgodnienie salda."
+  },
+  {
     "key": "gpw",
     "term": "GPW",
     "synonyms": ["giełda warszawska", "XWAR"],
@@ -108,6 +148,16 @@
     "definition": "Giełda Papierów Wartościowych w Warszawie.",
     "reading": "Kod MIC XWAR identyfikuje rynek.",
     "pitfalls": "Dzień kalendarzowy nie zawsze jest dniem sesji."
+  },
+  {
+    "key": "ilosc",
+    "term": "Liczba jednostek",
+    "synonyms": [],
+    "formula": "3",
+    "href": "/portfel",
+    "definition": "Liczba jednostek instrumentu w operacji, pozycji lub partii.",
+    "reading": "Ilość otwarta opisuje początek partii, a pozostała uwzględnia jej dotychczasowe zużycia.",
+    "pitfalls": "Split zmienia liczbę jednostek i koszt jednostkowy, ale sam nie zmienia łącznego kosztu."
   },
   {
     "key": "indeks",
@@ -150,10 +200,20 @@
     "pitfalls": "Nie jest kwotą gotówki posiadaną przez spółkę."
   },
   {
+    "key": "koszt-sredni",
+    "term": "Średni koszt jednostki",
+    "synonyms": [],
+    "formula": "3",
+    "href": "/portfel",
+    "definition": "Koszt pozostałych jednostek podzielony przez ich liczbę.",
+    "reading": "To informacyjny widok średniej ważonej; rozliczenie partii używa FIFO per rachunek.",
+    "pitfalls": "Brak kosztu nabycia jest brakiem danych, a nie zerowym kosztem."
+  },
+  {
     "key": "koszt",
     "term": "Koszt nabycia",
     "synonyms": ["cost basis", "FIFO", "partia"],
-    "formula": "4",
+    "formula": "3",
     "href": "/portfel",
     "definition": "Koszt przypisany do posiadanych sztuk, z uwzględnieniem zasad rozliczenia.",
     "reading": "FIFO przypisuje rozchód do najstarszych partii na rachunku.",
@@ -260,6 +320,16 @@
     "pitfalls": "Kurs brokera może różnić się od kursu średniego NBP."
   },
   {
+    "key": "przychod",
+    "term": "Przychód",
+    "synonyms": [],
+    "formula": "4",
+    "href": "/portfel",
+    "definition": "Kwota uzyskana z rozliczanych operacji, według wybranego widoku.",
+    "reading": "Przychód i koszt muszą dotyczyć tego samego kompletnego zbioru operacji.",
+    "pitfalls": "Przychód sam nie jest zyskiem; uwzględnij koszt oraz ujawnione wyłączenia danych."
+  },
+  {
     "key": "rachunek",
     "term": "Rachunek",
     "synonyms": ["account", "broker"],
@@ -360,10 +430,30 @@
     "pitfalls": "Nie jest tym samym co osobisty wynik kapitału liczony XIRR."
   },
   {
+    "key": "udzial",
+    "term": "Udział w portfelu",
+    "synonyms": [],
+    "formula": "5",
+    "href": "/portfel",
+    "definition": "Udział wartości grupy lub pozycji w wartości portfela.",
+    "reading": "Udziały służą opisowi koncentracji według dostępnych danych.",
+    "pitfalls": "Brakujące wyceny mogą zniekształcać udziały; nie jest to alokacja docelowa."
+  },
+  {
+    "key": "waluta",
+    "term": "Waluta notowania",
+    "synonyms": [],
+    "formula": "2",
+    "href": "/portfel",
+    "definition": "Waluta, w której podawana jest cena instrumentu.",
+    "reading": "Przeliczenie wyceny na PLN wymaga właściwego kursu wymiany.",
+    "pitfalls": "Waluta notowania nie opisuje pełnej ekspozycji walutowej przedsiębiorstwa ani ETF."
+  },
+  {
     "key": "wartosc",
     "term": "Wartość rynkowa",
     "synonyms": ["market value", "wycena"],
-    "formula": "4",
+    "formula": "5",
     "href": "/portfel",
     "definition": "Wartość posiadanych sztuk według dostępnych cen i kursów walut.",
     "reading": "Źródło i czas wyceny pokazują, z jakich danych powstał wynik.",
@@ -390,6 +480,16 @@
     "pitfalls": "Nie rozstrzyga to wszystkich obowiązków podatkowych inwestora."
   },
   {
+    "key": "wklad-dzienny",
+    "term": "Wkład do wyniku dnia",
+    "synonyms": [],
+    "formula": "5",
+    "href": "/portfel",
+    "definition": "Zmiana wartości instrumentu z korektą przepływów przypisanych mu w danym dniu.",
+    "reading": "Wkład procentowy odnosi się do tej samej bazy portfela co wynik dnia.",
+    "pitfalls": "Pozostały wynik obejmuje m.in. gotówkę i zdarzenia nieprzypisane instrumentom; braki danych pozostają jawne."
+  },
+  {
     "key": "wolumen",
     "term": "Wolumen",
     "synonyms": ["volume"],
@@ -410,6 +510,26 @@
     "pitfalls": "Niepełne ceny lub kursy mogą ograniczyć kompletność wyniku."
   },
   {
+    "key": "wynik-lokalny",
+    "term": "Wynik w walucie instrumentu",
+    "synonyms": [],
+    "formula": "4",
+    "href": "/portfel",
+    "definition": "Różnica bieżącej wartości pozycji i kosztu nabycia w walucie instrumentu.",
+    "reading": "Porównuj kwoty wyłącznie w tej samej walucie.",
+    "pitfalls": "Wynik w PLN dodatkowo zależy od kursów wymiany."
+  },
+  {
+    "key": "wynik-zrealizowany",
+    "term": "Wynik zrealizowany",
+    "synonyms": [],
+    "formula": "4",
+    "href": "/portfel",
+    "definition": "Różnica przychodu i kosztu zużytych partii FIFO w danym okresie.",
+    "reading": "Widok ekonomiczny i podatkowy mogą używać różnych kursów oraz kosztów.",
+    "pitfalls": "Wynik informacyjny nie zastępuje rozliczenia podatkowego; nieznane koszty są wyłączane z sum."
+  },
+  {
     "key": "xirr",
     "term": "XIRR",
     "synonyms": ["MWR", "IRR", "money weighted return"],
@@ -420,6 +540,16 @@
     "pitfalls": "Dla niektórych przepływów nie istnieje jednoznaczny wynik."
   },
   {
+    "key": "zakres-52-tygodni",
+    "term": "Zakres 52 tygodni",
+    "synonyms": [],
+    "formula": "5",
+    "href": "/portfel",
+    "definition": "Najniższa i najwyższa dostępna cena z ostatnich 52 tygodni.",
+    "reading": "Zakres opisuje obserwowaną historię instrumentu.",
+    "pitfalls": "Granice historyczne nie ograniczają przyszłych cen. Niepełna historia może zawężać zakres."
+  },
+  {
     "key": "zdarzenie-korporacyjne",
     "term": "Zdarzenie korporacyjne",
     "synonyms": ["corporate action"],
@@ -428,5 +558,15 @@
     "definition": "Zdarzenie dotyczące instrumentu, na przykład split lub dywidenda.",
     "reading": "Wyjaśnia niektóre zmiany liczby sztuk lub ceny.",
     "pitfalls": "Brak zdarzenia w danych może zniekształcić analizę."
+  },
+  {
+    "key": "zmiana-kursu",
+    "term": "Zmiana kursu",
+    "synonyms": [],
+    "formula": "5",
+    "href": "/portfel",
+    "definition": "Różnica ceny względem poprzedniego zamknięcia, kwotowo i procentowo.",
+    "reading": "Procent odnosi się do ceny poprzedniego zamknięcia.",
+    "pitfalls": "Nie jest wynikiem Twojego portfela; nie uwzględnia liczby sztuk, kosztów ani przepływów."
   }
 ]
