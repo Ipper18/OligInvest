@@ -44,7 +44,8 @@ export function fixtureCookie(route) {
     route === "/" ||
     route.startsWith("/ustawienia") ||
     route.startsWith("/portfel") ||
-    route.startsWith("/rynek")
+    route.startsWith("/rynek") ||
+    route.startsWith("/nauka")
   )
     return "__Host-oliginvest.session_token=fixture-perf";
   return "";

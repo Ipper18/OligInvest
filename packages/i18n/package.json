@@ -10,6 +10,10 @@
     "build": "tsc -p tsconfig.json"
   },
   "exports": {
+    "./education": {
+      "types": "./dist/education.d.ts",
+      "import": "./dist/education.js"
+    },
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"

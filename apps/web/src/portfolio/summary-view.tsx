@@ -2,6 +2,7 @@ import { portfolioMessages as m } from "@oliginvest/i18n";
 import { DataTable } from "@oliginvest/ui/table";
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { Explainer } from "../education/explainer";
 import { Amount, Freshness, ratio, TaxDisclaimer } from "./presentation";
 import type { Resource } from "./resources";
 
@@ -34,7 +35,15 @@ export function SummaryView({
       <dl className="oi-kpis">
         {(["totalValue", "dayChange", "unrealizedPl", "cash"] as const).map((key) => (
           <div key={key} className="oi-kpi">
-            <dt>{m[key]}</dt>
+            <dt>
+              {m[key]}
+              <Explainer
+                termKey={
+                  key === "dayChange" ? "wynik-dnia" : key === "unrealizedPl" ? "pl" : "wartosc"
+                }
+                term={m[key]}
+              />
+            </dt>
             <dd>
               <Amount value={data[key]} signed={key === "dayChange" || key === "unrealizedPl"} />
             </dd>
