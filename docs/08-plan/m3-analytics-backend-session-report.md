@@ -24,7 +24,7 @@
 4. Build „bez analytics”: moduł tylko w `optionalDependencies` aplikacji, ładowany w `src/modules.ts` z tolerancją braku pakietu; reguła w `check:deps` (testy) i `moduly.md` § 2. Sprawdzone lokalnie na kopii bez `modules/analytics`.
 5. Przy okazji: ACL `valkey-queue` dla `jobs` nie dopuszczał kluczy `benchmark:*` i `report:*` używanych od M2 (produkcyjny zapis znaczników i raportu GPW byłby odrzucony) — dodane z testem.
 
-Pozostaje (bez blokady): wrażliwość na długość bloku bootstrapu, tabela per kryzys (BL-556), prowizje transakcyjne.
+**2026-10-21 — akceptacja ograniczeń przez właściciela, BL-313 `gotowe`:** długość bloku w założeniach i dwa wiersze `block_length` w tabeli wrażliwości; ostrzeżenie `CRISIS_TESTS_UNAVAILABLE` w każdym wyniku i wymaganie dla ekranu BL-314. Pozostają poza M3: tabela per kryzys (BL-556) i prowizje transakcyjne.
 
 ## Odchylenia i ograniczenia
 

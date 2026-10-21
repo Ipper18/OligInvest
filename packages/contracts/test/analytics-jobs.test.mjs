@@ -132,6 +132,22 @@ test("done results carry only a distribution with assumptions; holds and cancell
           endValueP50: 4,
           goalProbability: 0.5,
         },
+        {
+          scenario: "block_length",
+          meanBlockMonths: 3,
+          annualCostRate: 0.005,
+          endValueP5: 1,
+          endValueP50: 3,
+          goalProbability: 0.4,
+        },
+        {
+          scenario: "block_length",
+          meanBlockMonths: 12,
+          annualCostRate: 0.005,
+          endValueP5: 1,
+          endValueP50: 3,
+          goalProbability: 0.4,
+        },
       ],
     },
     assumptions: { model: "stationary_bootstrap", proxies: ["WIG"], tax: { mode: "none" } },
@@ -150,7 +166,18 @@ test("done results carry only a distribution with assumptions; holds and cancell
   nanLike.result.maxDrawdownPercentiles.p5 = -1.5;
   const oneScenario = structuredClone(done);
   oneScenario.result.sensitivity = oneScenario.result.sensitivity.slice(0, 1);
-  for (const invalid of [point, nanLike, oneScenario, { ...done, result: undefined }])
+  const oneBlock = structuredClone(done);
+  oneBlock.result.sensitivity[3].meanBlockMonths = 3; // two rows, one block length
+  const blockWithoutLength = structuredClone(done);
+  delete blockWithoutLength.result.sensitivity[2].meanBlockMonths;
+  for (const invalid of [
+    point,
+    nanLike,
+    oneScenario,
+    oneBlock,
+    blockWithoutLength,
+    { ...done, result: undefined },
+  ])
     expect(analyticsResultSchema.safeParse(invalid).success).toBe(false);
   const { result: _r, assumptions: _a, warnings: _w, reproducibility: _p, ...envelope } = done;
   expect(analyticsResultSchema.parse({ ...envelope, status: "cancelled" }).status).toBe(

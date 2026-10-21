@@ -309,7 +309,14 @@ const monteCarloResult = object({
   }).optional(),
   sensitivity: z.array(
     object({
-      scenario: z.enum(["mean_minus_2pp", "mean_plus_2pp", "last_10y", "full_history"]),
+      scenario: z.enum([
+        "mean_minus_2pp",
+        "mean_plus_2pp",
+        "last_10y",
+        "full_history",
+        "block_length",
+      ]),
+      meanBlockMonths: int(1, 24).optional(),
       annualCostRate: z.number().optional(),
       endValueP5: z.number(),
       endValueP50: z.number(),

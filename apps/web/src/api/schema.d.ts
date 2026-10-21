@@ -4551,7 +4551,9 @@ export interface components {
             /** @description Obowiązkowa tabela wrażliwości (§ 12.1). */
             sensitivity: {
                 /** @enum {string} */
-                scenario: "mean_minus_2pp" | "mean_plus_2pp" | "last_10y" | "full_history";
+                scenario: "mean_minus_2pp" | "mean_plus_2pp" | "last_10y" | "full_history" | "block_length";
+                /** @description Tylko `block_length`: średnia długość bloku bootstrapu stacjonarnego w tym wierszu. */
+                meanBlockMonths?: number;
                 /** @description Roczny koszt przyjęty w scenariuszu (ułamek). */
                 annualCostRate?: number;
                 endValueP5: number;

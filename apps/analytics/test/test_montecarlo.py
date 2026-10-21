@@ -15,6 +15,7 @@ from oliginvest_analytics.montecarlo import (
     bootstrap_indices,
     flow_schedule,
     run_monte_carlo,
+    sensitivity_blocks,
     simulate,
 )
 
@@ -136,7 +137,13 @@ def test_same_seed_gives_identical_results_and_another_seed_differs() -> None:
 def test_sensitivity_table_is_mandatory_and_monotonic_in_the_mean() -> None:
     output = run_monte_carlo(job(), inputs())
     rows = {row["scenario"]: row for row in output["result"]["sensitivity"]}
-    assert set(rows) == {"mean_minus_2pp", "mean_plus_2pp", "last_10y", "full_history"}
+    assert set(rows) == {
+        "mean_minus_2pp",
+        "mean_plus_2pp",
+        "last_10y",
+        "full_history",
+        "block_length",
+    }
     base = output["result"]["nominal"]["p50"][-1]
     assert (
         rows["mean_minus_2pp"]["endValueP50"]
@@ -150,9 +157,12 @@ def test_sensitivity_table_is_mandatory_and_monotonic_in_the_mean() -> None:
     assert [r["scenario"] for r in short["result"]["sensitivity"]] == [
         "mean_minus_2pp",
         "mean_plus_2pp",
+        "block_length",
+        "block_length",
     ]
     assert [w["code"] for w in short["warnings"]] == [
         "COSTS_NOT_MODELLED",
+        "CRISIS_TESTS_UNAVAILABLE",
         "CONCENTRATION_NOT_MODELLED",
         "SHORT_HISTORY",
     ]
@@ -174,7 +184,9 @@ def test_assumptions_name_model_window_costs_tax_and_cash_rate() -> None:
     )
     a = output["assumptions"]
     assert a["model"] == "parametric_t" and a["degreesOfFreedom"] == 5
-    assert "meanBlockMonths" not in a
+    # Block length is shown for both models; with t it feeds the block-length rows.
+    assert a["meanBlockMonths"] == 6 and a["sensitivityBlockMonths"] == [3, 12]
+    assert a["crisisTests"] == "unavailable (BL-556)"
     assert (a["historyFrom"], a["historyTo"], a["historyMonths"]) == (
         "2000-01",
         "2024-12",
@@ -361,3 +373,26 @@ def test_us_total_return_index_is_labelled() -> None:
         WIG: "total_return",
         SPX: "total_return",
     }
+
+
+def test_sensitivity_has_two_other_block_lengths_and_a_crisis_notice() -> None:
+    # Owner conditions 2026-10-21 for accepting the M3 limitations.
+    assert sensitivity_blocks(6) == [3, 12]
+    assert sensitivity_blocks(1) == [2, 3]
+    assert sensitivity_blocks(24) == [1, 12]
+    assert sensitivity_blocks(5) == [2, 10]
+    output = run_monte_carlo(job(meanBlockMonths=6), inputs())
+    blocks = [
+        r for r in output["result"]["sensitivity"] if r["scenario"] == "block_length"
+    ]
+    assert [r["meanBlockMonths"] for r in blocks] == [3, 12]
+    assert all(r["endValueP5"] <= r["endValueP50"] for r in blocks)
+    assert output["assumptions"]["meanBlockMonths"] == 6
+    notice = next(
+        w for w in output["warnings"] if w["code"] == "CRISIS_TESTS_UNAVAILABLE"
+    )
+    assert notice["severity"] == "info" and "BL-556" in notice["message"]
+    assert check_result(envelope(output))
+    # Same seed, same block length as the main run → identical end distribution.
+    same = run_monte_carlo(job(meanBlockMonths=3), inputs())
+    assert same["result"]["nominal"]["p50"][-1] == blocks[0]["endValueP50"]

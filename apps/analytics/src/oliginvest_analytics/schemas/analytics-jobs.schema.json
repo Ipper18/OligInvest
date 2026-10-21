@@ -2442,53 +2442,103 @@
                 "additionalProperties": false
               },
               "sensitivity": {
-                "minItems": 2,
-                "maxItems": 4,
+                "minItems": 4,
+                "maxItems": 6,
                 "type": "array",
                 "items": {
-                  "type": "object",
-                  "properties": {
-                    "scenario": {
-                      "type": "string",
-                      "enum": [
-                        "mean_minus_2pp",
-                        "mean_plus_2pp",
-                        "last_10y",
-                        "full_history"
-                      ]
-                    },
-                    "annualCostRate": {
-                      "type": "number",
-                      "minimum": 0,
-                      "maximum": 0.05
-                    },
-                    "endValueP5": {
-                      "type": "number"
-                    },
-                    "endValueP50": {
-                      "type": "number"
-                    },
-                    "goalProbability": {
-                      "anyOf": [
-                        {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "scenario": {
+                          "type": "string",
+                          "enum": [
+                            "mean_minus_2pp",
+                            "mean_plus_2pp",
+                            "last_10y",
+                            "full_history"
+                          ]
+                        },
+                        "annualCostRate": {
                           "type": "number",
                           "minimum": 0,
-                          "maximum": 1
+                          "maximum": 0.05
                         },
-                        {
-                          "type": "null"
+                        "endValueP5": {
+                          "type": "number"
+                        },
+                        "endValueP50": {
+                          "type": "number"
+                        },
+                        "goalProbability": {
+                          "anyOf": [
+                            {
+                              "type": "number",
+                              "minimum": 0,
+                              "maximum": 1
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         }
-                      ]
+                      },
+                      "required": [
+                        "scenario",
+                        "annualCostRate",
+                        "endValueP5",
+                        "endValueP50",
+                        "goalProbability"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "scenario": {
+                          "type": "string",
+                          "const": "block_length"
+                        },
+                        "meanBlockMonths": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 24
+                        },
+                        "annualCostRate": {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 0.05
+                        },
+                        "endValueP5": {
+                          "type": "number"
+                        },
+                        "endValueP50": {
+                          "type": "number"
+                        },
+                        "goalProbability": {
+                          "anyOf": [
+                            {
+                              "type": "number",
+                              "minimum": 0,
+                              "maximum": 1
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "scenario",
+                        "meanBlockMonths",
+                        "annualCostRate",
+                        "endValueP5",
+                        "endValueP50",
+                        "goalProbability"
+                      ],
+                      "additionalProperties": false
                     }
-                  },
-                  "required": [
-                    "scenario",
-                    "annualCostRate",
-                    "endValueP5",
-                    "endValueP50",
-                    "goalProbability"
-                  ],
-                  "additionalProperties": false
+                  ]
                 }
               }
             },

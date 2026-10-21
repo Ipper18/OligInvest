@@ -29,6 +29,26 @@ CONCENTRATION_LIMIT = (
 RETURN_TYPES = {"WIG": "total_return", "^SP500TR": "total_return", "^GSPC": "price"}
 RETURN_FLOOR = -0.95  # a month cannot lose more than 95 % in the parametric model
 PERCENTILES = (5, 25, 50, 75, 95)
+BLOCK_CANDIDATES = (
+    1,
+    3,
+    12,
+    24,
+)  # fill-ins when half or double the block is not distinct
+
+
+def sensitivity_blocks(mean_block: int) -> list[int]:
+    """Two other mean block lengths for the sensitivity table (owner condition 2026-10-21):
+    half and double the chosen one within 1–24 months, else the nearest distinct candidates."""
+    lengths: list[int] = []
+    for length in (max(1, mean_block // 2), min(24, mean_block * 2), *BLOCK_CANDIDATES):
+        if length != mean_block and length not in lengths:
+            lengths.append(length)
+        if len(lengths) == 2:
+            break
+    return sorted(lengths)
+
+
 FREQUENCY_STEP = {"monthly": 1, "quarterly": 3, "yearly": 12}
 
 type Array = npt.NDArray[np.float64]
@@ -231,13 +251,15 @@ def run_monte_carlo(
         full[-WINDOW_10Y_MONTHS:] if params["historyWindow"] == "last_10y" else full
     )
 
-    def run(series: Array) -> Simulation:
+    def run(
+        series: Array, model: str | None = None, mean_block: int | None = None
+    ) -> Simulation:
         risky = _risky_paths(
-            params["model"],
+            model or params["model"],
             series,
             params["paths"],
             months_total,
-            params["meanBlockMonths"],
+            mean_block or params["meanBlockMonths"],
             seed,
         )
         return simulate(
@@ -267,6 +289,12 @@ def run_monte_carlo(
         )
         whole = main if params["historyWindow"] == "full" else run(full)
         scenarios += [("last_10y", recent), ("full_history", whole)]
+    # Block-length rows always use the stationary bootstrap (with the t model they compare models).
+    block_lengths = sensitivity_blocks(params["meanBlockMonths"])
+    block_rows = [
+        (length, run(windowed, "stationary_bootstrap", length))
+        for length in block_lengths
+    ]
     report(90, "summarizing")
 
     month_axis = np.arange(months_total + 1)
@@ -293,6 +321,17 @@ def run_monte_carlo(
                 "goalProbability": _goal_probability(sim.liquidation, goal),
             }
             for name, sim in scenarios
+        ]
+        + [
+            {
+                "scenario": "block_length",
+                "meanBlockMonths": length,
+                "annualCostRate": annual_cost,
+                "endValueP5": round(float(np.percentile(sim.values[:, -1], 5)), 2),
+                "endValueP50": round(float(np.percentile(sim.values[:, -1], 50)), 2),
+                "goalProbability": _goal_probability(sim.liquidation, goal),
+            }
+            for length, sim in block_rows
         ],
     }
     used = windowed.size
@@ -309,7 +348,13 @@ def run_monte_carlo(
             "severity": "info",
             "message": f"Roczny koszt {annual_cost:.2%} (opłaty funduszy i przewalutowanie) "
             "odejmowany raz w roku; prowizje transakcyjne są poza modelem.",
-        }
+        },
+        {
+            "code": "CRISIS_TESTS_UNAVAILABLE",
+            "severity": "info",
+            "message": "Testy w okresach kryzysów (BL-556: m.in. 2008, 2020, 2022) nie są jeszcze "
+            "dostępne; wynik nie pokazuje zachowania portfela w konkretnym kryzysie.",
+        },
     ]
     largest = max(
         (_amount(p["value"]) / total for p in portfolio["positions"]),
@@ -352,9 +397,11 @@ def run_monte_carlo(
         )
     assumptions: dict[str, Any] = {
         "model": params["model"],
-        "meanBlockMonths": params["meanBlockMonths"]
-        if params["model"] == "stationary_bootstrap"
-        else None,
+        # Shown for both models (owner condition 2026-10-21); with t it feeds the block rows.
+        "meanBlockMonths": params["meanBlockMonths"],
+        "sensitivityBlockMonths": block_lengths,
+        "sensitivityBlockModel": "stationary_bootstrap",
+        "crisisTests": "unavailable (BL-556)",
         "degreesOfFreedom": NU if params["model"] == "parametric_t" else None,
         "historyWindow": params["historyWindow"],
         "historyFrom": inputs.months[-used],

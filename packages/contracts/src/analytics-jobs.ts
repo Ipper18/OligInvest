@@ -380,18 +380,34 @@ export const monteCarloResultSchema = object({
   real: fan,
   goalProbability: z.number().min(0).max(1).nullable(),
   maxDrawdownPercentiles: object({ p5: ratio(-1, 0), p50: ratio(-1, 0), p95: ratio(-1, 0) }),
+  // Owner condition 2026-10-21: at least two block lengths besides the mean and window rows.
   sensitivity: z
     .array(
-      object({
-        scenario: z.enum(["mean_minus_2pp", "mean_plus_2pp", "last_10y", "full_history"]),
-        annualCostRate: ratio(0, 0.05),
-        endValueP5: z.number(),
-        endValueP50: z.number(),
-        goalProbability: z.number().min(0).max(1).nullable(),
-      }),
+      z.discriminatedUnion("scenario", [
+        object({
+          scenario: z.enum(["mean_minus_2pp", "mean_plus_2pp", "last_10y", "full_history"]),
+          annualCostRate: ratio(0, 0.05),
+          endValueP5: z.number(),
+          endValueP50: z.number(),
+          goalProbability: z.number().min(0).max(1).nullable(),
+        }),
+        object({
+          scenario: z.literal("block_length"),
+          meanBlockMonths: int(1, 24),
+          annualCostRate: ratio(0, 0.05),
+          endValueP5: z.number(),
+          endValueP50: z.number(),
+          goalProbability: z.number().min(0).max(1).nullable(),
+        }),
+      ]),
     )
-    .min(2)
-    .max(4),
+    .min(4)
+    .max(6)
+    .refine(
+      (rows) =>
+        new Set(rows.flatMap((r) => ("meanBlockMonths" in r ? [r.meanBlockMonths] : []))).size >= 2,
+      { message: "Sensitivity needs at least two block lengths" },
+    ),
 });
 const warning = object({
   code: z.string().regex(/^[A-Z][A-Z0-9_]{1,63}$/),
