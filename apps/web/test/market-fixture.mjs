@@ -1,5 +1,17 @@
 // Synthetic data for the M2 browser boundary; no network provider calls.
 export function marketFixture(path, url, send, instrumentId, instant) {
+  if (path.endsWith("/indicators"))
+    return send({
+      instrumentId,
+      interval: url.searchParams.get("interval") ?? "1d",
+      t: [1791763200, 1791849600],
+      indicators: url.searchParams.getAll("spec").map((spec) => ({
+        spec,
+        kind: ["sma", "ema", "bb"].includes(spec.split(":")[0]) ? "overlay" : "panel",
+        outputs: { value: [null, 11.5] },
+      })),
+      meta: { source: "gpw", asOf: instant, delayMinutes: 0, stale: false },
+    });
   if (path === "/market/benchmarks")
     return send({
       data: [
