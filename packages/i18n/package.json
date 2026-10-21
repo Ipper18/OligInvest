@@ -10,6 +10,14 @@
     "build": "tsc -p tsconfig.json"
   },
   "exports": {
+    "./onboarding": {
+      "types": "./dist/onboarding.d.ts",
+      "import": "./dist/onboarding.js"
+    },
+    "./allocation": {
+      "types": "./dist/allocation.d.ts",
+      "import": "./dist/allocation.js"
+    },
     "./education": {
       "types": "./dist/education.d.ts",
       "import": "./dist/education.js"
