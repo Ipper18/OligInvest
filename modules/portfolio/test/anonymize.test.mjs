@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import { Decimal } from "@oliginvest/core";
 import { expect, test, vi } from "vitest";
 import * as XLSX from "xlsx";
+import { BULK_TEST_TIMEOUT_MS } from "../../../scripts/test-timeouts.mjs";
 import { anonymizeFile, anonymizeXtb } from "../src/import/anonymize.js";
 import { parseXtb } from "../src/import/xtb.js";
 
@@ -106,37 +107,42 @@ test.each(["nowy", "stary"])(
   },
 );
 
-test("synthetic output is independent of input prices, quantities and amount magnitudes", () => {
-  const before = parseXtb(series(), account).rows;
-  const after = seeded(series());
-  expect(after).toEqual(seeded(series(true)));
-  for (const seed of [17, 2901]) expect(seeded(series(), seed)).toEqual(seeded(series(true), seed));
-  const trades = after.filter((r) => r.input.type === "BUY");
-  const source = before.filter((r) => r.input.type === "BUY");
-  expect(
-    Math.abs(
-      correlation(
-        source.map((r) => Number(r.input.price)),
-        trades.map((r) => Number(r.input.price)),
+test(
+  "synthetic output is independent of input prices, quantities and amount magnitudes",
+  () => {
+    const before = parseXtb(series(), account).rows;
+    const after = seeded(series());
+    expect(after).toEqual(seeded(series(true)));
+    for (const seed of [17, 2901])
+      expect(seeded(series(), seed)).toEqual(seeded(series(true), seed));
+    const trades = after.filter((r) => r.input.type === "BUY");
+    const source = before.filter((r) => r.input.type === "BUY");
+    expect(
+      Math.abs(
+        correlation(
+          source.map((r) => Number(r.input.price)),
+          trades.map((r) => Number(r.input.price)),
+        ),
       ),
-    ),
-  ).toBeLessThan(0.25);
-  expect(
-    new Set(trades.map((r, i) => new Decimal(r.raw.amount).div(source[i].raw.amount).toFixed(8)))
-      .size,
-  ).toBeGreaterThan(400);
-  let held = new Decimal(0);
-  for (const row of after) {
-    if (!["BUY", "SELL"].includes(row.input.type)) continue;
-    const gross = new Decimal(row.input.quantity)
-      .mul(row.input.price)
-      .toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
-    expect(new Decimal(row.raw.amount).abs().eq(gross)).toBe(true);
-    held = held.plus(new Decimal(row.input.quantity).mul(row.input.type === "BUY" ? 1 : -1));
-    expect(held.gte(0)).toBe(true);
-  }
-  assertCash(after);
-}, 30_000);
+    ).toBeLessThan(0.25);
+    expect(
+      new Set(trades.map((r, i) => new Decimal(r.raw.amount).div(source[i].raw.amount).toFixed(8)))
+        .size,
+    ).toBeGreaterThan(400);
+    let held = new Decimal(0);
+    for (const row of after) {
+      if (!["BUY", "SELL"].includes(row.input.type)) continue;
+      const gross = new Decimal(row.input.quantity)
+        .mul(row.input.price)
+        .toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
+      expect(new Decimal(row.raw.amount).abs().eq(gross)).toBe(true);
+      held = held.plus(new Decimal(row.input.quantity).mul(row.input.type === "BUY" ? 1 : -1));
+      expect(held.gte(0)).toBe(true);
+    }
+    assertCash(after);
+  },
+  BULK_TEST_TIMEOUT_MS,
+);
 
 test("reverse-ordered exports retain row order and funding, charges and split sales reconcile", () => {
   const lines = [

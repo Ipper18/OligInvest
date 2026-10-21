@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { performance } from "node:perf_hooks";
 import { describe, expect, test } from "vitest";
 import * as XLSX from "xlsx";
+import { BULK_TEST_TIMEOUT_MS } from "../../../scripts/test-timeouts.mjs";
 import { parseXtb } from "../src/import/xtb.js";
 
 const accountId = "0198a000-0000-7000-8000-000000000001";
@@ -67,11 +68,15 @@ describe("XTB content detection and lossless parsing", () => {
     bytes.writeUInt32LE(52428801, entry + 24);
     expect(() => parse(bytes)).toThrow();
   });
-  test("5000 rows parse within 30 seconds and 50001 rows fail closed", () => {
-    const rows = Array.from({ length: 5000 }, (_, i) => `deposit;;2025-01-10 10:00:00;1;${i};;`);
-    const start = performance.now();
-    expect(parse(csv(rows)).rows).toHaveLength(5000);
-    expect(performance.now() - start).toBeLessThan(30000);
-    expect(() => parse(csv(Array(50001).fill(rows[0])))).toThrow();
-  }, 30_000);
+  test(
+    "5000 rows parse within 30 seconds and 50001 rows fail closed",
+    () => {
+      const rows = Array.from({ length: 5000 }, (_, i) => `deposit;;2025-01-10 10:00:00;1;${i};;`);
+      const start = performance.now();
+      expect(parse(csv(rows)).rows).toHaveLength(5000);
+      expect(performance.now() - start).toBeLessThan(30000);
+      expect(() => parse(csv(Array(50001).fill(rows[0])))).toThrow();
+    },
+    BULK_TEST_TIMEOUT_MS,
+  );
 });
