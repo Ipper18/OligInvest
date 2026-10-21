@@ -33,8 +33,20 @@ function workerResult(runId) {
       goalProbability: null,
       maxDrawdownPercentiles: { p5: -0.4, p50: -0.2, p95: -0.05 },
       sensitivity: [
-        { scenario: "mean_minus_2pp", endValueP5: 90, endValueP50: 110, goalProbability: null },
-        { scenario: "mean_plus_2pp", endValueP5: 95, endValueP50: 130, goalProbability: null },
+        {
+          scenario: "mean_minus_2pp",
+          annualCostRate: 0,
+          endValueP5: 90,
+          endValueP50: 110,
+          goalProbability: null,
+        },
+        {
+          scenario: "mean_plus_2pp",
+          annualCostRate: 0,
+          endValueP5: 95,
+          endValueP50: 130,
+          goalProbability: null,
+        },
       ],
     },
     assumptions: { model: "stationary_bootstrap", historyMonths: 240 },
@@ -146,6 +158,13 @@ export async function testAnalyticsStorage(settings) {
       await tx.execute(
         sql`INSERT INTO market.instruments(mic,ticker,name,type,currency,country)VALUES('XWAR','WIG','WIG','index','PLN','PL'),('XNYS','^GSPC','S&P 500','index','USD','US') ON CONFLICT(mic,ticker) WHERE ticker IS NOT NULL DO NOTHING`,
       );
+      // Proxies count only with bars; ^SP500TR starts without a series (Yahoo fallback case).
+      await tx.execute(
+        sql`DELETE FROM market.bars_daily WHERE instrument_id IN (SELECT id FROM market.instruments WHERE mic='XNYS' AND ticker='^SP500TR')`,
+      );
+      await tx.execute(
+        sql`INSERT INTO market.bars_daily(instrument_id,session_date,close,source) SELECT id,'2026-10-16',100,'yahoo' FROM market.instruments WHERE (mic,ticker) IN (('XWAR','WIG'),('XNYS','^GSPC')) ON CONFLICT DO NOTHING`,
+      );
       return Object.fromEntries(
         (
           await tx.execute(
@@ -206,6 +225,7 @@ export async function testAnalyticsStorage(settings) {
     assert.equal(run.status, "queued");
     assert.equal(run.params.model, "stationary_bootstrap");
     assert.equal(run.params.contributions[0].endYear, 2);
+    assert.equal(run.params.annualCostRate, 0, "explicit default of the annual cost");
     assert.equal(Number.isInteger(run.params.seed), true);
     assert.deepEqual(run.compliance, {
       disclaimerKey: "analysis",
@@ -230,6 +250,10 @@ export async function testAnalyticsStorage(settings) {
       },
     });
     assert.equal(job.seed, run.params.seed);
+    assert.equal(job.params.annualCostRate, 0);
+    // Without ^SP500TR bars the US part falls back to ^GSPC, visibly (owner decision 2026-10-20).
+    assert.equal(run.warnings.find((w) => w.code === "PROXY_PRICE_INDEX")?.severity, "warning");
+    assert.match(run.assumptions.usEquityProxy, /\^GSPC/);
 
     // Idempotency: same key replays, a different body conflicts, the queue sees one job.
     const replay = await create(monteCarlo, key);
@@ -286,7 +310,11 @@ export async function testAnalyticsStorage(settings) {
     assert.equal(stored.result.kind, "monte_carlo");
     assert.equal(stored.assumptions.historyMonths, 240);
     assert.equal(stored.assumptions.portfolioAsOf, "2026-10-19");
-    assert.equal(stored.warnings[0].code, "SHORT_HISTORY");
+    assert.deepEqual(
+      stored.warnings.map((w) => w.code),
+      ["PROXY_PRICE_INDEX", "SHORT_HISTORY"],
+      "api warnings first, worker warnings appended",
+    );
     assert.deepEqual(stored.reproducibility.libraries, { numpy: "2.5.0" });
     assert.equal(stored.durationMs, 4000);
     await results.handleResult({
@@ -312,6 +340,31 @@ export async function testAnalyticsStorage(settings) {
         sql`UPDATE platform.role_limits SET limits='{"analytics_heavy_per_day":10}' WHERE role='pro'`,
       ),
     );
+    // With a ^SP500TR series the total-return index is the US proxy and no fallback is reported.
+    const totalReturn = await database.transaction({ userId: null, role: "system" }, async (tx) => {
+      await tx.execute(
+        sql`INSERT INTO market.instruments(mic,ticker,name,type,currency,country)VALUES('XNYS','^SP500TR','S&P 500 Total Return','index','USD','US') ON CONFLICT(mic,ticker) WHERE ticker IS NOT NULL DO NOTHING`,
+      );
+      const row = (
+        await tx.execute(
+          sql`SELECT id::text FROM market.instruments WHERE mic='XNYS' AND ticker='^SP500TR'`,
+        )
+      ).rows[0];
+      await tx.execute(
+        sql`INSERT INTO market.bars_daily(instrument_id,session_date,close,source)VALUES(${row.id}::uuid,'2026-10-16',100,'yahoo') ON CONFLICT DO NOTHING`,
+      );
+      return row.id;
+    });
+    const withDividends = await (await create(monteCarlo)).json();
+    assert.equal(
+      queued.at(-1).portfolio.positions.find((p) => p.instrumentId === us).proxyInstrumentId,
+      totalReturn,
+    );
+    assert.equal(
+      withDividends.warnings.some((w) => w.code === "PROXY_PRICE_INDEX"),
+      false,
+    );
+    assert.equal(withDividends.assumptions.usEquityProxy, undefined);
     const held = await (await create(monteCarlo)).json();
     await results.handleResult({
       v: 1,

@@ -66,6 +66,7 @@ export const monteCarloParams = object({
   withdrawals: z.array(cashFlowPlan).max(10).optional(),
   inflationRate: num(0, 0.2).default(0.025),
   taxMode: z.enum(["belka_simplified", "none"]).default("belka_simplified"),
+  annualCostRate: num(0, 0.05).default(0),
   goal: moneySchema.optional(),
   proxyOverrides: z
     .array(object({ instrumentId: uuid, proxyInstrumentId: uuid }))
@@ -309,6 +310,7 @@ const monteCarloResult = object({
   sensitivity: z.array(
     object({
       scenario: z.enum(["mean_minus_2pp", "mean_plus_2pp", "last_10y", "full_history"]),
+      annualCostRate: z.number().optional(),
       endValueP5: z.number(),
       endValueP50: z.number(),
       goalProbability: z.number().nullable().optional(),

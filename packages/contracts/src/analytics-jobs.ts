@@ -115,6 +115,8 @@ export const monteCarloJobSchema = job("monte_carlo", {
     withdrawals: z.array(cashFlowPlan).max(10),
     inflationRate,
     taxMode: z.enum(["belka_simplified", "none"]),
+    // TER + FX conversion as a fraction, deducted once a year (owner decision 2026-10-20).
+    annualCostRate: ratio(0, 0.05),
     goal: positivePln.optional(),
   }).refine(
     (params) =>
@@ -382,6 +384,7 @@ export const monteCarloResultSchema = object({
     .array(
       object({
         scenario: z.enum(["mean_minus_2pp", "mean_plus_2pp", "last_10y", "full_history"]),
+        annualCostRate: ratio(0, 0.05),
         endValueP5: z.number(),
         endValueP50: z.number(),
         goalProbability: z.number().min(0).max(1).nullable(),

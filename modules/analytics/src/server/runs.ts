@@ -37,7 +37,13 @@ const ERROR_MESSAGES: Record<(typeof ANALYTICS_ERROR_CODES)[number], string> = {
   DATA_QUALITY_HOLD: "Seria danych wejściowych czeka na weryfikację jakości.",
 };
 // Proxy series of § 12.1: GPW listings → WIG, other listings → S&P 500, cash → risk-free rate.
-const PROXIES = { gpw: { mic: "XWAR", ticker: "WIG" }, other: { mic: "XNYS", ticker: "^GSPC" } };
+// US listings use S&P 500 with dividends (^SP500TR, NIEZWERYFIKOWANE on Yahoo); without its
+// bars the price index ^GSPC stands in, with a visible warning (owner decision 2026-10-20).
+const PROXIES = {
+  gpw: { mic: "XWAR", ticker: "WIG" },
+  other: { mic: "XNYS", ticker: "^SP500TR" },
+  otherFallback: { mic: "XNYS", ticker: "^GSPC" },
+};
 
 export interface AnalyticsQueue {
   enqueue(job: AnalyticsJob): Promise<void>;
@@ -219,6 +225,7 @@ export class AnalyticsRepository {
           withdrawals: params.withdrawals,
           inflationRate: params.inflationRate,
           taxMode: params.taxMode,
+          annualCostRate: params.annualCostRate,
           ...(params.goal ? { goal: params.goal } : {}),
         },
         portfolio,
@@ -292,13 +299,16 @@ export class AnalyticsRepository {
     ).rows;
     const proxies = (
       await tx.execute(
-        sql`SELECT id::text,mic,ticker FROM market.instruments WHERE (mic=${PROXIES.gpw.mic} AND ticker=${PROXIES.gpw.ticker}) OR (mic=${PROXIES.other.mic} AND ticker=${PROXIES.other.ticker})`,
+        sql`SELECT i.id::text,i.mic,i.ticker FROM market.instruments i WHERE (i.mic,i.ticker) IN ((${PROXIES.gpw.mic},${PROXIES.gpw.ticker}),(${PROXIES.other.mic},${PROXIES.other.ticker}),(${PROXIES.otherFallback.mic},${PROXIES.otherFallback.ticker})) AND EXISTS(SELECT 1 FROM market.bars_daily b WHERE b.instrument_id=i.id)`,
       )
     ).rows;
     const proxyId = (target: { mic: string; ticker: string }) =>
       proxies.find((p) => p.mic === target.mic && p.ticker === target.ticker)?.id as
         | string
         | undefined;
+    const usTotalReturn = proxyId(PROXIES.other);
+    const usProxy = usTotalReturn ?? proxyId(PROXIES.otherFallback);
+    let usFallbackUsed = false;
     const overrides = new Map(
       (params.proxyOverrides ?? []).map((o) => [o.instrumentId, o.proxyInstrumentId]),
     );
@@ -322,9 +332,10 @@ export class AnalyticsRepository {
         continue;
       }
       const instrumentId = String(p.instrumentId);
-      const proxy =
-        overrides.get(instrumentId) ??
-        proxyId(p.mic === PROXIES.gpw.mic ? PROXIES.gpw : PROXIES.other);
+      const override = overrides.get(instrumentId);
+      const proxy = override ?? (p.mic === PROXIES.gpw.mic ? proxyId(PROXIES.gpw) : usProxy);
+      if (!override && p.mic !== PROXIES.gpw.mic && !usTotalReturn && usProxy)
+        usFallbackUsed = true;
       if (!proxy)
         throw outOfBounds("proxyOverrides", "proxy_unavailable", "Brak serii proxy dla pozycji.");
       const current = grouped.get(instrumentId);
@@ -338,6 +349,13 @@ export class AnalyticsRepository {
         code: "POSITIONS_UNVALUED",
         severity: "warning",
         message: `Pominięto pozycje bez wyceny w PLN: ${unvalued}.`,
+      });
+    if (usFallbackUsed)
+      warnings.push({
+        code: "PROXY_PRICE_INDEX",
+        severity: "warning",
+        message:
+          "Seria S&P 500 z dywidendami (^SP500TR) jest niedostępna; użyto indeksu cenowego ^GSPC — wynik części USA jest zaniżony o dywidendy.",
       });
     if (!grouped.size)
       throw outOfBounds("accountIds", "no_positions", "Brak wycenionych pozycji do symulacji.");
@@ -358,6 +376,9 @@ export class AnalyticsRepository {
         portfolioAsOf: asOf,
         proxyMapping: Object.fromEntries([...grouped].map(([id, g]) => [id, g.proxy])),
         cashProxy: "NBP:REF_RATE",
+        ...(usFallbackUsed
+          ? { usEquityProxy: "^GSPC (indeks cenowy, bez dywidend; ^SP500TR niedostępny)" }
+          : {}),
         accountsIncluded: latest.length,
       },
       warnings,

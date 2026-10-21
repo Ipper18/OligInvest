@@ -209,6 +209,11 @@
                   "none"
                 ]
               },
+              "annualCostRate": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 0.05
+              },
               "goal": {
                 "type": "object",
                 "properties": {
@@ -237,7 +242,8 @@
               "contributions",
               "withdrawals",
               "inflationRate",
-              "taxMode"
+              "taxMode",
+              "annualCostRate"
             ],
             "additionalProperties": false
           },
@@ -2451,6 +2457,11 @@
                         "full_history"
                       ]
                     },
+                    "annualCostRate": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 0.05
+                    },
                     "endValueP5": {
                       "type": "number"
                     },
@@ -2472,6 +2483,7 @@
                   },
                   "required": [
                     "scenario",
+                    "annualCostRate",
                     "endValueP5",
                     "endValueP50",
                     "goalProbability"

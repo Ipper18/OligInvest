@@ -98,7 +98,8 @@ def acl(values, cache=False):
             if service == "api":
                 keys += " ~auth:*"
             if service == "jobs":
-                keys += " ~quota:* ~breaker:*"
+                # Market job state: benchmark backfill markers and the GPW completeness report.
+                keys += " ~quota:* ~breaker:* ~benchmark:* ~report:*"
             commands = "+@read +@write +@scripting +@transaction +ping +info +client|setname +client|setinfo -flushall -flushdb -config -debug -module -acl -keys -scan -randomkey -migrate -restore -sort -sort_ro"
         lines.append(f"user {service} on #{digest} {keys} {commands}")
     return ("\n".join(lines) + "\n").encode()

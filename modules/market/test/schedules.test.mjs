@@ -6,7 +6,12 @@ import {
 } from "@oliginvest/data-providers/adapters";
 import { afterEach, expect, test, vi } from "vitest";
 import { BENCHMARK_HISTORY_DAYS, BENCHMARKS, BENCHMARKS_PER_RUN } from "../dist/src/benchmarks.js";
-import { createMarketJobs, IngestionStore, marketSchedules } from "../dist/src/jobs.js";
+import {
+  createMarketJobs,
+  IngestionStore,
+  marketSchedules,
+  NBP_BACKFILL,
+} from "../dist/src/jobs.js";
 import {
   MAX_QUOTED_INSTRUMENTS,
   QUOTE_ATTEMPT_MS,
@@ -36,7 +41,7 @@ function fixture(instant = "2026-10-07T10:20:00Z") {
   });
   return { ...jobs, transport };
 }
-test("seven idempotent schedules use Warsaw civil time", () => {
+test("eight idempotent schedules use Warsaw civil time", () => {
   expect(marketSchedules.map((s) => [s.job, s.cron, s.tz])).toEqual([
     ["market.fx", "20 12 * * 1-5", "Europe/Warsaw"],
     ["market.gpw", "30 18 * * 1-5", "Europe/Warsaw"],
@@ -45,6 +50,7 @@ test("seven idempotent schedules use Warsaw civil time", () => {
     ["market.gpw-completeness", "30 19 * * 1-5", "Europe/Warsaw"],
     ["market.benchmarks", "45 23 * * 1-5", "Europe/Warsaw"],
     ["market.macro", "0 6 * * *", "Europe/Warsaw"],
+    ["market.fx-backfill", "15 5 * * *", "Europe/Warsaw"],
   ]);
 });
 test("NBP fallback starts at the third failed attempt; no calls after 14:00", async () => {
@@ -230,7 +236,11 @@ test("benchmarks backfill five years once, then refresh a week, two series per r
 });
 test("Monte Carlo proxies (WIG, S&P 500) backfill full history once, then refresh a week", async () => {
   const proxies = BENCHMARKS.filter((b) => b.fullHistory);
-  expect(proxies.map((b) => b.code)).toEqual(["WIG", "SPX"]);
+  expect(proxies.map((b) => b.code)).toEqual(["WIG", "SPX", "SPXTR"]);
+  expect(proxies.find((b) => b.code === "SPXTR")).toMatchObject({
+    yahoo: "^SP500TR",
+    verified: false,
+  });
   const id = "0192f0c4-7b1e-7c3a-9f00-3d2a1b4c5d80";
   const keys = new Map([[`benchmark:backfill-full:${id}`, "1970-01-01"]]);
   const queue = {
@@ -254,4 +264,50 @@ test("Monte Carlo proxies (WIG, S&P 500) backfill full history once, then refres
   vi.spyOn(jobs.repository, "saveBars").mockResolvedValue();
   await jobs.dispatch("market.benchmarks", { date: "2026-10-20" });
   expect(bars.mock.calls).toEqual([[id, { from: "2026-10-12", to: "2026-10-20" }]]);
+});
+
+test("NBP table A backfill since 2002: 93-day ranges, five per run, resumable, then a no-op", async () => {
+  const keys = new Map();
+  const queue = {
+    get: vi.fn(async (key) => keys.get(key) ?? null),
+    set: vi.fn(async (key, value) => keys.set(key, value)),
+  };
+  vi.spyOn(ProviderLimits.prototype, "run").mockImplementation((_name, _quota, work) => work());
+  const saved = vi.spyOn(IngestionStore.prototype, "saveFx").mockResolvedValue();
+  const table = vi
+    .spyOn(NbpProvider.prototype, "getTable")
+    .mockResolvedValueOnce([])
+    .mockRejectedValueOnce(new ProviderError("no_data"))
+    .mockResolvedValue([]);
+  const enqueue = vi.fn();
+  const jobs = createMarketJobs({
+    database: { transaction: vi.fn() },
+    queue,
+    cache: {},
+    observed: async () => [],
+    enqueue,
+    now: () => new Date("2026-10-20T03:15:00Z"),
+    transport: vi.fn(),
+  });
+  await jobs.dispatch("market.fx-backfill", {});
+  expect(table.mock.calls.slice(0, 2)).toEqual([
+    ["2002-01-02", "2002-04-04"],
+    ["2002-04-05", "2002-07-06"],
+  ]);
+  expect(table).toHaveBeenCalledTimes(NBP_BACKFILL.perRun);
+  for (const [from, to] of table.mock.calls) expect(to >= from).toBe(true);
+  expect(saved).toHaveBeenCalledTimes(NBP_BACKFILL.perRun - 1); // the 404 range is skipped
+  expect(keys.get(NBP_BACKFILL.next)).toBe("2003-04-12"); // 2002-01-02 + 5 × 93 days
+  expect(enqueue).toHaveBeenCalledWith("market.fx-backfill", {}, 60_000);
+  // Close to the end the run finishes, marks completion and later runs do nothing.
+  keys.set(NBP_BACKFILL.next, "2026-09-01");
+  table.mockClear();
+  enqueue.mockClear();
+  await jobs.dispatch("market.fx-backfill", {});
+  expect(table.mock.calls).toEqual([["2026-09-01", "2026-10-19"]]);
+  expect(keys.get(NBP_BACKFILL.done)).toBe("2026-10-19");
+  expect(enqueue).not.toHaveBeenCalled();
+  table.mockClear();
+  await jobs.dispatch("market.fx-backfill", {});
+  expect(table).not.toHaveBeenCalled();
 });

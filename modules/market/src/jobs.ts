@@ -47,7 +47,21 @@ export const marketSchedules = [
   { job: "market.benchmarks", cron: "45 23 * * 1-5", tz: "Europe/Warsaw" },
   // Risk-free rate FRED DGS3MO (BL-319): one request at 06:00 (strategia-cache § 5).
   { job: "market.macro", cron: "0 6 * * *", tz: "Europe/Warsaw" },
+  // One-time NBP table A backfill since 2002 (BL-313); a no-op once finished.
+  { job: "market.fx-backfill", cron: "15 5 * * *", tz: "Europe/Warsaw" },
 ] as const;
+/**
+ * NBP table A history for Monte Carlo in PLN (owner decision 2026-10-20): the API serves tables
+ * from 2002-01-02, ≤ 93 days per request. Five requests per run (NBP budget 6/min), the run
+ * continues itself a minute later; progress lives in AOF-backed `quota:` keys of valkey-queue.
+ */
+export const NBP_BACKFILL = {
+  start: "2002-01-02",
+  perRun: 5,
+  continueMs: 60_000,
+  next: "quota:nbp:backfill:next",
+  done: "quota:nbp:backfill:done",
+} as const;
 /** DGS3MO starts on 1981-09-01; a first run backfills it in one request, later runs re-read 14 days. */
 export const FRED_DGS3MO = {
   code: "FRED:DGS3MO",
@@ -274,6 +288,25 @@ export function createMarketJobs(options: {
           fred.getObservations(FRED_DGS3MO.seriesId, from, payload.to ?? date),
         );
         await store.saveMacroObservations(FRED_DGS3MO, observations);
+        return;
+      }
+      case "market.fx-backfill": {
+        if (await options.queue.get(NBP_BACKFILL.done)) return;
+        const end = addDays(repository.today(), -1);
+        const next = (await options.queue.get(NBP_BACKFILL.next)) ?? NBP_BACKFILL.start;
+        const ranges = next <= end ? nbpRanges(next, end) : [];
+        for (const range of ranges.slice(0, NBP_BACKFILL.perRun)) {
+          try {
+            await store.saveFx(await nbp.getTable(range.from, range.to));
+          } catch (error) {
+            // A range without any published table (404) is a fact, not a failure.
+            if (!(error instanceof ProviderError && error.reason === "no_data")) throw error;
+          }
+          await options.queue.set(NBP_BACKFILL.next, addDays(range.to, 1));
+        }
+        if (ranges.length > NBP_BACKFILL.perRun)
+          await options.enqueue("market.fx-backfill", {}, NBP_BACKFILL.continueMs);
+        else await options.queue.set(NBP_BACKFILL.done, end);
         return;
       }
       case "market.backfill":

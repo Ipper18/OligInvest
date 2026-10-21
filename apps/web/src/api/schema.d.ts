@@ -4274,6 +4274,11 @@ export interface components {
              * @enum {string}
              */
             taxMode: "belka_simplified" | "none";
+            /**
+             * @description Roczny koszt (TER + przewalutowanie) jako ułamek, odejmowany od wartości raz w roku; prowizje transakcyjne poza modelem.
+             * @default 0
+             */
+            annualCostRate: number;
             goal?: components["schemas"]["Money"];
             proxyOverrides?: {
                 instrumentId: components["schemas"]["Uuid"];
@@ -4547,6 +4552,8 @@ export interface components {
             sensitivity: {
                 /** @enum {string} */
                 scenario: "mean_minus_2pp" | "mean_plus_2pp" | "last_10y" | "full_history";
+                /** @description Roczny koszt przyjęty w scenariuszu (ułamek). */
+                annualCostRate?: number;
                 endValueP5: number;
                 endValueP50: number;
                 goalProbability?: number | null;

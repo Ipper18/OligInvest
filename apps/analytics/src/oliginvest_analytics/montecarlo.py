@@ -26,7 +26,7 @@ CONCENTRATION_LIMIT = (
     0.2  # proxies hide single-instrument risk above this weight (BL-318)
 )
 # Index return type of known proxies (BL-318): a price index omits dividends.
-RETURN_TYPES = {"WIG": "total_return", "^GSPC": "price"}
+RETURN_TYPES = {"WIG": "total_return", "^SP500TR": "total_return", "^GSPC": "price"}
 RETURN_FLOOR = -0.95  # a month cannot lose more than 95 % in the parametric model
 PERCENTILES = (5, 25, 50, 75, 95)
 FREQUENCY_STEP = {"monthly": 1, "quarterly": 3, "yearly": 12}
@@ -132,10 +132,13 @@ def simulate(
     contributions: Array,
     withdrawals: Array,
     tax: bool,
+    annual_cost: float = 0.0,
 ) -> Simulation:
     """Constant mix rebalanced monthly; flows at the start of the month (§ 6.2 convention).
     Withdrawals are net amounts; the simplified tax takes 19 % of the gain share of the gross
-    withdrawal, the cost basis starts at today's value (§ 12.1 assumption)."""
+    withdrawal, the cost basis starts at today's value (§ 12.1 assumption). The annual cost
+    (TER + FX conversion) is deducted from the value once a year, at the end of every 12th
+    month; it lowers the return index too, so drawdowns are net of costs."""
     paths, months = risky.shape
     returns = (1 - cash_share) * risky + cash_share * cash_monthly
     values = np.empty((paths, months + 1))
@@ -163,6 +166,9 @@ def simulate(
             value = value - gross
         value = np.maximum(value * (1 + returns[:, m]), 0)
         index = index * (1 + returns[:, m])
+        if annual_cost > 0 and (m + 1) % 12 == 0:
+            value = value * (1 - annual_cost)
+            index = index * (1 - annual_cost)
         peak = np.maximum(peak, index)
         worst = np.minimum(worst, index / peak - 1)
         values[:, m + 1] = value
@@ -219,6 +225,7 @@ def run_monte_carlo(
     contributions = flow_schedule(params["contributions"], months_total, inflation)
     withdrawals = flow_schedule(params["withdrawals"], months_total, inflation)
     tax = params["taxMode"] == "belka_simplified"
+    annual_cost = float(params.get("annualCostRate", 0))
     goal = float(_amount(params["goal"])) if params.get("goal") else None
     windowed = (
         full[-WINDOW_10Y_MONTHS:] if params["historyWindow"] == "last_10y" else full
@@ -241,6 +248,7 @@ def run_monte_carlo(
             contributions=contributions,
             withdrawals=withdrawals,
             tax=tax,
+            annual_cost=annual_cost,
         )
 
     report(10, "simulating")
@@ -279,6 +287,7 @@ def run_monte_carlo(
         "sensitivity": [
             {
                 "scenario": name,
+                "annualCostRate": annual_cost,
                 "endValueP5": round(float(np.percentile(sim.values[:, -1], 5)), 2),
                 "endValueP50": round(float(np.percentile(sim.values[:, -1], 50)), 2),
                 "goalProbability": _goal_probability(sim.liquidation, goal),
@@ -291,8 +300,15 @@ def run_monte_carlo(
         {
             "code": "COSTS_NOT_MODELLED",
             "severity": "info",
-            "message": "Model nie uwzględnia opłat funduszy, prowizji ani przewalutowania; "
-            "rzeczywiste wartości będą niższe o ich sumę.",
+            "message": "Roczny koszt ustawiono na 0 %: opłaty funduszy i przewalutowanie są "
+            "pominięte, a prowizje transakcyjne są poza modelem; rzeczywiste wartości będą niższe.",
+        }
+        if annual_cost == 0
+        else {
+            "code": "TRANSACTION_COSTS_NOT_MODELLED",
+            "severity": "info",
+            "message": f"Roczny koszt {annual_cost:.2%} (opłaty funduszy i przewalutowanie) "
+            "odejmowany raz w roku; prowizje transakcyjne są poza modelem.",
         }
     ]
     largest = max(
@@ -358,7 +374,9 @@ def run_monte_carlo(
         "taxMode": params["taxMode"],
         "taxRate": BELKA if tax else 0,
         "taxBasis": "start_value" if tax else None,
-        "costs": "none",
+        "annualCostRate": annual_cost,
+        "annualCostApplication": "value_deduction_every_12_months",
+        "transactionCosts": "none",
         "proxySeries": {proxy: inputs.tickers.get(proxy, proxy) for proxy in weights},
         "proxyReturnType": {
             proxy: RETURN_TYPES.get(inputs.tickers.get(proxy, ""), "unknown")

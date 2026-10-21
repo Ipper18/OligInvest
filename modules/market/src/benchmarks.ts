@@ -67,6 +67,21 @@ export const BENCHMARKS: readonly BenchmarkDefinition[] = [
     fullHistory: true,
   },
   {
+    // S&P 500 with dividends: Monte Carlo proxy of US listings (owner decision 2026-10-20).
+    // NIEZWERYFIKOWANE: when Yahoo returns no series, api falls back to ^GSPC with a warning.
+    code: "SPXTR",
+    name: "S&P 500 Total Return",
+    kind: "index",
+    yahoo: "^SP500TR",
+    ticker: "^SP500TR",
+    mic: "XNYS",
+    type: "index",
+    currency: "USD",
+    country: "US",
+    verified: false,
+    fullHistory: true,
+  },
+  {
     code: "NDX",
     name: "Nasdaq-100",
     kind: "index",

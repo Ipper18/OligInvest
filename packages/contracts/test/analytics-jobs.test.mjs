@@ -118,8 +118,20 @@ test("done results carry only a distribution with assumptions; holds and cancell
       goalProbability: 0.42,
       maxDrawdownPercentiles: { p5: -0.5, p50: -0.2, p95: -0.05 },
       sensitivity: [
-        { scenario: "mean_minus_2pp", endValueP5: 1, endValueP50: 2, goalProbability: 0.3 },
-        { scenario: "mean_plus_2pp", endValueP5: 1, endValueP50: 4, goalProbability: 0.5 },
+        {
+          scenario: "mean_minus_2pp",
+          annualCostRate: 0.005,
+          endValueP5: 1,
+          endValueP50: 2,
+          goalProbability: 0.3,
+        },
+        {
+          scenario: "mean_plus_2pp",
+          annualCostRate: 0.005,
+          endValueP5: 1,
+          endValueP50: 4,
+          goalProbability: 0.5,
+        },
       ],
     },
     assumptions: { model: "stationary_bootstrap", proxies: ["WIG"], tax: { mode: "none" } },

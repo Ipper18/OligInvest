@@ -53,6 +53,7 @@ def job(**params: Any) -> dict[str, Any]:
         "withdrawals": [],
         "inflationRate": 0.025,
         "taxMode": "none",
+        "annualCostRate": 0.0,
     }
     return {
         "v": 1,
@@ -180,7 +181,10 @@ def test_assumptions_name_model_window_costs_tax_and_cash_rate() -> None:
         300,
     )
     assert (
-        a["costs"] == "none" and a["taxRate"] == 0.19 and a["taxBasis"] == "start_value"
+        a["annualCostRate"] == 0.0
+        and a["transactionCosts"] == "none"
+        and a["taxRate"] == 0.19
+        and a["taxBasis"] == "start_value"
     )
     assert a["cashRateAnnual"] == 0.0575 and a["cashShare"] == 0.1
     assert a["proxyWeights"] == {WIG: pytest.approx(2 / 3), SPX: pytest.approx(1 / 3)}
@@ -308,3 +312,52 @@ def test_review_findings_are_disclosed_costs_concentration_and_dividends() -> No
     assert "CONCENTRATION_NOT_MODELLED" not in [
         w["code"] for w in diversified["warnings"]
     ]
+
+
+def test_annual_cost_is_deducted_yearly_and_shown_in_assumptions_and_sensitivity() -> (
+    None
+):
+    # Owner decision 2026-10-20: one annual cost (TER + FX conversion), deducted once a year.
+    free = run_monte_carlo(job(), inputs())
+    costly = run_monte_carlo(job(annualCostRate=0.01), inputs())
+    ratio = (
+        costly["result"]["nominal"]["p50"][-1] / free["result"]["nominal"]["p50"][-1]
+    )
+    # Common random numbers: without flows every path shrinks by exactly 0.99 ** 10.
+    assert ratio == pytest.approx(0.99**10, rel=1e-6)
+    # Within the first year nothing is deducted yet; at month 12 the first deduction applies.
+    assert (
+        costly["result"]["nominal"]["p50"][11] == free["result"]["nominal"]["p50"][11]
+    )
+    assert costly["result"]["nominal"]["p50"][12] == pytest.approx(
+        free["result"]["nominal"]["p50"][12] * 0.99, rel=1e-6
+    )
+    assert costly["assumptions"]["annualCostRate"] == 0.01
+    assert {row["annualCostRate"] for row in costly["result"]["sensitivity"]} == {0.01}
+    codes = [w["code"] for w in costly["warnings"]]
+    assert (
+        "TRANSACTION_COSTS_NOT_MODELLED" in codes and "COSTS_NOT_MODELLED" not in codes
+    )
+    assert check_result(envelope(costly))
+    # Drawdowns are measured net of costs.
+    assert (
+        costly["result"]["maxDrawdownPercentiles"]["p50"]
+        <= free["result"]["maxDrawdownPercentiles"]["p50"]
+    )
+
+
+def test_us_total_return_index_is_labelled() -> None:
+    data = inputs()
+    tr = MarketInputs(
+        months=data.months,
+        returns=data.returns,
+        cash_rate=data.cash_rate,
+        cash_rate_date=data.cash_rate_date,
+        data_version=data.data_version,
+        tickers={WIG: "WIG", SPX: "^SP500TR"},
+    )
+    output = run_monte_carlo(job(), tr)
+    assert output["assumptions"]["proxyReturnType"] == {
+        WIG: "total_return",
+        SPX: "total_return",
+    }

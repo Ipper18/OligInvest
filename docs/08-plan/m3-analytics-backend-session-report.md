@@ -16,11 +16,15 @@
 
 `DATA_QUALITY_HOLD` w `AnalyticsRun.error.code`; kolumny luk nullable; stopa NBP przez CLI; pełny backfill WIG i S&P 500; właściciel uruchomienia z rekordu (`run_owner`), bez przeszukiwania `identity.user_directory`.
 
-## Otwarte (do decyzji)
+## Decyzje 2026-10-20 (druga runda) — wdrożone
 
-1. Backfill tabel A NBP od 2002 — bez niego historia S&P 500 w PLN kończy się na starcie instancji (R-41).
-2. Indeks dochodowy S&P 500 (np. `^SP500TR`, **NIEZWERYFIKOWANE**) zamiast cenowego `^GSPC`.
-3. Parametr kosztów (TER, przewalutowanie) i wrażliwość na długość bloku (12/24 mies.) — dziś ujawnione jako ograniczenia.
+1. Jednorazowy backfill tabel A NBP od 2002 (`market.fx-backfill`, ≤ 93 dni na żądanie, 5 żądań na uruchomienie, postęp w `quota:nbp:backfill:*`).
+2. Proxy USA `^SP500TR` (**NIEZWERYFIKOWANE**), pełna historia; bez notowań → `^GSPC` z ostrzeżeniem `PROXY_PRICE_INDEX` i założeniem `usEquityProxy`.
+3. Parametr `annualCostRate` (0–5 %, domyślnie 0) odejmowany raz w roku, widoczny w założeniach i w każdym wierszu tabeli wrażliwości; prowizje transakcyjne później.
+4. Build „bez analytics”: moduł tylko w `optionalDependencies` aplikacji, ładowany w `src/modules.ts` z tolerancją braku pakietu; reguła w `check:deps` (testy) i `moduly.md` § 2. Sprawdzone lokalnie na kopii bez `modules/analytics`.
+5. Przy okazji: ACL `valkey-queue` dla `jobs` nie dopuszczał kluczy `benchmark:*` i `report:*` używanych od M2 (produkcyjny zapis znaczników i raportu GPW byłby odrzucony) — dodane z testem.
+
+Pozostaje (bez blokady): wrażliwość na długość bloku bootstrapu, tabela per kryzys (BL-556), prowizje transakcyjne.
 
 ## Odchylenia i ograniczenia
 

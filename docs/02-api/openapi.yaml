@@ -5634,6 +5634,7 @@ components:
         withdrawals: {type: array, maxItems: 10, items: {$ref: '#/components/schemas/CashFlowPlan'}}
         inflationRate: {type: number, minimum: 0, maximum: 0.2, default: 0.025}
         taxMode: {type: string, enum: [belka_simplified, none], default: belka_simplified}
+        annualCostRate: {type: number, minimum: 0, maximum: 0.05, default: 0, description: 'Roczny koszt (TER + przewalutowanie) jako ułamek, odejmowany od wartości raz w roku; prowizje transakcyjne poza modelem.'}
         goal: {$ref: '#/components/schemas/Money'}
         proxyOverrides:
           type: array
@@ -5892,6 +5893,7 @@ components:
             required: [scenario, endValueP50, endValueP5]
             properties:
               scenario: {type: string, enum: [mean_minus_2pp, mean_plus_2pp, last_10y, full_history]}
+              annualCostRate: {type: number, description: 'Roczny koszt przyjęty w scenariuszu (ułamek).'}
               endValueP5: {type: number}
               endValueP50: {type: number}
               goalProbability: {type: [number, 'null']}
