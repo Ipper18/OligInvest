@@ -34,6 +34,30 @@ export function Providers({
   const stream = useRef<ReturnType<typeof connectStream> | null>(null);
   const router = useRouter();
   const pathname = usePathname();
+  useEffect(() => {
+    if (
+      !me.id ||
+      me.features["module.education"] === false ||
+      !me.permissions.includes("education:use")
+    )
+      return;
+    let alive = true,
+      dispose = () => {};
+    const timer = setTimeout(() => {
+      void import("../education/onboarding")
+        .then((module) => module.startOnboarding(false, () => alive))
+        .then((cleanup) => {
+          dispose = cleanup;
+          if (!alive) cleanup();
+        })
+        .catch(() => {});
+    }, 1500);
+    return () => {
+      alive = false;
+      clearTimeout(timer);
+      dispose();
+    };
+  }, [me.id, me.features, me.permissions]);
   const [connectionId, setConnectionId] = useState<string | null>(null);
   useEffect(() => {
     if (!connectionId) return;

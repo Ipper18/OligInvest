@@ -106,7 +106,11 @@ export class DomainError extends Error {
   }
 }
 export async function domainRequest(path: string, init: RequestInit = {}) {
-  if (!path.startsWith("/portfolio/") && !path.startsWith("/market/"))
+  if (
+    !path.startsWith("/portfolio/") &&
+    !path.startsWith("/market/") &&
+    path !== "/education/onboarding"
+  )
     throw new Error("INVALID_DOMAIN_PATH");
   const config = loadConfig("web", process.env, {
     mode: process.env.NODE_ENV as "production" | "development" | "test",

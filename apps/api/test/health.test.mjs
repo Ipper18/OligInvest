@@ -155,6 +155,7 @@ test("public OpenAPI 3.1 is generated from registered Zod routes", async () => {
   expect(Object.keys(document.paths).sort()).toEqual([
     "/admin/invitations",
     "/change-password",
+    "/education/onboarding",
     "/get-session",
     "/health/live",
     "/health/ready",

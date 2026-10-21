@@ -141,7 +141,15 @@ export function checkDependencies(root) {
         const error = layerError(pkg, target);
         if (error) report(path, `${name}: ${error}`);
       } else if (name.startsWith("@oliginvest/") || version.startsWith("workspace:")) {
-        report(path, `${name}: unknown workspace dependency`);
+        // A physically omitted functional module has no imports after registry generation.
+        const omittedFeature =
+          pkg.group === "apps" &&
+          /^@oliginvest\/mod-(education|analytics|alerts|admin|quick-actions)$/.test(name) &&
+          pkg.manifest.optionalDependencies?.[name] === "workspace:*" &&
+          !["dependencies", "devDependencies", "peerDependencies"].some((section) =>
+            Object.hasOwn(pkg.manifest[section] ?? {}, name),
+          );
+        if (!omittedFeature) report(path, `${name}: unknown workspace dependency`);
       }
       if (pkg.group === "apps" && pkg.id === "web" && name === "@oliginvest/db")
         report(path, "web: DB dependency forbidden");
@@ -199,7 +207,11 @@ export function checkDependencies(root) {
               !BUILTINS.has(specifier)
             )
               report(path, `${specifier}: undeclared dependency`);
-            if (!target) continue;
+            if (!target) {
+              if (name.startsWith("@oliginvest/"))
+                report(path, `${specifier}: missing workspace import`);
+              continue;
+            }
             if (target !== pkg) {
               edges.get(pkg).add(target);
               const error = layerError(pkg, target);

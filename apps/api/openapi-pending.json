@@ -73,7 +73,6 @@
   "getMacroSeries",
   "getMarketCalendar",
   "getNotificationPreferences",
-  "getOnboardingState",
   "getPerformance",
   "getPortfolioHistory",
   "getRiskMetrics",
@@ -114,7 +113,6 @@
   "updateConsent",
   "updateJournalEntry",
   "updateMe",
-  "updateOnboardingState",
   "upsertInstrumentOverride",
   "upsertJournalPostmortem",
   "upsertLearningProgress"
