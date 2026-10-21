@@ -1,8 +1,9 @@
-# Caddy 2.11.7 rebuilt with Go 1.26.9 and golang.org/x/net v0.60.0: the official image ships Go 1.26.8
-# and x/net v0.59.0 with fixed HTTP/2 vulnerabilities (GO-2026-66xx; M1-3, 2026-10-11). Golang manifest
-# pushed 2026-10-08T18:04:50Z and x/net v0.60.0 published 2026-10-08T17:22:58Z, both outside the 72-hour
-# window. x/net v0.60.0 requires the same x/crypto, x/sys, x/term and x/text versions as Caddy 2.11.7.
-FROM golang:1.26.9-alpine@sha256:397ecc648150dd585f1734dfcd8d1bb4746664e54464191d77ad0ecffaf38bdb AS builder
+# Caddy 2.11.7 rebuilt with Go 1.26.10 and golang.org/x/net v0.60.0: the official image ships Go 1.26.8
+# and x/net v0.59.0 with fixed HTTP/2 vulnerabilities (GO-2026-66xx; M1-3, 2026-10-11). Go 1.26.10 fixes
+# GO-2026-6809 (crypto/x509 distrust of compromised intermediates, published 2026-10-21). Golang manifest
+# pushed 2026-10-20T04:26:03Z and x/net v0.60.0 published 2026-10-08T17:22:58Z, both outside the 72-hour
+# window when adopted. x/net v0.60.0 requires the same x/crypto, x/sys, x/term and x/text versions as Caddy 2.11.7.
+FROM golang:1.26.10-alpine@sha256:9ce231b28998b32e116927c61aa5c406183061d4f3f2d61b292c88e7f6bdf7ca AS builder
 ENV CGO_ENABLED=0 GOTOOLCHAIN=local GOFLAGS=-mod=mod
 WORKDIR /src
 # Same entry point as the official build (cmd + standard modules); go.sum is verified by the Go checksum database.
