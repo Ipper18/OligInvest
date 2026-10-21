@@ -231,6 +231,7 @@ export function createApp(
   mountMarket(
     api,
     options.market ?? {
+      assertOrigin: async (request) => (await authDependencies.service()).assertOrigin(request),
       authorize: async (request) => {
         const principal = await (await authDependencies.service()).requireData(request);
         return { userId: principal.user_id, role: principal.role };

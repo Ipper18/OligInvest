@@ -156,6 +156,48 @@ export const benchmarkSchema = object({
   currency: z.string().regex(/^[A-Z]{3}$/),
   dataAvailableFrom: z.string().date().optional(),
 }).openapi("Benchmark");
+export const watchlistInput = z
+  .object({ name: z.string().min(1).max(40) })
+  .strict()
+  .openapi("WatchlistInput", { additionalProperties: true });
+export const watchlistPatch = watchlistInput
+  .partial()
+  .extend({ position: z.number().int().nonnegative().optional() })
+  .strict()
+  .refine((v) => Object.keys(v).length > 0)
+  .openapi("WatchlistPatch", { minProperties: 1, additionalProperties: true });
+export const watchlistSchema = object({
+  id: z.uuid(),
+  name: z.string(),
+  position: z.number().int(),
+  itemCount: z.number().int().nonnegative(),
+  createdAt: z.iso.datetime(),
+  updatedAt: z.iso.datetime(),
+}).openapi("Watchlist");
+export const watchlistItemInput = z
+  .object({ instrumentId: z.uuid(), note: z.string().max(280).optional() })
+  .strict()
+  .openapi("WatchlistItemInput", { additionalProperties: true });
+export const watchlistItemPatch = z
+  .object({
+    note: z.string().max(280).nullable().optional(),
+    position: z.number().int().nonnegative().optional(),
+  })
+  .strict()
+  .refine((v) => Object.keys(v).length > 0)
+  .openapi("WatchlistItemPatch", { minProperties: 1, additionalProperties: true });
+export const watchlistItemSchema = object({
+  instrument: summarySchema,
+  note: z.string().optional(),
+  position: z.number().int(),
+  addedAt: z.iso.datetime(),
+  quote: apiQuoteSchema.optional(),
+}).openapi("WatchlistItem");
+export const watchlistDetailFields = object({ items: z.array(watchlistItemSchema) });
+export const watchlistDetail = watchlistSchema.extend(watchlistDetailFields.shape).strict();
+export const watchlistDetailResponse = z
+  .intersection(watchlistSchema, watchlistDetailFields)
+  .openapi("WatchlistDetail");
 export const marketJobSchema = z
   .object({
     scheduledAt: z.iso.datetime().optional(),

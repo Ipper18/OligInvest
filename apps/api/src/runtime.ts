@@ -142,6 +142,7 @@ export function createRuntime(
         ),
     },
     market: {
+      assertOrigin: async (request) => (await getAuth()).service.assertOrigin(request),
       repository: async () => {
         market ??= new MarketRepository((await getAuth()).appDatabase);
         return market;

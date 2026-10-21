@@ -17,8 +17,10 @@ import {
 } from "../contracts.js";
 import { INDICATOR_PATTERN, indicatorSpec } from "../indicator-spec.js";
 import type { MarketRepository } from "./repository.js";
+import { mountWatchlists } from "./watchlist-routes.js";
 
 export interface MarketDependencies {
+  assertOrigin?(request: Request): void | Promise<void>;
   repository(): MarketRepository | Promise<MarketRepository>;
   authorize(request: Request): Promise<DatabaseContext>;
   searchInBackground(query: string): Promise<void>;
@@ -91,8 +93,15 @@ export function mountMarket(api: OpenAPIHono<AppEnv>, dependencies: MarketDepend
   // Authenticate before query validation and before conditional responses (no public 304s).
   api.use("/market/*", async (context, next) => {
     await dependencies.authorize(context.req.raw);
+    if (!["GET", "HEAD", "OPTIONS"].includes(context.req.method)) {
+      if (!dependencies.assertOrigin) throw new ProblemError("SERVICE_UNAVAILABLE");
+      await dependencies.assertOrigin(context.req.raw);
+      context.header("Cache-Control", "no-store");
+    }
+    if (context.req.path.includes("/watchlists")) context.header("Cache-Control", "no-store");
     await next();
   });
+  mountWatchlists(api, dependencies);
   const hook = (result: { success: boolean }) => {
     if (!result.success) throw new ProblemError("VALIDATION_FAILED");
     return undefined;

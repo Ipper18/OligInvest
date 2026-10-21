@@ -7,9 +7,16 @@ export {
   benchmarkSchema,
   chartSchema,
   fxResponseSchema,
+  indicatorSeriesSchema,
   instrumentSchema,
   pageSchema,
   statusSchema,
+  watchlistDetail,
+  watchlistInput,
+  watchlistItemInput,
+  watchlistItemPatch,
+  watchlistPatch,
+  watchlistSchema,
 } from "@oliginvest/mod-market/contracts";
 export {
   accountInput,

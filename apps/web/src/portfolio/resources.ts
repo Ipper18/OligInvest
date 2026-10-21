@@ -14,6 +14,7 @@ import {
   importBatchPage,
   importBatchSchema,
   importRowPage,
+  indicatorSeriesSchema,
   instrumentSchema,
   lotPage,
   pageSchema,
@@ -23,9 +24,16 @@ import {
   statusSchema,
   transactionPage,
   transactionSchema,
+  watchlistDetail,
+  watchlistSchema,
 } from "../modules";
 
 export const readSpecs = {
+  watchlists: {
+    path: "/market/watchlists",
+    output: z.object({ data: z.array(watchlistSchema) }).strict(),
+  },
+  watchlist: { path: "/market/watchlists/:id", output: watchlistDetail },
   benchmarks: {
     path: "/market/benchmarks",
     output: z.object({ data: z.array(benchmarkSchema) }).strict(),
@@ -58,12 +66,14 @@ export const readSpecs = {
   search: { path: "/market/instruments", output: pageSchema },
   instrument: { path: "/market/instruments/:id", output: instrumentSchema },
   chart: { path: "/market/instruments/:id/chart", output: chartSchema },
+  indicators: { path: "/market/instruments/:id/indicators", output: indicatorSeriesSchema },
 } as const;
 export type ReadKey = keyof typeof readSpecs;
 export type Resource<K extends ReadKey> = z.infer<(typeof readSpecs)[K]["output"]>;
 export const readArgs = z
   .object({
     id: z.uuid().optional(),
+    spec: z.array(z.string().max(32)).min(1).max(8).optional(),
     accountId: z.uuid().optional(),
     instrumentId: z.uuid().optional(),
     instrumentIds: z.array(z.uuid()).min(1).max(100).optional(),
@@ -128,7 +138,7 @@ export async function fetchResource<K extends ReadKey>(
   raw: ReadArgs = {},
 ): Promise<Resource<K>> {
   if (!Object.hasOwn(readSpecs, key)) throw new Error("INVALID_RESOURCE");
-  const { id, instrumentIds, currency, ...args } = readArgs.parse(raw);
+  const { id, instrumentIds, currency, spec: indicatorSpecs, ...args } = readArgs.parse(raw);
   const spec = readSpecs[key];
   const path = spec.path.includes(":id") ? spec.path.replace(":id", z.uuid().parse(id)) : spec.path;
   const query = new URLSearchParams(
@@ -136,6 +146,7 @@ export async function fetchResource<K extends ReadKey>(
   );
   for (const value of instrumentIds ?? []) query.append("instrumentId", value);
   for (const value of currency ?? []) query.append("currency", value);
+  for (const value of indicatorSpecs ?? []) query.append("spec", value);
   if (key === "rows" && args.status === "unresolved") {
     query.delete("status");
     query.append("status", "needs_mapping");

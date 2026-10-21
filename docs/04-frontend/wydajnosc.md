@@ -64,6 +64,7 @@ BL-016 wykrył, że formatery i18n importowały runtime `decimal.js` wyłącznie
 | `/rynek/[instrumentId]` | ≤ 190 KB | Lightweight Charts 54 KB, wyszukiwarka 24 KB | ≤ 280 KB | Radix, Zod |
 | `/rynek` | ≤ 190 KB | — | ≤ 230 KB | wykresy, driver.js, Radix, Zod |
 | `/rynek/waluty` | ≤ 185 KB | tabela + wirtualizacja 41 KB | ≤ 230 KB | wykresy, driver.js, Radix, Zod |
+| `/rynek/watchlisty`, `/rynek/watchlisty/*` | ≤ 190 KB | tabela + wirtualizacja 41 KB | ≤ 250 KB | wykresy, driver.js, Radix, Zod |
 | `/rynek/screener`, `/rynek/heatmapa` | ≤ 195 KB | tabela + wirtualizacja 41 KB | ≤ 250 KB | wykresy, Zod |
 | `/analizy`, `/analizy/*` | ≤ 195 KB | uPlot 23 KB, Zod 26 KB, zakładki + suwak 19 KB | ≤ 270 KB | Lightweight Charts |
 | `/alerty`, `/alerty/*` | ≤ 190 KB | Zod 26 KB | ≤ 220 KB | wykresy |
