@@ -5,6 +5,7 @@ import type { SearchParams } from "./page";
 import { PortfolioFilters, PortfolioNav } from "./presentation";
 import { fetchResource, readArgs } from "./resources";
 import { SummaryLive } from "./summary-live";
+import { SummaryTable } from "./summary-table";
 import { SummaryView } from "./summary-view";
 
 export async function summaryPage(search: SearchParams) {
@@ -30,7 +31,7 @@ export async function summaryPage(search: SearchParams) {
         accounts={accounts.data}
         initial={initial}
         initialDay={initialDay}
-        fallback={<SummaryView data={initial} day={initialDay} />}
+        fallback={<SummaryView data={initial} day={initialDay} Table={SummaryTable} />}
       />
     </section>
   );

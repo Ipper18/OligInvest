@@ -74,6 +74,13 @@ BL-016 wykrył, że formatery i18n importowały runtime `decimal.js` wyłącznie
 
 Powłoka aplikacji `(app)` (TanStack Query, klient API, SSE, nawigacja, formatery, słownik komunikatów PL) ma własny budżet **≤ 30 KB** ponad framework — kontrolowany przez `size-limit` (§ 6.2).
 
+M2-UI: `apps/web/e2e/m2-ui.spec.ts` mierzy dodatkowo rzeczywiście pobrane skrypty
+po otwarciu onboardingu oraz wykresu ze wskaźnikami (gzip-9, unikalne adresy).
+Egzekwuje limity „Razem” i bibliotek leniwych z tej sekcji. Pierwszy HTML podsumowania
+portfela używa tabeli serwerowej; tabela interaktywna i objaśnienia ładowane są leniwie.
+Walidator SSE importuje współdzielone ścisłe schematy przez `realtime/browser`,
+bez serwerowego generatora JSON Schema. Budżety pozostają bez zmian.
+
 ## 4. Co renderuje serwer, klient i strumień
 
 Wszystkie strony są renderowane dynamicznie (CSP z nonce — [`architektura-ui.md`](architektura-ui.md) § 5).

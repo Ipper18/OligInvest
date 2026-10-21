@@ -256,6 +256,19 @@ Etykiety: „Nazwa listy”, „Nowa lista”, „Utwórz listę”, „Notatka�
 „Dodaj instrument”, „Usuń listę”, „Usuń instrument”, „Potwierdź usunięcie”.
 Usuwanie wskazuje nazwę listy lub instrumentu; błąd nie usuwa wpisanej notatki.
 
+### M2 — alokacja i onboarding
+
+Alokacja: „Podział według”, „Klasyfikacja instrumentu”, „Klasyfikacja własna”,
+„Klasyfikacja katalogowa”. Stan bez usługi: „Alokacja i zapis klasyfikacji będą
+dostępne po uruchomieniu usługi portfela.” Udziały opisują strukturę według
+dostępnych wycen; nie są alokacją docelową ani sugestią transakcji. Katalog
+`packages/i18n/src/pl/allocation.json` zawiera etykiety pól istniejącego OpenAPI.
+
+Onboarding: „Pomiń”, „Wstecz”, „Dalej”, „Zakończ”, „Uruchom przewodnik ponownie”.
+Błąd: „Nie udało się zapisać postępu przewodnika. Możesz ponowić go w zakładce Nauka.”
+Komunikat zamyka „Zamknij komunikat”. Treść kroków pochodzi z samouczków § 2,
+a katalog `packages/i18n/src/pl/onboarding.json` dostarcza ją do przewodnika.
+
 - Teksty z tego dokumentu trafiają do `packages/i18n/src/pl/<obszar>.json`; komponenty nie zawierają literałów (lint sprawdza to w BL-012).
 - Disclaimery mają osobne, wersjonowane źródło ([`../11-zgodnosc-prawna.md`](../11-zgodnosc-prawna.md) § 4.3 → `packages/i18n/src/pl/disclaimers.json`) i własny test zgodności — nie powtarzamy ich tutaj.
 - Zmiana tekstu w aplikacji zaczyna się od zmiany w tym dokumencie (zasada „dokumentacja przed kodem”, [`../../CONTRIBUTING.md`](../../CONTRIBUTING.md) § 1).

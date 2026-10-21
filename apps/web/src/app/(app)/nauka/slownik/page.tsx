@@ -3,11 +3,15 @@ import { Disclaimer } from "@oliginvest/ui";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireMe } from "../../../../auth/session";
-import { searchGlossary } from "../../../../education/catalog";
+import { entries, searchGlossary } from "../../../../education/catalog";
 import type { SearchParams } from "../../../../portfolio/page";
 export default async function Page({ searchParams }: { searchParams: SearchParams }) {
   const me = await requireMe();
-  if (me.features["module.education"] === false || !me.permissions.includes("education:use"))
+  if (
+    !entries.length ||
+    me.features["module.education"] === false ||
+    !me.permissions.includes("education:use")
+  )
     notFound();
   const query = (await searchParams).q ?? "";
   if (typeof query !== "string" || query.length > 100) notFound();

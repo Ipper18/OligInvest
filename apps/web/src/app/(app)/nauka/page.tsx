@@ -3,10 +3,15 @@ import { Disclaimer } from "@oliginvest/ui";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireMe } from "../../../auth/session";
+import { entries } from "../../../education/catalog";
 import { OnboardingButton } from "../../../education/onboarding-button";
 export default async function Page() {
   const me = await requireMe();
-  if (me.features["module.education"] === false || !me.permissions.includes("education:use"))
+  if (
+    !entries.length ||
+    me.features["module.education"] === false ||
+    !me.permissions.includes("education:use")
+  )
     notFound();
   return (
     <section>

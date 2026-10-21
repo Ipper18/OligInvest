@@ -10,11 +10,16 @@ export function OnboardingButton() {
         type="button"
         className="oi-button"
         disabled={busy}
-        onClick={async () => {
+        onClick={async (event) => {
+          const trigger = event.currentTarget;
           setBusy(true);
           setError(false);
           try {
-            await (await import("./onboarding")).startOnboarding(true);
+            await (await import("./onboarding")).startOnboarding(
+              true,
+              () => trigger.isConnected,
+              trigger,
+            );
           } catch {
             setError(true);
           } finally {

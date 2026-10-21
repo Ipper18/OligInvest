@@ -2,7 +2,11 @@ import { onboardingMessages as m } from "@oliginvest/i18n/onboarding";
 import { onboardingAction } from "./onboarding-action";
 
 let starting = false;
-export async function startOnboarding(restart = false, alive = () => true) {
+export async function startOnboarding(
+  restart = false,
+  alive = () => true,
+  focusTarget?: HTMLElement,
+) {
   if (starting) return () => {};
   starting = true;
   try {
@@ -32,7 +36,7 @@ export async function startOnboarding(restart = false, alive = () => true) {
     const steps = m.steps.filter(
       (step) => step.key !== "demo" || document.querySelector(selectors.demo ?? ""),
     );
-    const originalFocus = document.activeElement;
+    const originalFocus = focusTarget ?? document.activeElement;
     let queue = Promise.resolve();
     const report = () => {
       if (!alive() || document.getElementById("onboarding-error")) return;
@@ -99,7 +103,10 @@ export async function startOnboarding(restart = false, alive = () => true) {
       },
       onDestroyed: () => {
         starting = false;
-        if (originalFocus instanceof HTMLElement) originalFocus.focus();
+        queueMicrotask(() => {
+          if (originalFocus instanceof HTMLElement && originalFocus.isConnected)
+            originalFocus.focus();
+        });
       },
     });
     tour.drive(
