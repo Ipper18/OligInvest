@@ -14,6 +14,7 @@ import {
   run,
 } from "./dev-services.mjs";
 import { childEnvironment } from "./dev-environment.mjs";
+import { persistDevelopmentSecrets } from "./dev-local.mjs";
 import { testMailpit } from "./test-mailpit.mjs";
 
 const checking = process.argv[2] === "--check";
@@ -108,6 +109,10 @@ try {
     ];
     if (new Set(passwords).size !== passwords.length)
       throw new Error("Use separate development passwords");
+    dev = await persistDevelopmentSecrets(
+      { ...dev, DB_NAME: dev.DB_NAME || "oliginvest_dev" },
+      resolve(repository, ".env"),
+    );
   }
   const env = applicationEnvironment(dev);
   const turbo = resolve(repository, "node_modules/turbo/bin/turbo");

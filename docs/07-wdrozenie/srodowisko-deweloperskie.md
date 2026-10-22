@@ -47,6 +47,10 @@ Wynik tej kontroli potwierdza wyłącznie składnię, interpolację i model Comp
 
 ## 4. Dane przykładowe (seed)
 
+### Trwałe klucze lokalne
+
+`pnpm dev` wymaga `NODE_ENV=development` i bazy `oliginvest_dev` (puste `DB_NAME` oznacza tę nazwę). Przy pierwszym uruchomieniu generuje `DEV_AUTH_SECRET` i `DEV_AUDIT_KEY` (każdy 32 losowe bajty, zapis hex) i dopisuje je do ignorowanego `.env`. Nie wypisuje wartości. Kolejne starty używają tych samych kluczy do TOTP, kodów zapasowych, sesji i pseudonimizacji audytu; hasła ról DB nadal są losowane. Sprzeczna wartość klucza w powłoce i `.env` przerywa start zamiast cichej rotacji. Zachowaj `.env` razem z lokalną bazą; usunięcie albo zmiana klucza uniemożliwia odczyt wcześniej zaszyfrowanego TOTP. Stare sekrety losowane przed tą poprawką nie są możliwe do odzyskania z nowego `.env`.
+
 Plik [`../03-dane/fixtures/seed-dev.json`](../03-dane/fixtures/seed-dev.json) zawiera kompletny, **w pełni fikcyjny** zestaw danych dla `pnpm dev` (BL-034). Jest deterministyczny (ziarno w `meta.seed`), więc każdy dostaje ten sam obraz aplikacji.
 
 | Blok | Zawartość |

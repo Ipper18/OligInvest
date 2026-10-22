@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { childEnvironment } from "./dev-environment.mjs";
-import { applicationEnvironment } from "./dev-services.mjs";
+import { applicationEnvironment, secret } from "./dev-services.mjs";
 
 test("jobs receives database settings and local Mailpit, never other service secrets", () => {
-  const env = applicationEnvironment({ NODE_ENV: "development", DEV_BIND_ADDRESS: "127.0.0.1", DEV_SMTP_PORT: "1025" });
+  const env = applicationEnvironment({ NODE_ENV: "development", DEV_BIND_ADDRESS: "127.0.0.1", DEV_SMTP_PORT: "1025", DEV_AUTH_SECRET: secret(), DEV_AUDIT_KEY: secret() });
   const jobs = childEnvironment(env, "jobs");
   for (const key of ["DB_HOST", "DB_PORT", "DB_NAME", "DB_SSL", "DB_APP_PASSWORD", "SMTP_HOST", "SMTP_PORT", "SMTP_FROM", "SMTP_USER", "SMTP_PASSWORD", "LEGAL_CONTROLLER_NAME"])
     assert.equal(jobs[key], env[key], key);

@@ -52,6 +52,11 @@ export async function isolatedEnvironment() {
     ...process.env,
     NODE_ENV: "test",
     COMPOSE_PROJECT_NAME: `oliginvest-workers-${randomBytes(8).toString("hex")}`,
+    DB_NAME: "oliginvest_dev",
+    DEV_AUTH_SECRET: secret(),
+    DEV_AUDIT_KEY: secret(),
+    DEV_PROFILE: "",
+    DEV_DEMO_PASSWORD: "",
   };
   try {
     for (const name of [
@@ -81,6 +86,10 @@ export async function isolatedEnvironment() {
 }
 
 export function applicationEnvironment(dev) {
+  if (!["development", "test"].includes(dev.NODE_ENV) || (dev.DB_NAME && dev.DB_NAME !== "oliginvest_dev"))
+    throw new Error("Development database required");
+  if (!dev.DEV_AUTH_SECRET || !dev.DEV_AUDIT_KEY)
+    throw new Error("Missing persistent development secrets");
   const host = dev.DEV_BIND_ADDRESS;
   const urlHost = host.includes(":") ? `[${host}]` : host;
   return {
@@ -96,8 +105,8 @@ export function applicationEnvironment(dev) {
     DB_APP_PASSWORD: secret(),
     DB_AUTH_PASSWORD: secret(),
     DB_ANALYTICS_RO_PASSWORD: secret(),
-    AUDIT_PSEUDONYM_KEY: secret(),
-    BETTER_AUTH_SECRETS: `1:${secret()}`,
+    AUDIT_PSEUDONYM_KEY: dev.DEV_AUDIT_KEY,
+    BETTER_AUTH_SECRETS: `1:${dev.DEV_AUTH_SECRET}`,
     VALKEY_QUEUE_HOST: host,
     VALKEY_QUEUE_PORT: dev.DEV_VALKEY_QUEUE_PORT || "6379",
     VALKEY_QUEUE_USER: "default",
