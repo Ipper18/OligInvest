@@ -86,7 +86,10 @@ export async function isolatedEnvironment() {
 }
 
 export function applicationEnvironment(dev) {
-  if (!["development", "test"].includes(dev.NODE_ENV) || (dev.DB_NAME && dev.DB_NAME !== "oliginvest_dev"))
+  if (
+    !["development", "test"].includes(dev.NODE_ENV) ||
+    (dev.DB_NAME && dev.DB_NAME !== "oliginvest_dev")
+  )
     throw new Error("Development database required");
   if (!dev.DEV_AUTH_SECRET || !dev.DEV_AUDIT_KEY)
     throw new Error("Missing persistent development secrets");

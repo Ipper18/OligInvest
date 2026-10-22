@@ -41,9 +41,34 @@ Wynik tej kontroli potwierdza wyłącznie składnię, interpolację i model Comp
 
 1. Wykonaj `pnpm install --frozen-lockfile` oraz dwa kroki `uv sync` z [README analytics](../../apps/analytics/README.md). Wymagane Node 24, Python 3.13, uv 0.12.16 i działający Docker.
 2. Uzupełnij ignorowany `.env`: jawne `NODE_ENV=development`, `DEV_BIND_ADDRESS` (pętla zwrotna jak w § 2) i trzy różne hasła `DEV_POSTGRES_PASSWORD`, `DEV_VALKEY_QUEUE_PASSWORD`, `DEV_VALKEY_CACHE_PASSWORD`. Porty `DEV_*_PORT` są opcjonalne; API/web domyślnie 3001/3000. Nie używaj znaczników walidacyjnych jako haseł.
-3. `pnpm dev` buduje wymagane pakiety, uruchamia usługi Compose, tworzy role, wykonuje migracje i seed z asercjami, następnie startuje api/web/jobs/analytics. Pokaże adres web po gotowości API i web. Jobs otrzymuje własne parametry DB/cache oraz lokalny transport Mailpit (`DEV_SMTP_PORT`, syntetyczny nadawca `example.test`, bez poświadczeń produkcyjnych). Konto seeda nie ma hasła ani ominięcia MFA; pierwsze rzeczywiste konto tworzy CLI. Zmiany TypeScript wymagają ponownego uruchomienia polecenia; Next działa w trybie dev.
+3. Wybierz profil z § 3.1 lub § 3.2. `pnpm dev` buduje wymagane pakiety, uruchamia usługi Compose, tworzy role i wykonuje migracje; tylko profil demo ładuje seed. Następnie startuje api/web/jobs/analytics i pokazuje adres web po gotowości API i web. Jobs otrzymuje własne parametry DB/cache oraz lokalny transport Mailpit (`DEV_SMTP_PORT`, syntetyczny nadawca `example.test`, bez poświadczeń produkcyjnych). Zmiany TypeScript wymagają ponownego uruchomienia polecenia; Next działa w trybie dev.
 4. `pnpm queues:test`, `pnpm db:seed:test` i `pnpm dev:test` tworzą własne projekty Compose, losowe porty i syntetyczne hasła, a w `finally` usuwają wyłącznie swoje kontenery/wolumeny. Pierwszy test sprawdza Node → Python i blokadę gniazd pytest; drugi wszystkie `expected`, idempotencję i rollback; trzeci start czterech aplikacji, gotowość bazy/cache/kolejki i Mailpit. Diagnostyka w `.git/m0-workers/`. Sondy: `node apps/jobs/dist/healthcheck.js` i `python -m oliginvest_analytics --health`, z tym samym środowiskiem co dany worker.
-5. Ctrl+C kończy procesy aplikacji. `docker compose -f compose.dev.yaml down` zatrzymuje usługi i zachowuje trwałe wolumeny. Zwykłe `pnpm dev` nigdy ich nie usuwa. Ponowny seed sprawdza istniejące dane; nie nadpisuje zmienionego portfela. Reset danych wymaga świadomej decyzji lokalnego operatora.
+5. Ctrl+C kończy procesy aplikacji. `docker compose -p oliginvest-dev -f compose.dev.yaml down` zatrzymuje demo i zachowuje trwałe wolumeny; dla właściciela użyj `-p oliginvest-dev-owner`. Zwykłe `pnpm dev` nigdy ich nie usuwa. Ponowny seed sprawdza istniejące dane; nie nadpisuje zmienionego portfela. Reset danych wymaga świadomej decyzji lokalnego operatora.
+
+### 3.1 Logowanie do demo
+
+1. W `.env` ustaw `DEV_PROFILE=demo` (także wartość pusta oznacza demo) i własne `DEV_DEMO_PASSWORD`. Hasło musi spełniać tę samą politykę co rejestracja: 12–128 znaków, kontrola popularnych i kontekstowych haseł, HIBP, Argon2id. Nie używaj hasła do innej usługi. Hasło wpisuj do pliku, nie do argumentów polecenia.
+2. Uruchom `pnpm dev` w terminalu. Konto `dev@example.invalid` otrzyma poświadczenie przy pierwszym seedzie z hasłem, także gdy istnieje już dawny seed bez hasła. Puste `DEV_DEMO_PASSWORD` pozostawia konto bez nowego poświadczenia. Kolejny start z tym samym hasłem niczego nie resetuje; inne hasło przerywa seed (zmianę wykonaj w aplikacji, następnie uaktualnij `.env`).
+3. Otwórz pokazany adres i `/logowanie`, podaj `dev@example.invalid` i ustawione hasło. Skonfiguruj TOTP, potwierdź kod i zapisz kody zapasowe. Zaakceptuj bieżący regulamin i informację o prywatności. Seed nie ustawia MFA ani zgód.
+4. Otwórz portfel i obejrzyj dane syntetyczne. Wyłącz i uruchom ponownie `pnpm dev`: hasło, TOTP i kody zapasowe pozostają ważne dzięki kluczom w `.env`. Do prób rzeczywistych importów użyj profilu właściciela; zmiana transakcji demo powoduje odmowę asercji przy następnym seedzie.
+
+### 3.2 Profil właściciela i rzeczywisty import XTB
+
+1. Zatrzymaj demo (`Ctrl+C`, następnie `docker compose -p oliginvest-dev -f compose.dev.yaml down`). Oba profile domyślnie używają tych samych portów hosta, więc uruchamiaj je kolejno.
+2. W `.env` ustaw `DEV_PROFILE=owner`. Nie ustawiaj własnego `COMPOSE_PROJECT_NAME`: launcher wybiera `oliginvest-dev-owner`, a demo `oliginvest-dev`. Profile mają odrębne kontenery, wolumeny PostgreSQL i kolejki; obie bazy nazywają się `oliginvest_dev`. Profil owner pomija cały seed, również `DEV_DEMO_PASSWORD`.
+3. Przy pierwszym uruchomieniu wykonaj w interaktywnym terminalu (PowerShell, podstaw własne dane):
+
+   ```powershell
+   pnpm dev --create-owner --email '<adres właściciela>' --name '<nazwa właściciela>'
+   ```
+
+   Po migracjach launcher uruchomi istniejące `create-owner` z tymi samymi hasłami ról DB i kluczami co API, przed startem aplikacji. Potwierdź kontrolę adresu i dokumenty przez `TAK`, następnie wpisz hasło w ukrytym wejściu. Wymagane TTY; hasła nie można przekazać argumentem ani potokiem. Polecenie działa wyłącznie dla pierwszego konta w pustej bazie. Odmowa lub błąd CLI zatrzymuje start aplikacji. Kolejne uruchomienia: samo `pnpm dev`, nadal z `DEV_PROFILE=owner`.
+4. Zaloguj się, skonfiguruj TOTP i zachowaj kody zapasowe. Utwórz rachunek XTB. Plik właściciela przechowuj poza repozytorium; wskaż go w formularzu importu (limit 10 MB). Dane pozostają w lokalnym profilu; wiadomości aplikacji trafiają do lokalnego Mailpit.
+5. **Pusty katalog wymaga uzupełnienia.** Parser XTB nie pobiera instrumentów z internetu: mapuje po ISIN, symbolach brokera i zapisanych wyborach. Nieznany instrument otrzyma `needs_mapping`. W podglądzie wybierz mapowanie instrumentu, wpisz nazwę lub symbol Yahoo (np. `AAPL`, `PKO.WA`, `VWCE.DE`) i wyszukaj. Pierwsze żądanie może zwrócić pustą listę: uruchamia `market.search` w workerze. Po kilku sekundach ponów wyszukiwanie i wybierz właściwy instrument, sprawdzając giełdę i walutę. Symbol XTB, np. `AAPL.US`, nie musi odpowiadać symbolowi Yahoo. Rozstrzygnij wiersze przed zatwierdzeniem.
+6. GPW uzupełnia katalog z archiwum w zadaniu `market.gpw` (dni robocze 18:30 Europe/Warsaw; wymaga uruchomionego jobs i dat w kalendarzu sesji). Nie jest to synchroniczny krok startu. Yahoo działa best effort; przy blokadzie/awarii nie obchodź ograniczeń. Brak wyniku albo niejednoznaczność zatrzymuje mapowanie — nie zastępuj instrumentu podobnym. Katalog nie dostarcza automatycznie całej historii kursów/FX dla wycen: brakujące dane pozostają jawne w aplikacji.
+7. Sprawdź uzgodnienie gotówki i ilości, następnie zatwierdź import. Nie traktuj samego przetworzenia pliku jako dowodu zgodności wyniku z brokerem. Ponowne uruchomienie profilu nie zmienia portfela ani konfiguracji TOTP. Zatrzymanie usług: `docker compose -p oliginvest-dev-owner -f compose.dev.yaml down` (bez usuwania wolumenów).
+
+Ścieżki lokalnych kont wymagają jednocześnie `NODE_ENV=development` i `DB_NAME=oliginvest_dev`. Nie dodają tras HTTP ani flag omijających MFA, regulamin, limity czy RLS. Skrypty izolowanych testów zachowują istniejący tryb `test` wyłącznie dla syntetycznego seeda bez hasła i bez profilu właściciela. Nie uruchamiaj dwóch launcherów na tej samej bazie: każdy start zmienia hasła ról DB.
 
 ## 4. Dane przykładowe (seed)
 
