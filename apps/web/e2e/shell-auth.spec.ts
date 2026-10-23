@@ -1,5 +1,5 @@
 import AxeBuilder from "@axe-core/playwright";
-import { type BrowserContext, expect, test } from "@playwright/test";
+import { type BrowserContext, expect, type Page, test } from "@playwright/test";
 
 async function session(context: BrowserContext, value: string) {
   await context.addCookies([
@@ -12,6 +12,13 @@ async function session(context: BrowserContext, value: string) {
       sameSite: "Lax",
     },
   ]);
+}
+// A live shell answers a revoked session (SSE 401) by navigating to /logowanie, which would race the
+// next page.goto; leave the application before swapping the session cookie.
+async function switchSession(page: Page, context: BrowserContext, value: string) {
+  await page.goto("about:blank");
+  await context.clearCookies();
+  await session(context, value);
 }
 for (const theme of ["dark", "light"])
   for (const width of [360, 1280])
@@ -40,13 +47,18 @@ test("preferences persist without document reload and system follows OS", async 
 }) => {
   await session(context, "preferences");
   await page.goto("/ustawienia");
-  const time = await page.evaluate(() => performance.timeOrigin);
+  // WebKit recomputes performance.timeOrigin from the wall clock, so a window marker detects reloads.
+  await page.evaluate(() => {
+    (window as { documentMarker?: boolean }).documentMarker = true;
+  });
   await page.getByLabel("Motyw", { exact: true }).selectOption("light");
   await page.getByLabel("Paleta zysku i straty").selectOption("colorblind");
   await page.getByRole("button", { name: "Zapisz", exact: true }).click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
   await expect(page.locator("html")).toHaveAttribute("data-palette", "colorblind");
-  expect(await page.evaluate(() => performance.timeOrigin)).toBe(time);
+  expect(await page.evaluate(() => (window as { documentMarker?: boolean }).documentMarker)).toBe(
+    true,
+  );
   const response = await page.reload();
   expect(await response?.text()).toContain('data-theme="light"');
   await page.getByLabel("Motyw", { exact: true }).selectOption("system");
@@ -99,16 +111,14 @@ test("enrollment then legal gate; optional modules absent from navigation", asyn
   await expect(page.locator(".oi-backup-codes li")).toHaveCount(10);
   await page.getByRole("button", { name: "Kody zapisane" }).click();
   await expect(page).toHaveURL("/");
-  await context.clearCookies();
-  await session(context, "legal");
+  await switchSession(page, context, "legal");
   await page.goto("/");
   await expect(page).toHaveURL(/\/akceptacja-regulaminu(?:\?|$)/);
   await page.getByLabel("Akceptuję regulamin.").check();
   await page.getByLabel("Potwierdzam zapoznanie się").check();
   await page.getByRole("button", { name: "Potwierdź akceptację" }).click();
   await expect(page).toHaveURL("/");
-  await context.clearCookies();
-  await session(context, "no-alerts");
+  await switchSession(page, context, "no-alerts");
   await page.goto("/");
   await expect(page.getByRole("link", { name: "Alerty", exact: true })).toHaveCount(0);
 });
@@ -166,7 +176,7 @@ test("logout waits for cookie removal before navigation and notifies other tabs 
   const requestArrived = new Promise<void>((resolve) => {
     received = resolve;
   });
-  await page.route("**/ustawienia", async (route) => {
+  await page.route("**/auth/action", async (route) => {
     if (route.request().method() !== "POST") return route.continue();
     received();
     await responseGate;

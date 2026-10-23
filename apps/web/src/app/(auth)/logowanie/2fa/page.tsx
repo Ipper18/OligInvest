@@ -18,7 +18,7 @@ export default async function Page({
       redirect(authDestination(gate, returnTo));
     return <AuthForm kind="totp" />;
   }
-  // Cookie rotation re-renders this page before the client's navigation completes.
+  // A verified session reaching this page (reload, history) continues to its destination.
   if (gate !== "/logowanie/2fa") redirect(authDestination(gate, returnTo));
   return <AuthForm kind="totp" />;
 }
