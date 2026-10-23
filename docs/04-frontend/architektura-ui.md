@@ -91,8 +91,9 @@ BL-011: `pnpm gen:api-client` uruchamia odizolowany generator w `tools/openapi-c
 | `NOT_FOUND` | `not-found.tsx` (także dla modułu wyłączonego flagą) |
 | `INTERNAL`, `SERVICE_UNAVAILABLE` | `error.tsx` z identyfikatorem żądania (`instance`) do zgłoszenia |
 
+- **Operacje sesji jedną nawigacją:** logowanie, TOTP, kody zapasowe, włączenie 2FA, akceptacja regulaminu, wylogowanie, preferencje i step-up idą przez cienki przekaźnik `POST /auth/action` (Route Handler, tylko JSON, `Origin` zgodny z hostem żądania, limit 64 KiB) do `api` — zgodnie z ADR-012 bez logiki domenowej. Nie są to Server Actions, bo zmiana ciasteczka w Server Action wymusza ponowne renderowanie bieżącej trasy, a jej przekierowanie uruchamia drugą nawigację routera konkurującą z nawigacją dokumentu po sukcesie. W WebKit przerwany w ten sposób strumień RSC Next zamienia w kolejną nawigację dokumentu (przerwane `page.goto`, w logu serwera „The destination stream closed early”). Po sukcesie formularz wykonuje dokładnie jedną nawigację dokumentu.
 - **Stany ekranu:** każdy segment ma `loading.tsx` (szkielet o wymiarach docelowych — CLS), `error.tsx`, `not-found.tsx`; widoki danych rynkowych pokazują `<DataFreshness/>` z przyczyną nieaktualności (FR-01.15).
-- **Powrót po uwierzytelnieniu:** formularze i przekierowania serwerowe bramek zachowują zwalidowane `returnTo`, także przy ponownym renderowaniu po rotacji ciasteczka przez Server Action. Po przejściu bramek kierują do tego samego celu. `safeReturnTo` dopuszcza wyłącznie ścieżkę tej aplikacji, bez przejść do API lub pętli ekranów uwierzytelnienia; odrzucony albo brakujący cel daje `/`.
+- **Powrót po uwierzytelnieniu:** formularze i przekierowania serwerowe bramek zachowują zwalidowane `returnTo`. Po przejściu bramek kierują do tego samego celu. `safeReturnTo` dopuszcza wyłącznie ścieżkę tej aplikacji, bez przejść do API lub pętli ekranów uwierzytelnienia; odrzucony albo brakujący cel daje `/`.
 
 ## 5. Renderowanie
 

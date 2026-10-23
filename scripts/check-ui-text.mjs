@@ -41,14 +41,25 @@ const normalize = (text) =>
 const escapePattern = (text) => text.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
 const meaningful = (text) => /[\p{L}\p{N}]/u.test(text);
 
+// A scan calls this for every literal in every component; compile each policy's patterns once.
+const compiled = new WeakMap();
+function patterns(policy) {
+  let entries = compiled.get(policy);
+  if (!entries) {
+    entries = policy.phrases.map((phrase) => [
+      phrase,
+      new RegExp(`(?<![\\p{L}\\p{N}_])${escapePattern(normalize(phrase))}(?![\\p{L}\\p{N}_])`, "u"),
+    ]);
+    compiled.set(policy, entries);
+  }
+  return entries;
+}
+
 export function forbiddenMatches(text, policy) {
   const normalized = normalize(text);
-  return policy.phrases.filter((phrase) =>
-    new RegExp(
-      `(?<![\\p{L}\\p{N}_])${escapePattern(normalize(phrase))}(?![\\p{L}\\p{N}_])`,
-      "u",
-    ).test(normalized),
-  );
+  return patterns(policy)
+    .filter(([, pattern]) => pattern.test(normalized))
+    .map(([phrase]) => phrase);
 }
 
 function files(directory) {

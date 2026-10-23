@@ -5,7 +5,7 @@ import { DataTable } from "@oliginvest/ui/table";
 import { useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { mutateResource, uploadFile } from "./actions";
 import { FormError, InstrumentPicker } from "./forms";
 import { Amount } from "./presentation";
@@ -226,6 +226,9 @@ export function ImportPreview({
   const cache = useQueryClient(),
     router = useRouter(),
     key = useRef<string | null>(null);
+  // Covers the route refresh after a mutation, so reconciliation is acknowledged only once current.
+  const [refreshing, startRefresh] = useTransition();
+  const pending = busy || refreshing;
   const editable = batch.status === "parsed",
     unresolved = (counts.error ?? 0) + (counts.needs_mapping ?? 0) > 0;
   useEffect(() => {
@@ -258,9 +261,11 @@ export function ImportPreview({
       key.current = null;
       setSelected(null);
       await cache.invalidateQueries({ queryKey: [userId, "portfolio"] });
-      if (kind === "commit") router.push("/portfel");
-      else if (kind === "import") router.push("/portfel/import");
-      router.refresh();
+      startRefresh(() => {
+        if (kind === "commit") router.push("/portfel");
+        else if (kind === "import") router.push("/portfel/import");
+        router.refresh();
+      });
     } catch {
       setError({ code: "SERVICE_UNAVAILABLE", requestId: "" });
     } finally {
@@ -387,12 +392,17 @@ export function ImportPreview({
           {unresolved && <p>{m.unresolved}</p>}
           {batch.reconciliation?.ok !== true && (
             <label>
-              <input type="checkbox" checked={ack} onChange={(e) => setAck(e.target.checked)} />
+              <input
+                type="checkbox"
+                checked={ack}
+                disabled={pending}
+                onChange={(e) => setAck(e.target.checked)}
+              />
               {m.acknowledgeDifferences}
             </label>
           )}
           <Button
-            disabled={busy || unresolved || (batch.reconciliation?.ok !== true && !ack)}
+            disabled={pending || unresolved || (batch.reconciliation?.ok !== true && !ack)}
             onClick={() => void run("commit", { acknowledgeDifferences: ack })}
           >
             {m.commit}
