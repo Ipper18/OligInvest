@@ -25,7 +25,7 @@
     "@oliginvest/config": "workspace:*",
     "@oliginvest/i18n": "workspace:*",
     "@oliginvest/ui": "workspace:*",
-    "next": "16.3.8",
+    "next": "16.4.2",
     "openapi-fetch": "0.17.0",
     "react": "19.3.0",
     "react-dom": "19.3.0",
@@ -34,7 +34,7 @@
     "@tanstack/react-query": "5.103.1",
     "@oliginvest/contracts": "workspace:*",
     "qrcode": "1.5.4",
-    "@next/mdx": "16.3.8",
+    "@next/mdx": "16.4.2",
     "@mdx-js/loader": "3.1.1",
     "@mdx-js/react": "3.1.1"
   },
