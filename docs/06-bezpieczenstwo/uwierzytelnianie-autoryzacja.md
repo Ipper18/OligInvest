@@ -55,6 +55,8 @@ Posiadanie linku wysłanego na adres z zaproszenia dowodzi kontroli nad skrzynk�
 
 Formularze uwierzytelniania mają metodę POST i przycisk wysłania nieaktywny do czasu uruchomienia obsługi JavaScript. Hasło, kod TOTP ani token resetu nie mogą trafić do query string przez domyślne wysłanie formularza przed hydratacją (BL-122; regresja lokalnego startu 2026-10-22).
 
+Po pierwszej konfiguracji TOTP ekran pozostawia jednorazowo wydane kody zapasowe do zapisania, także gdy użytkownik musi jeszcze zaakceptować regulamin. Dopiero potwierdzenie zapisania kodów prowadzi dalej przez bramkę regulaminu; dostęp do danych pozostaje zablokowany. Ponowne wejście na ekran bez lokalnego stanu kodów nie odtwarza ich (BL-122, 2026-10-23).
+
 | Reguła | Wartość |
 |---|---|
 | Długość | 12–128 znaków (FR-07.02); pełny ciąg UTF-8 bez przycinania i zmiany wielkości liter |

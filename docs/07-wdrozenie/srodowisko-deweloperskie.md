@@ -70,6 +70,8 @@ Wynik tej kontroli potwierdza wyłącznie składnię, interpolację i model Comp
 
 Ścieżki lokalnych kont wymagają jednocześnie `NODE_ENV=development` i `DB_NAME=oliginvest_dev`. Nie dodają tras HTTP ani flag omijających MFA, regulamin, limity czy RLS. Skrypty izolowanych testów zachowują istniejący tryb `test` wyłącznie dla syntetycznego seeda bez hasła i bez profilu właściciela. Nie uruchamiaj dwóch launcherów na tej samej bazie: każdy start zmienia hasła ról DB.
 
+Next dev dopuszcza zasoby developerskie dla `localhost`, pętli zwrotnej IPv4 i `::1` (`allowedDevOrigins` wyłącznie w development). Przekazuje `/api/*` do `API_INTERNAL_URL`, aby SSE i żądania przeglądarki trafiały do API; w produkcji nadal robi to Caddy. Logowanie argumentów Server Functions jest wyłączone (`logging.serverFunctions: false`), ponieważ argumenty zawierają hasła i kody. Formularze czekają na hydratację i mają metodę POST, aby szybkie wysłanie nie umieszczało poświadczeń w URL. Nie zmienia to CSP ani atrybutów ciasteczek produkcyjnych.
+
 ## 4. Dane przykładowe (seed)
 
 ### Trwałe klucze lokalne
