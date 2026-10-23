@@ -53,6 +53,8 @@ Posiadanie linku wysłanego na adres z zaproszenia dowodzi kontroli nad skrzynk�
 
 ## 2. Hasła (ASVS V6.2, NFR-03.02)
 
+Formularze uwierzytelniania mają metodę POST i przycisk wysłania nieaktywny do czasu uruchomienia obsługi JavaScript. Hasło, kod TOTP ani token resetu nie mogą trafić do query string przez domyślne wysłanie formularza przed hydratacją (BL-122; regresja lokalnego startu 2026-10-22).
+
 | Reguła | Wartość |
 |---|---|
 | Długość | 12–128 znaków (FR-07.02); pełny ciąg UTF-8 bez przycinania i zmiany wielkości liter |
