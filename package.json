@@ -51,7 +51,8 @@
     "admin:revoke-pats": "pnpm --filter @oliginvest/api exec node dist/admin-cli.js revoke-pats",
     "admin:revoke-all-pats": "pnpm --filter @oliginvest/api exec node dist/admin-cli.js revoke-all-pats",
     "admin:queues": "pnpm --filter @oliginvest/api exec node dist/admin-cli.js queues",
-    "admin:flag": "pnpm --filter @oliginvest/api exec node dist/admin-cli.js flag"
+    "admin:flag": "pnpm --filter @oliginvest/api exec node dist/admin-cli.js flag",
+    "admin:risk-free-rate": "pnpm --filter @oliginvest/api exec node dist/admin-cli.js risk-free-rate"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.14",

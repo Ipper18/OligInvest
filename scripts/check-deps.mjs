@@ -7,6 +7,9 @@ import { API } from "typescript/unstable/sync";
 
 const FOUNDATIONS = ["identity", "notifications", "market", "portfolio"];
 const ENTRIES = ["./contracts", "./jobs", "./server", "./ui"];
+// Functional modules can be removed (moduly.md § 8.2, CI "build without <module>"): apps declare
+// them only in optionalDependencies and load them in the composition registry.
+const FEATURE_PACKAGE = /^@oliginvest\/mod-(analytics|alerts|education|admin|quick-actions)$/u;
 const SECTIONS = ["dependencies", "devDependencies", "peerDependencies", "optionalDependencies"];
 const BUILTINS = new Set(builtinModules.flatMap((name) => [name, `node:${name}`]));
 const IGNORED = new Set([
@@ -136,6 +139,10 @@ export function checkDependencies(root) {
     }
     for (const [name, version] of Object.entries(pkg.dependencies)) {
       const target = byName.get(name);
+      const optional = Object.hasOwn(pkg.manifest.optionalDependencies ?? {}, name);
+      if (pkg.group === "apps" && FEATURE_PACKAGE.test(name) && !optional)
+        report(path, `${name}: functional module must be an optional dependency`);
+      if (!target && optional && pkg.group === "apps" && FEATURE_PACKAGE.test(name)) continue;
       if (target) {
         edges.get(pkg).add(target);
         const error = layerError(pkg, target);

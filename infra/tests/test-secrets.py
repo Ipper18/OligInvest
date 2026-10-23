@@ -28,6 +28,9 @@ class SecretTests(unittest.TestCase):
             line = next(line for line in lines if line.startswith(f"user {service} "))
             self.assertEqual("~quota:*" in line, service == "jobs")
             self.assertEqual("~breaker:*" in line, service == "jobs")
+            # BL-206/BL-213/BL-313: market job markers and reports are jobs-only state.
+            self.assertEqual("~benchmark:*" in line, service == "jobs")
+            self.assertEqual("~report:*" in line, service == "jobs")
 
     def test_auth_state_is_private_to_api(self):
         values = {f"VALKEY_QUEUE_{name}_PASSWORD": b"synthetic-secret" for name in ["API", "JOBS", "ANALYTICS"]}

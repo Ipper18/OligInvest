@@ -83,7 +83,7 @@ flowchart LR
 |---|---|---|---|---|---|
 | `/analizy` | lista analiz, limity, wybór typu | FR-04.01 | `listAnalyticsRuns`, `getAnalyticsLimits` | D | typy ciężkie widoczne dla roli user z wyjaśnieniem braku dostępu |
 | `/analizy/nowa/[typ]` | formularz parametrów + podgląd założeń przed uruchomieniem (`monte-carlo`, `optymalizacja`, `testy-skrajne`, `co-jesli`, `backtest`, `cel`, `rebalancing`) | FR-04.02–FR-04.09 | `createAnalyticsRun`, `listStressScenarios`, `listStrategies`, `listTargetAllocations` | Z, D | formularz etapowy; Zod leniwie (architektura-ui § 11) |
-| `/analizy/[runId]` | postęp, wynik jako rozkład, „jak czytać ten wynik”, ostrzeżenia, odtwarzalność | FR-04.01, FR-06.06, NFR-07.02 | `getAnalyticsRun`, `cancelAnalyticsRun` | Z, D, W | lewy ogon pokazywany jako pierwszy (obliczenia § 12.1) |
+| `/analizy/[runId]` | postęp, wynik jako rozkład, „jak czytać ten wynik”, ostrzeżenia, odtwarzalność | FR-04.01, FR-06.06, NFR-07.02 | `getAnalyticsRun`, `cancelAnalyticsRun` | Z, D, W | lewy ogon pokazywany jako pierwszy (obliczenia § 12.1); Monte Carlo: jawna informacja, że testy w okresach kryzysów (BL-556) nie są jeszcze dostępne (ostrzeżenie `CRISIS_TESTS_UNAVAILABLE`, decyzja właściciela 2026-10-21), oraz wiersze wrażliwości `block_length` z długością bloku |
 | `/analizy/strategie` | definicje strategii do backtestu | FR-04.08 | `listStrategies`, `createStrategy`, `replaceStrategy` | D | — |
 | `/alerty` | reguły i ostatnie wyzwolenia | FR-05.01–FR-05.06 | `listAlertRules`, `listAlertEvents` | D | — |
 | `/alerty/nowy`, `/alerty/[ruleId]` | kreator reguły (typ → parametry → kanały → podgląd treści) | FR-05.01–FR-05.07 | `createAlertRule`, `updateAlertRule`, `deleteAlertRule` | D | podgląd przykładowego powiadomienia |

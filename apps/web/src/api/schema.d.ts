@@ -4274,6 +4274,11 @@ export interface components {
              * @enum {string}
              */
             taxMode: "belka_simplified" | "none";
+            /**
+             * @description Roczny koszt (TER + przewalutowanie) jako ułamek, odejmowany od wartości raz w roku; prowizje transakcyjne poza modelem.
+             * @default 0
+             */
+            annualCostRate: number;
             goal?: components["schemas"]["Money"];
             proxyOverrides?: {
                 instrumentId: components["schemas"]["Uuid"];
@@ -4546,7 +4551,11 @@ export interface components {
             /** @description Obowiązkowa tabela wrażliwości (§ 12.1). */
             sensitivity: {
                 /** @enum {string} */
-                scenario: "mean_minus_2pp" | "mean_plus_2pp" | "last_10y" | "full_history";
+                scenario: "mean_minus_2pp" | "mean_plus_2pp" | "last_10y" | "full_history" | "block_length";
+                /** @description Tylko `block_length`: średnia długość bloku bootstrapu stacjonarnego w tym wierszu. */
+                meanBlockMonths?: number;
+                /** @description Roczny koszt przyjęty w scenariuszu (ułamek). */
+                annualCostRate?: number;
                 endValueP5: number;
                 endValueP50: number;
                 goalProbability?: number | null;
@@ -4733,8 +4742,11 @@ export interface components {
                 };
             };
             error?: {
-                /** @enum {string} */
-                code: "TIMEOUT" | "MEMORY_LIMIT" | "INSUFFICIENT_DATA" | "COVERAGE_TOO_LOW" | "INVALID_PARAMS" | "INTERNAL";
+                /**
+                 * @description `DATA_QUALITY_HOLD` — otwarte zgłoszenie BLOCK na serii wejściowej (obliczenia-finansowe.md § 14).
+                 * @enum {string}
+                 */
+                code: "TIMEOUT" | "MEMORY_LIMIT" | "INSUFFICIENT_DATA" | "COVERAGE_TOO_LOW" | "INVALID_PARAMS" | "INTERNAL" | "DATA_QUALITY_HOLD";
                 message: string;
             };
             createdAt: components["schemas"]["Timestamp"];

@@ -75,6 +75,7 @@ export async function startJobs(
   let mailer: ReturnType<typeof createAuthMailer> | undefined;
   let mailWorker: Worker | undefined;
   let marketWorker: { close(): Promise<void> } | undefined;
+  let analyticsWorker: { close(): Promise<void> } | undefined;
   let portfolioWorker:
     | {
         close(): Promise<void>;
@@ -111,6 +112,7 @@ export async function startJobs(
       await mailWorker?.close();
       await portfolioWorker?.close();
       await marketWorker?.close();
+      await analyticsWorker?.close();
       await monitoring?.close();
       mailer?.close();
       await flagRuntime.close();
@@ -156,6 +158,14 @@ export async function startJobs(
       logger,
       observe,
     });
+    const { startAnalyticsWorker } = await import("./analytics-runtime.js");
+    analyticsWorker = await startAnalyticsWorker({
+      database: flagRuntime.database,
+      cache: flagRuntime.cache,
+      connection: runtime.connection,
+      logger,
+      observe,
+    });
     const { startMarketWorker } = await import("./market-runtime.js");
     marketWorker = await startMarketWorker({
       updated: async (reason, fromDate) => portfolioWorker?.enqueueAll(reason, fromDate),
@@ -167,6 +177,7 @@ export async function startJobs(
       connection: runtime.connection,
       logger,
       observe,
+      fredApiKey: runtime.config.FRED_API_KEY,
     });
     {
       // The worker uses blocking reads; the producer's 1.5 s command deadline

@@ -46,6 +46,8 @@ export const ANALYTICS_ERROR_CODES = [
   "COVERAGE_TOO_LOW",
   "INVALID_PARAMS",
   "INTERNAL",
+  // obliczenia-finansowe.md § 14 (owner decision 2026-10-20): an open BLOCK on an input series.
+  "DATA_QUALITY_HOLD",
 ] as const;
 
 const object = z.strictObject;
@@ -113,6 +115,8 @@ export const monteCarloJobSchema = job("monte_carlo", {
     withdrawals: z.array(cashFlowPlan).max(10),
     inflationRate,
     taxMode: z.enum(["belka_simplified", "none"]),
+    // TER + FX conversion as a fraction, deducted once a year (owner decision 2026-10-20).
+    annualCostRate: ratio(0, 0.05),
     goal: positivePln.optional(),
   }).refine(
     (params) =>
@@ -358,18 +362,100 @@ export const analyticsJobSchema = z.discriminatedUnion("type", [
 ]);
 export type AnalyticsJob = z.infer<typeof analyticsJobSchema>;
 
-// `done` payloads arrive with the analyses (BL-313+); this version reports failures only.
+// Distribution only (FR-04.01): percentiles over time, never a single projected value.
+const series = (max: number) => z.array(z.number()).max(max);
+const months = ANALYTICS_LIMITS.horizonYears * 12 + 1;
+const fan = object({
+  p5: series(months),
+  p25: series(months),
+  p50: series(months),
+  p75: series(months),
+  p95: series(months),
+});
+export const monteCarloResultSchema = object({
+  kind: z.literal("monte_carlo"),
+  currency: z.literal("PLN"),
+  months: z.array(z.int().min(0).max(months)).max(months),
+  nominal: fan,
+  real: fan,
+  goalProbability: z.number().min(0).max(1).nullable(),
+  maxDrawdownPercentiles: object({ p5: ratio(-1, 0), p50: ratio(-1, 0), p95: ratio(-1, 0) }),
+  // Owner condition 2026-10-21: at least two block lengths besides the mean and window rows.
+  sensitivity: z
+    .array(
+      z.discriminatedUnion("scenario", [
+        object({
+          scenario: z.enum(["mean_minus_2pp", "mean_plus_2pp", "last_10y", "full_history"]),
+          annualCostRate: ratio(0, 0.05),
+          endValueP5: z.number(),
+          endValueP50: z.number(),
+          goalProbability: z.number().min(0).max(1).nullable(),
+        }),
+        object({
+          scenario: z.literal("block_length"),
+          meanBlockMonths: int(1, 24),
+          annualCostRate: ratio(0, 0.05),
+          endValueP5: z.number(),
+          endValueP50: z.number(),
+          goalProbability: z.number().min(0).max(1).nullable(),
+        }),
+      ]),
+    )
+    .min(4)
+    .max(6)
+    .refine(
+      (rows) =>
+        new Set(rows.flatMap((r) => ("meanBlockMonths" in r ? [r.meanBlockMonths] : []))).size >= 2,
+      { message: "Sensitivity needs at least two block lengths" },
+    ),
+});
+const warning = object({
+  code: z.string().regex(/^[A-Z][A-Z0-9_]{1,63}$/),
+  severity: z.enum(["info", "warning", "critical"]),
+  message: z.string().max(500),
+});
+const jsonValue = z.union([z.string().max(500), z.number(), z.boolean(), z.null()]);
+// Shown to the user as the assumptions block (dane, okno, model, koszty, podatki, ziarno).
+const assumptions = z.record(
+  z.string().regex(/^[a-zA-Z][a-zA-Z0-9_]{0,63}$/),
+  z.union([jsonValue, z.array(jsonValue).max(500), z.record(z.string().max(64), jsonValue)]),
+);
+const envelope = {
+  v: z.literal(ANALYTICS_JOB_VERSION),
+  runId: uuid,
+  finishedAt: timestamp,
+  durationMs: z.int().min(0),
+};
 export const analyticsResultSchema = z.discriminatedUnion("status", [
   object({
-    v: z.literal(ANALYTICS_JOB_VERSION),
-    runId: uuid,
+    ...envelope,
+    status: z.literal("done"),
+    result: monteCarloResultSchema,
+    assumptions,
+    warnings: z.array(warning).max(20),
+    reproducibility: object({
+      seed,
+      algorithmVersion: z.string().regex(/^[a-z0-9_.-]{1,40}$/),
+      dataVersion: z.record(z.string().max(80), z.string().max(80)),
+      libraries: z.record(z.string().regex(/^[a-z0-9_.-]{1,40}$/), z.string().max(40)),
+    }),
+  }),
+  object({
+    ...envelope,
     status: z.literal("failed"),
     error: object({ code: z.enum(ANALYTICS_ERROR_CODES) }),
-    finishedAt: timestamp,
-    durationMs: z.int().min(0),
   }),
+  // The worker stopped between steps after api set the cancel flag (BL-312).
+  object({ ...envelope, status: z.literal("cancelled") }),
 ]);
 export type AnalyticsResult = z.infer<typeof analyticsResultSchema>;
+/** Progress reported through BullMQ `job.updateProgress` on the `analytics` queue. */
+export const analyticsProgressSchema = object({
+  progress: z.int().min(0).max(100),
+  stage: z.enum(["loading_data", "simulating", "sensitivity", "summarizing"]),
+});
+/** Key in valkey-queue the worker polls between steps; api sets it on cancel (TTL 1 h). */
+export const analyticsCancelKey = (runId: string) => `bull:analytics:cancel:${uuid.parse(runId)}`;
 
 // Single artefact consumed by apps/analytics; regenerate with `pnpm gen:analytics-schema`.
 export function analyticsContractDocument() {
@@ -381,5 +467,6 @@ export function analyticsContractDocument() {
     timeoutsSeconds: ANALYTICS_TIMEOUTS_SECONDS,
     job: z.toJSONSchema(analyticsJobSchema),
     result: z.toJSONSchema(analyticsResultSchema),
+    progress: z.toJSONSchema(analyticsProgressSchema),
   };
 }

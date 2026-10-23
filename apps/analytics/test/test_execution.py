@@ -89,24 +89,38 @@ def test_child_environment_carries_no_secrets(monkeypatch: pytest.MonkeyPatch) -
     }
 
 
-def test_installed_runner_has_no_analyses_yet() -> None:
-    # Real `python -I -m oliginvest_analytics.runner`; BL-313 registers handlers.
+def test_installed_runner_turns_malformed_requests_into_internal() -> None:
+    # Real `python -I -m oliginvest_analytics.runner`: a job without params and market data.
     outcome = run()
     assert outcome.status == "failed" and outcome.code == "INTERNAL"
 
 
 def test_runner_maps_handler_outcomes() -> None:
-    request = json.dumps({"type": "goal", "job": {"seed": 1}}).encode()
+    request = json.dumps(
+        {"type": "goal", "job": {"seed": 1}, "data": {"n": 2}}
+    ).encode()
 
-    def exhausted(job: object) -> dict[str, object]:
+    def exhausted(job: object, data: object, progress: object) -> dict[str, object]:
         raise MemoryError
 
-    def broken(job: object) -> dict[str, object]:
+    def broken(job: object, data: object, progress: object) -> dict[str, object]:
         raise RuntimeError("contains parameters")
 
-    assert runner.run(request, {"goal": lambda job: {"seed": job["seed"]}}) == {
+    def short(job: object, data: object, progress: object) -> dict[str, object]:
+        raise runner.InsufficientData(12)
+
+    def echo(
+        job: dict[str, int], data: dict[str, int], progress: object
+    ) -> dict[str, int]:
+        return {"seed": job["seed"], "n": data["n"]}
+
+    assert runner.run(request, {"goal": echo}) == {
         "status": "done",
-        "result": {"seed": 1},
+        "result": {"seed": 1, "n": 2},
+    }
+    assert runner.run(request, {"goal": short}) == {
+        "status": "failed",
+        "code": "INSUFFICIENT_DATA",
     }
     assert runner.run(request, {"goal": exhausted}) == {
         "status": "failed",
@@ -117,3 +131,58 @@ def test_runner_maps_handler_outcomes() -> None:
         "code": "INTERNAL",
     }
     assert runner.run(request, {}) == {"status": "failed", "code": "INTERNAL"}
+
+
+PROGRESS_CHILD = r"""
+import json, sys, time
+sys.stdin.read()
+for p in (10, 60):
+    sys.stderr.write(json.dumps({"progress": p, "stage": "simulating"}) + "\n")
+    sys.stderr.flush()
+sys.stderr.write("noise\n")
+sys.stderr.flush()
+time.sleep(30)
+"""
+ECHO_CHILD = r"""
+import json, sys
+request = json.loads(sys.stdin.read())
+print(json.dumps({"status": "done", "result": request["data"]}))
+"""
+
+
+def test_progress_lines_are_forwarded_and_cancellation_kills_the_child() -> None:
+    seen: list[tuple[int, str]] = []
+
+    async def scenario() -> object:
+        async def on_progress(value: int, stage: str) -> None:
+            seen.append((value, stage))
+
+        async def cancelled() -> bool:
+            return len(seen) >= 2
+
+        started = time.monotonic()
+        outcome = await execute(
+            JOB,
+            command=python(PROGRESS_CHILD),
+            timeout_seconds=20,
+            on_progress=on_progress,
+            cancelled=cancelled,
+        )
+        assert time.monotonic() - started < 10
+        return outcome
+
+    outcome = asyncio.run(scenario())
+    assert outcome.status == "cancelled"
+    assert seen == [(10, "simulating"), (60, "simulating")]
+
+
+def test_market_data_travels_to_the_child_in_the_request() -> None:
+    outcome = asyncio.run(
+        execute(
+            JOB,
+            command=python(ECHO_CHILD),
+            timeout_seconds=10,
+            data={"months": ["2024-01"]},
+        )
+    )
+    assert outcome.status == "done" and outcome.result == {"months": ["2024-01"]}

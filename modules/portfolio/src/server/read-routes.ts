@@ -6,10 +6,12 @@ import {
   dayChangeResponse,
   lotPage,
   object,
+  portfolioHistorySchema,
   portfolioSummary,
   positionsResponse,
   realizedResponse,
 } from "../contracts.js";
+import { readPortfolioHistory } from "./history.js";
 import { readPortfolio } from "./read-service.js";
 import { validationError } from "./repository.js";
 import type { PortfolioDependencies } from "./routes.js";
@@ -83,7 +85,60 @@ const definitions = [
       .strict(),
   },
 ];
+const historyQuery = z
+  .object({
+    ...accounts,
+    from: z.string().date().optional(),
+    to: z.string().date().optional(),
+    interval: z.enum(["1d", "1w", "1mo"]).default("1d"),
+    maxPoints: z.coerce.number().int().min(50).max(3000).default(1500),
+  })
+  .strict();
+function queryValues(url: string) {
+  const values: Record<string, string | string[]> = {};
+  for (const [key, value] of new URL(url).searchParams) {
+    if (key === "accountId") values[key] = [...((values[key] as string[]) ?? []), value];
+    else {
+      if (key in values) throw new ProblemError("VALIDATION_FAILED");
+      values[key] = value;
+    }
+  }
+  return values;
+}
 export function mountPortfolioReads(api: OpenAPIHono<AppEnv>, deps: PortfolioDependencies) {
+  const history = createRoute({
+    method: "get",
+    path: "/portfolio/history",
+    operationId: "getPortfolioHistory",
+    tags: ["portfolio"],
+    security: [{ sessionCookie: [] }],
+    request: { query: historyQuery },
+    responses: {
+      200: {
+        description: "Seria.",
+        content: { "application/json": { schema: portfolioHistorySchema } },
+      },
+      401: marketError,
+      403: marketError,
+      422: marketError,
+    },
+  });
+  api.openAPIRegistry.registerPath(history);
+  api.get(history.path, async (c) => {
+    try {
+      const values = queryValues(c.req.url);
+      const principal = await deps.authorize(c.req.raw);
+      const response = await readPortfolioHistory(
+        await deps.repository(),
+        principal,
+        historyQuery.parse(values),
+      );
+      c.header("Cache-Control", "no-store");
+      return c.json(response);
+    } catch (error) {
+      return validationError(error);
+    }
+  });
   for (const def of definitions) {
     const route = createRoute({
       method: "get",
@@ -107,14 +162,7 @@ export function mountPortfolioReads(api: OpenAPIHono<AppEnv>, deps: PortfolioDep
     api.openAPIRegistry.registerPath(route);
     api.get(route.path, async (c) => {
       try {
-        const values: Record<string, string | string[]> = {};
-        for (const [key, value] of new URL(c.req.url).searchParams) {
-          if (key === "accountId") values[key] = [...((values[key] as string[]) ?? []), value];
-          else {
-            if (key in values) throw new ProblemError("VALIDATION_FAILED");
-            values[key] = value;
-          }
-        }
+        const values = queryValues(c.req.url);
         const query = def.query.parse(values);
         const principal = await deps.authorize(c.req.raw);
         const response = await readPortfolio(

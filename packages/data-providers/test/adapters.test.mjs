@@ -2,6 +2,7 @@ import { expect, test, vi } from "vitest";
 import * as XLSX from "xlsx";
 import {
   FrankfurterProvider,
+  FredProvider,
   GPW_HEADERS,
   NbpProvider,
   parseGpwWorkbook,
@@ -107,4 +108,31 @@ test("GPW rejects wrong date, changed headers, formulas and oversized files", ()
     ),
   ).toThrow();
   expect(() => parseGpwWorkbook(Buffer.alloc(10_000_001), "2026-10-05")).toThrow();
+});
+
+test("FRED keeps decimal text, skips '.' holidays and rejects a changed schema", async () => {
+  const key = "a".repeat(32);
+  const request = vi.fn(
+    async () =>
+      new Response(
+        '{"observations":[{"realtime_start":"2026-10-20","realtime_end":"2026-10-20","date":"2026-10-12","value":"."},{"realtime_start":"2026-10-20","realtime_end":"2026-10-20","date":"2026-10-13","value":"4.05"}]}',
+      ),
+  );
+  const fred = new FredProvider(request, key);
+  expect(await fred.getObservations("DGS3MO", "2026-10-12", "2026-10-13")).toEqual([
+    { date: "2026-10-13", value: "4.05" },
+  ]);
+  expect(String(request.mock.calls[0][0])).toMatch(
+    /^https:\/\/api\.stlouisfed\.org\/fred\/series\/observations\?/,
+  );
+  const changed = new FredProvider(
+    async () => new Response('{"observations":[{"date":"x"}]}'),
+    key,
+  );
+  await expect(changed.getObservations("DGS3MO", "2026-10-12", "2026-10-13")).rejects.toMatchObject(
+    {
+      reason: "provider_error",
+    },
+  );
+  expect(() => new FredProvider(request, "short")).toThrow();
 });
