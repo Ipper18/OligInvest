@@ -18,7 +18,12 @@ export default defineConfig({
       },
     ],
   ],
-  use: { ignoreHTTPSErrors: true, baseURL: process.env.E2E_BASE_URL || "https://127.0.0.1:3197" },
+  // A failed run keeps its trace in the uploaded report; nothing is retried.
+  use: {
+    ignoreHTTPSErrors: true,
+    baseURL: process.env.E2E_BASE_URL || "https://127.0.0.1:3197",
+    trace: "retain-on-failure",
+  },
   projects: (["chromium", "webkit", "firefox"] as const).flatMap((browserName) => [
     {
       name: browserName,
