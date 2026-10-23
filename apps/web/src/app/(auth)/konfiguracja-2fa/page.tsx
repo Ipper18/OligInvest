@@ -13,6 +13,6 @@ export default async function Page({
   const me = await getMe();
   const gate = gatePath(me);
   if (gate && gate !== "/konfiguracja-2fa") redirect(authDestination(gate, returnTo));
-  // The mounted client preserves one-time recovery codes across cookie rotation.
+  // Session calls do not re-render this route, so the mounted form keeps one-time recovery codes.
   return <AuthForm kind="enable" enrolled={!gate} />;
 }

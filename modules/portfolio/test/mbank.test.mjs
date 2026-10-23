@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { performance } from "node:perf_hooks";
 import { buildLedger } from "@oliginvest/core";
 import { describe, expect, test } from "vitest";
+import { BULK_TEST_TIMEOUT_MS } from "../../../scripts/test-timeouts.mjs";
 import { toCoreTransaction } from "../src/domain/transactions.js";
 import { nameKey, parseMbank } from "../src/import/mbank.js";
 import { prepareImportInput } from "../src/server/imports.js";
@@ -312,14 +313,18 @@ describe("mBank eMakler file safety", () => {
     expect(() => parse(Buffer.alloc(0))).toThrow("FILE_TOO_LARGE");
   });
 
-  test("5000 rows parse within 30 seconds and 50001 rows fail closed", () => {
-    const line = (i) =>
-      `05.02.2025 10:00:00;WYC.BK: ${String(i).padStart(6, "0")} POZ: 0000001;1,00`;
-    const start = performance.now();
-    const result = parse(cash(Array.from({ length: 5000 }, (_, i) => line(i))));
-    expect(result.rows).toHaveLength(5000);
-    expect(result.cash).toBe("5000");
-    expect(performance.now() - start).toBeLessThan(30000);
-    expect(() => parse(cash(Array.from({ length: 50001 }, (_, i) => line(i))))).toThrow();
-  }, 30_000);
+  test(
+    "5000 rows parse within 30 seconds and 50001 rows fail closed",
+    () => {
+      const line = (i) =>
+        `05.02.2025 10:00:00;WYC.BK: ${String(i).padStart(6, "0")} POZ: 0000001;1,00`;
+      const start = performance.now();
+      const result = parse(cash(Array.from({ length: 5000 }, (_, i) => line(i))));
+      expect(result.rows).toHaveLength(5000);
+      expect(result.cash).toBe("5000");
+      expect(performance.now() - start).toBeLessThan(30000);
+      expect(() => parse(cash(Array.from({ length: 50001 }, (_, i) => line(i))))).toThrow();
+    },
+    BULK_TEST_TIMEOUT_MS,
+  );
 });
