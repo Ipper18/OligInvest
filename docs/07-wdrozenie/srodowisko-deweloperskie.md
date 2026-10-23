@@ -1,8 +1,8 @@
 # Środowisko deweloperskie M0-1
 
-**Cel:** opisać samodzielny plik Compose dla lokalnych danych syntetycznych i sposób jego walidacji bez instalowania zależności aplikacji (BL-034, NFR-10.01).
+**Cel:** opisać samodzielny plik Compose, logowanie do lokalnego demo oraz odizolowany profil właściciela do prób importu (BL-034, NFR-10.01).
 
-Stan 2026-09-28: `pnpm dev` uruchamia cztery aplikacje na hoście, przygotowuje role/migracje i ładuje seed; testy `queues:test`, `db:seed:test` i `dev:test` korzystają z izolowanych projektów tego samego Compose. Wyniki CI i pozostały DoD: [raport sesji](../08-plan/m0-1-session-report.md). Korekta sieci developerskiej pozostaje ograniczona do § 5.
+Stan 2026-10-23: `pnpm dev` uruchamia cztery aplikacje na hoście, przygotowuje role/migracje i w profilu demo ładuje seed; profil owner pomija seed i może uruchomić interaktywne tworzenie właściciela. Testy `queues:test`, `db:seed:test` i `dev:test` korzystają z izolowanych projektów tego samego Compose. [Raport lokalnych kont](../08-plan/dev-local-accounts-session-report.md); wcześniejszy DoD: [M0-1](../08-plan/m0-1-session-report.md). Korekta sieci developerskiej pozostaje ograniczona do § 5.
 
 ## 1. Usługi i izolacja
 
@@ -19,7 +19,7 @@ Izolacja sieciowa analytics (sieć bez bramy wychodzącej) obowiązuje w `compos
 
 Wersje obrazów są przypięte digestami indeksów wieloplatformowych odczytanymi 2026-09-20 przez `docker buildx imagetools inspect`; odczyt metadanych nie pobrał warstw ani nie uruchomił obrazów. Źródła: [oficjalny PostgreSQL](https://hub.docker.com/_/postgres), [Valkey 9.1.2](https://github.com/valkey-io/valkey/releases/tag/9.1.2), [Mailpit 1.31.1](https://github.com/axllent/mailpit/releases/tag/v1.31.1) i [obrazy Mailpit](https://mailpit.axllent.org/docs/install/docker/). Przypięcie nie zastępuje skanowania podatności obrazu przed użyciem.
 
-Sieć developerskiego Compose jest zwykłą siecią bridge (`internal: false`, decyzja właściciela 2026-09-21). Wszystkie opublikowane porty wymagają jawnego `DEV_BIND_ADDRESS` ustawionego na pętlę zwrotną hosta; nie wpisuj adresu interfejsu LAN ani wildcard. W repozytorium nie przechowujemy adresów IP. Są to porty wyłącznie developerskie, konfigurowalne zmiennymi `DEV_*_PORT`, bez związku z infrastrukturą domową. Hasła PostgreSQL i obu Valkey są wymagane, osobne i lokalne; nie kopiuj poświadczeń produkcji. Mailpit przechowuje tylko syntetyczne wiadomości.
+Sieć developerskiego Compose jest zwykłą siecią bridge (`internal: false`, decyzja właściciela 2026-09-21). Wszystkie opublikowane porty wymagają jawnego `DEV_BIND_ADDRESS` ustawionego na pętlę zwrotną hosta; nie wpisuj adresu interfejsu LAN ani wildcard. W repozytorium nie przechowujemy adresów IP. Są to porty wyłącznie developerskie, konfigurowalne zmiennymi `DEV_*_PORT`, bez związku z infrastrukturą domową. Hasła PostgreSQL i obu Valkey są wymagane, osobne i lokalne; nie kopiuj poświadczeń produkcji. Mailpit w demo przechowuje wiadomości syntetyczne; w profilu owner może zawierać lokalne wiadomości związane z kontem właściciela.
 
 Konto `postgres` służy wyłącznie do lokalnego bootstrapu/migracji i utworzenia konta syntetycznego. Seed zapisuje dane rynkowe i portfel przez `SET LOCAL ROLE oliginvest_app` z kontekstem `app.user_id`. API dostaje hasła ról app/auth, analytics wyłącznie hasło roli read-only (w M0 nie łączy się z bazą). Hasła ról syntetycznych są generowane przy starcie i przekazywane tylko właściwym procesom; nie uruchamiaj równolegle dwóch sesji dev na tej samej bazie.
 
