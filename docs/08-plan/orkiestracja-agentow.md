@@ -123,6 +123,8 @@ Agenci używają `gh` z fine-grained PAT ustawionym w zmiennej `GH_TOKEN` agenta
 
 Bez: Administration, Secrets, Variables, Environments, Workflows. Brak uprawnienia Workflows blokuje push zmian w `.github/workflows` — takie zadania wykonuje właściciel. **NIEZWERYFIKOWANE:** dokładne nazwy uprawnień w formularzu fine-grained PAT oraz to, czy token „odczyt” (bez Contents: write) nie może scalić PR — sprawdzić przy tworzeniu tokenów na testowym PR w pilotażu.
 
+**Pomocnik poświadczeń w klonie:** w pilotażu (2026-10-24) `git push` uruchamiany przez Codex w OpenBot dostawał HTTP 403, choć `gh` widział token z `GH_TOKEN` z prawem zapisu — git pobierał poświadczenie spoza `gh`. Dlatego każdy klon agenta ma lokalnie `credential.helper` wyczyszczony i ustawiony na `!gh auth git-credential` ([`openbot-agenci.md`](openbot-agenci.md) § 1).
+
 **Ograniczenie:** token „budowa” technicznie pozwala scalić PR z zielonym CI, bo ruleset `main` wymaga 0 zatwierdzeń (R-23; ruleset aktywny według odczytu API z 2026-10-24). Ochroną są instrukcje agentów, wyłączone auto-merge i rutyna kontroli scaleń ([`openbot-rutyny.md`](openbot-rutyny.md), R2) — ryzyko R-42.
 
 ### 6.3 Instrukcje projektu w workspace
