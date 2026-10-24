@@ -86,6 +86,8 @@ M0-3, 2026-10-02: właściciel zatwierdził decyzje BL-030/031; kalibracja Argon
 
 ### 1.1 Postęp i odchylenia
 
+- **2026-10-23, BL-034/102/122:** trwałe lokalne klucze, opcjonalne hasło demo, izolowany owner i TTY CLI; dodatkowo bezpieczne wysyłanie formularzy i lokalny gateway Next. Testy PostgreSQL/restartu i logowania Chromium PASS; status BL-034 nadal `w toku` do CI/DoD. Estymacja bez zmian, dodatkowy nakład niezmierzony. [Raport](dev-local-accounts-session-report.md), [PR #22](https://github.com/Ipper18/OligInvest/pull/22).
+
 - **2026-10-01, M0-2 / BL-018/020–023/030/031:** implementacja i lokalne testy zakończone: 9 obrazów, izolacja sekretów/sieci, kopia pgBackRest, 36/36 E2E, skan obrazów PASS według CI §5, testy wdrożenia i spiki 3 przeglądarek. R-27 rozstrzygnięte i potwierdzone testami. Statusy `w toku` do końcowego CI i wspólnego DoD; spiki wymagają decyzji właściciela, Argon2id także pomiaru na VM. Estymacje bez zmian, nakład niezmierzony; dodatkowa naprawa pakietów bazowych oraz Caddy, R-28. [Raport](m0-2-session-report.md), [instrukcja właściciela](../07-wdrozenie/m0-2-owner-runbook.md).
 
 - **2026-10-01, M0-2 / BL-022:** analiza konfiguracji ujawniła konflikt sekretów root/0600 z kontenerami non-root. Lokalna reprodukcja Compose potwierdzona; [propozycja korekty INF](m0-2-secret-permissions.md) oczekuje na decyzję właściciela (AGENTS §2.5). Implementacja paczki wstrzymana; R-27, estymacje bez zmian, nakład niezmierzony. [Stan M0-2](m0-2-session-report.md).

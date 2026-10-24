@@ -48,6 +48,8 @@ jobs:
         run: pnpm queues:test
       - name: Test synthetic seed against real PostgreSQL
         run: pnpm db:seed:test
+      - name: Test local accounts and authentication after restart
+        run: node apps/api/scripts/test-development-accounts.mjs
       - name: Test application monitoring and daily error mail
         run: node apps/jobs/scripts/test-monitoring.mjs
       - name: Test four applications with Compose services
