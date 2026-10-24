@@ -33,6 +33,7 @@ try {
     pnpm(["install", "--frozen-lockfile"]);
     run("uv", ["sync", "--project", "apps/analytics", "--frozen", "--no-install-project", "--no-build", "--no-python-downloads"]);
     run("uv", ["sync", "--project", "apps/analytics", "--frozen", "--no-build-isolation", "--no-python-downloads"]);
+    run(process.execPath, ["scripts/generate-api-registry.mjs"]);
     pnpm(["check:deps"]);
     const lock = readFileSync(join(root, "pnpm-lock.yaml"));
     if (!lock.equals(readFileSync(join(sandbox, "pnpm-lock.yaml")))) throw new Error("Frozen lockfile changed");

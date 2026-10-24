@@ -1,6 +1,29 @@
 {
   "compression": "gzip-9",
   "routes": {
+    "/rynek/watchlisty": {
+      "initialKb": 190,
+      "totalKb": 250,
+      "lazyKb": { "table-virtual": 41 },
+      "forbid": ["charts", "driver.js", "radix", "zod"]
+    },
+    "/rynek/watchlisty/*": {
+      "initialKb": 190,
+      "totalKb": 250,
+      "lazyKb": { "table-virtual": 41 },
+      "forbid": ["charts", "driver.js", "radix", "zod"]
+    },
+    "/rynek": {
+      "initialKb": 190,
+      "totalKb": 230,
+      "forbid": ["charts", "driver.js", "radix", "zod"]
+    },
+    "/rynek/waluty": {
+      "initialKb": 185,
+      "totalKb": 230,
+      "lazyKb": { "table-virtual": 41 },
+      "forbid": ["charts", "driver.js", "radix", "zod"]
+    },
     "/logowanie": {
       "initialKb": 160,
       "totalKb": 160,

@@ -62,6 +62,9 @@ BL-016 wykrył, że formatery i18n importowały runtime `decimal.js` wyłącznie
 | `/` (Start) | ≤ 190 KB | uPlot 23 KB (po LCP) | ≤ 230 KB | Lightweight Charts, uPlot, driver.js (NFR-01.03), Radix |
 | `/portfel`, `/portfel/*` | ≤ 195 KB | tabela + wirtualizacja 41 KB, menu 31 KB, uPlot 23 KB | ≤ 290 KB | wykresy, Radix, Zod |
 | `/rynek/[instrumentId]` | ≤ 190 KB | Lightweight Charts 54 KB, wyszukiwarka 24 KB | ≤ 280 KB | Radix, Zod |
+| `/rynek` | ≤ 190 KB | — | ≤ 230 KB | wykresy, driver.js, Radix, Zod |
+| `/rynek/waluty` | ≤ 185 KB | tabela + wirtualizacja 41 KB | ≤ 230 KB | wykresy, driver.js, Radix, Zod |
+| `/rynek/watchlisty`, `/rynek/watchlisty/*` | ≤ 190 KB | tabela + wirtualizacja 41 KB | ≤ 250 KB | wykresy, driver.js, Radix, Zod |
 | `/rynek/screener`, `/rynek/heatmapa` | ≤ 195 KB | tabela + wirtualizacja 41 KB | ≤ 250 KB | wykresy, Zod |
 | `/analizy`, `/analizy/*` | ≤ 195 KB | uPlot 23 KB, Zod 26 KB, zakładki + suwak 19 KB | ≤ 270 KB | Lightweight Charts |
 | `/alerty`, `/alerty/*` | ≤ 190 KB | Zod 26 KB | ≤ 220 KB | wykresy |
@@ -70,6 +73,13 @@ BL-016 wykrył, że formatery i18n importowały runtime `decimal.js` wyłącznie
 | `/admin/*` | ≤ 200 KB | tabela 41 KB, menu 31 KB, zakładki 9 KB | ≤ 290 KB | — (poza nawigacją użytkowników) |
 
 Powłoka aplikacji `(app)` (TanStack Query, klient API, SSE, nawigacja, formatery, słownik komunikatów PL) ma własny budżet **≤ 30 KB** ponad framework — kontrolowany przez `size-limit` (§ 6.2).
+
+M2-UI: `apps/web/e2e/m2-ui.spec.ts` mierzy dodatkowo rzeczywiście pobrane skrypty
+po otwarciu onboardingu oraz wykresu ze wskaźnikami (gzip-9, unikalne adresy).
+Egzekwuje limity „Razem” i bibliotek leniwych z tej sekcji. Pierwszy HTML podsumowania
+portfela używa tabeli serwerowej; tabela interaktywna i objaśnienia ładowane są leniwie.
+Walidator SSE importuje współdzielone ścisłe schematy przez `realtime/browser`,
+bez serwerowego generatora JSON Schema. Budżety pozostają bez zmian.
 
 ## 4. Co renderuje serwer, klient i strumień
 

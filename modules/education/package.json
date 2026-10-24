@@ -32,6 +32,11 @@
     }
   },
   "dependencies": {
+    "@hono/zod-openapi": "1.6.3",
+    "@oliginvest/db": "workspace:*",
+    "@oliginvest/mod-market": "workspace:*",
+    "hono": "4.13.8",
+    "zod": "4.6.5",
     "drizzle-orm": "0.45.2",
     "@oliginvest/mod-identity": "workspace:*",
     "@oliginvest/platform": "workspace:*"

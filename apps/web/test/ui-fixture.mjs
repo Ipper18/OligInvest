@@ -44,7 +44,8 @@ export function fixtureCookie(route) {
     route === "/" ||
     route.startsWith("/ustawienia") ||
     route.startsWith("/portfel") ||
-    route.startsWith("/rynek")
+    route.startsWith("/rynek") ||
+    route.startsWith("/nauka")
   )
     return "__Host-oliginvest.session_token=fixture-perf";
   return "";
@@ -78,6 +79,34 @@ export async function uiFixture(request, response) {
         })
       : null;
   if (path === "/api/v1/health/live") return send({ status: "ok" });
+  if (path === "/api/v1/education/onboarding") {
+    if (!profile) return fail();
+    if (key.includes("no-education")) return fail("NOT_FOUND", 404);
+    const current = profile.onboarding ?? {
+      step: "start",
+      updatedAt: "2026-10-13T12:00:00Z",
+      ...(key.includes("onboarding") ? {} : { completedAt: "2026-10-13T12:00:00Z" }),
+    };
+    if (request.method === "PUT") {
+      let text = "";
+      for await (const chunk of request) text += chunk;
+      const input = JSON.parse(text);
+      if (input.action === "restart") {
+        delete current.completedAt;
+        delete current.skippedAt;
+        current.step = "start";
+      }
+      if (input.step) current.step = input.step;
+      if (input.action === "skip") current.skippedAt = current.updatedAt;
+      if (input.action === "complete") {
+        current.completedAt = current.updatedAt;
+        delete current.skippedAt;
+      }
+      profile.onboarding = current;
+      saved.set(key, profile);
+    }
+    return send(current);
+  }
   if (path === "/api/v1/me")
     return profile
       ? send({
@@ -102,7 +131,7 @@ export async function uiFixture(request, response) {
             "module.portfolio.import.mbank": !key.includes("no-mbank"),
             "module.alerts": !key.includes("no-alerts"),
             "module.analytics": true,
-            "module.education": true,
+            "module.education": !key.includes("no-education"),
           },
           preferences: Object.fromEntries(Object.keys(preferences).map((k) => [k, profile[k]])),
         })

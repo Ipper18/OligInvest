@@ -4,6 +4,7 @@ import { type ComponentType, type ReactNode, useEffect, useState } from "react";
 export type TableProps = {
   caption: string;
   headings: string[];
+  headingContent?: Record<string, ReactNode>;
   rows: { id: string; cells: ReactNode[] }[];
 };
 export function DataTable(props: TableProps) {
@@ -27,7 +28,7 @@ export function DataTable(props: TableProps) {
           <tr>
             {props.headings.map((heading) => (
               <th key={heading} scope="col">
-                {heading}
+                {props.headingContent?.[heading] ?? heading}
               </th>
             ))}
           </tr>

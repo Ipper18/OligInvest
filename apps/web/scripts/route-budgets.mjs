@@ -114,7 +114,7 @@ export function performanceFixtures() {
     process.env.PERF_FIXTURES ||
       (process.env.BASE_URL
         ? "{}"
-        : '{"instrumentId":"01900000-0000-7000-8000-000000000101","accountId":"01900000-0000-7000-8000-000000000102","transactionId":"01900000-0000-7000-8000-000000000103","importId":"01900000-0000-7000-8000-000000000104"}'),
+        : '{"instrumentId":"01900000-0000-7000-8000-000000000101","accountId":"01900000-0000-7000-8000-000000000102","transactionId":"01900000-0000-7000-8000-000000000103","importId":"01900000-0000-7000-8000-000000000104","watchlistId":"01900000-0000-7000-8000-000000000106","termin":"sma"}'),
   );
 }
 export function currentPlan() {

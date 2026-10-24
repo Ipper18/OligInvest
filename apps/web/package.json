@@ -20,6 +20,7 @@
     "lighthouse:assert": "node scripts/lighthouse-assert.mjs --assert"
   },
   "dependencies": {
+    "driver.js": "1.8.0",
     "@oliginvest/mod-portfolio": "workspace:*",
     "@oliginvest/mod-market": "workspace:*",
     "@oliginvest/config": "workspace:*",

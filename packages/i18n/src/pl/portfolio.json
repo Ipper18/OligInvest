@@ -5,6 +5,7 @@
   "accounts": "Rachunki",
   "lots": "Partie FIFO",
   "realized": "Wynik zrealizowany",
+  "allocation": "Alokacja",
   "imports": "Import operacji",
   "summary": "Podsumowanie wierszy",
   "resolution": "Rozstrzygnięcie",

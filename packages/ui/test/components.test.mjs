@@ -22,6 +22,20 @@ test("every disclaimer renders its exact versioned text and rejects an incorrect
 });
 
 const meta = { source: "yahoo", asOf: "2026-09-18T13:42:00Z", delayMinutes: 20, stale: false };
+test("quality warning is independent of freshness, while legacy holds retain BLOCK", () => {
+  for (const qualityStatus of ["WARN", "BLOCK"]) {
+    const html = render(h(DataFreshness, { meta: { ...meta, qualityStatus }, kind: "delayed" }));
+    expect(html).toContain(qualityStatus);
+  }
+  const html = render(
+    h(DataFreshness, {
+      meta: { ...meta, stale: true, staleReason: "data_quality_hold" },
+      kind: "delayed",
+    }),
+  );
+  expect(html).toContain("BLOCK");
+});
+
 test("freshness preserves actual delay, source, exact time and all stale reasons", () => {
   const html = render(h(DataFreshness, { meta, kind: "delayed" }));
   expect(html).toContain("opóźnione ok. 20 min");

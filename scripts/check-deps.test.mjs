@@ -65,6 +65,16 @@ for (const section of [
   });
 }
 
+test("omitted optional feature permits manifest only, never an unchecked import", (t) => {
+  const f = fixture(t);
+  f.pkg("apps/api", {}, { optionalDependencies: { "@oliginvest/mod-education": "workspace:*" } });
+  assert.deepEqual(checkDependencies(f.root), []);
+  f.write("apps/api/src/modules.ts", "export * from '@oliginvest/mod-education/server';");
+  assert.match(checkDependencies(f.root).join("\n"), /missing workspace import/);
+  f.pkg("apps/api", {}, { optionalDependencies: { "@oliginvest/mod-invented": "workspace:*" } });
+  assert.match(checkDependencies(f.root).join("\n"), /unknown workspace dependency/);
+});
+
 for (const source of [
   "import { x } from '@oliginvest/mod-alerts/contracts';",
   "export * from '@oliginvest/mod-alerts/contracts';",
