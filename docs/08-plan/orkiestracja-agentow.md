@@ -133,7 +133,7 @@ Bez: Administration, Secrets, Variables, Environments, Workflows. Brak uprawnien
 
 ### 6.3 Instrukcje projektu w workspace
 
-Workspace agenta to `~/OpenBot/Agents/<agent-id>`, a repozytorium leży w podkatalogu. **NIEZWERYFIKOWANE:** czy Codex i Claude Code uruchomione przez OpenBota wczytują `AGENTS.md`, `CLAUDE.md` i `.claude/skills` z podkatalogu. Dlatego wspólna instrukcja ([`openbot-agenci.md`](openbot-agenci.md) § 1) każe agentowi pracować w `./OligInvest` i przeczytać `AGENTS.md` przed każdym zadaniem. W pilotażu sprawdzamy, czy Recenzent na Claude Code widzi skille `backtest-review` i `strategy-critique`.
+Workspace agenta to `~/OpenBot/Agents/<agent-id>`, a repozytorium leży w podkatalogu. **NIEZWERYFIKOWANE:** czy Codex i Claude Code uruchomione przez OpenBota wczytują `AGENTS.md`, `CLAUDE.md` i `.claude/skills` z podkatalogu. Dlatego wspólna instrukcja ([`openbot-agenci.md`](openbot-agenci.md) § 1) każe agentowi pracować w `./OligInvest` i przeczytać `AGENTS.md` na początku wątku oraz po każdej jego zmianie na `origin/main` (§ 8.2). W pilotażu sprawdzamy, czy Recenzent na Claude Code widzi skille `backtest-review` i `strategy-critique`.
 
 ## 7. Rutyny
 
@@ -149,12 +149,42 @@ Szczegóły i treść do wklejenia: [`openbot-rutyny.md`](openbot-rutyny.md).
 
 Nie ma rutyny „wykonaj następną paczkę” — start paczki zawsze wymaga zgody właściciela.
 
-## 8. Limity dostawców
+## 8. Limity dostawców i budżet tokenów
 
-- Zasady z [`AGENTS.md`](../../AGENTS.md) § 6.1 obowiązują wszystkich agentów: raport stanu zamiast historii, duże dokumenty fragmentami, ciche wyjście narzędzi, CI sprawdzane raz.
-- W kanale tylko karty; diff, logi i raporty w PR albo w `~/OpenBot/Shared/oliginvest/`.
-- Recenzent czyta diff i dokumenty z kolumny „Dokumenty” zadań, nie całe repozytorium.
-- Dyspozytor może używać tańszego modelu — jego praca to czytanie tabel i kart.
+Cel tej sekcji: zmniejszyć zużycie limitów bez obniżania jakości — oszczędzamy na powtórnym czytaniu i rozmowie, nie na przeglądzie, testach ani rozumowaniu przy kodzie krytycznym.
+
+### 8.1 Skąd bierze się koszt
+
+- Każda tura agenta wczytuje ponownie historię kanału lub wątku, instrukcje i wyniki narzędzi — długi kanał podraża każde kolejne „OK”.
+- Lektura zasad na starcie zadania: `AGENTS.md` (ok. 21 KB) i odpowiednie sekcje tego katalogu to kilka tysięcy tokenów za każdym razem.
+- Poszukiwanie plików przez wykonawcę, gdy karta nie wskazuje, gdzie jest kontrakt i dokumentacja.
+- Odpytywanie CI w pętli, pełne logi i powtarzane rundy przeglądu.
+
+### 8.2 Zasady
+
+1. **Świeży kontekst na paczkę.** Po scaleniu albo zamknięciu paczki następna startuje w nowym wątku lub kanale (stary archiwizujemy). Ciągłość zapewniają karta, `~/OpenBot/Shared/oliginvest/stan.md` i repozytorium, nie historia czatu. **NIEZWERYFIKOWANE:** czy OpenBot pozwala wyczyścić historię kanału bez tworzenia nowego — sprawdzić w pilotażu.
+2. **Zasady czytane raz na wątek.** Agent czyta `AGENTS.md` i swoje sekcje [`openbot-agenci.md`](openbot-agenci.md) przy pierwszym zadaniu w wątku, a potem tylko wtedy, gdy zmienił się ich ostatni commit na `origin/main` (`git log -1 --format=%h origin/main -- AGENTS.md docs/08-plan/openbot-agenci.md`). Zakazy krytyczne są w wersji skróconej instrukcji, więc obowiązują także bez ponownej lektury.
+3. **Karta ze wskazaniem miejsc.** Dyspozytor wpisuje do zadania ścieżki plików, sekcje dokumentów, `operationId` i tabele, których dotyczy paczka (np. „kontrakt: `GET /portfolio/export`, `exportPortfolioData`, `docs/02-api/openapi.yaml`”). Wykonawca nie przeszukuje repozytorium.
+4. **Poziom rozumowania według roli i ryzyka:**
+
+   | Agent | Model | Rozumowanie |
+   |---|---|---|
+   | Dyspozytor | Claude Sonnet | **średni** — czyta tabele i karty |
+   | Budowniczy | Codex | **wysoki** dla `packages/core`, `packages/db`, RLS, autoryzacji, importu i eksportu danych, zgodności (FR-04); **średni** dla paczek tylko z dokumentacją, konfiguracją lub testami |
+   | Recenzent | Claude Opus | **wysoki** — bez zmian, to bramka jakości |
+   | Weryfikator | Gemini Flash | domyślny |
+
+   Dyspozytor w propozycji paczki podaje zalecany poziom dla Budowniczego; właściciel ustawia go w OpenBot przed „OK”.
+5. **Recenzent czyta diff.** Pierwszy przegląd: `gh pr diff` i dokumenty wskazane w karcie. Po poprawkach tylko zmiany od ostatnio ocenianego commitu. Najwyżej 2 rundy poprawek, potem STOP do właściciela (§ 4).
+6. **CI raz, logi skrótowo** — według [`AGENTS.md`](../../AGENTS.md) § 6.1: jedno `gh pr checks` na końcu, przy błędzie tylko końcówka `--log-failed`.
+7. **Rozmowa w kanale.** Tylko karty; diff, logi i raporty w PR albo w `~/OpenBot/Shared/oliginvest/`. Właściciel pisze do Dyspozytora jedną wiadomością ze wszystkimi decyzjami — każda wiadomość to osobna tura z ponownym wczytaniem kontekstu.
+8. **Rutyny.** „Brak zmian.” jest pełną odpowiedzią ([`openbot-rutyny.md`](openbot-rutyny.md)). Do oceny po pomiarze: przeniesienie R1 (sam odczyt `gh`) z Dyspozytora na Weryfikatora z tańszym modelem.
+
+**Czego nie ograniczamy:** przeglądu Recenzenta, testów i Definition of Done, rozumowania przy obliczeniach finansowych, RLS i bezpieczeństwie.
+
+### 8.3 Pomiar
+
+Po każdej paczce Dyspozytor zapisuje w `stan.md` zużycie każdego agenta z panelu użycia OpenBot (ikona wykresu) i liczbę rund poprawek. Porównanie paczek przed i po zmianach z § 8.2 trafia do oceny pilotażu (§ 10, punkt 5).
 
 ## 9. Bezpieczeństwo i zgodność — reguły nadrzędne
 
