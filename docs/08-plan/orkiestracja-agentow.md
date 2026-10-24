@@ -81,6 +81,10 @@ sequenceDiagram
 4. **Przegląd właściciela i scalenie** — bez zmian względem [`CONTRIBUTING.md`](../../CONTRIBUTING.md) § 4. Automatyczne scalanie pozostaje wyłączone ([`ustawienia-repozytorium.md`](../07-wdrozenie/ustawienia-repozytorium.md) § 2).
 5. **Zamknięcie.** Dyspozytor zapisuje stan kolejki w `~/OpenBot/Shared/oliginvest/stan.md` (poza repozytorium) i proponuje następną paczkę.
 
+### 4.0 Mechanizm przekazania w OpenBot
+
+Sprawdzone w pilotażu (2026-10-24): adresat dostaje turę tylko wtedy, gdy lider kanału (Dyspozytor) przypisze zadanie narzędziem `openbot.channel_assign` (`recipientAgentId`, `task`, `expectedResult`, `sourceMessageIds`; odpowiedź `accepted: true`). Wykonawca oddaje wynik przez `channel_result`. Wzmianka `@nazwa` i zwykła wiadomość w kanale nie uruchamiają adresata. Wiadomość właściciela skierowana bezpośrednio do wykonawcy przypisuje mu zadanie z pominięciem Dyspozytora — wtedy wynik nie wraca do Dyspozytora i przegląd Recenzenta nie startuje (tak PR #28 trafił do scalenia bez przeglądu). Dlatego właściciel pisze w kanale do Dyspozytora, także odpowiedzi na STOP wykonawców.
+
 ### 4.1 Karta przekazania
 
 Każde przekazanie w kanale to jedna karta — szczegóły są w PR, nie w czacie:
