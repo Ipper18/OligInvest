@@ -57,6 +57,7 @@ Zadanie jest skończone, gdy spełnia **wszystkie** punkty (lista trafia do szab
 
 - Właściciel przegląda **każdy** PR — także przygotowany przez agenta i z zielonym CI (R-11 w [`docs/08-plan/ryzyka.md`](docs/08-plan/ryzyka.md)).
 - Przegląd właściciela pozostaje obowiązkiem procesu (R-11), nie jest egzekwowany mechanizmem zatwierdzeń GitHuba: repozytorium ma jednego współpracownika, który nie może zatwierdzić własnego PR. Ruleset wymaga 0 zatwierdzeń i nie wymaga zatwierdzenia code ownera; nie tworzymy odrębnej tożsamości autora ani obejść reguł.
+- Agenci orkiestrowani w OpenBot ([`docs/08-plan/orkiestracja-agentow.md`](docs/08-plan/orkiestracja-agentow.md)) działają na tokenach właściciela, więc na GitHubie wyglądają jak on: oznaczają komentarze prefiksem roli, nie zatwierdzają, nie scalają i nie zmieniają ustawień repozytorium. Scala wyłącznie właściciel po własnym przeglądzie.
 - `CODEOWNERS` wskazuje obszary wymagające szczególnej uwagi właściciela: `docs/06-bezpieczenstwo/`, `infra/`, `.github/`, `packages/db/`, `apps/api/src/auth/`.
 - Na co patrzeć: zakres zgodny z zadaniem; nowe zależności i skrypty instalacyjne; usunięte lub osłabione testy; zmiany w politykach RLS, nagłówkach i CSP; nowe połączenia wychodzące; język wyników (zakazy z [`docs/11-zgodnosc-prawna.md`](docs/11-zgodnosc-prawna.md) § 4.1).
 

@@ -97,3 +97,21 @@ Wniosek: katalogi nie zawierają lepszej alternatywy dla warstwy krytyki metodol
 3. Repo `marketcalls/vectorbt-backtesting-skills` nie ma pliku `LICENSE` (tylko wpis „MIT” w README) — traktujemy jako MIT, ale odnotowano.
 4. Skille społecznościowe traktować jako **doradców**, nie źródło prawdy: wzory finansowe obowiązują wg `docs/03-dane/obliczenia-finansowe.md`, a każdy skill z tradermonty jest pisany pod rynek USA (np. godziny sesji, kalendarz NYSE).
 5. Ponowny audyt przy każdej aktualizacji skilli (`git log -1` + ten sam `grep` hostów/env); procedura powtarzalna — komendy w [`CONTRIBUTING.md`](../../CONTRIBUTING.md) § 7.
+
+---
+
+## 6. OpenBot — narzędzie orkiestracji agentów (2026-10-24)
+
+Źródła: [openbot.run](https://openbot.run), [OpenBot 101](https://openbot.run/guides/openbot-101), [Marketplace](https://openbot.run/guides/openbot-marketplace), [README](https://github.com/nightly-labs/openbot#readme) — sprawdzono 2026-10-24. Proces użycia: [`../08-plan/orkiestracja-agentow.md`](../08-plan/orkiestracja-agentow.md).
+
+| Kryterium | Wynik |
+|---|---|
+| Rola w projekcie | narzędzie właściciela na stacji roboczej; nie jest zależnością aplikacji ani elementem CI |
+| Licencja | PolyForm Noncommercial 1.0.0 (wersje ≤ 0.1.11: Apache-2.0) — dopuszczalna dla prywatnego, niekomercyjnego użycia; nie trafia do kodu aplikacji, więc lista licencji z § 5.8 `AGENTS.md` jej nie dotyczy |
+| Dojrzałość | „development preview”; wersja używana przez właściciela — **NIEZWERYFIKOWANE**, uzupełnić przy pilotażu |
+| Uprawnienia | po jednorazowej zgodzie `danger-full-access` i `approvalPolicy: never` — pliki, polecenia, sieć, przeglądarka bez pytania; poza workspace tam, gdzie pozwala system |
+| Sieć | dostawcy modeli (prompty i wyniki narzędzi), konto i parowanie urządzeń przez Cloudflare/WebRTC (bez treści czatów według README), strony otwierane przez agentów, pluginy |
+| Dane i poświadczenia | lokalnie (`~/OpenBot`, `openbot.db`); logowania dostawców zostają w katalogach ich CLI, OpenBot ich nie kopiuje |
+| Marketplace | agenci, skille i pluginy od osób trzecich; dane uwierzytelniające pluginu trafiają do usługi zewnętrznej |
+
+**Werdykt:** ⚠️ **dopuszczony warunkowo** — wyłącznie na osobnym koncie systemowym bez dostępu do serwerów i sekretów, z dwoma fine-grained PAT ograniczonymi do repozytorium, bez Computer Use i publicznych webhooków ([`orkiestracja-agentow.md`](../08-plan/orkiestracja-agentow.md) § 6, ryzyko R-42 w [`ryzyka.md`](../08-plan/ryzyka.md)). Pluginów, skilli i agentów z Marketplace nie instalujemy bez audytu według kryteriów z początku tego dokumentu; plugin GitHub zastępuje `gh` z tokenem w zmiennej `GH_TOKEN`.
