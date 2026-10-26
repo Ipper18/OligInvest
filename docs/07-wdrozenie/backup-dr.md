@@ -4,7 +4,7 @@
 
 Powiązane: [`infrastruktura.md`](infrastruktura.md), [`monitoring.md`](monitoring.md) (sygnały życia kopii), [`ci-cd.md`](ci-cd.md) § 6, [`../06-bezpieczenstwo/plan-reagowania.md`](../06-bezpieczenstwo/plan-reagowania.md) (P5–P8), [`../06-bezpieczenstwo/prywatnosc-rodo.md`](../06-bezpieczenstwo/prywatnosc-rodo.md) § 6–7, [`../06-bezpieczenstwo/kontrole-bezpieczenstwa.md`](../06-bezpieczenstwo/kontrole-bezpieczenstwa.md) § 1 (klucze, odstępstwo O-03), [`../03-dane/model-danych.md`](../03-dane/model-danych.md) § 4.
 
-Narzędzia (sprawdzone 2026-09-19): pgBackRest 2.59.1 (MIT; szyfrowanie repozytorium wyłącznie `aes-256-cbc`, kompresja m.in. `zst`, repozytoria `posix` i `sftp`), restic 0.19.1 (BSD-2), rest-server 0.14.0 (BSD-2; tryb `--append-only`, `--private-repos`, uwierzytelnianie `.htpasswd` z bcrypt), Proxmox `vzdump`.
+Narzędzia (sprawdzone 2026-09-19): pgBackRest 2.59.1, w obrazie od 2026-10-26 **2.59.3** (wydanie poprawkowe w PGDG z 2026-10-05; repozytorium PGDG usunęło 2.59.1 po publikacji 2.60.0, a 2.60.0 jest jeszcze w karencji) (MIT; szyfrowanie repozytorium wyłącznie `aes-256-cbc`, kompresja m.in. `zst`, repozytoria `posix` i `sftp`), restic 0.19.1 (BSD-2), rest-server 0.14.0 (BSD-2; tryb `--append-only`, `--private-repos`, uwierzytelnianie `.htpasswd` z bcrypt), Proxmox `vzdump`.
 
 Implementacja BL-028 (M0-3): [instrukcja kopii i monitoringu](m0-3-backup-monitoring-runbook.md), timery systemd i `host-operations.py`. Przed pierwszym wdrożeniem wymagany hostowy override wolumenu kopii na HDD; zastany wolumen lokalny Dockera wymaga jawnej migracji. Skorygowano kod retencji z 2 do wymaganych 5 pełnych kopii, bez zmiany decyzji DR. Właściciel wykonuje próby append-only i odtworzenia; same pliki i testy lokalne nie potwierdzają RPO/RTO.
 
