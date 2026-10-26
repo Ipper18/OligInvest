@@ -33,7 +33,8 @@
     "@oliginvest/mod-portfolio": "workspace:*",
     "@oliginvest/mod-notifications": "workspace:*",
     "@oliginvest/mod-alerts": "workspace:*",
-    "@oliginvest/mod-quick-actions": "workspace:*"
+    "@oliginvest/mod-quick-actions": "workspace:*",
+    "@oliginvest/i18n": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "24.13.5",

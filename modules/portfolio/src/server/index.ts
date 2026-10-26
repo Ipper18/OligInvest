@@ -4,3 +4,4 @@ export { ImportRepository } from "./imports.js";
 export { enqueuePortfolioRecompute } from "./recompute-queue.js";
 export * from "./repository.js";
 export * from "./routes.js";
+export {readPortfolio} from './read-service.js';

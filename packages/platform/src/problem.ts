@@ -37,6 +37,7 @@ const optionsSchema = z
     detail: z.string().optional(),
     errors: z.array(fieldErrorSchema).optional(),
     retryAfterSeconds: z.number().int().positive().optional(),
+    candidates:z.array(z.object({id:z.uuid(),ticker:z.string(),name:z.string(),mic:z.string(),currency:z.string(),type:z.enum(['stock','etf','etc','etn','index','fx','commodity','bond','fund','crypto']),isActive:z.boolean()}).strict()).optional(),
   })
   .strict();
 type ProblemOptions = z.infer<typeof optionsSchema>;
@@ -74,6 +75,7 @@ export function problemResponse(
       : {
           ...(problem.options.detail === undefined ? {} : { detail: problem.options.detail }),
           ...(problem.options.errors === undefined ? {} : { errors: problem.options.errors }),
+          ...(code==='INSTRUMENT_AMBIGUOUS' && problem.options.candidates ? {candidates:problem.options.candidates}:{}),
         }),
   };
   const headers = new Headers({

@@ -4,6 +4,8 @@ export const alertMessages = alerts;
 import authMail from "./pl/auth-mail.json" with { type: "json" };
 import bootstrap from "./pl/bootstrap.json" with { type: "json" };
 import common from "./pl/common.json" with { type: "json" };
+import quick from './pl/quick.json' with {type:'json'};
+export const quickMessages=quick;
 import data from "./pl/data.json" with { type: "json" };
 import disclaimerCatalog from "./pl/disclaimers.json" with { type: "json" };
 import errors from "./pl/errors.json" with { type: "json" };

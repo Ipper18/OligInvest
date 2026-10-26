@@ -674,32 +674,68 @@ paths:
     get:
       operationId: listPersonalAccessTokens
       summary: Lista tokenów PAT (bez wartości tokenów)
-      tags: [identity]
-      x-requirements: [FR-07.07]
+      tags:
+        - identity
+      x-requirements:
+        - FR-07.07
       responses:
-        '200': {description: 'Tokeny.', content: {application/json: {schema: {type: object, required: [data], properties: {data: {type: array, items: {$ref: '#/components/schemas/PersonalAccessToken'}}}}}}}
-        '401': {$ref: '#/components/responses/Unauthenticated'}
-        '403': {$ref: '#/components/responses/Forbidden'}
+        "200":
+          description: Tokeny.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/PersonalAccessToken"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
     post:
       operationId: createPersonalAccessToken
       summary: Utwórz token PAT (wartość pokazywana jednorazowo)
-      tags: [identity]
+      tags:
+        - identity
       x-step-up: true
       x-idempotency: required
-      x-requirements: [FR-07.07, FR-09.04]
+      x-requirements:
+        - FR-07.07
+        - FR-09.04
       parameters:
-        - {$ref: '#/components/parameters/IdempotencyKey'}
+        - $ref: "#/components/parameters/IdempotencyKey"
       requestBody:
         required: true
         content:
           application/json:
-            schema: {$ref: '#/components/schemas/PersonalAccessTokenCreate'}
+            schema:
+              $ref: "#/components/schemas/PersonalAccessTokenCreate"
       responses:
-        '201': {description: 'Utworzono.', headers: {Cache-Control: {description: '`no-store`', schema: {type: string}}}, content: {application/json: {schema: {$ref: '#/components/schemas/PersonalAccessTokenCreated'}}}}
-        '401': {$ref: '#/components/responses/Unauthenticated'}
-        '403': {$ref: '#/components/responses/Forbidden'}
-        '409': {$ref: '#/components/responses/Conflict'}
-        '422': {$ref: '#/components/responses/ValidationFailed'}
+        "201":
+          description: Utworzono.
+          headers:
+            Cache-Control:
+              description: "`no-store`"
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PersonalAccessTokenCreated"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+        "429":
+          $ref: "#/components/responses/RateLimited"
   /me/tokens/{tokenId}:
     delete:
       operationId: revokePersonalAccessToken
@@ -2292,37 +2328,70 @@ paths:
     get:
       operationId: listAlertRules
       summary: Reguły alertów
-      tags: [alerts]
+      tags:
+        - alerts
       x-permission: alerts:manage
       x-feature-flag: module.alerts
-      x-requirements: [FR-05.01, FR-05.06]
+      x-requirements:
+        - FR-05.01
+        - FR-05.06
       parameters:
-        - {$ref: '#/components/parameters/InstrumentIdQuery'}
-        - {name: enabled, in: query, required: false, schema: {type: boolean}}
-        - {$ref: '#/components/parameters/Limit'}
-        - {$ref: '#/components/parameters/Cursor'}
+        - $ref: "#/components/parameters/InstrumentIdQuery"
+        - name: enabled
+          in: query
+          required: false
+          schema:
+            type: boolean
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Cursor"
       responses:
-        '200': {description: 'Reguły.', content: {application/json: {schema: {$ref: '#/components/schemas/AlertRulePage'}}}}
-        '401': {$ref: '#/components/responses/Unauthenticated'}
-        '404': {$ref: '#/components/responses/NotFound'}
+        "200":
+          description: Reguły.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PriceAlertRulePage"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "404":
+          $ref: "#/components/responses/NotFound"
     post:
       operationId: createAlertRule
-      summary: Utwórz regułę alertu (cenowy, zmiana, wskaźnik, portfel, obsunięcie, alokacja, wyniki, newsy)
-      tags: [alerts]
+      summary: Utwórz alert cenowy (próg lub zmiana dzienna)
+      tags:
+        - alerts
       x-permission: alerts:manage
       x-feature-flag: module.alerts
-      x-requirements: [FR-05.01, FR-05.02, FR-05.03, FR-05.04, FR-05.05, FR-05.06]
+      x-requirements:
+        - FR-05.01
+        - FR-05.06
+        - FR-05.07
       requestBody:
         required: true
         content:
           application/json:
-            schema: {$ref: '#/components/schemas/AlertRuleInput'}
+            schema:
+              $ref: "#/components/schemas/PriceAlertRuleInput"
       responses:
-        '201': {description: 'Utworzono.', content: {application/json: {schema: {$ref: '#/components/schemas/AlertRule'}}}}
-        '401': {$ref: '#/components/responses/Unauthenticated'}
-        '404': {$ref: '#/components/responses/NotFound'}
-        '422': {$ref: '#/components/responses/ValidationFailed'}
-        '429': {$ref: '#/components/responses/RateLimited'}
+        "201":
+          description: Utworzono.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PriceAlertRule"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      x-idempotency: required
   /alerts/rules/{ruleId}:
     get:
       operationId: getAlertRule
@@ -2334,7 +2403,7 @@ paths:
       parameters:
         - {$ref: '#/components/parameters/RuleId'}
       responses:
-        '200': {description: 'Reguła.', content: {application/json: {schema: {$ref: '#/components/schemas/AlertRule'}}}}
+        '200': {description: 'Reguła.', content: {application/json: {schema: {$ref: '#/components/schemas/PriceAlertRule'}}}}
         '401': {$ref: '#/components/responses/Unauthenticated'}
         '404': {$ref: '#/components/responses/NotFound'}
     patch:
@@ -2350,9 +2419,9 @@ paths:
         required: true
         content:
           application/json:
-            schema: {$ref: '#/components/schemas/AlertRulePatch'}
+            schema: {$ref: '#/components/schemas/PriceAlertRulePatch'}
       responses:
-        '200': {description: 'Zapisano.', content: {application/json: {schema: {$ref: '#/components/schemas/AlertRule'}}}}
+        '200': {description: 'Zapisano.', content: {application/json: {schema: {$ref: '#/components/schemas/PriceAlertRule'}}}}
         '401': {$ref: '#/components/responses/Unauthenticated'}
         '404': {$ref: '#/components/responses/NotFound'}
         '422': {$ref: '#/components/responses/ValidationFailed'}
@@ -2384,7 +2453,7 @@ paths:
         - {$ref: '#/components/parameters/Limit'}
         - {$ref: '#/components/parameters/Cursor'}
       responses:
-        '200': {description: 'Wyzwolenia (najnowsze pierwsze).', content: {application/json: {schema: {$ref: '#/components/schemas/AlertEventPage'}}}}
+        '200': {description: 'Wyzwolenia (najnowsze pierwsze).', content: {application/json: {schema: {$ref: '#/components/schemas/PriceAlertEventPage'}}}}
         '401': {$ref: '#/components/responses/Unauthenticated'}
         '404': {$ref: '#/components/responses/NotFound'}
 
@@ -2491,116 +2560,246 @@ paths:
     get:
       operationId: quickGetPortfolio
       summary: Podsumowanie portfela dla Skrótów i widżetów
-      tags: [quick]
-      security: [{bearerPat: ['portfolio:read']}]
+      description: Braki danych zwracają 200 z incomplete=true, reasons i null dla niekompletnych kwot. Tekst podaje
+        powód; 503 tylko przy niedostępności usługi.
+      tags:
+        - quick
+      security:
+        - bearerPat:
+            - portfolio:read
       x-feature-flag: module.quick-actions
-      x-requirements: [FR-09.04, FR-09.05, FR-09.08]
+      x-requirements:
+        - FR-09.04
+        - FR-09.05
+        - FR-09.08
       parameters:
-        - {$ref: '#/components/parameters/QuickFormat'}
+        - $ref: "#/components/parameters/QuickFormat"
       responses:
-        '200':
+        "200":
           description: Podsumowanie.
           content:
-            application/json: {schema: {$ref: '#/components/schemas/QuickPortfolio'}}
-            text/plain: {schema: {type: string}, example: "Portfel: 52 184,20 zł\nDziś: +280,45 zł (+0,54%)\nDane: 15:42, opóźnione 15 min"}
-        '401': {$ref: '#/components/responses/Unauthenticated'}
-        '403': {$ref: '#/components/responses/Forbidden'}
-        '429': {$ref: '#/components/responses/RateLimited'}
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuickPortfolio"
+            text/plain:
+              schema:
+                type: string
+              example: |-
+                Portfel: 52 184,20 zł
+                Dziś: +280,45 zł (+0,54%)
+                Dane: 15:42, opóźnione 15 min
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+        "429":
+          $ref: "#/components/responses/RateLimited"
   /quick/today:
     get:
       operationId: quickGetToday
       summary: Wynik dnia (najlepsza i najsłabsza pozycja)
-      tags: [quick]
-      security: [{bearerPat: ['portfolio:read']}]
+      description: Braki danych zwracają 200 z incomplete=true, reasons i null dla niekompletnych kwot. Nie
+        podstawiamy zer ani częściowej wyceny.
+      tags:
+        - quick
+      security:
+        - bearerPat:
+            - portfolio:read
       x-feature-flag: module.quick-actions
-      x-requirements: [FR-02.09, FR-09.04, FR-09.05]
+      x-requirements:
+        - FR-02.09
+        - FR-09.04
+        - FR-09.05
       parameters:
-        - {$ref: '#/components/parameters/QuickFormat'}
+        - $ref: "#/components/parameters/QuickFormat"
       responses:
-        '200':
+        "200":
           description: Wynik dnia.
           content:
-            application/json: {schema: {$ref: '#/components/schemas/QuickToday'}}
-            text/plain: {schema: {type: string}, example: "Dziś: +280,45 zł (+0,54%)\n▲ CDR +2,10%  ▼ PKO -0,85%\nDane: 15:42, opóźnione 15 min"}
-        '401': {$ref: '#/components/responses/Unauthenticated'}
-        '403': {$ref: '#/components/responses/Forbidden'}
-        '429': {$ref: '#/components/responses/RateLimited'}
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuickToday"
+            text/plain:
+              schema:
+                type: string
+              example: |-
+                Dziś: +280,45 zł (+0,54%)
+                ▲ CDR +2,10%  ▼ PKO -0,85%
+                Dane: 15:42, opóźnione 15 min
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+        "429":
+          $ref: "#/components/responses/RateLimited"
   /quick/quote:
     get:
       operationId: quickGetQuote
       summary: Kurs instrumentu po tickerze
-      tags: [quick]
-      security: [{bearerPat: ['market:read']}]
+      tags:
+        - quick
+      security:
+        - bearerPat:
+            - market:read
       x-feature-flag: module.quick-actions
-      x-requirements: [FR-09.04]
+      x-requirements:
+        - FR-09.04
       parameters:
-        - {name: ticker, in: query, required: true, schema: {type: string, pattern: '^[A-Za-z0-9.\-]{1,20}$'}}
-        - {name: mic, in: query, required: false, schema: {type: string, pattern: '^[A-Z0-9]{4}$'}}
-        - {$ref: '#/components/parameters/QuickFormat'}
+        - name: ticker
+          in: query
+          required: true
+          schema:
+            type: string
+            pattern: ^[A-Za-z0-9.\-]{1,20}$
+        - name: mic
+          in: query
+          required: false
+          schema:
+            type: string
+            pattern: ^[A-Z0-9]{4}$
+        - $ref: "#/components/parameters/QuickFormat"
       responses:
-        '200':
+        "200":
           description: Kurs.
           content:
-            application/json: {schema: {$ref: '#/components/schemas/QuickQuote'}}
-            text/plain: {schema: {type: string}, example: "PKO 58,34 zł (-0,85%)\n15:42, opóźnione 15 min, Yahoo"}
-        '401': {$ref: '#/components/responses/Unauthenticated'}
-        '403': {$ref: '#/components/responses/Forbidden'}
-        '404': {$ref: '#/components/responses/NotFound'}
-        '409': {$ref: '#/components/responses/Conflict'}
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuickQuote"
+            text/plain:
+              schema:
+                type: string
+              example: |-
+                PKO 58,34 zł (-0,85%)
+                15:42, opóźnione 15 min, Yahoo
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+        "429":
+          $ref: "#/components/responses/RateLimited"
   /quick/transactions:
     post:
       operationId: quickCreateTransaction
       summary: Dodaj transakcję kupna lub sprzedaży ze Skrótu
-      description: |
-        Niejednoznaczny ticker → `409 INSTRUMENT_AMBIGUOUS` z listą `candidates` (Skrót pyta użytkownika i ponawia z `mic`).
-        Ochrona przed podwójnym zapisem przy ponowieniu ze słabą siecią (Skrót generuje nowy klucz idempotencji):
+      description: >
+        Niejednoznaczny ticker → `409 INSTRUMENT_AMBIGUOUS` z listą `candidates` (Skrót pyta użytkownika i
+        ponawia z `mic`).
+
+        Ochrona przed podwójnym zapisem przy ponowieniu ze słabą siecią (Skrót generuje nowy klucz
+        idempotencji):
+
         ta sama transakcja (rachunek, instrument, strona, ilość, cena, data) w ciągu 10 min → `409 CONFLICT`
+
         z `detail` „możliwy duplikat”; ponowienie z `confirmDuplicate = true` zapisuje operację.
-      tags: [quick]
-      security: [{bearerPat: ['transactions:write']}]
+      tags:
+        - quick
+      security:
+        - bearerPat:
+            - transactions:write
       x-feature-flag: module.quick-actions
       x-idempotency: required
-      x-requirements: [FR-09.04, FR-09.05, FR-03.03]
+      x-requirements:
+        - FR-09.04
+        - FR-09.05
+        - FR-03.03
       parameters:
-        - {$ref: '#/components/parameters/IdempotencyKey'}
-        - {$ref: '#/components/parameters/QuickFormat'}
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/QuickFormat"
       requestBody:
         required: true
         content:
           application/json:
-            schema: {$ref: '#/components/schemas/QuickTransactionInput'}
+            schema:
+              $ref: "#/components/schemas/QuickTransactionInput"
       responses:
-        '201':
+        "201":
           description: Zapisano.
           content:
-            application/json: {schema: {$ref: '#/components/schemas/QuickTransactionCreated'}}
-            text/plain: {schema: {type: string}, example: "Zapisano: kupno 10 × PKO po 58,34 zł (XTB — zwykły)"}
-        '401': {$ref: '#/components/responses/Unauthenticated'}
-        '403': {$ref: '#/components/responses/Forbidden'}
-        '409': {$ref: '#/components/responses/Conflict'}
-        '422': {$ref: '#/components/responses/ValidationFailed'}
-        '429': {$ref: '#/components/responses/RateLimited'}
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuickTransactionCreated"
+            text/plain:
+              schema:
+                type: string
+              example: "Zapisano: kupno 10 × PKO po 58,34 zł (XTB — zwykły)"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+        "429":
+          $ref: "#/components/responses/RateLimited"
   /quick/alerts:
     get:
       operationId: quickGetAlerts
       summary: Ostatnie wyzwolone alerty i liczba aktywnych reguł
-      tags: [quick]
-      security: [{bearerPat: ['alerts:read']}]
+      tags:
+        - quick
+      security:
+        - bearerPat:
+            - alerts:read
       x-feature-flag: module.alerts
-      x-requirements: [FR-09.04, FR-09.05]
+      x-requirements:
+        - FR-09.04
+        - FR-09.05
       parameters:
-        - {$ref: '#/components/parameters/QuickFormat'}
-        - {name: limit, in: query, required: false, schema: {type: integer, minimum: 1, maximum: 10, default: 5}}
+        - $ref: "#/components/parameters/QuickFormat"
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 10
+            default: 5
       responses:
-        '200':
+        "200":
           description: Alerty.
           content:
-            application/json: {schema: {$ref: '#/components/schemas/QuickAlerts'}}
-            text/plain: {schema: {type: string}, example: "Aktywne reguły: 6\n14:05 PKO poniżej 58,50 zł (58,34 zł)"}
-        '401': {$ref: '#/components/responses/Unauthenticated'}
-        '403': {$ref: '#/components/responses/Forbidden'}
-        '404': {$ref: '#/components/responses/NotFound'}
-
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuickAlerts"
+            text/plain:
+              schema:
+                type: string
+              example: |-
+                Aktywne reguły: 6
+                14:05 PKO poniżej 58,50 zł (58,34 zł)
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+        "429":
+          $ref: "#/components/responses/RateLimited"
   # ───────────────────────────── admin (audyt każdej operacji — FR-08.10) ─────────────────────────────
   /admin/users:
     get:
@@ -6210,6 +6409,400 @@ components:
             updatedAt: {$ref: '#/components/schemas/Timestamp'}
 
     # ── alerts ──
+    # M4 backend: tylko trzy typy cenowe; pozostałe kontrakty pozostają dla BL-701–704.
+    PriceAlertRuleInput:
+      oneOf:
+        - type: object
+          properties:
+            channels:
+              type: array
+              items:
+                type: string
+                enum:
+                  - push
+                  - email
+              minItems: 1
+              default:
+                - push
+                - email
+              uniqueItems: true
+            cooldownMinutes:
+              type: integer
+              minimum: 5
+              maximum: 10080
+              default: 1440
+            hysteresis:
+              type: number
+              minimum: 0
+              maximum: 0.1
+              default: 0.005
+            enabled:
+              type: boolean
+              default: true
+            type:
+              type: string
+              enum:
+                - price_above
+            instrumentId:
+              type: string
+              format: uuid
+            params:
+              type: object
+              properties:
+                threshold:
+                  type: string
+                  pattern: ^-?\d{1,12}(\.\d{1,8})?$
+                basis:
+                  type: string
+                  enum:
+                    - last
+                    - close
+                  default: last
+              required:
+                - threshold
+              additionalProperties: true
+          required:
+            - type
+            - instrumentId
+            - params
+          additionalProperties: true
+        - type: object
+          properties:
+            channels:
+              type: array
+              items:
+                type: string
+                enum:
+                  - push
+                  - email
+              minItems: 1
+              default:
+                - push
+                - email
+              uniqueItems: true
+            cooldownMinutes:
+              type: integer
+              minimum: 5
+              maximum: 10080
+              default: 1440
+            hysteresis:
+              type: number
+              minimum: 0
+              maximum: 0.1
+              default: 0.005
+            enabled:
+              type: boolean
+              default: true
+            type:
+              type: string
+              enum:
+                - price_below
+            instrumentId:
+              type: string
+              format: uuid
+            params:
+              type: object
+              properties:
+                threshold:
+                  type: string
+                  pattern: ^-?\d{1,12}(\.\d{1,8})?$
+                basis:
+                  type: string
+                  enum:
+                    - last
+                    - close
+                  default: last
+              required:
+                - threshold
+              additionalProperties: true
+          required:
+            - type
+            - instrumentId
+            - params
+          additionalProperties: true
+        - type: object
+          properties:
+            channels:
+              type: array
+              items:
+                type: string
+                enum:
+                  - push
+                  - email
+              minItems: 1
+              default:
+                - push
+                - email
+              uniqueItems: true
+            cooldownMinutes:
+              type: integer
+              minimum: 5
+              maximum: 10080
+              default: 1440
+            hysteresis:
+              type: number
+              minimum: 0
+              maximum: 0.1
+              default: 0.005
+            enabled:
+              type: boolean
+              default: true
+            type:
+              type: string
+              enum:
+                - change_pct
+            instrumentId:
+              type: string
+              format: uuid
+            params:
+              type: object
+              properties:
+                threshold:
+                  type: number
+                  exclusiveMinimum: 0
+                  maximum: 1
+                direction:
+                  type: string
+                  enum:
+                    - up
+                    - down
+                    - both
+                  default: both
+              required:
+                - threshold
+              additionalProperties: true
+          required:
+            - type
+            - instrumentId
+            - params
+          additionalProperties: true
+    PriceAlertRulePatch:
+      type: object
+      properties:
+        channels:
+          type: array
+          items:
+            type: string
+            enum:
+              - push
+              - email
+          minItems: 1
+          uniqueItems: true
+        cooldownMinutes:
+          type: integer
+          minimum: 5
+          maximum: 10080
+        hysteresis:
+          type: number
+          minimum: 0
+          maximum: 0.1
+        enabled:
+          type: boolean
+        params:
+          type: object
+          additionalProperties: {}
+      additionalProperties: true
+      minProperties: 1
+    PriceAlertRule:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum:
+            - price_above
+            - price_below
+            - change_pct
+        instrumentId:
+          type: string
+          format: uuid
+        params:
+          anyOf:
+            - type: object
+              properties:
+                threshold:
+                  type: string
+                  pattern: ^-?\d{1,12}(\.\d{1,8})?$
+                basis:
+                  type: string
+                  enum:
+                    - last
+                    - close
+                  default: last
+              required:
+                - threshold
+              additionalProperties: true
+            - type: object
+              properties:
+                threshold:
+                  type: number
+                  exclusiveMinimum: 0
+                  maximum: 1
+                direction:
+                  type: string
+                  enum:
+                    - up
+                    - down
+                    - both
+                  default: both
+              required:
+                - threshold
+              additionalProperties: true
+        channels:
+          type: array
+          items:
+            type: string
+            enum:
+              - push
+              - email
+          minItems: 1
+          uniqueItems: true
+        cooldownMinutes:
+          type: integer
+          minimum: 5
+          maximum: 10080
+        hysteresis:
+          type: number
+          minimum: 0
+          maximum: 0.1
+        enabled:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        lastTriggeredAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - type
+        - instrumentId
+        - params
+        - channels
+        - cooldownMinutes
+        - hysteresis
+        - enabled
+        - createdAt
+        - updatedAt
+      additionalProperties: true
+    PriceAlertRulePage:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/PriceAlertRule"
+        page:
+          $ref: "#/components/schemas/PageInfo"
+      required:
+        - data
+        - page
+      additionalProperties: true
+    PriceAlertEvent:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        ruleId:
+          type: string
+          format: uuid
+        ruleType:
+          type: string
+          enum:
+            - price_above
+            - price_below
+            - change_pct
+        triggeredAt:
+          type: string
+          format: date-time
+        value:
+          type: string
+          pattern: ^-?\d{1,12}(\.\d{1,8})?$
+        threshold:
+          type: string
+          pattern: ^-?\d{1,12}(\.\d{1,8})?$
+        message:
+          type: string
+        dataAsOf:
+          type: string
+          format: date-time
+        dataSource:
+          type: string
+          enum:
+            - gpw
+            - gpw_manual
+            - yahoo
+            - stooq_manual
+            - nbp
+            - ecb
+            - finnhub
+            - twelvedata
+            - alphavantage
+            - fred
+            - gdelt
+            - marketaux
+            - broker_import
+            - computed
+            - demo
+            - mixed
+        instrument:
+          $ref: "#/components/schemas/InstrumentSummary"
+        deliveries:
+          type: array
+          items:
+            type: object
+            properties:
+              channel:
+                type: string
+                enum:
+                  - push
+                  - email
+              status:
+                type: string
+                enum:
+                  - queued
+                  - sent
+                  - failed
+                  - skipped
+              sentAt:
+                type: string
+                format: date-time
+            required:
+              - channel
+              - status
+            additionalProperties: true
+      required:
+        - id
+        - ruleId
+        - ruleType
+        - triggeredAt
+        - value
+        - threshold
+        - message
+        - dataAsOf
+        - dataSource
+        - deliveries
+      additionalProperties: true
+    PriceAlertEventPage:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/PriceAlertEvent"
+        page:
+          $ref: "#/components/schemas/PageInfo"
+      required:
+        - data
+        - page
+      additionalProperties: true
+
     AlertRuleType: {type: string, enum: [price_above, price_below, change_pct, indicator, portfolio_change, drawdown, allocation_drift, earnings, news]}
     PriceThresholdParams:
       type: object
@@ -6393,16 +6986,26 @@ components:
         stale: {type: boolean}
         delayMinutes: {type: integer, minimum: 0}
         source: {$ref: '#/components/schemas/DataSource'}
+    QuickIncompleteReason:
+      description: 'Brak danych, nigdy pozorne zero ani częściowa wycena jako pełna (R-39).'
+      type: object
+      required: [code]
+      properties:
+        code: {type: string, enum: [missing_fx_rate, missing_price, missing_cost_basis, missing_day_baseline]}
+        pair: {type: string}
+        instrumentId: {$ref: '#/components/schemas/Uuid'}
     QuickPortfolio:
       allOf:
         - {$ref: '#/components/schemas/QuickFreshness'}
         - type: object
-          required: [totalValue, dayChange, dayChangeRatio, unrealizedPl]
+          required: [totalValue, dayChange, dayChangeRatio, unrealizedPl, incomplete, reasons]
           properties:
-            totalValue: {$ref: '#/components/schemas/Money'}
-            dayChange: {$ref: '#/components/schemas/Money'}
+            incomplete: {type: boolean}
+            reasons: {type: array, items: {$ref: '#/components/schemas/QuickIncompleteReason'}}
+            totalValue: {oneOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}]}
+            dayChange: {oneOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}]}
             dayChangeRatio: {type: [number, 'null']}
-            unrealizedPl: {$ref: '#/components/schemas/Money'}
+            unrealizedPl: {oneOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}]}
             topPositions:
               type: array
               maxItems: 5
@@ -6423,9 +7026,11 @@ components:
       allOf:
         - {$ref: '#/components/schemas/QuickFreshness'}
         - type: object
-          required: [dayChange, dayChangeRatio]
+          required: [dayChange, dayChangeRatio, incomplete, reasons]
           properties:
-            dayChange: {$ref: '#/components/schemas/Money'}
+            incomplete: {type: boolean}
+            reasons: {type: array, items: {$ref: '#/components/schemas/QuickIncompleteReason'}}
+            dayChange: {oneOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}]}
             dayChangeRatio: {type: [number, 'null']}
             best: {$ref: '#/components/schemas/QuickMover'}
             worst: {$ref: '#/components/schemas/QuickMover'}

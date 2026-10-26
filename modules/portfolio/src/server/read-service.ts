@@ -226,7 +226,7 @@ export async function readPortfolio(
       meta: readMeta(quotes, Boolean(change)),
     });
     if (operation === "getDayChange") return result;
-    return portfolioSummary.parse({
+    const summary=portfolioSummary.parse({
       totalValue: jsonMoney(valuation.total),
       marketValue: model.totals.marketValueBase,
       cash: jsonMoney(
@@ -252,6 +252,8 @@ export async function readPortfolio(
         totalValueBase: jsonMoney(a.totalReporting),
       })),
     });
+    if(operation==='getQuickSnapshot')return {summary,day:result,positions:model.data,gaps:valuation.gaps,previousGaps:previous.gaps,missingCosts:selected.positions.filter(p=>p.cost===null).map(p=>p.instrumentId)};
+    return summary;
   });
 }
 

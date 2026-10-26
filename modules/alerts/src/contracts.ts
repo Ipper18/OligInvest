@@ -1,10 +1,11 @@
 import {z} from "@hono/zod-openapi";
+import {toDecimal} from "@oliginvest/core";
 import {summarySchema} from "@oliginvest/mod-market/contracts";
 export const object=<T extends z.ZodRawShape>(shape:T)=>z.object(shape).strict().openapi({additionalProperties:true});
 export const decimal=z.string().regex(/^-?\d{1,12}(\.\d{1,8})?$/);
 export const channels=z.array(z.enum(["push","email"])).min(1).refine(v=>new Set(v).size===v.length).openapi({uniqueItems:true});
 const settings={channels:channels.default(["push","email"]),cooldownMinutes:z.number().int().min(5).max(10080).default(1440),hysteresis:z.number().min(0).max(0.1).default(0.005),enabled:z.boolean().default(true)};
-export const priceParams=object({threshold:decimal.refine(v=>Number(v)>0),basis:z.enum(["last","close"]).default("last")});
+export const priceParams=object({threshold:decimal.refine(v=>toDecimal(v).gt(0)),basis:z.enum(["last","close"]).default("last")});
 export const changeParams=object({threshold:z.number().gt(0).max(1),direction:z.enum(["up","down","both"]).default("both")});
 export const priceRuleInput=z.discriminatedUnion("type",[
   object({...settings,type:z.literal("price_above"),instrumentId:z.uuid(),params:priceParams}),

@@ -39,7 +39,7 @@
     "@oliginvest/core": "workspace:*",
     "@oliginvest/i18n": "workspace:*",
     "@hono/zod-openapi": "1.6.3",
-    "zod": "4.6.5"
+    "zod": "4.6.7"
   },
   "devDependencies": {
     "@types/node": "24.13.5"

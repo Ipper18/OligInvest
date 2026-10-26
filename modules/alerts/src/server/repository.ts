@@ -59,7 +59,7 @@ export class AlertRepository {
       const rows=(await tx.execute(sql`SELECT e.*,r.type FROM alerts.alert_events e JOIN alerts.alert_rules r ON r.id=e.rule_id WHERE ${query.ruleId?sql`rule_id=${query.ruleId}::uuid`:sql`true`} AND ${query.from?sql`triggered_at>=(${query.from}::date::timestamp AT TIME ZONE 'Europe/Warsaw')`:sql`true`} AND ${query.to?sql`triggered_at<((${query.to}::date+1)::timestamp AT TIME ZONE 'Europe/Warsaw')`:sql`true`} AND ${cursor?sql`(triggered_at,e.id)<(${cursor.at}::timestamptz,${cursor.id}::uuid)`:sql`true`} ORDER BY triggered_at DESC,e.id DESC LIMIT ${query.limit+1}`)).rows;
       const data=[];
       for(const row of rows.slice(0,query.limit)){
-        const payload=z.object({message:z.string()}).passthrough().parse(row.payload);
+        const payload=z.object({message:z.string(),channels:z.array(z.enum(["push","email"])),enqueued:z.boolean()}).strict().parse(row.payload);
         const deliveries=(await tx.execute(sql`SELECT channel,status,sent_at FROM notifications.notification_deliveries WHERE source_ref=${`alert:${row.rule_id}:${row.id}`}`)).rows.map(d=>({channel:d.channel,status:d.status,...(d.sent_at?{sentAt:instant(d.sent_at)}:{})}));
         data.push({id:row.id,ruleId:row.rule_id,ruleType:row.type,triggeredAt:instant(row.triggered_at),value:String(row.value),threshold:String(row.threshold),message:payload.message,dataAsOf:instant(row.data_as_of),dataSource:row.data_source,deliveries});
       }

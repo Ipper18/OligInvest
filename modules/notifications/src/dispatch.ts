@@ -28,6 +28,10 @@ export async function dispatchNotification(database:AppDatabase,input:unknown,se
     await tx.execute(sql`INSERT INTO notifications.notification_deliveries(user_id,kind,source_ref,channel,status,created_at) SELECT ${data.userId}::uuid,${data.kind},${data.sourceRef},${channel},${channels.includes(channel)?"queued":"skipped"},${data.occurredAt}::timestamptz WHERE NOT EXISTS (SELECT 1 FROM notifications.notification_deliveries WHERE source_ref=${data.sourceRef} AND channel=${channel})`);
     const delivery=(await tx.execute(sql`SELECT id::text,status FROM notifications.notification_deliveries WHERE source_ref=${data.sourceRef} AND channel=${channel} FOR UPDATE`)).rows[0];
     if(!delivery || ["sent","skipped"].includes(String(delivery.status)))return {};
+    if(!channels.includes(channel)){
+      await tx.execute(sql`UPDATE notifications.notification_deliveries SET status='skipped',error='CHANNEL_DISABLED' WHERE id=${delivery.id}::uuid`);
+      return {};
+    }
     const timezone=String((await tx.execute(sql`SELECT timezone FROM identity.user_preferences`)).rows[0]?.timezone??"Europe/Warsaw");
     const until=data.kind==="security"?null:quietUntil(now.toISOString(),timezone,preferences.quietHours);
     if(until)return {delayUntil:Date.parse(until)};

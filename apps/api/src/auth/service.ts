@@ -148,7 +148,6 @@ export class AuthService {
     };
   }
   async requireData(request: Request, stepUp = false): Promise<Principal> {
-    if(request.headers.has("authorization"))throw new ProblemError("FORBIDDEN");
     if (request.headers.has("authorization")) throw new ProblemError("FORBIDDEN");
     const principal = requireMfa(await this.principal(request));
     if ((await this.legal(principal)).termsAcceptanceRequired)

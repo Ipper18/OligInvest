@@ -21,6 +21,7 @@ import { mountStream, type StreamDependencies } from "./stream-routes.js";
 import { mountNotifications } from "./notification-routes.js";
 import {mountAlerts} from "./alert-routes.js";
 import {mountPats} from "./auth/pat-routes.js";
+import {mountQuick} from './quick-routes.js';
 
 export type HealthChecks = Readonly<
   Record<"postgres" | "valkeyQueue" | "valkeyCache", () => Promise<void>>
@@ -190,6 +191,7 @@ export function createApp(
     }),
   );
   const auth = createAuthRouter(authDependencies);
+  for(const prefix of ['/api/v1/alerts/*','/api/v1/notifications/*','/api/v1/quick/*'])app.use(prefix,bodyLimit({maxSize:16_384,onError:()=>{throw new ProblemError('BAD_REQUEST');}}));
   app.route("/api/auth", auth);
   app.all("/api/auth/*", () => {
     throw new ProblemError("FORBIDDEN");
@@ -206,7 +208,7 @@ export function createApp(
   });
   mountStepUp(api, authDependencies);
   api.use("*", async (context, next) => {
-    const module = /^\/api\/v1\/(analytics|alerts|education|quick)(?:\/|$)/u.exec(
+    const module = /^\/api\/v1\/(analytics|alerts|education)(?:\/|$)/u.exec(
       context.req.path,
     )?.[1];
     if (module) {
@@ -234,6 +236,7 @@ export function createApp(
   mountNotifications(api, authDependencies);
   mountAlerts(api,authDependencies);
   mountPats(api,authDependencies);
+  mountQuick(api,authDependencies,options.portfolio);
   mountMarket(
     api,
     options.market ?? {

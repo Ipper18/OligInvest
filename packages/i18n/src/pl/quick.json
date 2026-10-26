@@ -1,0 +1,16 @@
+{
+ "incomplete":"Wycena niepełna: {reasons}",
+ "missing_fx_rate":"brak kursu {pair}",
+ "missing_price":"brak ceny instrumentu",
+ "missing_cost_basis":"brak kosztu nabycia",
+ "missing_day_baseline":"brak danych do wyniku dnia",
+ "freshness":"Dane: {time}, opóźnienie {delay} min, źródło: {source}{stale}",
+ "stale":" (nieaktualne)",
+ "portfolio":"Portfel: {value}\nDziś: {change}",
+ "today":"Dziś: {change}",
+ "quote":"{ticker}: {price}",
+ "created":"Zapisano transakcję {side}: {quantity} × {ticker} po {price} ({account})",
+ "alerts":"Aktywne reguły: {count}",
+ "accounts":"Wskaż rachunek: {names}",
+ "duplicate":"Możliwy duplikat transakcji z ostatnich 10 minut."
+}

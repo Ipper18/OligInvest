@@ -51,7 +51,8 @@ export class PatService {
       await this.service.options.audit.record(context,{action:"pat.create",outcome:"success",resourceType:"api_key",resourceId:receipt.id,after:{expiresAt:receipt.expiresAt}});
       return {...receipt,tokenShown:true as const,token:created.key};
     });
-    await this.scheduleExpiry(context,result);
+    const active=await this.service.options.database.transaction(async tx=>(await tx.execute(sql`SELECT id FROM auth.api_keys WHERE id=${result.id}::uuid AND enabled AND expires_at>now()`)).rows.length>0);
+    if(active)await this.scheduleExpiry(context,result);
     return result;
   }
   async scheduleExpiry(context:DatabaseContext,token:z.infer<typeof patSchema>) {
@@ -82,14 +83,23 @@ export class PatService {
       if(!publicToken.scopes.includes(scope))throw new ProblemError("PAT_SCOPE_MISSING");
       const verified=await createAuth(tx,this.service.options.configuration).api.verifyApiKey({body:{key:token}});
       if((verified as {valid?:unknown}).valid!==true)throw new ProblemError("UNAUTHENTICATED");
-      const metadata=patMetadata.parse(JSON.parse(String(row.metadata))),network=approximateIp(ip);
+      const metadata=patMetadata.parse(JSON.parse(String(row.metadata))),network=approximateIp(ip)??"unknown";
       const newNetwork=network!=="unknown"&&!metadata.networks.includes(network);
-      if(newNetwork){metadata.networks.push(network);await tx.execute(sql`UPDATE auth.api_keys SET metadata=${JSON.stringify(metadata)},last_request=now() WHERE id=${publicToken.id}::uuid`);}
       return {userId,role,tokenId:publicToken.id,scopes:publicToken.scopes,newNetwork,network,name:publicToken.name};
     });
     if(result.newNetwork) {
       if(!this.service.options.patMail)throw new Error("PAT_MAIL_NOT_CONFIGURED");
       await this.service.options.patMail(`pat-network-${result.tokenId}-${digest(result.network)}`,{v:1,userId:result.userId,kind:"security",sourceRef:`pat-network:${result.tokenId}:${digest(result.network).replaceAll("_","-")}`,channels:["email"],subject:alertMessages.patNetworkSubject,text:formatMessage(alertMessages.patNetworkBody,{name:result.name,time:new Date().toISOString(),network:result.network,url:new URL("/ustawienia/tokeny",this.service.options.configuration.origin).href}),occurredAt:new Date().toISOString()},0);
+      // Acknowledge only after durable enqueue. Concurrent requests share the queue job ID.
+      await this.service.options.database.transaction(async tx=>{
+        const row=(await tx.execute(sql`SELECT metadata FROM auth.api_keys WHERE id=${result.tokenId}::uuid AND reference_id=${result.userId}::uuid FOR UPDATE`)).rows[0];
+        if(!row)return;
+        const metadata=patMetadata.parse(JSON.parse(String(row.metadata)));
+        if(!metadata.networks.includes(result.network)){
+          metadata.networks.push(result.network);
+          await tx.execute(sql`UPDATE auth.api_keys SET metadata=${JSON.stringify(metadata)} WHERE id=${result.tokenId}::uuid`);
+        }
+      });
     }
     return {userId:result.userId,role:result.role,tokenId:result.tokenId,scopes:result.scopes};
   }

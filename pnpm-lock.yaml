@@ -218,6 +218,9 @@ importers:
       '@oliginvest/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@oliginvest/i18n':
+        specifier: workspace:*
+        version: link:../../packages/i18n
       '@oliginvest/mod-alerts':
         specifier: workspace:*
         version: link:../../modules/alerts
@@ -444,7 +447,7 @@ importers:
     dependencies:
       '@hono/zod-openapi':
         specifier: 1.6.3
-        version: 1.6.3(hono@4.13.8)(zod@4.6.5)
+        version: 1.6.3(hono@4.13.8)(zod@4.6.7)
       '@oliginvest/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -467,8 +470,8 @@ importers:
         specifier: 0.45.2
         version: 0.45.2(@opentelemetry/api@1.9.1)(@types/pg@8.23.1)(kysely@0.29.6)(pg@8.23.0)
       zod:
-        specifier: 4.6.5
-        version: 4.6.5
+        specifier: 4.6.7
+        version: 4.6.7
     devDependencies:
       '@types/node':
         specifier: 24.13.5
@@ -548,7 +551,7 @@ importers:
     dependencies:
       '@hono/zod-openapi':
         specifier: 1.6.3
-        version: 1.6.3(hono@4.13.8)(zod@4.6.5)
+        version: 1.6.3(hono@4.13.8)(zod@4.6.7)
       '@oliginvest/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -568,8 +571,8 @@ importers:
         specifier: 0.45.2
         version: 0.45.2(@opentelemetry/api@1.9.1)(@types/pg@8.23.1)(kysely@0.29.6)(pg@8.23.0)
       zod:
-        specifier: 4.6.5
-        version: 4.6.5
+        specifier: 4.6.7
+        version: 4.6.7
     devDependencies:
       '@types/node':
         specifier: 24.13.5
@@ -619,7 +622,7 @@ importers:
     dependencies:
       '@hono/zod-openapi':
         specifier: 1.6.3
-        version: 1.6.3(hono@4.13.8)(zod@4.6.5)
+        version: 1.6.3(hono@4.13.8)(zod@4.6.7)
       '@oliginvest/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -642,8 +645,8 @@ importers:
         specifier: 0.45.2
         version: 0.45.2(@opentelemetry/api@1.9.1)(@types/pg@8.23.1)(kysely@0.29.6)(pg@8.23.0)
       zod:
-        specifier: 4.6.5
-        version: 4.6.5
+        specifier: 4.6.7
+        version: 4.6.7
     devDependencies:
       '@types/node':
         specifier: 24.13.5

@@ -112,3 +112,5 @@ Akceptowana jest kropka albo przecinek dziesiętny, np. `"58.34"` i `"58,34"`.
 Nie używaj separatorów tysięcy. Ponowienie utworzenia PAT może zwrócić
 `tokenShown: false` bez sekretu; wtedy pokaż komunikat:
 „Token był już wyświetlony — unieważnij go i utwórz nowy”.
+
+Szybkie odczyty portfela i wyniku dnia zwracają HTTP 200 także przy brakach danych: `incomplete: true`, `reasons` (np. `missing_fx_rate` z `pair: USD/PLN`, `missing_cost_basis`) i kwoty `null`. Skrót nie zamienia null na zero; pokazuje powód, np. „Wycena niepełna: brak kursu USD/PLN”. Format tekstowy już zawiera ten komunikat. HTTP 503 oznacza niedostępność usługi, a nie niepełne dane (decyzja właściciela 2026-10-26; R-39).
