@@ -2,8 +2,6 @@
 export { mountEducation } from "@oliginvest/mod-education/server";
 // END OPTIONAL EDUCATION
 
-import type { DatabaseContext } from "@oliginvest/db";
-
 export {
   authAccounts,
   authApiKeys,
@@ -52,7 +50,7 @@ export type AnalyticsDependencies =
   Absent<AnalyticsModule> extends true
     ? {
         repository(): unknown;
-        authorize(request: Request): Promise<DatabaseContext>;
+        authorize(request: Request): Promise<import("@oliginvest/db").DatabaseContext>;
         assertOrigin(request: Request): void | Promise<void>;
       }
     : Parameters<AnalyticsModule["mountAnalytics"]>[1];
