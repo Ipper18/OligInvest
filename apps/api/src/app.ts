@@ -1,4 +1,5 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
+import type { AppDatabase, DatabaseContext } from "@oliginvest/db";
 import {
   type AppEnv,
   Metrics,
@@ -15,6 +16,7 @@ import {
   type AnalyticsDependencies,
   analyticsModule,
   type MarketDependencies,
+  mountEducation,
   mountMarket,
   mountPortfolio,
   type PortfolioDependencies,
@@ -47,6 +49,11 @@ export function createApp(
     market?: MarketDependencies;
     portfolio?: PortfolioDependencies;
     analytics?: AnalyticsDependencies;
+    education?: {
+      database(): AppDatabase | Promise<AppDatabase>;
+      authorize(request: Request): Promise<DatabaseContext>;
+      assertOrigin(request: Request): void | Promise<void>;
+    };
     stream?: StreamDependencies;
     recordError?: (input: unknown) => Promise<void>;
   }>,
@@ -231,9 +238,24 @@ export function createApp(
       }),
   });
   mountPreferences(api, authDependencies);
+  mountEducation(
+    api,
+    options.education ?? {
+      database: () => {
+        throw new ProblemError("SERVICE_UNAVAILABLE");
+      },
+      authorize: async (request: Request) => {
+        const principal = await (await authDependencies.service()).requireData(request);
+        return { userId: principal.user_id, role: principal.role };
+      },
+      assertOrigin: async (request: Request) =>
+        (await authDependencies.service()).assertOrigin(request),
+    },
+  );
   mountMarket(
     api,
     options.market ?? {
+      assertOrigin: async (request) => (await authDependencies.service()).assertOrigin(request),
       authorize: async (request) => {
         const principal = await (await authDependencies.service()).requireData(request);
         return { userId: principal.user_id, role: principal.role };

@@ -34,6 +34,27 @@ export function Providers({
   const stream = useRef<ReturnType<typeof connectStream> | null>(null);
   const router = useRouter();
   const pathname = usePathname();
+  const educationEnabled =
+    me.features["module.education"] !== false && me.permissions.includes("education:use");
+  useEffect(() => {
+    if (!me.id || !educationEnabled) return;
+    let alive = true,
+      dispose = () => {};
+    const timer = setTimeout(() => {
+      void import("../education/onboarding")
+        .then((module) => module.startOnboarding(false, () => alive))
+        .then((cleanup) => {
+          dispose = cleanup;
+          if (!alive) cleanup();
+        })
+        .catch(() => {});
+    }, 1500);
+    return () => {
+      alive = false;
+      clearTimeout(timer);
+      dispose();
+    };
+  }, [me.id, educationEnabled]);
   const [connectionId, setConnectionId] = useState<string | null>(null);
   useEffect(() => {
     if (!connectionId) return;
@@ -83,7 +104,7 @@ export function Providers({
     });
     const unsubscribeRemote = onRemoteLogout(logout);
     // Validation is loaded outside the initial shell bundle; no Zod runtime in initial JS.
-    void import("@oliginvest/contracts/realtime")
+    void import("@oliginvest/contracts/realtime/browser")
       .then(({ realtimeSchemas }) => {
         if (disposed) return;
         stream.current = connectStream({

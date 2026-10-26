@@ -54,6 +54,7 @@ export function PortfolioNav() {
           ["accounts", "/rachunki"],
           ["lots", "/partie"],
           ["realized", "/wyniki"],
+          ["allocation", "/alokacja"],
         ] as const
       ).map(([key, suffix]) => (
         <Link prefetch={false} key={key} href={`/portfel${suffix}`}>

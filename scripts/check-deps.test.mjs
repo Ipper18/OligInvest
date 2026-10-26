@@ -65,6 +65,16 @@ for (const section of [
   });
 }
 
+test("omitted optional feature permits manifest only, never an unchecked import", (t) => {
+  const f = fixture(t);
+  f.pkg("apps/api", {}, { optionalDependencies: { "@oliginvest/mod-education": "workspace:*" } });
+  assert.deepEqual(checkDependencies(f.root), []);
+  f.write("apps/api/src/modules.ts", "export * from '@oliginvest/mod-education/server';");
+  assert.match(checkDependencies(f.root).join("\n"), /missing workspace import/);
+  f.pkg("apps/api", {}, { optionalDependencies: { "@oliginvest/mod-invented": "workspace:*" } });
+  assert.match(checkDependencies(f.root).join("\n"), /unknown workspace dependency/);
+});
+
 for (const source of [
   "import { x } from '@oliginvest/mod-alerts/contracts';",
   "export * from '@oliginvest/mod-alerts/contracts';",
@@ -222,6 +232,9 @@ test("functional modules in apps are optional and may be absent (build without a
   assert.deepEqual(checkDependencies(f.root), []);
   rmSync(join(f.root, "modules/analytics"), { recursive: true, force: true });
   assert.deepEqual(checkDependencies(f.root), [], "absent optional functional module");
+  f.write("apps/api/src/static.ts", `export * from '${f.analytics}/server';`);
+  assert.match(checkDependencies(f.root).join("\n"), /missing workspace import/);
+  rmSync(join(f.root, "apps/api/src/static.ts"));
   f.pkg("apps/api", { [f.alerts]: "workspace:*" });
   assert.match(checkDependencies(f.root).join("\n"), /must be an optional dependency/);
   f.pkg("apps/api", {}, { optionalDependencies: { "@oliginvest/mod-identity": "workspace:*" } });

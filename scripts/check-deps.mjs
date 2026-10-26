@@ -73,6 +73,7 @@ function importReferences(source) {
   function visit(node) {
     let literal;
     let found = false;
+    let dynamic = false;
     if (node.kind === SyntaxKind.ImportDeclaration || node.kind === SyntaxKind.ExportDeclaration) {
       literal = node.moduleSpecifier;
       found = literal !== undefined;
@@ -93,6 +94,7 @@ function importReferences(source) {
       ) {
         literal = node.arguments[0];
         found = true;
+        dynamic = expression.kind === SyntaxKind.ImportKeyword;
       }
     }
     if (found) {
@@ -101,7 +103,11 @@ function importReferences(source) {
         [SyntaxKind.StringLiteral, SyntaxKind.NoSubstitutionTemplateLiteral].includes(literal.kind)
           ? literal.text
           : undefined;
-      references.push({ specifier, reexport: node.kind === SyntaxKind.ExportDeclaration });
+      references.push({
+        specifier,
+        reexport: node.kind === SyntaxKind.ExportDeclaration,
+        dynamic,
+      });
     }
     node.forEachChild(visit);
   }
@@ -142,13 +148,20 @@ export function checkDependencies(root) {
       const optional = Object.hasOwn(pkg.manifest.optionalDependencies ?? {}, name);
       if (pkg.group === "apps" && FEATURE_PACKAGE.test(name) && !optional)
         report(path, `${name}: functional module must be an optional dependency`);
-      if (!target && optional && pkg.group === "apps" && FEATURE_PACKAGE.test(name)) continue;
       if (target) {
         edges.get(pkg).add(target);
         const error = layerError(pkg, target);
         if (error) report(path, `${name}: ${error}`);
       } else if (name.startsWith("@oliginvest/") || version.startsWith("workspace:")) {
-        report(path, `${name}: unknown workspace dependency`);
+        // A physically omitted functional module has no imports after registry generation.
+        const omittedFeature =
+          pkg.group === "apps" &&
+          /^@oliginvest\/mod-(education|analytics|alerts|admin|quick-actions)$/.test(name) &&
+          pkg.manifest.optionalDependencies?.[name] === "workspace:*" &&
+          !["dependencies", "devDependencies", "peerDependencies"].some((section) =>
+            Object.hasOwn(pkg.manifest[section] ?? {}, name),
+          );
+        if (!omittedFeature) report(path, `${name}: unknown workspace dependency`);
       }
       if (pkg.group === "apps" && pkg.id === "web" && name === "@oliginvest/db")
         report(path, "web: DB dependency forbidden");
@@ -180,7 +193,7 @@ export function checkDependencies(root) {
           }
           if (project.program.getSyntacticDiagnostics(path).length)
             report(path, "invalid source syntax");
-          for (const { specifier, reexport } of importReferences(source)) {
+          for (const { specifier, reexport, dynamic } of importReferences(source)) {
             if (specifier === undefined) {
               report(path, "import requires a literal specifier");
               continue;
@@ -206,7 +219,18 @@ export function checkDependencies(root) {
               !BUILTINS.has(specifier)
             )
               report(path, `${specifier}: undeclared dependency`);
-            if (!target) continue;
+            if (!target) {
+              // The registry's dynamic import of an omitted optional module resolves to "absent" at
+              // runtime; it is checked like any other import in the build that includes the module.
+              const optionalLoad =
+                dynamic &&
+                pkg.group === "apps" &&
+                FEATURE_PACKAGE.test(name) &&
+                Object.hasOwn(pkg.manifest.optionalDependencies ?? {}, name);
+              if (name.startsWith("@oliginvest/") && !optionalLoad)
+                report(path, `${specifier}: missing workspace import`);
+              continue;
+            }
             if (target !== pkg) {
               edges.get(pkg).add(target);
               const error = layerError(pkg, target);

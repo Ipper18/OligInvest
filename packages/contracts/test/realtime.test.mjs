@@ -64,3 +64,47 @@ test("ephemeral events cannot move the durable replay cursor", () => {
     }).success,
   ).toBe(false);
 });
+
+test("browser validators retain strict nested fields, money formats and numerical bounds", () => {
+  const quote = examples["market.quotes.updated"].quotes[0];
+  for (const patch of [
+    { price: 12 },
+    { price: "1e3" },
+    { currency: "pln" },
+    { delayMinutes: -1 },
+    { delayMinutes: 0.5 },
+    { secret: "extra" },
+    { instrumentId: "invalid" },
+    { asOf: "yesterday" },
+  ]) {
+    expect(
+      realtimeSchemas["market.quotes.updated"].safeParse({ v: 1, quotes: [{ ...quote, ...patch }] })
+        .success,
+    ).toBe(false);
+  }
+  expect(
+    realtimeSchemas["market.quotes.updated"].safeParse({ v: 1, quotes: Array(201).fill(quote) })
+      .success,
+  ).toBe(false);
+  for (const progress of [-1, 101])
+    expect(
+      realtimeSchemas["analytics.run.progress"].safeParse({
+        ...examples["analytics.run.progress"],
+        progress,
+      }).success,
+    ).toBe(false);
+  expect(
+    realtimeSchemas["flags.changed"].safeParse({ v: 1, keys: Array(101).fill("flag") }).success,
+  ).toBe(false);
+  expect(
+    realtimeSchemas["portfolio.valuation.updated"].safeParse({
+      ...examples["portfolio.valuation.updated"],
+      summary: {
+        totalValue: { amount: "1", currency: "PLN", extra: true },
+        dayChange: { amount: "0", currency: "PLN" },
+        dayChangeRatio: 0,
+        source: "computed",
+      },
+    }).success,
+  ).toBe(false);
+});

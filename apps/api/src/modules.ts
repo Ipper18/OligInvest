@@ -1,3 +1,7 @@
+// BEGIN OPTIONAL EDUCATION
+export { mountEducation } from "@oliginvest/mod-education/server";
+// END OPTIONAL EDUCATION
+
 import type { DatabaseContext } from "@oliginvest/db";
 
 export {

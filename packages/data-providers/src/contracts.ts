@@ -35,6 +35,7 @@ export const dataMetaSchema = z
     asOf: z.iso.datetime(),
     delayMinutes: z.number().int().nonnegative(),
     stale: z.boolean(),
+    qualityStatus: z.enum(["WARN", "BLOCK"]).optional(),
     staleReason: staleReasonSchema.optional(),
     attribution: z.string().max(200).optional(),
   })

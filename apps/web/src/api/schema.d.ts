@@ -2656,6 +2656,11 @@ export interface components {
             /** @description Deklarowane opóźnienie źródła (EOD = 0 z `asOf` po sesji). */
             delayMinutes: number;
             stale: boolean;
+            /**
+             * @description Najwyższy otwarty problem jakości instrumentu; BLOCK ma pierwszeństwo. Brak pola oznacza brak zgłoszonych WARN/BLOCK, nie gwarancję jakości. WARN nie blokuje analiz.
+             * @enum {string}
+             */
+            qualityStatus?: "WARN" | "BLOCK";
             staleReason?: components["schemas"]["StaleReason"];
             /** @description Tekst atrybucji źródła (NFR-07.03). */
             attribution?: string;
