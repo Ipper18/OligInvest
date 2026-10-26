@@ -200,6 +200,7 @@ Błędy pól formularza: „Podaj wartość”, „Wartość musi być większa 
 | Nagłówek objaśnienia wyniku | Jak czytać ten wynik |
 | Widok podatkowy | Widok podatkowy — dzień przychodu: {basis}; koszt przewalutowania: {fxMode} |
 | Nieznany koszt nabycia (`null`, decyzja 2026-10-08) | Koszt nieznany |
+| Wynik dnia bez sesji po ostatnim zamknięciu (`null`, `market_closed`) | Brak wyniku dnia: od ostatniego zamknięcia nie było sesji, więc notowania nie zmieniły się. Wynik pojawi się z pierwszymi notowaniami nowej sesji. |
 | Uzgodnienie po imporcie | Salda zgadzają się co do grosza. / Różnica {value} — sprawdź wiersze oznaczone do rozstrzygnięcia. |
 
 Wyniki analiz zawsze podajemy jako przedział albo rozkład („od {low} do {high}, mediana {median}”), nigdy jako jedną liczbę opisującą przyszłość (LAW § 4.1).

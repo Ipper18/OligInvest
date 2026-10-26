@@ -4,6 +4,7 @@ import {
   dayChange,
   externalFlows,
   grossValue,
+  hasSessionSincePreviousClose,
   isCoreError,
   isoDate,
   type Money,
@@ -167,12 +168,13 @@ export async function readPortfolio(
           });
         }),
       };
-    const prev = state.ledgerOn(addDays(date, -1));
+    const prev = state.ledgerOn(addDays(date, -1)),
+      previousQuotes = state.quotesOn(addDays(date, -1));
     const previous = valuePortfolio({
       accounts: coreAccounts,
       positions: prev.positions,
       cash: prev.cash,
-      quotes: state.quotesOn(addDays(date, -1)),
+      quotes: previousQuotes,
       fxRates: state.fx,
       date: addDays(date, -1),
     });
@@ -193,8 +195,13 @@ export async function readPortfolio(
     } catch (error) {
       if (!isCoreError(error) || error.code !== "missing_transfer_value") throw error;
     }
+    const session = hasSessionSincePreviousClose({
+      instrumentIds,
+      quotesNow: quotes,
+      quotesPrevClose: previousQuotes,
+    });
     const change =
-      valuation.isComplete && previous.isComplete && flows
+      session && valuation.isComplete && previous.isComplete && flows
         ? dayChange({
             valueNow: valuation.total,
             valuePrevClose: previous.total,
@@ -220,10 +227,12 @@ export async function readPortfolio(
       residualChange: jsonMoney(breakdown.residualChange),
       positions: breakdown.positions.map((p) => ({
         instrument: instruments.find((i) => i.id === p.instrumentId),
-        change: jsonMoney(p.change),
-        contributionRatio: p.contributionRatio,
+        change: session ? jsonMoney(p.change) : null,
+        contributionRatio: session ? p.contributionRatio : null,
       })),
-      meta: readMeta(quotes, Boolean(change)),
+      meta: session
+        ? readMeta(quotes, Boolean(change))
+        : { ...readMeta(quotes), stale: true, staleReason: "market_closed" },
     });
     if (operation === "getDayChange") return result;
     return portfolioSummary.parse({

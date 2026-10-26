@@ -44,6 +44,9 @@ export function SummaryView({
             </dt>
             <dd>
               <Amount value={data[key]} signed={key === "dayChange" || key === "unrealizedPl"} />
+              {key === "dayChange" &&
+                !data.dayChange &&
+                day.meta.staleReason === "market_closed" && <small>{m.dayNoSession}</small>}
             </dd>
           </div>
         ))}
