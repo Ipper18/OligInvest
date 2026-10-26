@@ -16,6 +16,8 @@ Powiązane: [`instrukcja.md`](instrukcja.md), [`../00-przeglad/slownik-pojec.md`
 
 Przewodnik driver.js ładowany leniwie; „Pomiń” zawsze widoczne, `Esc` kończy; stan ukończenia zapisany per użytkownik; do powtórzenia w **Nauka → Onboarding**.
 
+W M2 krok Demo pojawia się dopiero, gdy ekran Demo jest dostępny. Dla elementu nieobecnego na bieżącym ekranie przewodnik pokazuje opis bez podświetlenia. Stan zapisuje istniejący kontrakt `/education/onboarding`; awaria zapisu jest komunikowana i nie blokuje zamknięcia przewodnika.
+
 | Krok | Element | Tekst |
 |---|---|---|
 | 1 | nagłówek | Witaj w OligInvest. Pokażemy w minutę, gdzie co jest. Możesz pominąć przewodnik i wrócić do niego w zakładce Nauka. |

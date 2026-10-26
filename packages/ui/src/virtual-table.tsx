@@ -2,7 +2,7 @@
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useRef } from "react";
 import type { TableProps } from "./data-table.js";
-export function VirtualTable({ caption, headings, rows }: TableProps) {
+export function VirtualTable({ caption, headings, rows, headingContent }: TableProps) {
   const parent = useRef<HTMLElement>(null);
   const virtual = useVirtualizer({
     count: rows.length,
@@ -25,7 +25,7 @@ export function VirtualTable({ caption, headings, rows }: TableProps) {
           <tr>
             {headings.map((heading) => (
               <th key={heading} scope="col">
-                {heading}
+                {headingContent?.[heading] ?? heading}
               </th>
             ))}
           </tr>

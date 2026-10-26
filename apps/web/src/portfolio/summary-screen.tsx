@@ -1,4 +1,7 @@
 "use client";
+import { Explainer } from "../education/explainer";
+import { metricKeys } from "../education/metric-keys";
+import { MetricTable } from "../education/metric-table";
 import { QueryNotice, useResource } from "./query";
 import type { ReadArgs, Resource } from "./resources";
 import { SummaryView } from "./summary-view";
@@ -25,6 +28,8 @@ export function SummaryScreen({
   );
   return (
     <SummaryView
+      Table={MetricTable}
+      explain={(key, term) => <Explainer termKey={metricKeys[key]} term={term} />}
       data={data}
       day={day.data}
       notice={<QueryNotice failed={query.isError} retry={query.refetch} />}

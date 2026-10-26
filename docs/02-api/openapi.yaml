@@ -3476,6 +3476,7 @@ components:
         asOf: {$ref: '#/components/schemas/Timestamp'}
         delayMinutes: {type: integer, minimum: 0, description: 'Deklarowane opóźnienie źródła (EOD = 0 z `asOf` po sesji).'}
         stale: {type: boolean}
+        qualityStatus: {type: string, enum: [WARN, BLOCK], description: 'Najwyższy otwarty problem jakości instrumentu; BLOCK ma pierwszeństwo. Brak pola oznacza brak zgłoszonych WARN/BLOCK, nie gwarancję jakości. WARN nie blokuje analiz.'}
         staleReason: {$ref: '#/components/schemas/StaleReason'}
         attribution: {type: string, maxLength: 200, description: 'Tekst atrybucji źródła (NFR-07.03).'}
     PageInfo:

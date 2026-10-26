@@ -253,6 +253,16 @@ try {
   );
   await testMarketBenchmarkStorage({ host, port, database: migrated, passwords });
   console.log("Benchmarks: idempotent catalog, existing mappings, universe and listing PASS");
+  const { testWatchlistStorage } = await import(
+    "../../../modules/market/integration/watchlists.mjs"
+  );
+  await testWatchlistStorage({ host, port, database: migrated, passwords });
+  console.log("Watchlists: 3 x 50 items, owner isolation, notes, ordering and idempotency PASS");
+  const { testOnboardingStorage } = await import(
+    "../../../modules/education/integration/onboarding.mjs"
+  );
+  await testOnboardingStorage({ host, port, database: migrated, passwords });
+  console.log("Onboarding: persistent progress, skip/restart/complete and owner isolation PASS");
   const roleSettings = () =>
     withClient(
       migrated,

@@ -141,7 +141,16 @@ export function createRuntime(
             ).rows.map((row) => String(row.instrument_id)),
         ),
     },
+    education: {
+      database: async () => (await getAuth()).appDatabase,
+      authorize: async (request) => {
+        const principal = await (await getAuth()).service.requireData(request);
+        return { userId: principal.user_id, role: principal.role };
+      },
+      assertOrigin: async (request) => (await getAuth()).service.assertOrigin(request),
+    },
     market: {
+      assertOrigin: async (request) => (await getAuth()).service.assertOrigin(request),
       repository: async () => {
         market ??= new MarketRepository((await getAuth()).appDatabase);
         return market;

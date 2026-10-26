@@ -2,14 +2,22 @@ import { createHash } from "node:crypto";
 import {
   addDays,
   aggregateMarketBars,
+  atr,
+  bollingerBands,
   DATA_QUALITY_RULES,
   type DataQualityCode,
   DEAD_CANDLE_SESSIONS,
+  Decimal,
+  ema,
   type MarketBar,
+  macd,
+  prepareMarketBars,
+  rsi,
   scanMarketSeries,
   settlementCycleDays,
   settlementDate,
   settlementRegionForMic,
+  sma,
   VOLUME_MEDIAN_SESSIONS,
 } from "@oliginvest/core";
 import { type Bar, barSchema, type Quote, quoteSchema } from "@oliginvest/data-providers";
@@ -23,11 +31,13 @@ import {
   benchmarkSchema,
   chartSchema,
   fxResponseSchema,
+  indicatorSeriesSchema,
   instrumentSchema,
   pageSchema,
   statusSchema,
   summarySchema,
 } from "../contracts.js";
+import { indicatorSpec } from "../indicator-spec.js";
 import { QUOTE_STALE_MS } from "../quote-cadence.js";
 
 const system = { userId: null, role: "system" } as const;
@@ -125,7 +135,8 @@ export class MarketRepository {
         coalesce(q.delay_minutes,0) AS delay,coalesce(q.source,b.source) AS source,
         to_char(coalesce(q.fetched_at,b.ingested_at),'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS "fetchedAt",
         b.session_date::text AS "sessionDate", q.instrument_id IS NULL AS eod,
-        EXISTS(SELECT 1 FROM market.data_quality_issues d WHERE d.instrument_id=i.id AND d.status='open' AND d.severity='BLOCK') AS hold
+        EXISTS(SELECT 1 FROM market.data_quality_issues d WHERE d.instrument_id=i.id AND d.status='open' AND d.severity='BLOCK') AS hold,
+        EXISTS(SELECT 1 FROM market.data_quality_issues d WHERE d.instrument_id=i.id AND d.status='open' AND d.severity='WARN') AS warning
         FROM market.instruments i
         LEFT JOIN LATERAL (SELECT * FROM market.bars_daily WHERE instrument_id=i.id ORDER BY session_date DESC LIMIT 1) b ON true
         LEFT JOIN market.quotes_latest q ON q.instrument_id=i.id
@@ -134,7 +145,7 @@ export class MarketRepository {
             OR ((q.as_of AT TIME ZONE CASE WHEN i.mic='XWAR' THEN 'Europe/Warsaw' ELSE 'America/New_York' END)::date=b.session_date AND q.fetched_at>b.ingested_at))
         WHERE i.id=ANY(${sql.param(ids)}::uuid[]) AND coalesce(q.price,b.close) IS NOT NULL`)
       ).rows;
-      return rows.map(({ asOf, delay, source, eod, hold, ...row }) => {
+      return rows.map(({ asOf, delay, source, eod, hold, warning, ...row }) => {
         const age = this.now().getTime() - Date.parse(String(row.fetchedAt));
         const stale = Boolean(hold) || Boolean(eod) || age > QUOTE_STALE_MS;
         return quoteSchema.parse({
@@ -144,6 +155,7 @@ export class MarketRepository {
             asOf,
             delayMinutes: delay,
             stale,
+            ...(hold ? { qualityStatus: "BLOCK" } : warning ? { qualityStatus: "WARN" } : {}),
             ...(stale
               ? { staleReason: hold ? "data_quality_hold" : eod ? "eod_only" : "provider_error" }
               : {}),
@@ -212,13 +224,78 @@ export class MarketRepository {
       adjusted: boolean;
     },
   ) {
+    return (await this.chartData(context, id, options)).response;
+  }
+  async indicators(
+    context: DatabaseContext,
+    id: string,
+    options: Omit<Parameters<MarketRepository["chart"]>[2], "adjusted"> & { spec: string[] },
+  ) {
+    const specs = z.array(indicatorSpec).min(1).max(8).parse(options.spec);
+    const { response, full } = await this.chartData(context, id, { ...options, adjusted: true });
+    const interval =
+      options.interval === "1w" || options.interval === "1mo" ? options.interval : "1d";
+    const bars = prepareMarketBars(full, interval, true);
+    const close = bars.map((bar) => new Decimal(bar.close));
+    const indices = new Map(
+      bars.map((bar, index) => [Date.parse(`${bar.date}T00:00:00Z`) / 1000, index]),
+    );
+    const indicators = specs.map((spec) => {
+      const [name, ...params] = spec.split(":");
+      const n = Number(params[0]);
+      let outputs: Record<string, (number | null)[]>;
+      if (name === "macd") outputs = { ...macd(close, n, Number(params[1]), Number(params[2])) };
+      else if (name === "bb") outputs = { ...bollingerBands(close, n, params[1] ?? "2") };
+      else if (name === "atr") {
+        // Incomplete H/L cannot be invented, e.g. index close-only archives.
+        outputs = {
+          value: bars.some((bar) => bar.high === null || bar.low === null)
+            ? bars.map(() => null)
+            : atr(
+                bars.map((bar) => new Decimal(bar.high as string)),
+                bars.map((bar) => new Decimal(bar.low as string)),
+                close,
+                n,
+              ),
+        };
+      } else
+        outputs = {
+          value: name === "sma" ? sma(close, n) : name === "ema" ? ema(close, n) : rsi(close, n),
+        };
+      return {
+        spec,
+        kind: ["sma", "ema", "bb"].includes(name ?? "") ? "overlay" : "panel",
+        outputs: Object.fromEntries(
+          Object.entries(outputs).map(([key, values]) => [
+            key,
+            response.t.map((time) => values[indices.get(time) ?? -1] ?? null),
+          ]),
+        ),
+      };
+    });
+    return indicatorSeriesSchema.parse({
+      instrumentId: id,
+      interval: response.interval,
+      t: response.t,
+      indicators,
+      meta: response.meta,
+    });
+  }
+  private async chartData(
+    context: DatabaseContext,
+    id: string,
+    options: Parameters<MarketRepository["chart"]>[2],
+  ) {
     const to = options.to ?? this.today();
     const from = options.from ?? addDays(to, -3653);
     if (from > to) throw new ProblemError("VALIDATION_FAILED");
     const result = await this.database.transaction(context, async (tx) => {
       const instrument = (
         await tx.execute(
-          sql`SELECT currency,EXISTS(SELECT 1 FROM market.data_quality_issues WHERE instrument_id=${id}::uuid AND severity='BLOCK' AND status='open') AS hold FROM market.instruments WHERE id=${id}::uuid`,
+          sql`SELECT currency,
+          EXISTS(SELECT 1 FROM market.data_quality_issues WHERE instrument_id=${id}::uuid AND severity='BLOCK' AND status='open') AS hold,
+          EXISTS(SELECT 1 FROM market.data_quality_issues WHERE instrument_id=${id}::uuid AND severity='WARN' AND status='open') AS warning
+          FROM market.instruments WHERE id=${id}::uuid`,
         )
       ).rows[0];
       if (!instrument) throw new ProblemError("NOT_FOUND");
@@ -226,6 +303,7 @@ export class MarketRepository {
         return {
           currency: instrument.currency,
           hold: Boolean(instrument.hold),
+          warning: Boolean(instrument.warning),
           rows: [],
           actions: [],
         };
@@ -239,7 +317,13 @@ export class MarketRepository {
           sql`SELECT ex_date::text AS date,type,ratio_from AS "ratioFrom",ratio_to AS "ratioTo" FROM market.corporate_actions WHERE instrument_id=${id}::uuid AND type IN ('split','reverse_split','dividend') AND ex_date BETWEEN ${from}::date AND ${to}::date ORDER BY ex_date`,
         )
       ).rows.map(clean);
-      return { currency: instrument.currency, hold: Boolean(instrument.hold), rows, actions };
+      return {
+        currency: instrument.currency,
+        hold: Boolean(instrument.hold),
+        warning: Boolean(instrument.warning),
+        rows,
+        actions,
+      };
     });
     const full = result.rows.map(({ source: _s, ...row }) =>
       z
@@ -262,7 +346,7 @@ export class MarketRepository {
       options.adjusted,
     );
     const last = result.rows.at(-1);
-    return chartSchema.parse({
+    const response = chartSchema.parse({
       instrumentId: id,
       interval: options.interval,
       adjusted: options.adjusted,
@@ -280,12 +364,18 @@ export class MarketRepository {
         asOf: last ? `${last.date}T00:00:00Z` : this.now().toISOString(),
         delayMinutes: 0,
         stale: result.hold || !last,
+        ...(result.hold
+          ? { qualityStatus: "BLOCK" }
+          : result.warning
+            ? { qualityStatus: "WARN" }
+            : {}),
         ...(result.hold || !last
           ? { staleReason: result.hold ? "data_quality_hold" : "no_data" }
           : {}),
         attribution: last?.source === "yahoo" ? "Dane: Yahoo Finance" : "Źródło: GPW",
       },
     });
+    return { response, full };
   }
   async fx(context: DatabaseContext, currencies: string[], from?: string, to?: string) {
     const end = to ?? this.today();
