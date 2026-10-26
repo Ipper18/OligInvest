@@ -340,6 +340,7 @@ Teksty uzupełniające BL-121/122/113/116 (2026-10-11), klucze w katalogu `app`:
 | pending | Trwa zapisywanie. |
 | live | Aktualizacje na żywo |
 | polling | Aktualizacje co minutę |
+| connecting | Łączenie z aktualizacjami |
 | paused | Aktualizacje wstrzymane |
 | pause | Wstrzymaj aktualizacje |
 | resume | Wznów aktualizacje |
@@ -350,6 +351,10 @@ Teksty uzupełniające BL-121/122/113/116 (2026-10-11), klucze w katalogu `app`:
 | required | Podaj wartość |
 | copied | Skopiowano. |
 | configurationMissing | Dane usługodawcy nie zostały jeszcze skonfigurowane. |
+
+Stan w nagłówku i przycisk obok nie mogą sobie przeczyć: „Aktualizacje wstrzymane” tylko po wyborze
+„Wstrzymaj aktualizacje” (przycisk pokazuje wtedy „Wznów aktualizacje”); przed połączeniem, po wznowieniu
+i po powrocie z karty w tle stan to „Łączenie z aktualizacjami” (poprawka po demo 2026-10-26).
 
 Kody błędów pozostają z § 7. Teksty dokumentów prawnych pochodzą w całości z dokumentów użytkownika, bez przeredagowania.
 
