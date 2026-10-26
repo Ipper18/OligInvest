@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { z } from "zod";
+import { DevelopmentError } from "../../../scripts/dev-local.mjs";
 
 const decimal = z.string().regex(/^-?\d+(?:\.\d+)?$/u);
 const date = z.iso.date();
@@ -137,11 +138,43 @@ function sessions(seed) {
   return result;
 }
 
-export async function seedDevelopment(client, mode, fixture) {
+export async function seedDevelopment(client, mode, fixture, password, passwordChecks) {
   if (mode !== "development" && mode !== "test")
     throw new Error("Seed requires explicit development/test mode");
+  if (password && mode !== "development") throw new Error("Demo password requires development");
+  if ((await client.query("SELECT current_database() AS name")).rows[0].name !== "oliginvest_dev")
+    throw new Error("Development database required");
   const seed = fixture ? schema.parse(fixture) : await readSeed();
   const days = sessions(seed);
+  async function credential(userId) {
+    if (!password) return;
+    // Tooling-only dynamic import: use exactly the API policy and Argon2id implementation.
+    const { checkPassword, defaultPasswordChecks, hashPassword, verifyPassword } = await import(
+      "../../../apps/api/dist/auth/password.js"
+    );
+    const existing = await client.query(
+      "SELECT password FROM auth.accounts WHERE user_id=$1 AND provider_id='credential'",
+      [userId],
+    );
+    if (existing.rowCount) {
+      if (!(await verifyPassword({ hash: existing.rows[0].password, password })))
+        throw new DevelopmentError("Demo password differs: change it through the application");
+      return;
+    }
+    await checkPassword(
+      password,
+      seed.user,
+      passwordChecks ??
+        defaultPasswordChecks(() => {
+          console.warn("auth.hibp_unavailable");
+        }),
+    );
+    await client.query(
+      "INSERT INTO auth.accounts(account_id,provider_id,user_id,password) VALUES($1,'credential',$2::uuid,$3)",
+      [userId, userId, await hashPassword(password)],
+    );
+    await client.query("UPDATE auth.users SET email_verified=true WHERE id=$1", [userId]);
+  }
   await client.query("BEGIN");
   try {
     await client.query("SELECT pg_advisory_xact_lock(20260922)");
@@ -150,6 +183,7 @@ export async function seedDevelopment(client, mode, fixture) {
       seed.user.email,
     ]);
     if (existing.rowCount) {
+      await credential(existing.rows[0].id);
       await assertSeed(client, seed, existing.rows[0].id);
       await client.query("COMMIT");
       return;
@@ -160,6 +194,7 @@ export async function seedDevelopment(client, mode, fixture) {
         [seed.user.email, seed.user.name, seed.user.role],
       )
     ).rows[0].id;
+    await credential(userId);
     await client.query("SET LOCAL ROLE oliginvest_app");
     await client.query("SELECT set_config('app.user_id', $1, true)", [userId]);
     const accounts = new Map();

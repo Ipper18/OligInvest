@@ -73,6 +73,8 @@ Powiązane: [`roadmapa.md`](roadmapa.md), [`backlog.md`](backlog.md), [`../06-be
 
 ## 3. Podsumowanie
 
+Doprecyzowanie R-19 (BL-034, 2026-10-23): lokalna baza owner wymaga zachowania `.env` z `DEV_AUTH_SECRET` i `DEV_AUDIT_KEY`; ich utrata może uniemożliwić odczyt TOTP/kodów oraz spójne powiązanie audytu. Launcher zapisuje klucze raz, odrzuca konflikt wartości, a regresja sprawdza restart. Instrukcja lokalna wymaga zachowania `.env` razem z bazą; ocena R-19 bez zmian, brak nowego odrębnego ryzyka.
+
 44 ryzyka: **5 wysokich** (R-01, R-07, R-11, R-16, R-28), 29 średnich, 10 niskich; brak krytycznych.
 
 | Ryzyko wysokie | Działanie przed końcem etapu |
