@@ -207,6 +207,9 @@ test("watchlists persist a list, instrument and note after reload", async ({ pag
   await page.getByRole("button", { name: "Wyszukaj instrument", exact: true }).click();
   await page.getByRole("radio").first().check();
   await page.getByRole("button", { name: "Dodaj instrument", exact: true }).click();
+  // Controls stay disabled until the save and its router refresh have finished; reloading during
+  // the refresh made Firefox abort page.reload (NS_BINDING_ABORTED).
+  await expect(page.getByRole("button", { name: "Dodaj instrument", exact: true })).toBeEnabled();
   await page.getByLabel("Notatka TEST", { exact: true }).fill("Notatka syntetyczna");
   await page.getByRole("button", { name: "Zapisz notatkę", exact: true }).click();
   await expect(page.getByRole("button", { name: "Zapisz notatkę", exact: true })).toBeEnabled();
