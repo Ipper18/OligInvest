@@ -15,6 +15,7 @@ export type DataMeta = {
   asOf: string;
   delayMinutes: number;
   stale: boolean;
+  qualityStatus?: "WARN" | "BLOCK" | undefined;
   staleReason?: keyof typeof messages.data.reasons | undefined;
   attribution?: string | undefined;
 };
@@ -41,6 +42,7 @@ export function DataFreshness(props: FreshnessProps) {
           source: meta.source,
         });
   const reason = meta.staleReason ? messages.data.reasons[meta.staleReason] : undefined;
+  const quality = meta.staleReason === "data_quality_hold" ? "BLOCK" : meta.qualityStatus;
   return (
     <div className="oi-freshness" data-freshness-source={meta.source} data-stale={meta.stale}>
       <p>
@@ -51,6 +53,7 @@ export function DataFreshness(props: FreshnessProps) {
       {props.kind === "fx" && <p>{meta.source}</p>}
       {meta.attribution && <p>{meta.attribution}</p>}
       <div role="status" aria-live="polite" aria-atomic="true">
+        {quality && <p data-quality-status={quality}>{messages.data.quality[quality]}</p>}
         {meta.stale && (
           <p className="oi-stale">
             <strong>{messages.data.staleLabel}</strong>

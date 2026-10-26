@@ -7,6 +7,7 @@ import {
   benchmarkSchema,
   chartSchema,
   fxResponseSchema,
+  indicatorSeriesSchema,
   instrumentResponseSchema,
   instrumentType,
   object,
@@ -14,9 +15,12 @@ import {
   statusSchema,
   summarySchema,
 } from "../contracts.js";
+import { INDICATOR_PATTERN, indicatorSpec } from "../indicator-spec.js";
 import type { MarketRepository } from "./repository.js";
+import { mountWatchlists } from "./watchlist-routes.js";
 
 export interface MarketDependencies {
+  assertOrigin?(request: Request): void | Promise<void>;
   repository(): MarketRepository | Promise<MarketRepository>;
   authorize(request: Request): Promise<DatabaseContext>;
   searchInBackground(query: string): Promise<void>;
@@ -89,12 +93,61 @@ export function mountMarket(api: OpenAPIHono<AppEnv>, dependencies: MarketDepend
   // Authenticate before query validation and before conditional responses (no public 304s).
   api.use("/market/*", async (context, next) => {
     await dependencies.authorize(context.req.raw);
+    if (!["GET", "HEAD", "OPTIONS"].includes(context.req.method)) {
+      if (!dependencies.assertOrigin) throw new ProblemError("SERVICE_UNAVAILABLE");
+      await dependencies.assertOrigin(context.req.raw);
+      context.header("Cache-Control", "no-store");
+    }
+    if (context.req.path.includes("/watchlists")) context.header("Cache-Control", "no-store");
     await next();
   });
+  mountWatchlists(api, dependencies);
   const hook = (result: { success: boolean }) => {
     if (!result.success) throw new ProblemError("VALIDATION_FAILED");
     return undefined;
   };
+  api.openapi(
+    createRoute({
+      method: "get",
+      path: "/market/instruments/{instrumentId}/indicators",
+      operationId: "getInstrumentIndicators",
+      tags: ["market"],
+      security,
+      request: {
+        params,
+        query: chartQuery
+          .omit({ adjusted: true })
+          .extend({
+            spec: z
+              .array(z.string().regex(INDICATOR_PATTERN))
+              .min(1)
+              .max(8)
+              .openapi({ param: { style: "form", explode: true } }),
+          })
+          .strict(),
+      },
+      responses: {
+        200: json(indicatorSeriesSchema),
+        401: marketError,
+        404: marketError,
+        422: marketError,
+      },
+    }),
+    async (context) => {
+      const query = context.req.valid("query");
+      if (!query.spec.every((spec) => indicatorSpec.safeParse(spec).success))
+        throw new ProblemError("PARAMETERS_OUT_OF_BOUNDS");
+      return context.json(
+        await (await dependencies.repository()).indicators(
+          await dependencies.authorize(context.req.raw),
+          context.req.valid("param").instrumentId,
+          query,
+        ),
+        200,
+      );
+    },
+    hook,
+  );
   api.openapi(
     createRoute({
       method: "get",

@@ -1,4 +1,4 @@
-import { aggregateMarketBars } from "@oliginvest/core";
+import { aggregateMarketBars, prepareMarketBars } from "@oliginvest/core";
 import { expect, test } from "vitest";
 
 const bars = [
@@ -21,6 +21,16 @@ const bars = [
     adjustmentFactor: "0.5",
   },
 ];
+test("indicator preparation preserves full split-adjusted history before display decimation", () => {
+  const full = Array.from({ length: 4001 }, (_, index) => ({
+    ...bars[0],
+    date: new Date(Date.UTC(2000, 0, index + 1)).toISOString().slice(0, 10),
+  }));
+  expect(prepareMarketBars(full, "1d", true)).toHaveLength(4001);
+  expect(prepareMarketBars(full, "1d", true)[4000].close).toBe("5.1");
+  expect(aggregateMarketBars(full, "1d", 50, true)).toHaveLength(50);
+  expect(prepareMarketBars(bars, "1w", true)).toEqual(aggregateMarketBars(bars, "1w", 3000, true));
+});
 test("weekly OHLC retains first/last/extremes and sums volume exactly", () => {
   expect(aggregateMarketBars(bars, "1w", 3000, false)).toEqual([
     { date: "2026-10-05", open: "10.1", high: "11", low: "9", close: "10.8", volume: "0.3" },

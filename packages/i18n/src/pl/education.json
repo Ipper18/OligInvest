@@ -1,0 +1,17 @@
+{
+  "title": "Nauka",
+  "glossary": "Słownik pojęć",
+  "search": "Szukaj pojęcia lub synonimu",
+  "submit": "Szukaj",
+  "empty": "Brak pasujących haseł",
+  "explain": "Co oznacza {term}",
+  "definition": "Definicja",
+  "reading": "Jak czytać",
+  "pitfalls": "Pułapki",
+  "glossaryLink": "Hasło w słowniku",
+  "formula": "Definicja obliczenia",
+  "appLink": "Zobacz w aplikacji",
+  "loading": "Ładowanie wyjaśnienia",
+  "unavailable": "Wyjaśnienie niedostępne",
+  "retry": "Spróbuj ponownie"
+}

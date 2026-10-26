@@ -12,7 +12,21 @@ export type CandleSeries = {
   c: (string | null)[];
   v: (string | null)[];
 };
-export function CandlestickChart({ series }: { series: CandleSeries }) {
+export type ChartIndicators = {
+  t: number[];
+  indicators: {
+    spec: string;
+    kind: "overlay" | "panel";
+    outputs: Record<string, (number | null)[]>;
+  }[];
+};
+export function CandlestickChart({
+  series,
+  indicators,
+}: {
+  series: CandleSeries;
+  indicators?: ChartIndicators | null;
+}) {
   const host = useRef<HTMLDivElement>(null),
     chart = useRef<IChartApi | null>(null);
   const [selected, setSelected] = useState(0),
@@ -26,7 +40,7 @@ export function CandlestickChart({ series }: { series: CandleSeries }) {
       if (!entries.some((e) => e.isIntersecting)) return;
       observer.disconnect();
       void import("lightweight-charts")
-        .then(({ createChart, CandlestickSeries, HistogramSeries, ColorType }) => {
+        .then(({ createChart, CandlestickSeries, HistogramSeries, LineSeries, ColorType }) => {
           if (disposed) return;
           const instance = createChart(element, {
             autoSize: true,
@@ -45,6 +59,31 @@ export function CandlestickChart({ series }: { series: CandleSeries }) {
             1,
           );
           instance.panes()[1]?.setHeight(80);
+          let panel = 2;
+          const lines = (indicators?.indicators ?? []).flatMap((indicator) => {
+            const pane = indicator.kind === "overlay" ? 0 : panel++;
+            return Object.entries(indicator.outputs).map(([name, values], index) => {
+              const line = instance.addSeries(
+                LineSeries,
+                {
+                  title: `${indicator.spec} ${name}`,
+                  lineWidth: 2,
+                  lineStyle: index % 3,
+                  priceLineVisible: false,
+                },
+                pane,
+              );
+              line.setData(
+                (indicators?.t ?? []).map((time, i) =>
+                  values[i] == null
+                    ? { time: time as UTCTimestamp }
+                    : { time: time as UTCTimestamp, value: values[i] as number },
+                ),
+              );
+              if (pane > 1) instance.panes()[pane]?.setHeight(120);
+              return line;
+            });
+          });
           const applyTheme = () => {
             const css = getComputedStyle(element),
               token = (name: string) => css.getPropertyValue(name).trim();
@@ -63,6 +102,9 @@ export function CandlestickChart({ series }: { series: CandleSeries }) {
               borderVisible: false,
             });
             volume.applyOptions({ color: token("--color-accent") });
+            lines.forEach((line, index) => {
+              line.applyOptions({ color: token(index % 2 ? "--color-warning" : "--color-accent") });
+            });
           };
           applyTheme();
           // Decimal strings become numbers only at the canvas boundary; never reused in totals.
@@ -113,7 +155,7 @@ export function CandlestickChart({ series }: { series: CandleSeries }) {
       observer.disconnect();
       cleanup();
     };
-  }, [series]);
+  }, [series, indicators]);
   function zoom(factor: number) {
     const scale = chart.current?.timeScale(),
       range = scale?.getVisibleLogicalRange();

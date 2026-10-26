@@ -177,6 +177,21 @@ export function aggregateMarketBars(
 ): MarketBar[] {
   if (!Number.isInteger(maxPoints) || maxPoints < 1 || maxPoints > 3000)
     throw new Error("Invalid point limit");
+  const bars = prepareMarketBars(input, interval, adjusted);
+  if (bars.length <= maxPoints) return bars;
+  const output: MarketBar[] = [];
+  const size = Math.ceil(bars.length / maxPoints);
+  for (let index = 0; index < bars.length; index += size)
+    output.push(mergeBars(bars.slice(index, index + size)));
+  return output;
+}
+
+/** Full interval series for indicators; display point limits must never alter their input. */
+export function prepareMarketBars(
+  input: readonly MarketBar[],
+  interval: "1d" | "1w" | "1mo",
+  adjusted: boolean,
+): MarketBar[] {
   const groups = new Map<string, MarketBar[]>();
   let previous = "";
   for (const value of input) {
@@ -206,11 +221,5 @@ export function aggregateMarketBars(
     group.push(bar);
     groups.set(key, group);
   }
-  const bars = [...groups.values()].map(mergeBars);
-  if (bars.length <= maxPoints) return bars;
-  const output: MarketBar[] = [];
-  const size = Math.ceil(bars.length / maxPoints);
-  for (let index = 0; index < bars.length; index += size)
-    output.push(mergeBars(bars.slice(index, index + size)));
-  return output;
+  return [...groups.values()].map(mergeBars);
 }

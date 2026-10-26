@@ -1,0 +1,36 @@
+{
+  "title": "Alokacja",
+  "classification": "Klasyfikacja instrumentu",
+  "pending": "Alokacja i zapis klasyfikacji będą dostępne po uruchomieniu usługi portfela.",
+  "by": "Podział według",
+  "group": "Grupa",
+  "value": "Wartość",
+  "weight": "Udział",
+  "total": "Łączna wartość",
+  "overridden": "Klasyfikacja własna",
+  "catalog": "Klasyfikacja katalogowa",
+  "save": "Zapisz klasyfikację",
+  "restore": "Przywróć klasyfikację katalogową",
+  "note": "Notatka",
+  "unchanged": "Bez nadpisania",
+  "basis": "Udziały opisują aktualną strukturę według dostępnych wycen. Nie są alokacją docelową ani sugestią transakcji.",
+  "currencyHelp": "Waluta notowania pochodzi z katalogu. Nadpisanie klasyfikacji nie zmienia waluty instrumentu.",
+  "groups": {
+    "asset_class": "Klasa aktywów",
+    "sector": "Sektor",
+    "country": "Kraj",
+    "listing_market": "Rynek notowania",
+    "currency": "Waluta",
+    "instrument": "Instrument"
+  },
+  "classes": {
+    "equity": "Akcje",
+    "bond": "Obligacje",
+    "cash": "Gotówka",
+    "commodity": "Surowce",
+    "real_estate": "Nieruchomości",
+    "crypto": "Kryptoaktywa",
+    "mixed": "Mieszane",
+    "other": "Pozostałe"
+  }
+}

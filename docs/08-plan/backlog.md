@@ -205,21 +205,21 @@ Brama A (**[A]**) — MVP właściciela; brama B (**[B]**) — funkcje wymagane 
 | ID | Zadanie | Wymagania | Dokumenty | Zależy od | d | Status |
 |---|---|---|---|---|---|---|
 | BL-201 | `packages/core`: SMA, EMA, wstęgi Bollingera, RSI, MACD, ATR — zgodność z TA-Lib (wektor E, 1e-8) | FR-01.05, NFR-08.02 | OBL, VEC | BL-141 | 3 | w toku |
-| BL-202 | `getInstrumentIndicators`, nakładki i panele na wykresie, parametry wskaźników | FR-01.05 | API, [ADR-009](../09-decyzje/ADR-009-wykresy.md) | BL-201, BL-138 | 2 | todo |
-| BL-203 | Wyjaśnienia kontekstowe `<Explainer/>` (klucze i treści MDX modułu `education`) dla wskaźników i metryk MVP; test pokrycia kluczy | FR-01.07, FR-06.02, NFR-06.03 | DS, MOD | BL-202 | 2 | todo |
-| BL-204 | Glosariusz: indeks statyczny, wyszukiwanie po fragmencie i synonimie, pierwsze 30 haseł ze słownika pojęć | FR-06.03 | EKR, SLOW | BL-203 | 2 | todo |
-| BL-205 | Watchlisty: listy, kolejność, notatki, ekran z kursami | FR-01.08 | API, EKR | BL-137 | 2 | todo |
+| BL-202 | `getInstrumentIndicators`, nakładki i panele na wykresie, parametry wskaźników | FR-01.05 | API, [ADR-009](../09-decyzje/ADR-009-wykresy.md) | BL-201, BL-138 | 2 | w toku — PR #17; implementacja i lokalne testy PASS; nakład niezmierzony |
+| BL-203 | Wyjaśnienia kontekstowe `<Explainer/>` (klucze i treści MDX modułu `education`) dla wskaźników i metryk MVP; test pokrycia kluczy | FR-01.07, FR-06.02, NFR-06.03 | DS, MOD | BL-202 | 2 | w toku — PR #17; implementacja i lokalne testy PASS; nakład niezmierzony |
+| BL-204 | Glosariusz: indeks statyczny, wyszukiwanie po fragmencie i synonimie, pierwsze 30 haseł ze słownika pojęć | FR-06.03 | EKR, SLOW | BL-203 | 2 | w toku — PR #17; implementacja i lokalne testy PASS; nakład niezmierzony |
+| BL-205 | Watchlisty: listy, kolejność, notatki, ekran z kursami | FR-01.08 | API, EKR | BL-137 | 2 | w toku — PR #17; API/UI i RLS PASS; pomiar renderowania 50 pozycji do odbioru; nakład niezmierzony |
 | BL-206 | Indeksy i benchmarki (WIG20, WIG, mWIG40, sWIG80, S&P 500, Nasdaq-100 i ETF-y): backfill ≥ 5 lat, `listBenchmarks`, ekran `/rynek` | FR-01.09 | SRC, EKR | BL-134 | 2 | w toku (Claude Code, `feat/m2-market-backend`, [PR #15](https://github.com/Ipper18/OligInvest/pull/15); backend — ekran `/rynek` i oznaczenia UI u Codex; nakład/odchylenie niezmierzone) |
-| BL-207 | Klasyfikacja instrumentów (klasa, sektor, kraj, waluta) z nadpisaniami; `getAllocation` i ekran alokacji | FR-02.05 | API, EKR | BL-146 | 3 | todo |
+| BL-207 | Klasyfikacja instrumentów (klasa, sektor, kraj, waluta) z nadpisaniami; `getAllocation` i ekran alokacji | FR-02.05 | API, EKR | BL-146 | 3 | w toku — PR #17: UI według OpenAPI; backend i integracja osobna sesja (decyzja właściciela); nakład niezmierzony |
 | BL-208 | Import mBank eMakler (historia transakcji i finansowa, Windows-1250, mapowanie po nazwie) | FR-03.02 | IMP | BL-145 | 3 | w toku — czeka na odbiór właściciela: realny eksport mBank i akceptacja 415/propagacji mapowania |
 | BL-209 | Pełna kontrola jakości danych: reguły BLOCK/WARN/INFO, `data_quality_issues`, oznaczenia w UI, blokada analiz | NFR-08.04, NFR-09.02 | OBL | BL-139 | 1,5 | w toku (Claude Code, `feat/m2-market-backend`, [PR #15](https://github.com/Ipper18/OligInvest/pull/15); backend — ekran `/rynek` i oznaczenia UI u Codex; nakład/odchylenie niezmierzone) |
 | BL-210 | Zapasowe adaptery USA: Finnhub, Twelve Data, Alpha Vantage — kwoty, testy kontraktowe na zapisanych odpowiedziach | NFR-02.04, NFR-09.02 | SRC, CACHE | BL-131 | 2 | todo |
 | BL-211 | Preferencje: metoda kosztu (FIFO/średnia), ustawienia widoku podatkowego (dzień przychodu, marża przewalutowania w koszcie — przelicza widok podatkowy), strefa czasowa, język; synchronizacja między urządzeniami | FR-07.08 | API | BL-113 | 1 | todo |
 | BL-212 | Test opóźnienia SSE < 2 s p95 i wznowienia z `Last-Event-ID` | NFR-01.06 | RT, [ADR-007](../09-decyzje/ADR-007-sse-zamiast-websocket.md) | BL-125 | 1 | todo |
 | BL-213 | Raport kompletności EOD GPW (weryfikacja ADR-005 przez 20 sesji) | NFR-09.02 | [ADR-005](../09-decyzje/ADR-005-strategia-danych-rynkowych.md) | BL-133 | 0,5 | w toku (Claude Code, `feat/m2-market-backend`, [PR #15](https://github.com/Ipper18/OligInvest/pull/15); backend — ekran `/rynek` i oznaczenia UI u Codex; nakład/odchylenie niezmierzone) |
-| BL-214 | Ekran kursów walut `/rynek/waluty` z historią NBP | FR-01.14 | EKR | BL-132 | 1 | todo |
+| BL-214 | Ekran kursów walut `/rynek/waluty` z historią NBP | FR-01.14 | EKR | BL-132 | 1 | w toku — PR #17; implementacja i lokalne testy PASS; nakład niezmierzony |
 | BL-215 | Limity per rola w `platform` (np. liczba analiz dziennie), `429` z czasem odnowienia | FR-08.03 | MOD, KONW | BL-131 | 1,5 | todo |
-| BL-216 | Onboarding przy pierwszym logowaniu (driver.js ładowany leniwie, pomijalny i powtarzalny, dostępny z klawiatury; treść z samouczków § 2) | FR-06.01 | A11Y, PERF, USR | BL-203 | 2 | todo |
+| BL-216 | Onboarding przy pierwszym logowaniu (driver.js ładowany leniwie, pomijalny i powtarzalny, dostępny z klawiatury; treść z samouczków § 2) | FR-06.01 | A11Y, PERF, USR | BL-203 | 2 | w toku — PR #17; zapis per użytkownik, klawiatura i budżety PASS; nakład niezmierzony |
 | | **Suma etapu** | | | | **29,5** | |
 
 ## 4. M3 — Wyniki historyczne i analizy scenariuszowe (P1)
