@@ -152,4 +152,4 @@ Obowiązkowy dla każdej funkcji z obszaru FR-04 (Monte Carlo, optymalizacja, te
 | `docker compose -f compose.dev.yaml up -d` | lokalne PostgreSQL, Valkey i Mailpit |
 | `pnpm admin:<polecenie>` | polecenia administracyjne (kontrakt: [`docs/12-dla-uzytkownika/instrukcja-administratora.md`](docs/12-dla-uzytkownika/instrukcja-administratora.md) § 2) |
 
-Prompty startowe i paczki zadań na sesje: [`docs/08-plan/prompty-codex.md`](docs/08-plan/prompty-codex.md).
+Prompty startowe i paczki zadań na sesje: [`docs/08-plan/prompty-codex.md`](docs/08-plan/prompty-codex.md). Praca w zespole agentów OpenBot: [`docs/08-plan/orkiestracja-agentow.md`](docs/08-plan/orkiestracja-agentow.md).

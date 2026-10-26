@@ -2,7 +2,7 @@
 
 **Cel:** przekazać wynik BL-034 oraz powiązanych poprawek BL-102/122 i pozostałe kroki właściciela.
 
-**2026-10-23**, gałąź `feat/dev-local-accounts`, [roboczy PR #22](https://github.com/Ipper18/OligInvest/pull/22). Po scaleniu PR #18 o 20:55 Europe/Warsaw włączono `origin/main` (`31b5f3f`) przez merge. Osobny worktree zachował aktywną pracę `feat/m2-ui` w głównym katalogu. PR #22 pozostaje otwarty.
+**2026-10-26**, gałąź `feat/dev-local-accounts`, [roboczy PR #22](https://github.com/Ipper18/OligInvest/pull/22). W osobnym worktree włączono `origin/main` (`f6adccd`) przez merge: Zod 4.6.7, poprawki Caddy, pgBackRest 2.59.3 i dokumentację. Konflikt `ryzyka.md`: R-42, R-43 i podsumowanie 43 ryzyk z main, dodatkowo nasze doprecyzowanie R-19. Bez zmian cudzej pracy i bez scalania PR.
 
 ## Wykonane
 
@@ -14,10 +14,10 @@
 
 ## Dowody i ograniczenia
 
-- PASS po merge: 112 testów skryptów; kontrola 109 dokumentów/repozytorium/granic; 43 zadania lint/typecheck/test wraz z wymaganymi buildami, w tym 36 testów web i 93 API. Instalacja z frozen lockfile. Konflikt konfiguracji 2FA rozwiązany z zachowaniem kodów zapasowych i bramek; nowy relay z main przyjęty. `13f8194` pozostaje osobnym przodkiem gałęzi.
+- PASS po merge 26.10: frozen lockfile; 57 zadań lint/typecheck/test z wymaganymi buildami (25 z cache), w tym 36 testów web; 112 testów skryptów, 4 polityki audytu obrazów; kontrole 112 dokumentów/repozytorium/granic. `13f8194` pozostaje osobnym przodkiem gałęzi, zabezpieczenia i timeouty bez zmian.
 - PASS PostgreSQL: seed, rollback, polityka hasła, pusty owner/bootstrap, katalog Yahoo bez sieci; odtworzenie runtime z nowymi hasłami ról zachowuje sesję, TOTP i kod zapasowy. MFA oraz regulamin nadal blokują dane. Regresja kont uruchamiana w CI workers.
-- PASS `pnpm dev:test`: API/web/jobs/analytics, Mailpit i Valkey. Lokalną `.venv` uzupełniono z istniejącego lockfile po wykryciu braku jsonschema; bez zmian zależności.
+- Wcześniejszy PASS `pnpm dev:test`: API/web/jobs/analytics, Mailpit i Valkey; `.venv` uzupełniona z lockfile.
 - PASS Chromium przez lokalny HTTP: demo → TOTP → zapis kodów → regulamin → portfel z dwoma rachunkami; ciasteczko Secure/HttpOnly, brak hasła w logach. Diagnostyka lokalna w `.git/dev-browser-*.log`; nie jest testem realnego pliku właściciela.
-- Po merge nie powtarzano E2E (porty harnessu zajęte przez inną pracę), integracji DB ani obrazów; wcześniejsze dowody wyżej dotyczą stanu przed merge. Rzeczywisty import pozostaje u właściciela. CI sprawdzane jeden raz po push; wynik w Checks PR i podsumowaniu sesji. DoD i etap M0/M1 nie są zamknięte. Automatyzacja oczekiwania na PR #18 kończy się po push.
+- E2E, integracji DB i obrazów nie powtarzano lokalnie; dowody DB i Chromium wyżej pochodzą sprzed merge. Rzeczywisty import pozostaje u właściciela. CI: jeden odczyt po push, wynik w Checks PR i podsumowaniu sesji. Według właściciela poprzednie E2E anulowano po 20 min instalacji Playwright/apt; przy powtórzeniu zgłosić, nie podnosić timeoutów. Automatyzacja oczekiwania na PR #18 usunięta 23.10. DoD i etap M0/M1 pozostają otwarte.
 
 Odchylenie: dodatkowe poprawki formularza i konfiguracji Next wykryte przez test przeglądarkowy; nakład niezmierzony. Bez nowego ADR, usług, kosztów, zmian SQL/OpenAPI i osłabiania zabezpieczeń. Ryzyko utraty `.env` doprecyzowane w R-19; realne uzgodnienie importu pozostaje kryterium bramy M1-A.
