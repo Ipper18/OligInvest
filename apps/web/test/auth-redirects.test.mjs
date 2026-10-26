@@ -36,7 +36,7 @@ test("completed auth pages retain the destination when rendered with a rotated s
 
 test("server gate transitions carry the original destination", async () => {
   context.me.legal.termsAcceptanceRequired = true;
-  for (const page of [signIn, totp, enrollment])
+  for (const page of [signIn, totp])
     await expect(page(props("/ustawienia"))).rejects.toThrow(
       "redirect:/akceptacja-regulaminu?returnTo=%2Fustawienia",
     );
@@ -76,6 +76,11 @@ test("server redirects apply the existing returnTo validation", async () => {
 });
 
 test("MFA challenge and one-time enrollment codes remain on their forms", async () => {
+  expect((await enrollment(props("/ustawienia"))).props).toMatchObject({
+    kind: "enable",
+    enrolled: true,
+  });
+  context.me.legal.termsAcceptanceRequired = true;
   expect((await enrollment(props("/ustawienia"))).props).toMatchObject({
     kind: "enable",
     enrolled: true,

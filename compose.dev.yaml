@@ -1,4 +1,4 @@
-# Local development only; synthetic data. See docs/07-wdrozenie/srodowisko-deweloperskie.md.
+# Local development only; demo or isolated owner profile. See docs/07-wdrozenie/srodowisko-deweloperskie.md.
 name: oliginvest-dev
 
 services:

@@ -3,11 +3,15 @@ import { fileURLToPath } from "node:url";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
 import pg from "pg";
+import { requireDevelopment } from "../../../scripts/dev-local.mjs";
 import { seedDevelopment } from "./seed-development.mjs";
 
 export async function prepareDevelopment(dev, env) {
   if (!["development", "test"].includes(env.NODE_ENV) || env.DB_NAME !== "oliginvest_dev")
     throw new Error("Development database required");
+  if (dev.DEV_PROFILE && !["demo", "owner"].includes(dev.DEV_PROFILE))
+    throw new Error("Invalid development profile");
+  if (dev.DEV_PROFILE || dev.DEV_DEMO_PASSWORD) requireDevelopment(env);
   const client = new pg.Client({
     host: env.DB_HOST,
     port: Number(env.DB_PORT),
@@ -33,7 +37,8 @@ export async function prepareDevelopment(dev, env) {
       EXECUTE format('ALTER ROLE oliginvest_auth PASSWORD %L', current_setting('oliginvest_dev.auth_password'));
       EXECUTE format('ALTER ROLE oliginvest_analytics_ro PASSWORD %L', current_setting('oliginvest_dev.analytics_password'));
     END $$`);
-    await seedDevelopment(client, env.NODE_ENV);
+    if (dev.DEV_PROFILE !== "owner")
+      await seedDevelopment(client, env.NODE_ENV, undefined, dev.DEV_DEMO_PASSWORD);
   } finally {
     await client.end();
   }

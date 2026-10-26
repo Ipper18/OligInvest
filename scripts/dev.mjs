@@ -6,6 +6,15 @@ import { isIP } from "node:net";
 import { resolve } from "node:path";
 import { parseEnv } from "node:util";
 import { prepareDevelopment } from "../packages/db/scripts/prepare-development.mjs";
+import { childEnvironment } from "./dev-environment.mjs";
+import {
+  createDevelopmentOwner,
+  DevelopmentError,
+  developmentOptions,
+  developmentProfile,
+  persistDevelopmentSecrets,
+  requireOwnerTerminal,
+} from "./dev-local.mjs";
 import {
   applicationEnvironment,
   compose,
@@ -13,15 +22,13 @@ import {
   repository,
   run,
 } from "./dev-services.mjs";
-import { childEnvironment } from "./dev-environment.mjs";
 import { testMailpit } from "./test-mailpit.mjs";
 
-const checking = process.argv[2] === "--check";
-if (process.argv.length > (checking ? 3 : 2)) throw new Error("Unexpected arguments");
+const options = developmentOptions(process.argv.slice(2));
+const checking = options.check;
 const children = [];
 let stopping = false;
 let dev;
-
 
 function start(command, args, env, service) {
   const child = spawn(command, args, {
@@ -108,6 +115,9 @@ try {
     ];
     if (new Set(passwords).size !== passwords.length)
       throw new Error("Use separate development passwords");
+    dev = developmentProfile({ ...dev, DB_NAME: dev.DB_NAME || "oliginvest_dev" });
+    if (options["create-owner"]) requireOwnerTerminal(dev);
+    dev = await persistDevelopmentSecrets(dev, resolve(repository, ".env"));
   }
   const env = applicationEnvironment(dev);
   const turbo = resolve(repository, "node_modules/turbo/bin/turbo");
@@ -128,6 +138,7 @@ try {
   );
   compose(dev, ["up", "-d", "--wait"]);
   await prepareDevelopment(dev, env);
+  if (options["create-owner"]) createDevelopmentOwner(dev, env, options, repository);
   process.once("SIGINT", () => {
     void stop();
   });
@@ -182,9 +193,11 @@ try {
   }
 } catch (error) {
   console.error(
-    checking
+    checking || error instanceof DevelopmentError
       ? error.message
-      : "Development startup failed; check local configuration and .git/m0-workers logs.",
+      : error.code === "VALIDATION_FAILED"
+        ? "Demo password rejected by the application password policy; update DEV_DEMO_PASSWORD."
+        : "Development startup failed; check local configuration and .git/m0-workers logs.",
   );
   process.exitCode = 1;
   await stop();
