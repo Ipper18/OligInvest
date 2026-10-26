@@ -1,4 +1,5 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import "./generate-education.mjs";
 
 const root = new URL("../", import.meta.url);
 const definitions = [];

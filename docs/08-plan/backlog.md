@@ -86,6 +86,8 @@ M0-3, 2026-10-02: właściciel zatwierdził decyzje BL-030/031; kalibracja Argon
 
 ### 1.1 Postęp i odchylenia
 
+- **2026-10-23, BL-034/102/122:** trwałe lokalne klucze, opcjonalne hasło demo, izolowany owner i TTY CLI; dodatkowo bezpieczne wysyłanie formularzy i lokalny gateway Next. Testy PostgreSQL/restartu i logowania Chromium PASS; status BL-034 nadal `w toku` do CI/DoD. Estymacja bez zmian, dodatkowy nakład niezmierzony. [Raport](dev-local-accounts-session-report.md), [PR #22](https://github.com/Ipper18/OligInvest/pull/22).
+
 - **2026-10-01, M0-2 / BL-018/020–023/030/031:** implementacja i lokalne testy zakończone: 9 obrazów, izolacja sekretów/sieci, kopia pgBackRest, 36/36 E2E, skan obrazów PASS według CI §5, testy wdrożenia i spiki 3 przeglądarek. R-27 rozstrzygnięte i potwierdzone testami. Statusy `w toku` do końcowego CI i wspólnego DoD; spiki wymagają decyzji właściciela, Argon2id także pomiaru na VM. Estymacje bez zmian, nakład niezmierzony; dodatkowa naprawa pakietów bazowych oraz Caddy, R-28. [Raport](m0-2-session-report.md), [instrukcja właściciela](../07-wdrozenie/m0-2-owner-runbook.md).
 
 - **2026-10-01, M0-2 / BL-022:** analiza konfiguracji ujawniła konflikt sekretów root/0600 z kontenerami non-root. Lokalna reprodukcja Compose potwierdzona; [propozycja korekty INF](m0-2-secret-permissions.md) oczekuje na decyzję właściciela (AGENTS §2.5). Implementacja paczki wstrzymana; R-27, estymacje bez zmian, nakład niezmierzony. [Stan M0-2](m0-2-session-report.md).
@@ -205,21 +207,21 @@ Brama A (**[A]**) — MVP właściciela; brama B (**[B]**) — funkcje wymagane 
 | ID | Zadanie | Wymagania | Dokumenty | Zależy od | d | Status |
 |---|---|---|---|---|---|---|
 | BL-201 | `packages/core`: SMA, EMA, wstęgi Bollingera, RSI, MACD, ATR — zgodność z TA-Lib (wektor E, 1e-8) | FR-01.05, NFR-08.02 | OBL, VEC | BL-141 | 3 | w toku |
-| BL-202 | `getInstrumentIndicators`, nakładki i panele na wykresie, parametry wskaźników | FR-01.05 | API, [ADR-009](../09-decyzje/ADR-009-wykresy.md) | BL-201, BL-138 | 2 | todo |
-| BL-203 | Wyjaśnienia kontekstowe `<Explainer/>` (klucze i treści MDX modułu `education`) dla wskaźników i metryk MVP; test pokrycia kluczy | FR-01.07, FR-06.02, NFR-06.03 | DS, MOD | BL-202 | 2 | todo |
-| BL-204 | Glosariusz: indeks statyczny, wyszukiwanie po fragmencie i synonimie, pierwsze 30 haseł ze słownika pojęć | FR-06.03 | EKR, SLOW | BL-203 | 2 | todo |
-| BL-205 | Watchlisty: listy, kolejność, notatki, ekran z kursami | FR-01.08 | API, EKR | BL-137 | 2 | todo |
+| BL-202 | `getInstrumentIndicators`, nakładki i panele na wykresie, parametry wskaźników | FR-01.05 | API, [ADR-009](../09-decyzje/ADR-009-wykresy.md) | BL-201, BL-138 | 2 | w toku — PR #17; implementacja i lokalne testy PASS; nakład niezmierzony |
+| BL-203 | Wyjaśnienia kontekstowe `<Explainer/>` (klucze i treści MDX modułu `education`) dla wskaźników i metryk MVP; test pokrycia kluczy | FR-01.07, FR-06.02, NFR-06.03 | DS, MOD | BL-202 | 2 | w toku — PR #17; implementacja i lokalne testy PASS; nakład niezmierzony |
+| BL-204 | Glosariusz: indeks statyczny, wyszukiwanie po fragmencie i synonimie, pierwsze 30 haseł ze słownika pojęć | FR-06.03 | EKR, SLOW | BL-203 | 2 | w toku — PR #17; implementacja i lokalne testy PASS; nakład niezmierzony |
+| BL-205 | Watchlisty: listy, kolejność, notatki, ekran z kursami | FR-01.08 | API, EKR | BL-137 | 2 | w toku — PR #17; API/UI i RLS PASS; pomiar renderowania 50 pozycji do odbioru; nakład niezmierzony |
 | BL-206 | Indeksy i benchmarki (WIG20, WIG, mWIG40, sWIG80, S&P 500, Nasdaq-100 i ETF-y): backfill ≥ 5 lat, `listBenchmarks`, ekran `/rynek` | FR-01.09 | SRC, EKR | BL-134 | 2 | w toku (Claude Code, `feat/m2-market-backend`, [PR #15](https://github.com/Ipper18/OligInvest/pull/15); backend — ekran `/rynek` i oznaczenia UI u Codex; nakład/odchylenie niezmierzone) |
-| BL-207 | Klasyfikacja instrumentów (klasa, sektor, kraj, waluta) z nadpisaniami; `getAllocation` i ekran alokacji | FR-02.05 | API, EKR | BL-146 | 3 | todo |
+| BL-207 | Klasyfikacja instrumentów (klasa, sektor, kraj, waluta) z nadpisaniami; `getAllocation` i ekran alokacji | FR-02.05 | API, EKR | BL-146 | 3 | w toku — PR #17: UI według OpenAPI; backend i integracja osobna sesja (decyzja właściciela); nakład niezmierzony |
 | BL-208 | Import mBank eMakler (historia transakcji i finansowa, Windows-1250, mapowanie po nazwie) | FR-03.02 | IMP | BL-145 | 3 | w toku — czeka na odbiór właściciela: realny eksport mBank i akceptacja 415/propagacji mapowania |
 | BL-209 | Pełna kontrola jakości danych: reguły BLOCK/WARN/INFO, `data_quality_issues`, oznaczenia w UI, blokada analiz | NFR-08.04, NFR-09.02 | OBL | BL-139 | 1,5 | w toku (Claude Code, `feat/m2-market-backend`, [PR #15](https://github.com/Ipper18/OligInvest/pull/15); backend — ekran `/rynek` i oznaczenia UI u Codex; nakład/odchylenie niezmierzone) |
 | BL-210 | Zapasowe adaptery USA: Finnhub, Twelve Data, Alpha Vantage — kwoty, testy kontraktowe na zapisanych odpowiedziach | NFR-02.04, NFR-09.02 | SRC, CACHE | BL-131 | 2 | todo |
 | BL-211 | Preferencje: metoda kosztu (FIFO/średnia), ustawienia widoku podatkowego (dzień przychodu, marża przewalutowania w koszcie — przelicza widok podatkowy), strefa czasowa, język; synchronizacja między urządzeniami | FR-07.08 | API | BL-113 | 1 | todo |
 | BL-212 | Test opóźnienia SSE < 2 s p95 i wznowienia z `Last-Event-ID` | NFR-01.06 | RT, [ADR-007](../09-decyzje/ADR-007-sse-zamiast-websocket.md) | BL-125 | 1 | todo |
 | BL-213 | Raport kompletności EOD GPW (weryfikacja ADR-005 przez 20 sesji) | NFR-09.02 | [ADR-005](../09-decyzje/ADR-005-strategia-danych-rynkowych.md) | BL-133 | 0,5 | w toku (Claude Code, `feat/m2-market-backend`, [PR #15](https://github.com/Ipper18/OligInvest/pull/15); backend — ekran `/rynek` i oznaczenia UI u Codex; nakład/odchylenie niezmierzone) |
-| BL-214 | Ekran kursów walut `/rynek/waluty` z historią NBP | FR-01.14 | EKR | BL-132 | 1 | todo |
+| BL-214 | Ekran kursów walut `/rynek/waluty` z historią NBP | FR-01.14 | EKR | BL-132 | 1 | w toku — PR #17; implementacja i lokalne testy PASS; nakład niezmierzony |
 | BL-215 | Limity per rola w `platform` (np. liczba analiz dziennie), `429` z czasem odnowienia | FR-08.03 | MOD, KONW | BL-131 | 1,5 | todo |
-| BL-216 | Onboarding przy pierwszym logowaniu (driver.js ładowany leniwie, pomijalny i powtarzalny, dostępny z klawiatury; treść z samouczków § 2) | FR-06.01 | A11Y, PERF, USR | BL-203 | 2 | todo |
+| BL-216 | Onboarding przy pierwszym logowaniu (driver.js ładowany leniwie, pomijalny i powtarzalny, dostępny z klawiatury; treść z samouczków § 2) | FR-06.01 | A11Y, PERF, USR | BL-203 | 2 | w toku — PR #17; zapis per użytkownik, klawiatura i budżety PASS; nakład niezmierzony |
 | | **Suma etapu** | | | | **29,5** | |
 
 ## 4. M3 — Wyniki historyczne i analizy scenariuszowe (P1)
@@ -229,7 +231,7 @@ M3 nie zależy od M4 (etapy mogą iść równolegle).
 | ID | Zadanie | Wymagania | Dokumenty | Zależy od | d | Status |
 |---|---|---|---|---|---|---|
 | BL-301 | `packages/core`: TWR (metoda łańcuchowa) i XIRR, okresy, waluta stopy — wektor B | FR-03.06, NFR-08.02 | OBL, VEC | BL-143 | 3 | todo (rdzeń w `packages/core`, PR `feat/m1-core-engine`) |
-| BL-302 | Wyceny dzienne i historia wartości (`valuations_daily`, `cash_balances_daily`), `getPortfolioHistory`, wykres uPlot ładowany leniwie | FR-02.10 | OBL, [ADR-009](../09-decyzje/ADR-009-wykresy.md) | BL-146 | 3 | todo |
+| BL-302 | Wyceny dzienne i historia wartości (`valuations_daily`, `cash_balances_daily`), `getPortfolioHistory`, wykres uPlot ładowany leniwie | FR-02.10 | OBL, [ADR-009](../09-decyzje/ADR-009-wykresy.md) | BL-146 | 3 | w toku (Claude Code, `feat/m3-analytics-backend`; backend: migracja luk `NULL`, `portfolioHistory`, `getPortfolioHistory` — wykres uPlot u Codex; nakład niezmierzony) |
 | BL-303 | `getPerformance` i ekran wyników (TWR, XIRR, okresy, P/L zrealizowany); zmiana OpenAPI: `ReturnFigures.xirrStatus` += `period_too_short` (okres < 30 dni, § 6.3; decyzja właściciela 2026-09-24, rdzeń już ją zwraca) | FR-03.06 | EKR | BL-301, BL-302 | 2 | todo |
 | BL-304 | Benchmark: TWR portfela kontra indeks i symulacja „te same przepływy” | FR-03.07 | OBL | BL-303, BL-206 | 2 | todo |
 | BL-305 | Obsunięcia i wykres „underwater” — wektor C | FR-03.09 | OBL, VEC | BL-302 | 1,5 | todo (rdzeń w `packages/core`, PR `feat/m1-core-engine`) |
@@ -239,20 +241,25 @@ M3 nie zależy od M4 (etapy mogą iść równolegle).
 | BL-309 | Dziennik transakcji i postmortem | FR-03.11 | API, EKR | BL-144 | 2 | todo |
 | BL-310 | Eksport transakcji, pozycji i wyników (CSV/JSON) z neutralizacją formuł i linią `export`; test eksport → import | FR-03.13 | SEC, LAW | BL-144 | 1,5 | todo |
 | BL-311 | Worker `analytics`: kontrakty zadań (JSON Schema z Zod), walidacja `jsonschema`, rola `analytics_ro`, sieć bez wyjścia, limity CPU/RAM/czasu, testy izolacji | NFR-03.13, NFR-01.07 | [ADR-003](../09-decyzje/ADR-003-hybryda-obliczen-i-kolejki.md), INF | BL-014, BL-022 | 3 | gotowe (nakład niezmierzony) |
-| BL-312 | Moduł `analytics`: uruchomienia, postęp i wynik przez SSE, limity roli, anulowanie, zapis wyników w kontekście RLS | FR-04.01, NFR-01.07 | API, MOD | BL-311, BL-125 | 3 | todo |
-| BL-313 | Monte Carlo: bootstrap stacjonarny i t-Student, proxy klas aktywów, przepływy, inflacja, podatek; wachlarz, P(cel), rozkład obsunięć, tabela wrażliwości, ziarno | FR-04.02, NFR-08.05 | OBL | BL-312 | 5 | todo |
-| BL-314 | Ekran wyników analiz: rozkłady, „jak czytać”, blok założeń, disclaimer, dane do odtworzenia | FR-04.01, FR-06.06 | EKR, LAW | BL-313 | 2 | todo |
+| BL-312 | Moduł `analytics`: uruchomienia, postęp i wynik przez SSE, limity roli, anulowanie, zapis wyników w kontekście RLS | FR-04.01, NFR-01.07 | API, MOD | BL-311, BL-125 | 3 | w toku (Claude Code, `feat/m3-analytics-backend`; właściciel z rekordu przez `analytics.run_owner`; nakład niezmierzony) |
+| BL-313 | Monte Carlo: bootstrap stacjonarny i t-Student, proxy klas aktywów, przepływy, inflacja, podatek; wachlarz, P(cel), rozkład obsunięć, tabela wrażliwości, ziarno | FR-04.02, NFR-08.05 | OBL | BL-312 | 5 | gotowe (Claude Code, [PR #19](https://github.com/Ipper18/OligInvest/pull/19); ograniczenia M3 zaakceptowane przez właściciela 2026-10-21 — długość bloku w założeniach i ≥ 2 wiersze `block_length` w tabeli wrażliwości, jawna informacja o braku testów kryzysowych BL-556; nakład niezmierzony) |
+| BL-314 | Ekran wyników analiz: rozkłady, „jak czytać”, blok założeń, disclaimer, dane do odtworzenia; Monte Carlo: widoczna informacja o niedostępnych testach kryzysowych (BL-556, ostrzeżenie `CRISIS_TESTS_UNAVAILABLE`) i wiersze wrażliwości `block_length` z długością bloku (warunek właściciela 2026-10-21) | FR-04.01, FR-06.06 | EKR, LAW | BL-313 | 2 | todo |
 | BL-315 | Kalkulator rebalancingu: alokacje docelowe, tryby `full` i `buy_only`, koszty, szacowany podatek, blokada przy nieuzgodnionych danych — wektor H; przyszła opcja: `buy_only` z wolnej gotówki na rachunku (nie tylko nowej) | FR-04.06 | OBL, VEC, LAW | BL-143, BL-207 | 3 | todo (rdzeń § 12.5 w `packages/core`, PR #3) |
 | BL-316 | Bramkowanie roli `pro` dla analiz ciężkich, komunikaty w UI | FR-07.06 | MOD | BL-312 | 1 | todo |
 | BL-317 | Wektory B–D w pytest kontra empyrical-reloaded | NFR-02.06, NFR-08.02 | OBL | BL-311 | 1 | gotowe (nakład niezmierzony) |
-| BL-318 | Przegląd metodologiczny Monte Carlo i rebalancingu (checklisty z AGENTS.md) zapisany w PR | NFR-07.02 | LAW, OBL | BL-314, BL-315 | 0,5 | todo |
-| BL-319 | Stopa wolna od ryzyka: FRED `DGS3MO` i szereg stopy referencyjnej NBP wpisywany przez admina | FR-03.10 | OBL, SRC | BL-131 | 1 | todo |
+| BL-318 | Przegląd metodologiczny Monte Carlo i rebalancingu (checklisty z AGENTS.md) zapisany w PR | NFR-07.02 | LAW, OBL | BL-314, BL-315 | 0,5 | w toku (część Monte Carlo w [PR #19](https://github.com/Ipper18/OligInvest/pull/19), 2026-10-20; rebalancing po BL-315) |
+| BL-319 | Stopa wolna od ryzyka: FRED `DGS3MO` i szereg stopy referencyjnej NBP wpisywany przez admina | FR-03.10 | OBL, SRC | BL-131 | 1 | w toku (Claude Code, `feat/m3-analytics-backend`; `market.macro` + `oli-admin risk-free-rate` + `riskFreeRateOn`; klucz `FRED_API_KEY` zakłada właściciel; nakład niezmierzony) |
 | | **Suma etapu** | | | | **38,5** | |
 
 ### 4.1 Postęp i odchylenia
 
 - **2026-10-19, BL-311:** kontrakty zadań `analytics` (Zod → JSON Schema w paczce workera, kontrola aktualności w CI), walidacja `jsonschema` przed przetwarzaniem, limity Z-19, limity czasu per typ (proces potomny bez sekretów), wynik `failed` do `analytics-results`; sonda izolacji na obrazach produkcyjnych (egress, macierz `analytics_ro`). Kontrakt: [moduly.md § 5.2.1](../01-architektura/moduly.md). Decyzje właściciela: limity czasu `goal`/`stress_test`/`what_if`, wyjątek licencyjny numpy/Zlib, wykluczenie `peewee`. [Stan](m3-analytics-worker-session-report.md).
 - **2026-10-19, BL-317:** wektory B–D kontra empyrical-reloaded 0.5.12 (dev) w pytest, tolerancje § 0.5; XIRR, korelacja i VaR parametryczny z definicji (scipy/numpy), bo empyrical ich nie ma.
+- **2026-10-20, BL-302:** luki wycen jako `NULL` (migracja 0007, decyzja właściciela), przepływy per rachunek i dzień, `portfolioHistory` w `packages/core`, `GET /portfolio/history`; wykres uPlot u Codex. [Stan](m3-analytics-backend-session-report.md).
+- **2026-10-20, BL-319:** FRED `DGS3MO` (`market.macro`, 06:00), stopa NBP przez `oli-admin risk-free-rate` z audytem, `riskFreeRateOn`; G-10 rozstrzygnięte.
+- **2026-10-20, BL-312:** trasy `/analytics/*` zgodne z OpenAPI, limity roli, idempotencja, anulowanie; właściciel z `analytics_runs.user_id` przez `analytics.run_owner` (migracja 0008), zapis wyników i postępu w RLS właściciela, SSE.
+- **2026-10-20, BL-313/BL-318:** Monte Carlo w workerze (bootstrap stacjonarny, t-Student, przepływy, inflacja, podatek, wrażliwość), `DATA_QUALITY_HOLD`, pełny backfill WIG i S&P 500; przegląd `strategy-critique` (MEDIUM) i `backtest-review` (FIX) w PR #19.
+- **2026-10-21, BL-313:** decyzje właściciela wdrożone (backfill tabel A NBP od 2002, proxy `^SP500TR` z zapasem `^GSPC`, `annualCostRate`, wiersze `block_length`, informacja o braku testów kryzysowych); ograniczenia M3 zaakceptowane — `gotowe`.
 
 ## 5. M4 — Alerty, PWA i Skróty
 

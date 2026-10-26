@@ -10,6 +10,17 @@ Powiązane: [`samouczki.md`](samouczki.md) (nauka krok po kroku), [`regulamin.md
 
 ## 1. Pierwsze kroki
 
+Przewodnik można pominąć przyciskiem „Pomiń” lub klawiszem Esc, a potem uruchomić
+ponownie w zakładce **Nauka**. Przyciski obsługuje się Tab i Enter; zapis postępu
+dotyczy Twojego konta. W **Nauka → Słownik pojęć** wyszukasz również synonimy.
+Przycisk „?” przy wskaźniku lub metryce otwiera krótkie objaśnienie; Esc je zamyka.
+
+W **Rynek** znajdziesz benchmarki, watchlisty oraz historię kursów USD i EUR do PLN
+w **Waluty**. Czytaj źródło, czas i opóźnienie obok wartości; ostrzeżenia WARN/BLOCK
+opisują jakość danych. W karcie instrumentu „Pokaż wskaźniki” udostępnia parametry
+i tabelę wartości. Ekran **Portfel → Alokacja** oczekuje jeszcze na uruchomienie
+usługi alokacji i zapisu klasyfikacji; jego pola są do tego czasu nieaktywne.
+
 1. **Zaproszenie.** Dostajesz e-mail z linkiem ważnym 72 godziny. Link działa raz.
 2. **Rejestracja.** Podaj nazwę i hasło (co najmniej 12 znaków; najlepiej fraza z kilku słów — menedżer haseł bardzo pomaga). Zaakceptuj regulamin i potwierdź zapoznanie się z informacją o danych. Zgoda na anonimowe pomiary wydajności jest dobrowolna.
 3. **Weryfikacja dwuetapowa (obowiązkowa).** Zeskanuj kod QR w aplikacji do kodów jednorazowych (np. wbudowane Hasła w iOS, Google Authenticator, 2FAS, Aegis) i wpisz 6-cyfrowy kod.

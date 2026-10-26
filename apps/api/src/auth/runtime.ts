@@ -1,5 +1,7 @@
 import type { ServiceConfig } from "@oliginvest/config";
 import {
+  type AnalyticsJob,
+  analyticsCancelKey,
   authMailSchema,
   authSecurityEventSchema,
   invitationMailSchema,
@@ -158,6 +160,27 @@ export function createAuthRuntime(
       reason: "transactions" | "import";
     }) => {
       await enqueuePortfolioRecompute(queue("recompute"), payload);
+    },
+    // BL-312: jobId = runId; results come back through analytics-results (ADR-003).
+    analyticsQueue: {
+      enqueue: async (job: AnalyticsJob) => {
+        await queue("analytics").add(job.type, job, {
+          jobId: job.runId,
+          attempts: 1,
+          removeOnComplete: { age: 86400 },
+          removeOnFail: { age: 604800 },
+        });
+      },
+      remove: async (runId: string) => {
+        const job = await queue("analytics").getJob(runId);
+        if (!job || !(await job.isWaiting())) return false;
+        await job.remove();
+        return true;
+      },
+      requestCancel: async (runId: string) => {
+        const client = await queue("analytics").getBackend().client;
+        await client.runCommand("set", [analyticsCancelKey(runId), "1", "EX", "3600"]);
+      },
     },
     enqueueMarketSearch: async (query: string) => {
       const { createHash } = await import("node:crypto");

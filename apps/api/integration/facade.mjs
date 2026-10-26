@@ -759,6 +759,37 @@ export async function testAuthFacade(settings) {
       () => cli({ command: "flag", key: "module.identity", action: "off" }),
       "FORBIDDEN",
     );
+    // BL-319: NBP reference rate entered by the administrator, audited, stored in percent.
+    await cli({ command: "risk-free-rate", effective: "2025-07-03", rate: "0.05" });
+    await cli({ command: "risk-free-rate", effective: "2025-07-03", rate: "0.0475" });
+    for (const rate of ["5", "0.51", "-0.01", "0.0000001"])
+      await denied(
+        () => cli({ command: "risk-free-rate", effective: "2025-07-03", rate }),
+        "VALIDATION_FAILED",
+      );
+    await denied(
+      () => cli({ command: "risk-free-rate", effective: "2099-01-01", rate: "0.05" }),
+      "VALIDATION_FAILED",
+    );
+    const riskFree = await appDatabase.transaction({ userId: null, role: "system" }, (tx) =>
+      tx.execute(
+        sql`SELECT s.source,s.frequency,o.value::text FROM market.macro_observations o JOIN market.macro_series s ON s.id=o.series_id WHERE s.code='NBP:REF_RATE'`,
+      ),
+    );
+    assert.deepEqual(riskFree.rows, [{ source: "admin", frequency: "event", value: "4.75000000" }]);
+    const rateAudit = await appDatabase.transaction({ userId: ownerId, role: "admin" }, (tx) =>
+      tx.execute(
+        sql`SELECT before,after FROM platform.audit_log WHERE action='cli.risk-free-rate' AND outcome='success' ORDER BY occurred_at DESC LIMIT 1`,
+      ),
+    );
+    assert.deepEqual(rateAudit.rows[0], {
+      before: { ratePercent: "5", effectiveDate: "2025-07-03" },
+      after: {
+        ratePercent: "4.75",
+        effectiveDate: "2025-07-03",
+        reason: "Synthetic integration test",
+      },
+    });
     await cli({ command: "queues", action: "pause", queue: "notify" });
     await cli({ command: "queues", action: "resume", queue: "notify" });
     assert.deepEqual(queueActions, [

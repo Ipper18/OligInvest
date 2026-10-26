@@ -38,6 +38,7 @@ export function AuthForm({
   privacyVersion?: string;
 }) {
   const [busy, setBusy] = useState(false),
+    [ready, setReady] = useState(false),
     [error, setError] = useState<Extract<ActionResult, { ok: false }> | null>(null),
     [message, setMessage] = useState("");
   const [token, setToken] = useState(""),
@@ -48,6 +49,7 @@ export function AuthForm({
   const summary = useRef<HTMLDivElement>(null),
     fragmentRead = useRef(false);
   const search = useSearchParams();
+  useEffect(() => setReady(true), []);
   useEffect(() => {
     if (error) summary.current?.focus();
   }, [error]);
@@ -251,7 +253,7 @@ export function AuthForm({
         </div>
       )}
       {!verified && (
-        <form onSubmit={submit} aria-busy={busy} className="oi-form">
+        <form method="post" onSubmit={submit} aria-busy={busy} className="oi-form">
           {kind === "register" && (
             <TextField
               id="name"
@@ -348,7 +350,7 @@ export function AuthForm({
           )}
           <Button
             type="submit"
-            disabled={busy || (["register", "reset"].includes(kind) && !validToken)}
+            disabled={!ready || busy || (["register", "reset"].includes(kind) && !validToken)}
           >
             {busy
               ? t.pending

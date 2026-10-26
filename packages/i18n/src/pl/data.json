@@ -1,4 +1,8 @@
 {
+  "quality": {
+    "WARN": "WARN — ostrzeżenie o jakości danych",
+    "BLOCK": "BLOCK — dane wyłączone z analiz"
+  },
   "delayed": "{time} · opóźnione ok. {minutes} min · {source}",
   "eod": "zamknięcie {date} · {source}",
   "fx": "kurs średni NBP z {date} (tabela A)",

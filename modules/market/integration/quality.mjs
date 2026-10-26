@@ -91,8 +91,21 @@ export async function testMarketQualityStorage(settings) {
       [["2031-03-05", "gap", "WARN", "open"]],
     );
     assert.equal(await repository.analysisEligible(context, gapped), true, "WARN never blocks");
+    assert.equal((await repository.quotes(context, [gapped]))[0].meta.qualityStatus, "WARN");
+    const chartOptions = {
+      interval: "1d",
+      maxPoints: 50,
+      adjusted: true,
+      from: SESSIONS[0],
+      to: SESSIONS[4],
+    };
+    assert.equal(
+      (await repository.chart(context, gapped, chartOptions)).meta.qualityStatus,
+      "WARN",
+    );
     await repository.saveBars([bar(gapped, "2031-03-05", "10.15")]);
     const [closed] = await issues(gapped);
+    assert.equal((await repository.quotes(context, [gapped]))[0].meta.qualityStatus, undefined);
     assert.equal(closed.status, "resolved");
     assert.equal(closed.details.resolution, "bar_received");
 
@@ -148,6 +161,11 @@ export async function testMarketQualityStorage(settings) {
     const quote = (await repository.quotes(context, [split]))[0];
     assert.equal(quote.price, "100.00000000", "A BLOCK keeps prices visible");
     assert.equal(quote.meta.staleReason, "data_quality_hold");
+    assert.equal(quote.meta.qualityStatus, "BLOCK");
+    assert.equal(
+      (await repository.chart(context, split, chartOptions)).meta.qualityStatus,
+      "BLOCK",
+    );
 
     // GPW archive: a missing session becomes a gap; a new ISIN under a listed short name and a
     // currency drift are BLOCKs on the affected series.

@@ -15,6 +15,8 @@ const HOSTS = new Set([
   "www.gpw.pl",
   // Chart and search only; no cookie or crumb hosts (BL-159).
   "query2.finance.yahoo.com",
+  // FRED series observations (BL-319); the API key is a query parameter by design of the API.
+  "api.stlouisfed.org",
 ]);
 export function createProviderFetch(
   userAgent: string,

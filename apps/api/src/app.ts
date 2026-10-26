@@ -1,4 +1,5 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
+import type { AppDatabase, DatabaseContext } from "@oliginvest/db";
 import {
   type AppEnv,
   Metrics,
@@ -12,7 +13,10 @@ import { mountPreferences } from "./auth/preferences-routes.js";
 import { type AuthRouteDependencies, createAuthRouter, mountStepUp } from "./auth/routes.js";
 import { SESSION_COOKIE } from "./auth/session.js";
 import {
+  type AnalyticsDependencies,
+  analyticsModule,
   type MarketDependencies,
+  mountEducation,
   mountMarket,
   mountPortfolio,
   type PortfolioDependencies,
@@ -48,6 +52,12 @@ export function createApp(
     auth?: AuthRouteDependencies & Partial<Pick<IdentityDependencies, "administration">>;
     market?: MarketDependencies;
     portfolio?: PortfolioDependencies;
+    analytics?: AnalyticsDependencies;
+    education?: {
+      database(): AppDatabase | Promise<AppDatabase>;
+      authorize(request: Request): Promise<DatabaseContext>;
+      assertOrigin(request: Request): void | Promise<void>;
+    };
     stream?: StreamDependencies;
     recordError?: (input: unknown) => Promise<void>;
   }>,
@@ -237,9 +247,24 @@ export function createApp(
   mountAlerts(api,authDependencies);
   mountPats(api,authDependencies);
   mountQuick(api,authDependencies,options.portfolio);
+  mountEducation(
+    api,
+    options.education ?? {
+      database: () => {
+        throw new ProblemError("SERVICE_UNAVAILABLE");
+      },
+      authorize: async (request: Request) => {
+        const principal = await (await authDependencies.service()).requireData(request);
+        return { userId: principal.user_id, role: principal.role };
+      },
+      assertOrigin: async (request: Request) =>
+        (await authDependencies.service()).assertOrigin(request),
+    },
+  );
   mountMarket(
     api,
     options.market ?? {
+      assertOrigin: async (request) => (await authDependencies.service()).assertOrigin(request),
       authorize: async (request) => {
         const principal = await (await authDependencies.service()).requireData(request);
         return { userId: principal.user_id, role: principal.role };
@@ -263,6 +288,19 @@ export function createApp(
       },
     },
   );
+  // Optional functional module: mounted only when the package is part of the build.
+  const analyticsDependencies: AnalyticsDependencies = options.analytics ?? {
+    authorize: async (request: Request) => {
+      const principal = await (await authDependencies.service()).requireData(request);
+      return { userId: principal.user_id, role: principal.role };
+    },
+    assertOrigin: async (request: Request) =>
+      (await authDependencies.service()).assertOrigin(request),
+    repository: () => {
+      throw new ProblemError("SERVICE_UNAVAILABLE");
+    },
+  };
+  analyticsModule?.mountAnalytics(api, analyticsDependencies);
   function document() {
     const metadata = {
       openapi: "3.1.0",

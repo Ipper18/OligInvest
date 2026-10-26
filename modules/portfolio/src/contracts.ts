@@ -376,3 +376,14 @@ export const realizedResponse = object({
   }).optional(),
   taxNote: z.string().optional(),
 }).openapi("RealizedPl");
+const numberSeries = z.array(z.number().nullable());
+export const portfolioHistorySchema = object({
+  currency,
+  interval: z.enum(["1d", "1w", "1mo"]),
+  t: z.array(z.number().int()),
+  value: numberSeries,
+  netContributions: numberSeries,
+  flows: z.array(object({ date, amount: moneySchema, type: z.enum(TRANSACTION_TYPES) })).optional(),
+  decimated: z.boolean(),
+  meta: metaSchema,
+}).openapi("PortfolioHistory");

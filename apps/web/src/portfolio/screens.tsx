@@ -1,8 +1,8 @@
 "use client";
 import { formatDate, formatQuantity, portfolioMessages as m } from "@oliginvest/i18n";
 import { Disclosure } from "@oliginvest/ui";
-import { DataTable } from "@oliginvest/ui/table";
 import Link from "next/link";
+import { MetricTable as DataTable } from "../education/metric-table";
 import { Amount, Freshness, ratio, TaxDisclaimer } from "./presentation";
 import { QueryNotice, useResource } from "./query";
 import type { ReadArgs, Resource } from "./resources";

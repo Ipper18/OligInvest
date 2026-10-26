@@ -3675,6 +3675,7 @@ components:
         asOf: {$ref: '#/components/schemas/Timestamp'}
         delayMinutes: {type: integer, minimum: 0, description: 'Deklarowane opóźnienie źródła (EOD = 0 z `asOf` po sesji).'}
         stale: {type: boolean}
+        qualityStatus: {type: string, enum: [WARN, BLOCK], description: 'Najwyższy otwarty problem jakości instrumentu; BLOCK ma pierwszeństwo. Brak pola oznacza brak zgłoszonych WARN/BLOCK, nie gwarancję jakości. WARN nie blokuje analiz.'}
         staleReason: {$ref: '#/components/schemas/StaleReason'}
         attribution: {type: string, maxLength: 200, description: 'Tekst atrybucji źródła (NFR-07.03).'}
     PageInfo:
@@ -5834,6 +5835,7 @@ components:
         withdrawals: {type: array, maxItems: 10, items: {$ref: '#/components/schemas/CashFlowPlan'}}
         inflationRate: {type: number, minimum: 0, maximum: 0.2, default: 0.025}
         taxMode: {type: string, enum: [belka_simplified, none], default: belka_simplified}
+        annualCostRate: {type: number, minimum: 0, maximum: 0.05, default: 0, description: 'Roczny koszt (TER + przewalutowanie) jako ułamek, odejmowany od wartości raz w roku; prowizje transakcyjne poza modelem.'}
         goal: {$ref: '#/components/schemas/Money'}
         proxyOverrides:
           type: array
@@ -6091,7 +6093,9 @@ components:
             type: object
             required: [scenario, endValueP50, endValueP5]
             properties:
-              scenario: {type: string, enum: [mean_minus_2pp, mean_plus_2pp, last_10y, full_history]}
+              scenario: {type: string, enum: [mean_minus_2pp, mean_plus_2pp, last_10y, full_history, block_length]}
+              meanBlockMonths: {type: integer, minimum: 1, maximum: 24, description: 'Tylko `block_length`: średnia długość bloku bootstrapu stacjonarnego w tym wierszu.'}
+              annualCostRate: {type: number, description: 'Roczny koszt przyjęty w scenariuszu (ułamek).'}
               endValueP5: {type: number}
               endValueP50: {type: number}
               goalProbability: {type: [number, 'null']}
@@ -6316,7 +6320,7 @@ components:
           type: object
           required: [code, message]
           properties:
-            code: {type: string, enum: [TIMEOUT, MEMORY_LIMIT, INSUFFICIENT_DATA, COVERAGE_TOO_LOW, INVALID_PARAMS, INTERNAL]}
+            code: {type: string, enum: [TIMEOUT, MEMORY_LIMIT, INSUFFICIENT_DATA, COVERAGE_TOO_LOW, INVALID_PARAMS, INTERNAL, DATA_QUALITY_HOLD], description: '`DATA_QUALITY_HOLD` — otwarte zgłoszenie BLOCK na serii wejściowej (obliczenia-finansowe.md § 14).'}
             message: {type: string}
         createdAt: {$ref: '#/components/schemas/Timestamp'}
         startedAt: {$ref: '#/components/schemas/Timestamp'}

@@ -34,3 +34,13 @@ CREATE FUNCTION identity.consume_invitation(p_token_hash text, p_user_id uuid)
       RETURNING 1)
     SELECT EXISTS (SELECT 1 FROM u)
   $$;
+
+-- Właściciel uruchomienia analizy (BL-312): jobs dostaje z kolejki wyłącznie runId i odczytuje user_id
+-- z rekordu tą funkcją (tylko kontekst system), a wynik zapisuje już w kontekście RLS właściciela.
+CREATE FUNCTION analytics.run_owner(p_run_id uuid)
+  RETURNS uuid
+  LANGUAGE sql STABLE SECURITY DEFINER SET search_path = pg_catalog, analytics
+  AS $$
+    SELECT r.user_id FROM analytics.analytics_runs r
+    WHERE r.id = p_run_id AND platform.current_app_role() = 'system'
+  $$;

@@ -1,0 +1,572 @@
+[
+  {
+    "key": "akcja",
+    "term": "Akcja",
+    "synonyms": ["share", "stock"],
+    "formula": "4",
+    "href": "/rynek",
+    "definition": "Udział w spółce notowanej na giełdzie.",
+    "reading": "Cena opisuje wartość jednej akcji w walucie notowania.",
+    "pitfalls": "Cena może spaść, a dywidenda nie jest gwarantowana."
+  },
+  {
+    "key": "alokacja",
+    "term": "Alokacja",
+    "synonyms": ["udział", "weight", "ekspozycja"],
+    "formula": "4",
+    "href": "/portfel",
+    "definition": "Podział wartości portfela według wybranego wymiaru.",
+    "reading": "Udziały odnoszą się do tej samej bazy wyceny.",
+    "pitfalls": "Waluta notowania ETF nie opisuje wszystkich walut jego aktywów."
+  },
+  {
+    "key": "atr",
+    "term": "ATR",
+    "synonyms": ["average true range"],
+    "formula": "9",
+    "href": "/rynek",
+    "definition": "Wygładzona miara zakresu wahań ceny z uwzględnieniem luk.",
+    "reading": "Wartość jest wyrażona w jednostce ceny instrumentu.",
+    "pitfalls": "Nie określa kierunku zmiany ani maksymalnej możliwej straty."
+  },
+  {
+    "key": "bb",
+    "term": "Wstęgi Bollingera",
+    "synonyms": ["bollinger bands", "pasma"],
+    "formula": "9",
+    "href": "/rynek",
+    "definition": "Średnia ceny otoczona pasmami zależnymi od historycznej zmienności.",
+    "reading": "Okres i mnożnik określają szerokość pasma.",
+    "pitfalls": "Pasmo nie jest przedziałem gwarantowanych przyszłych cen."
+  },
+  {
+    "key": "benchmark",
+    "term": "Benchmark",
+    "synonyms": ["punkt odniesienia"],
+    "formula": "4",
+    "href": "/rynek",
+    "definition": "Indeks lub ETF służący jako punkt odniesienia.",
+    "reading": "Porównanie wymaga zgodnego okresu i waluty.",
+    "pitfalls": "Inny skład i koszty ograniczają porównywalność."
+  },
+  {
+    "key": "cena",
+    "term": "Cena instrumentu",
+    "synonyms": [],
+    "formula": "5",
+    "href": "/portfel",
+    "definition": "Cena jednej jednostki instrumentu w walucie notowania.",
+    "reading": "Sprawdź źródło, czas i opóźnienie notowania.",
+    "pitfalls": "Cena nie jest wartością całej pozycji ani gwarantowaną ceną wykonania."
+  },
+  {
+    "key": "cfd",
+    "term": "CFD",
+    "synonyms": ["contract for difference"],
+    "formula": "4",
+    "href": "/rynek",
+    "definition": "Kontrakt rozliczający różnicę ceny instrumentu.",
+    "reading": "Nie oznacza własności akcji. OligInvest nie modeluje pozycji CFD.",
+    "pitfalls": "Dźwignia zwiększa zarówno możliwy zysk, jak i stratę."
+  },
+  {
+    "key": "dywidenda",
+    "term": "Dywidenda",
+    "synonyms": ["dividend"],
+    "formula": "4",
+    "href": "/rynek",
+    "definition": "Wypłata części środków spółki jej akcjonariuszom.",
+    "reading": "Kwota brutto, potrącony podatek i kwota netto mają różne znaczenie.",
+    "pitfalls": "Historyczna dywidenda nie oznacza identycznej wypłaty w przyszłości."
+  },
+  {
+    "key": "efekt-ceny",
+    "term": "Efekt ceny",
+    "synonyms": [],
+    "formula": "4",
+    "href": "/portfel",
+    "definition": "Część wyniku pozycji zagranicznej związana ze zmianą ceny instrumentu.",
+    "reading": "Razem z efektem waluty składa się na wynik w PLN według definicji obliczeń.",
+    "pitfalls": "Wynik zależy od danych partii i kursów; nie jest osobną stopą zwrotu."
+  },
+  {
+    "key": "efekt-waluty",
+    "term": "Efekt waluty",
+    "synonyms": [],
+    "formula": "4",
+    "href": "/portfel",
+    "definition": "Część wyniku pozycji zagranicznej związana ze zmianą kursu wymiany.",
+    "reading": "Uzupełnia efekt ceny do wyniku w PLN.",
+    "pitfalls": "Historyczny efekt nie określa przyszłego kierunku kursu."
+  },
+  {
+    "key": "ema",
+    "term": "EMA",
+    "synonyms": ["średnia wykładnicza"],
+    "formula": "9",
+    "href": "/rynek",
+    "definition": "Średnia nadająca większą wagę nowszym cenom.",
+    "reading": "Okres określa szybkość reakcji na zmianę ceny.",
+    "pitfalls": "Wynik zależy od rozgrzewki i przyjętego początku historii."
+  },
+  {
+    "key": "eod",
+    "term": "EOD",
+    "synonyms": ["end of day", "zamknięcie"],
+    "formula": "4",
+    "href": "/rynek",
+    "definition": "Dane dostępne po zakończeniu sesji giełdowej.",
+    "reading": "Data sesji wskazuje, którego zamknięcia dotyczą.",
+    "pitfalls": "Nie są bieżącą ceną możliwą do wykonania transakcji."
+  },
+  {
+    "key": "etf",
+    "term": "ETF",
+    "synonyms": ["fundusz indeksowy", "exchange traded fund"],
+    "formula": "4",
+    "href": "/rynek",
+    "definition": "Fundusz, którego jednostki są notowane na giełdzie.",
+    "reading": "Nazwa funduszu i jego dokumenty opisują śledzony rynek.",
+    "pitfalls": "Waluta notowania nie opisuje całego ryzyka walutowego funduszu."
+  },
+  {
+    "key": "gotowka",
+    "term": "Gotówka",
+    "synonyms": [],
+    "formula": "5",
+    "href": "/portfel",
+    "definition": "Saldo środków pieniężnych rachunku, z podaną walutą.",
+    "reading": "Saldo w walucie bazowej korzysta z kursu wymiany użytego do wyceny.",
+    "pitfalls": "Braki w historii lub kursach walut mogą uniemożliwić pełne uzgodnienie salda."
+  },
+  {
+    "key": "gpw",
+    "term": "GPW",
+    "synonyms": ["giełda warszawska", "XWAR"],
+    "formula": "4",
+    "href": "/rynek",
+    "definition": "Giełda Papierów Wartościowych w Warszawie.",
+    "reading": "Kod MIC XWAR identyfikuje rynek.",
+    "pitfalls": "Dzień kalendarzowy nie zawsze jest dniem sesji."
+  },
+  {
+    "key": "ilosc",
+    "term": "Liczba jednostek",
+    "synonyms": [],
+    "formula": "3",
+    "href": "/portfel",
+    "definition": "Liczba jednostek instrumentu w operacji, pozycji lub partii.",
+    "reading": "Ilość otwarta opisuje początek partii, a pozostała uwzględnia jej dotychczasowe zużycia.",
+    "pitfalls": "Split zmienia liczbę jednostek i koszt jednostkowy, ale sam nie zmienia łącznego kosztu."
+  },
+  {
+    "key": "indeks",
+    "term": "Indeks giełdowy",
+    "synonyms": ["index", "koszyk"],
+    "formula": "4",
+    "href": "/rynek",
+    "definition": "Miara wartości określonego koszyka instrumentów.",
+    "reading": "Zmiana indeksu opisuje zmianę tego koszyka.",
+    "pitfalls": "Indeks i fundusz śledzący indeks mogą mieć różne wyniki i koszty."
+  },
+  {
+    "key": "instrument-id",
+    "term": "Identyfikator instrumentu",
+    "synonyms": ["instrument_id", "tożsamość instrumentu"],
+    "formula": "4",
+    "href": "/rynek",
+    "definition": "Stały identyfikator instrumentu w OligInvest.",
+    "reading": "Pozwala łączyć notowania i operacje tego samego instrumentu.",
+    "pitfalls": "Zmiana symbolu nie musi oznaczać zmiany instrumentu."
+  },
+  {
+    "key": "isin",
+    "term": "ISIN",
+    "synonyms": ["identyfikator papieru"],
+    "formula": "4",
+    "href": "/rynek",
+    "definition": "Międzynarodowy identyfikator papieru wartościowego złożony z 12 znaków.",
+    "reading": "Pomaga rozpoznać instrument niezależnie od jego nazwy.",
+    "pitfalls": "Sam ISIN nie określa rynku notowań."
+  },
+  {
+    "key": "kapitalizacja",
+    "term": "Kapitalizacja",
+    "synonyms": ["market cap"],
+    "formula": "4",
+    "href": "/rynek",
+    "definition": "Wartość rynkowa wszystkich akcji spółki.",
+    "reading": "Łączy cenę akcji z ich liczbą.",
+    "pitfalls": "Nie jest kwotą gotówki posiadaną przez spółkę."
+  },
+  {
+    "key": "koszt-sredni",
+    "term": "Średni koszt jednostki",
+    "synonyms": [],
+    "formula": "3",
+    "href": "/portfel",
+    "definition": "Koszt pozostałych jednostek podzielony przez ich liczbę.",
+    "reading": "To informacyjny widok średniej ważonej; rozliczenie partii używa FIFO per rachunek.",
+    "pitfalls": "Brak kosztu nabycia jest brakiem danych, a nie zerowym kosztem."
+  },
+  {
+    "key": "koszt",
+    "term": "Koszt nabycia",
+    "synonyms": ["cost basis", "FIFO", "partia"],
+    "formula": "3",
+    "href": "/portfel",
+    "definition": "Koszt przypisany do posiadanych sztuk, z uwzględnieniem zasad rozliczenia.",
+    "reading": "FIFO przypisuje rozchód do najstarszych partii na rachunku.",
+    "pitfalls": "Nieznany koszt nie jest kosztem zerowym."
+  },
+  {
+    "key": "kurs-skorygowany",
+    "term": "Kurs skorygowany",
+    "synonyms": ["adjusted price"],
+    "formula": "4",
+    "href": "/rynek",
+    "definition": "Cena historyczna przeliczona o zdarzenia takie jak split.",
+    "reading": "Wskaźniki korzystają z cen skorygowanych o splity.",
+    "pitfalls": "Kurs skorygowany nie jest kursem rzeczywistego rozliczenia operacji."
+  },
+  {
+    "key": "macd",
+    "term": "MACD",
+    "synonyms": ["moving average convergence divergence"],
+    "formula": "9",
+    "href": "/rynek",
+    "definition": "Różnica dwóch średnich wykładniczych oraz jej wygładzenie.",
+    "reading": "Histogram pokazuje różnicę między linią MACD a jej wygładzeniem.",
+    "pitfalls": "Przecięcia opisują dane historyczne i mogą często zmieniać kierunek."
+  },
+  {
+    "key": "mic",
+    "term": "MIC",
+    "synonyms": ["market identifier code", "rynek notowań"],
+    "formula": "4",
+    "href": "/rynek",
+    "definition": "Kod identyfikujący rynek notowań.",
+    "reading": "XWAR, XNYS i XNAS oznaczają różne rynki.",
+    "pitfalls": "Ten sam instrument może być notowany na więcej niż jednym rynku."
+  },
+  {
+    "key": "newconnect",
+    "term": "NewConnect",
+    "synonyms": ["alternatywny system obrotu"],
+    "formula": "4",
+    "href": "/rynek",
+    "definition": "Alternatywny system obrotu prowadzony przez GPW.",
+    "reading": "To odrębny segment rynku.",
+    "pitfalls": "Mniejszy obrót może utrudniać wykonanie transakcji po widocznej cenie."
+  },
+  {
+    "key": "obrot",
+    "term": "Obrót",
+    "synonyms": ["turnover"],
+    "formula": "4",
+    "href": "/rynek",
+    "definition": "Wartość transakcji w danym okresie.",
+    "reading": "Zawsze ma jednostkę pieniężną.",
+    "pitfalls": "Nie jest tym samym co liczba sztuk, czyli wolumen."
+  },
+  {
+    "key": "ohlcv",
+    "term": "OHLCV",
+    "synonyms": ["open", "high", "low", "close", "volume"],
+    "formula": "4",
+    "href": "/rynek",
+    "definition": "Cena otwarcia, najwyższa, najniższa, zamknięcia oraz wolumen w jednym interwale.",
+    "reading": "Świeca pokazuje zakres i zmianę ceny; wolumen jest osobną wielkością.",
+    "pitfalls": "Dane dzienne nie pokazują kolejności zdarzeń wewnątrz sesji."
+  },
+  {
+    "key": "opoznienie",
+    "term": "Dane opóźnione",
+    "synonyms": ["delayed quotes", "opóźnione notowania"],
+    "formula": "4",
+    "href": "/rynek",
+    "definition": "Notowania pokazane po upływie czasu od ich rejestracji.",
+    "reading": "Etykieta podaje czas, źródło i deklarowane opóźnienie.",
+    "pitfalls": "Opóźnienie źródła i nieaktualność po awarii to różne rzeczy."
+  },
+  {
+    "key": "pl",
+    "term": "P/L",
+    "synonyms": ["wynik", "zysk", "strata"],
+    "formula": "4",
+    "href": "/portfel",
+    "definition": "Różnica wartości i kosztu dla wybranego widoku.",
+    "reading": "Znak dodatni oznacza zysk, a ujemny stratę w tym widoku.",
+    "pitfalls": "Wynik ekonomiczny i podatkowy mogą się różnić."
+  },
+  {
+    "key": "prowizja",
+    "term": "Prowizja",
+    "synonyms": ["commission", "opłata brokera"],
+    "formula": "4",
+    "href": "/rynek",
+    "definition": "Opłata pobierana za wykonanie operacji.",
+    "reading": "Wynik po kosztach uwzględnia tę opłatę.",
+    "pitfalls": "Brak prowizji nie oznacza braku spreadu i kosztów walutowych."
+  },
+  {
+    "key": "przewalutowanie",
+    "term": "Przewalutowanie",
+    "synonyms": ["currency conversion", "FX"],
+    "formula": "4",
+    "href": "/rynek",
+    "definition": "Wymiana jednej waluty na inną.",
+    "reading": "Wynik w PLN zależy także od kursu waluty.",
+    "pitfalls": "Kurs brokera może różnić się od kursu średniego NBP."
+  },
+  {
+    "key": "przychod",
+    "term": "Przychód",
+    "synonyms": [],
+    "formula": "4",
+    "href": "/portfel",
+    "definition": "Kwota uzyskana z rozliczanych operacji, według wybranego widoku.",
+    "reading": "Przychód i koszt muszą dotyczyć tego samego kompletnego zbioru operacji.",
+    "pitfalls": "Przychód sam nie jest zyskiem; uwzględnij koszt oraz ujawnione wyłączenia danych."
+  },
+  {
+    "key": "rachunek",
+    "term": "Rachunek",
+    "synonyms": ["account", "broker"],
+    "formula": "4",
+    "href": "/portfel",
+    "definition": "Rachunek maklerski odwzorowany w aplikacji.",
+    "reading": "Każdy rachunek ma walutę i typ.",
+    "pitfalls": "Partie FIFO rozlicza się odrębnie dla rachunków."
+  },
+  {
+    "key": "rsi",
+    "term": "RSI",
+    "synonyms": ["relative strength index"],
+    "formula": "9",
+    "href": "/rynek",
+    "definition": "Miara relacji historycznych wzrostów i spadków ceny.",
+    "reading": "Wartość leży na skali od 0 do 100.",
+    "pitfalls": "Sam poziom RSI nie określa przyszłego kierunku ceny."
+  },
+  {
+    "key": "sesja",
+    "term": "Sesja giełdowa",
+    "synonyms": ["trading day"],
+    "formula": "4",
+    "href": "/rynek",
+    "definition": "Okres, w którym dany rynek prowadzi notowania.",
+    "reading": "Daty wykresu wynikają z kalendarza giełdy.",
+    "pitfalls": "Święta i strefy czasowe różnią się między giełdami."
+  },
+  {
+    "key": "sma",
+    "term": "SMA",
+    "synonyms": ["średnia prosta"],
+    "formula": "9",
+    "href": "/rynek",
+    "definition": "Średnia cen zamknięcia z wybranej liczby interwałów.",
+    "reading": "Dłuższy okres silniej wygładza krótkie zmiany.",
+    "pitfalls": "Wygładzanie opóźnia reakcję; początek serii nie ma pełnego okna."
+  },
+  {
+    "key": "split",
+    "term": "Split / scalenie",
+    "synonyms": ["reverse split", "podział akcji"],
+    "formula": "4",
+    "href": "/rynek",
+    "definition": "Zmiana liczby akcji i ceny jednostkowej wynikająca z podziału lub połączenia akcji.",
+    "reading": "Sam split nie zmienia wartości pozycji.",
+    "pitfalls": "Nieskorygowana historia może wyglądać jak nagły skok ceny."
+  },
+  {
+    "key": "spread",
+    "term": "Spread",
+    "synonyms": ["bid ask"],
+    "formula": "4",
+    "href": "/rynek",
+    "definition": "Różnica między cenami po dwóch stronach arkusza zleceń.",
+    "reading": "To jeden z elementów kosztu wykonania transakcji.",
+    "pitfalls": "Ostatnia cena transakcyjna nie musi być aktualnie dostępna."
+  },
+  {
+    "key": "subindeks",
+    "term": "Subindeks sektorowy",
+    "synonyms": ["sektor", "branża"],
+    "formula": "4",
+    "href": "/rynek",
+    "definition": "Indeks obejmujący spółki z wybranego sektora.",
+    "reading": "Pomaga opisać zmiany w jednej części rynku.",
+    "pitfalls": "Klasyfikacja sektora nie opisuje wszystkich źródeł przychodów spółki."
+  },
+  {
+    "key": "swieca",
+    "term": "Świeca",
+    "synonyms": ["candlestick"],
+    "formula": "4",
+    "href": "/rynek",
+    "definition": "Graficzny zapis cen otwarcia, zamknięcia oraz skrajnych cen interwału.",
+    "reading": "Korpus pokazuje zmianę, a knoty zakres cen.",
+    "pitfalls": "Kształt świecy sam nie określa przyszłej zmiany ceny."
+  },
+  {
+    "key": "ticker",
+    "term": "Ticker / symbol",
+    "synonyms": ["symbol notowania"],
+    "formula": "4",
+    "href": "/rynek",
+    "definition": "Skrót używany do oznaczania instrumentu.",
+    "reading": "Wyszukiwarka łączy symbole dostawców z instrumentem w aplikacji.",
+    "pitfalls": "Ten sam skrót może oznaczać różne instrumenty."
+  },
+  {
+    "key": "twr",
+    "term": "TWR",
+    "synonyms": ["time weighted return"],
+    "formula": "6",
+    "href": "/portfel",
+    "definition": "Stopa zwrotu neutralizująca wpływ zewnętrznych wpłat i wypłat.",
+    "reading": "Pozwala porównać zmianę wartości w czasie bez efektu wielkości wpłat.",
+    "pitfalls": "Nie jest tym samym co osobisty wynik kapitału liczony XIRR."
+  },
+  {
+    "key": "udzial",
+    "term": "Udział w portfelu",
+    "synonyms": [],
+    "formula": "5",
+    "href": "/portfel",
+    "definition": "Udział wartości grupy lub pozycji w wartości portfela.",
+    "reading": "Udziały służą opisowi koncentracji według dostępnych danych.",
+    "pitfalls": "Brakujące wyceny mogą zniekształcać udziały; nie jest to alokacja docelowa."
+  },
+  {
+    "key": "waluta",
+    "term": "Waluta notowania",
+    "synonyms": [],
+    "formula": "2",
+    "href": "/portfel",
+    "definition": "Waluta, w której podawana jest cena instrumentu.",
+    "reading": "Przeliczenie wyceny na PLN wymaga właściwego kursu wymiany.",
+    "pitfalls": "Waluta notowania nie opisuje pełnej ekspozycji walutowej przedsiębiorstwa ani ETF."
+  },
+  {
+    "key": "wartosc",
+    "term": "Wartość rynkowa",
+    "synonyms": ["market value", "wycena"],
+    "formula": "5",
+    "href": "/portfel",
+    "definition": "Wartość posiadanych sztuk według dostępnych cen i kursów walut.",
+    "reading": "Źródło i czas wyceny pokazują, z jakich danych powstał wynik.",
+    "pitfalls": "Brak notowania daje niepełną wycenę, a nie wartość zero."
+  },
+  {
+    "key": "watchlista",
+    "term": "Watchlista",
+    "synonyms": ["watchlist", "obserwowane"],
+    "formula": "4",
+    "href": "/rynek",
+    "definition": "Własna lista obserwowanych instrumentów.",
+    "reading": "Kolejność i notatki ustala użytkownik.",
+    "pitfalls": "Obecność na liście nie oznacza pozycji w portfelu."
+  },
+  {
+    "key": "wht",
+    "term": "Podatek u źródła",
+    "synonyms": ["withholding tax", "WHT"],
+    "formula": "4",
+    "href": "/rynek",
+    "definition": "Podatek potrącany przy wypłacie, na przykład zagranicznej dywidendy.",
+    "reading": "Kwota netto uwzględnia to potrącenie.",
+    "pitfalls": "Nie rozstrzyga to wszystkich obowiązków podatkowych inwestora."
+  },
+  {
+    "key": "wklad-dzienny",
+    "term": "Wkład do wyniku dnia",
+    "synonyms": [],
+    "formula": "5",
+    "href": "/portfel",
+    "definition": "Zmiana wartości instrumentu z korektą przepływów przypisanych mu w danym dniu.",
+    "reading": "Wkład procentowy odnosi się do tej samej bazy portfela co wynik dnia.",
+    "pitfalls": "Pozostały wynik obejmuje m.in. gotówkę i zdarzenia nieprzypisane instrumentom; braki danych pozostają jawne."
+  },
+  {
+    "key": "wolumen",
+    "term": "Wolumen",
+    "synonyms": ["volume"],
+    "formula": "4",
+    "href": "/rynek",
+    "definition": "Liczba sztuk instrumentu, które zmieniły właściciela w danym interwale.",
+    "reading": "Wolumen opisuje aktywność obrotu.",
+    "pitfalls": "Duży wolumen sam nie określa kierunku następnej zmiany ceny."
+  },
+  {
+    "key": "wynik-dnia",
+    "term": "Wynik dnia",
+    "synonyms": ["day change"],
+    "formula": "5",
+    "href": "/portfel",
+    "definition": "Zmiana wartości od poprzedniego zamknięcia po odjęciu przepływów zewnętrznych dnia.",
+    "reading": "Wpłata nie jest traktowana jako zysk.",
+    "pitfalls": "Niepełne ceny lub kursy mogą ograniczyć kompletność wyniku."
+  },
+  {
+    "key": "wynik-lokalny",
+    "term": "Wynik w walucie instrumentu",
+    "synonyms": [],
+    "formula": "4",
+    "href": "/portfel",
+    "definition": "Różnica bieżącej wartości pozycji i kosztu nabycia w walucie instrumentu.",
+    "reading": "Porównuj kwoty wyłącznie w tej samej walucie.",
+    "pitfalls": "Wynik w PLN dodatkowo zależy od kursów wymiany."
+  },
+  {
+    "key": "wynik-zrealizowany",
+    "term": "Wynik zrealizowany",
+    "synonyms": [],
+    "formula": "4",
+    "href": "/portfel",
+    "definition": "Różnica przychodu i kosztu zużytych partii FIFO w danym okresie.",
+    "reading": "Widok ekonomiczny i podatkowy mogą używać różnych kursów oraz kosztów.",
+    "pitfalls": "Wynik informacyjny nie zastępuje rozliczenia podatkowego; nieznane koszty są wyłączane z sum."
+  },
+  {
+    "key": "xirr",
+    "term": "XIRR",
+    "synonyms": ["MWR", "IRR", "money weighted return"],
+    "formula": "6",
+    "href": "/portfel",
+    "definition": "Stopa zwrotu uwzględniająca kwoty i daty przepływów.",
+    "reading": "Zależy także od momentu wpłat i wypłat.",
+    "pitfalls": "Dla niektórych przepływów nie istnieje jednoznaczny wynik."
+  },
+  {
+    "key": "zakres-52-tygodni",
+    "term": "Zakres 52 tygodni",
+    "synonyms": [],
+    "formula": "5",
+    "href": "/portfel",
+    "definition": "Najniższa i najwyższa dostępna cena z ostatnich 52 tygodni.",
+    "reading": "Zakres opisuje obserwowaną historię instrumentu.",
+    "pitfalls": "Granice historyczne nie ograniczają przyszłych cen. Niepełna historia może zawężać zakres."
+  },
+  {
+    "key": "zdarzenie-korporacyjne",
+    "term": "Zdarzenie korporacyjne",
+    "synonyms": ["corporate action"],
+    "formula": "4",
+    "href": "/rynek",
+    "definition": "Zdarzenie dotyczące instrumentu, na przykład split lub dywidenda.",
+    "reading": "Wyjaśnia niektóre zmiany liczby sztuk lub ceny.",
+    "pitfalls": "Brak zdarzenia w danych może zniekształcić analizę."
+  },
+  {
+    "key": "zmiana-kursu",
+    "term": "Zmiana kursu",
+    "synonyms": [],
+    "formula": "5",
+    "href": "/portfel",
+    "definition": "Różnica ceny względem poprzedniego zamknięcia, kwotowo i procentowo.",
+    "reading": "Procent odnosi się do ceny poprzedniego zamknięcia.",
+    "pitfalls": "Nie jest wynikiem Twojego portfela; nie uwzględnia liczby sztuk, kosztów ani przepływów."
+  }
+]
