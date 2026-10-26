@@ -72,6 +72,8 @@ export interface AuthServiceOptions {
   securityEvent: (event: AuthSecurityEvent) => Promise<void>;
   preferencesChanged?: (userId: string) => Promise<void>;
   sessionsChanged?: () => Promise<void>;
+  patMail?: (id:string,payload:unknown,delay:number)=>Promise<void>;
+  cancelPatMail?: (id:string)=>Promise<void>;
   wait?: (milliseconds: number) => Promise<void>;
   event: (event: string) => void;
 }
@@ -146,6 +148,7 @@ export class AuthService {
     };
   }
   async requireData(request: Request, stepUp = false): Promise<Principal> {
+    if(request.headers.has("authorization"))throw new ProblemError("FORBIDDEN");
     if (request.headers.has("authorization")) throw new ProblemError("FORBIDDEN");
     const principal = requireMfa(await this.principal(request));
     if ((await this.legal(principal)).termsAcceptanceRequired)

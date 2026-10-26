@@ -35,6 +35,14 @@
     "drizzle-orm": "0.45.2",
     "@oliginvest/mod-market": "workspace:*",
     "@oliginvest/mod-identity": "workspace:*",
-    "@oliginvest/platform": "workspace:*"
+    "@oliginvest/platform": "workspace:*",
+    "@oliginvest/db": "workspace:*",
+    "@oliginvest/core": "workspace:*",
+    "@oliginvest/i18n": "workspace:*",
+    "@hono/zod-openapi": "1.6.3",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@types/node": "24.13.5"
   }
 }

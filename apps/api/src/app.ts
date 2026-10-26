@@ -18,6 +18,9 @@ import {
   type PortfolioDependencies,
 } from "./modules.js";
 import { mountStream, type StreamDependencies } from "./stream-routes.js";
+import { mountNotifications } from "./notification-routes.js";
+import {mountAlerts} from "./alert-routes.js";
+import {mountPats} from "./auth/pat-routes.js";
 
 export type HealthChecks = Readonly<
   Record<"postgres" | "valkeyQueue" | "valkeyCache", () => Promise<void>>
@@ -228,6 +231,9 @@ export function createApp(
       }),
   });
   mountPreferences(api, authDependencies);
+  mountNotifications(api, authDependencies);
+  mountAlerts(api,authDependencies);
+  mountPats(api,authDependencies);
   mountMarket(
     api,
     options.market ?? {

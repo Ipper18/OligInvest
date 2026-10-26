@@ -1,6 +1,8 @@
 import { loadConfig } from "@oliginvest/config";
 import { createLogger, type PlatformLogger } from "@oliginvest/platform";
-import { Queue, Worker } from "bullmq";
+import { DelayedError, Queue, Worker } from "bullmq";
+import { MailQuotaExceeded, reserveMail } from "./mail-quota.js";
+import { dispatchNotification } from "./modules.js";
 import { z } from "zod";
 import type { createAuthMailer } from "./auth-mail.js";
 import { observeWorker, startMonitoring } from "./monitoring.js";
@@ -75,6 +77,7 @@ export async function startJobs(
   let mailer: ReturnType<typeof createAuthMailer> | undefined;
   let mailWorker: Worker | undefined;
   let marketWorker: { close(): Promise<void> } | undefined;
+  let alertsWorker: Awaited<ReturnType<typeof import("./alerts-runtime.js").startAlertsWorker>> | undefined;
   let portfolioWorker:
     | {
         close(): Promise<void>;
@@ -109,6 +112,7 @@ export async function startJobs(
       logger.warn({ event: "jobs.heartbeat_cleanup_failed" });
     } finally {
       await mailWorker?.close();
+      await alertsWorker?.close();
       await portfolioWorker?.close();
       await marketWorker?.close();
       await monitoring?.close();
@@ -121,7 +125,15 @@ export async function startJobs(
     await Promise.all(queues.map((queue) => queue.waitUntilReady()));
     if (runtime.mail) {
       const { createAuthMailer } = await import("./auth-mail.js");
-      mailer = createAuthMailer(runtime.mail.config, runtime.mode, runtime.mail.port);
+      mailer = createAuthMailer(runtime.mail.config, runtime.mode, runtime.mail.port, async security => {
+        const client = await healthQueue.getBackend().client;
+        await reserveMail(async key => {
+          const count = Number(await client.runCommand("INCR", [key]));
+          await client.runCommand("EXPIRE", [key, "172800"]);
+          if(!Number.isSafeInteger(count) || count<1) throw new Error("MAIL_QUOTA_UNAVAILABLE");
+          return count;
+        },security);
+      });
     }
     monitoring = await startMonitoring({
       cache: flagRuntime.cache,
@@ -157,7 +169,11 @@ export async function startJobs(
       observe,
     });
     const { startMarketWorker } = await import("./market-runtime.js");
+    const {startAlertsWorker}=await import("./alerts-runtime.js");
+    alertsWorker=await startAlertsWorker({database:flagRuntime.database,flags:flagRuntime.flags,cache:flagRuntime.cache,queues,connection:runtime.connection,logger,origin:runtime.config.PUBLIC_BASE_URL,observe});
     marketWorker = await startMarketWorker({
+      alertsUpdated: async mode=>alertsWorker?.enqueueAll(mode),
+      alertInstruments: async()=>alertsWorker?.observed()??[],
       updated: async (reason, fromDate) => portfolioWorker?.enqueueAll(reason, fromDate),
       observeProvider: (provider, result) =>
         monitoring?.metrics.add("provider_requests_total", { provider, result }),
@@ -174,15 +190,27 @@ export async function startJobs(
       const { commandTimeout: _producerTimeout, ...workerConnection } = runtime.connection;
       mailWorker = new Worker(
         "notify",
-        async (job) => {
+        async (job, token) => {
           try {
-            if (["monitoring.error", "monitoring.daily-report"].includes(job.name))
+            if (job.name === "notifications.deliver") {
+              if(!mailer) throw new Error("SMTP_NOT_CONFIGURED");
+              const result=await dispatchNotification(flagRuntime.database,job.data,mailer.sendNotification);
+              if(result.delayUntil) {
+                await job.moveToDelayed(result.delayUntil,token);
+                throw new DelayedError();
+              }
+            } else if (["monitoring.error", "monitoring.daily-report"].includes(job.name))
               await activeMonitoring.handle(job);
             else {
               if (!mailer) throw new Error("SMTP_NOT_CONFIGURED");
               await mailer.send(job.name, job.data);
             }
-          } catch {
+          } catch (error) {
+            if(error instanceof DelayedError) throw error;
+            if(error instanceof MailQuotaExceeded) {
+              await job.moveToDelayed(error.retryAt,token);
+              throw new DelayedError();
+            }
             logger.warn({ event: "auth.mail_delivery_failed" });
             throw new Error("AUTH_MAIL_DELIVERY_FAILED");
           }
@@ -198,6 +226,7 @@ export async function startJobs(
     logger.info({ event: "jobs.ready" });
     return { registry, queues, close };
   } catch (error) {
+    await alertsWorker?.close();
     await portfolioWorker?.close();
     await mailWorker?.close();
     await marketWorker?.close();

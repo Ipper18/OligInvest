@@ -4070,9 +4070,10 @@ components:
       allOf:
         - {$ref: '#/components/schemas/PersonalAccessToken'}
         - type: object
-          required: [token]
+          required: [tokenShown]
           properties:
-            token: {type: string, description: 'Pełna wartość — pokazywana wyłącznie w tej odpowiedzi.'}
+            tokenShown: {type: boolean, description: 'true wyłącznie przy pierwszym utworzeniu; ponowienie idempotentne zwraca false bez tokenu.'}
+            token: {type: string, description: 'Pełna wartość wyłącznie przy tokenShown=true; nigdy nieodtwarzana.'}
     DataExport:
       type: object
       required: [id, status, createdAt]
@@ -6457,10 +6458,10 @@ components:
         note: {type: string, maxLength: 200}
         confirmDuplicate: {type: boolean, default: false, description: 'Potwierdzenie zapisu mimo ostrzeżenia o możliwym duplikacie (409).'}
     QuickDecimal:
-      description: 'Liczba dodatnia jako ciąg z kropką lub przecinkiem (pole tekstowe Skrótu w pl-PL) albo liczba JSON (typ „Liczba” w akcji Słownik); serwer normalizuje do DecimalString.'
-      oneOf:
-        - {type: string, pattern: '^\d{1,14}([.,]\d{1,10})?$', example: '58,34'}
-        - {type: number, exclusiveMinimum: 0, example: 58.34}
+      description: 'Wartość dziesiętna wyłącznie jako tekst z kropką lub przecinkiem; normalizowana do DecimalString. W Skrótach i HTTP Shortcuts typ Tekst, nie Liczba (ADR-014).'
+      type: string
+      pattern: '^\d{1,14}([.,]\d{1,10})?$'
+      example: '58,34'
     QuickTransactionCreated:
       type: object
       required: [transactionId, accountId, instrument, summary]

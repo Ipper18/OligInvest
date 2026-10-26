@@ -1,4 +1,6 @@
 import app from "./pl/app.json" with { type: "json" };
+import alerts from "./pl/alerts.json" with { type: "json" };
+export const alertMessages = alerts;
 import authMail from "./pl/auth-mail.json" with { type: "json" };
 import bootstrap from "./pl/bootstrap.json" with { type: "json" };
 import common from "./pl/common.json" with { type: "json" };

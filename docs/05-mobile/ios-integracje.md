@@ -112,3 +112,11 @@ Jak § 4.1 z adresem `…/quick/alerts?format=text&limit=5`. Wymaga zakresu `ale
 
 - Systemowe widżety iOS nie wyświetlają danych z PWA ani ze Skrótów na stałe — widżet Skróty tylko uruchamia skrót.
 - **Scriptable** (darmowa aplikacja z widżetami w JavaScript) może pobierać `GET /quick/today?format=json` z tokenem trzymanym w pęku kluczy aplikacji i rysować widżet z wartością i czasem danych. Ryzyko: ostatnia aktualizacja aplikacji 2024-09 — funkcja wyłącznie opcjonalna, bez gwarancji działania na kolejnych wersjach iOS. Przykładowy skrypt to zadanie BL-707 (P3, po M6); trafi do [`../12-dla-uzytkownika/instrukcja.md`](../12-dla-uzytkownika/instrukcja.md).
+
+### Typy pól szybkich akcji (BL-408, 2026-10-23)
+
+Pola kwot, cen, ilości i prowizji w JSON mają typ **Tekst**, nie **Liczba**.
+Akceptowana jest kropka albo przecinek dziesiętny, np. `"58.34"` i `"58,34"`.
+Nie używaj separatorów tysięcy. Ponowienie utworzenia PAT może zwrócić
+`tokenShown: false` bez sekretu; wtedy pokaż komunikat:
+„Token był już wyświetlony — unieważnij go i utwórz nowy”.

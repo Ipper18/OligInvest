@@ -218,15 +218,24 @@ importers:
       '@oliginvest/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@oliginvest/mod-alerts':
+        specifier: workspace:*
+        version: link:../../modules/alerts
       '@oliginvest/mod-identity':
         specifier: workspace:*
         version: link:../../modules/identity
       '@oliginvest/mod-market':
         specifier: workspace:*
         version: link:../../modules/market
+      '@oliginvest/mod-notifications':
+        specifier: workspace:*
+        version: link:../../modules/notifications
       '@oliginvest/mod-portfolio':
         specifier: workspace:*
         version: link:../../modules/portfolio
+      '@oliginvest/mod-quick-actions':
+        specifier: workspace:*
+        version: link:../../modules/quick-actions
       '@oliginvest/platform':
         specifier: workspace:*
         version: link:../../packages/platform
@@ -276,12 +285,21 @@ importers:
       '@oliginvest/i18n':
         specifier: workspace:*
         version: link:../../packages/i18n
+      '@oliginvest/mod-alerts':
+        specifier: workspace:*
+        version: link:../../modules/alerts
       '@oliginvest/mod-market':
         specifier: workspace:*
         version: link:../../modules/market
+      '@oliginvest/mod-notifications':
+        specifier: workspace:*
+        version: link:../../modules/notifications
       '@oliginvest/mod-portfolio':
         specifier: workspace:*
         version: link:../../modules/portfolio
+      '@oliginvest/mod-quick-actions':
+        specifier: workspace:*
+        version: link:../../modules/quick-actions
       '@oliginvest/platform':
         specifier: workspace:*
         version: link:../../packages/platform
@@ -424,6 +442,18 @@ importers:
 
   modules/alerts:
     dependencies:
+      '@hono/zod-openapi':
+        specifier: 1.6.3
+        version: 1.6.3(hono@4.13.8)(zod@4.6.5)
+      '@oliginvest/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@oliginvest/db':
+        specifier: workspace:*
+        version: link:../../packages/db
+      '@oliginvest/i18n':
+        specifier: workspace:*
+        version: link:../../packages/i18n
       '@oliginvest/mod-identity':
         specifier: workspace:*
         version: link:../identity
@@ -436,6 +466,13 @@ importers:
       drizzle-orm:
         specifier: 0.45.2
         version: 0.45.2(@opentelemetry/api@1.9.1)(@types/pg@8.23.1)(kysely@0.29.6)(pg@8.23.0)
+      zod:
+        specifier: 4.6.5
+        version: 4.6.5
+    devDependencies:
+      '@types/node':
+        specifier: 24.13.5
+        version: 24.13.5
 
   modules/analytics:
     dependencies:
@@ -509,12 +546,34 @@ importers:
 
   modules/notifications:
     dependencies:
+      '@hono/zod-openapi':
+        specifier: 1.6.3
+        version: 1.6.3(hono@4.13.8)(zod@4.6.5)
+      '@oliginvest/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@oliginvest/db':
+        specifier: workspace:*
+        version: link:../../packages/db
+      '@oliginvest/i18n':
+        specifier: workspace:*
+        version: link:../../packages/i18n
       '@oliginvest/mod-identity':
         specifier: workspace:*
         version: link:../identity
+      '@oliginvest/platform':
+        specifier: workspace:*
+        version: link:../../packages/platform
       drizzle-orm:
         specifier: 0.45.2
         version: 0.45.2(@opentelemetry/api@1.9.1)(@types/pg@8.23.1)(kysely@0.29.6)(pg@8.23.0)
+      zod:
+        specifier: 4.6.5
+        version: 4.6.5
+    devDependencies:
+      '@types/node':
+        specifier: 24.13.5
+        version: 24.13.5
 
   modules/portfolio:
     dependencies:
@@ -556,7 +615,39 @@ importers:
         specifier: 24.13.5
         version: 24.13.5
 
-  modules/quick-actions: {}
+  modules/quick-actions:
+    dependencies:
+      '@hono/zod-openapi':
+        specifier: 1.6.3
+        version: 1.6.3(hono@4.13.8)(zod@4.6.5)
+      '@oliginvest/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@oliginvest/db':
+        specifier: workspace:*
+        version: link:../../packages/db
+      '@oliginvest/i18n':
+        specifier: workspace:*
+        version: link:../../packages/i18n
+      '@oliginvest/mod-market':
+        specifier: workspace:*
+        version: link:../market
+      '@oliginvest/mod-portfolio':
+        specifier: workspace:*
+        version: link:../portfolio
+      '@oliginvest/platform':
+        specifier: workspace:*
+        version: link:../../packages/platform
+      drizzle-orm:
+        specifier: 0.45.2
+        version: 0.45.2(@opentelemetry/api@1.9.1)(@types/pg@8.23.1)(kysely@0.29.6)(pg@8.23.0)
+      zod:
+        specifier: 4.6.5
+        version: 4.6.5
+    devDependencies:
+      '@types/node':
+        specifier: 24.13.5
+        version: 24.13.5
 
   packages/config:
     dependencies:

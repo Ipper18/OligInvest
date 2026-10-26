@@ -1,1 +1,1 @@
-export {};
+export { dispatchNotification } from "./dispatch.js";

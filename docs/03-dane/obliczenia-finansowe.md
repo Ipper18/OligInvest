@@ -528,3 +528,23 @@ Plik [`wektory-testowe.json`](wektory-testowe.json) zawiera dane wejściowe i oc
 Zależności referencyjne do testów: TA-Lib ≥ 0.8.0 i **empyrical-reloaded ≥ 0.5.12** (starsze wersje odwołują się do `np.NINF`, usuniętego w NumPy 2.0 — zweryfikowano 2026-09-19).
 
 BL-317 (2026-10-19): `apps/analytics/test/test_reference_vectors.py` porównuje wektory B–D z empyrical-reloaded 0.5.12 (NumPy 2.5, pandas 3.0): `cum_returns_final`/`annual_return` (TWR i annualizacja 365/dni), `max_drawdown`/`cum_returns` (seria DD, szczyt, dołek, odrobienie), `annual_volatility`, `sharpe_ratio`, `sortino_ratio`, `beta`, `value_at_risk`, `conditional_value_at_risk` (także remisy `tied_*`). empyrical nie ma XIRR, korelacji ani VaR parametrycznego — te liczy test wprost z § 6.3 i § 8 (scipy `brentq`, numpy, `norm.ppf`). Każda wartość musi zaokrąglać się do wektora (pół jednostki ostatniej cyfry) i spełniać tolerancję z § 0.5; dodatkowo test sprawdza, że empyrical realizuje dokładnie definicje z § 8 (Sortino po wszystkich obserwacjach, CVaR z `k = ⌊(n − 1)·0,05⌋ + 1`). Wartości TWR liczone są z tabeli § 6.4, bo JSON przechowuje tylko przepływy i wartość końcową.
+
+## 16. Alerty cenowe (BL-404, decyzja właściciela 2026-10-23)
+
+Warunek `price_above` to kurs > próg, `price_below` to kurs < próg.
+`change_pct` to (kurs / poprzednie zamknięcie − 1), porównane z dodatnim
+progiem dla `up`, ujemnym dla `down`, z oboma dla `both`. Wszystkie działania
+na cenach i porównania wykonuje `packages/core` przez Decimal.
+
+Pierwsza świeża obserwacja spełniająca warunek wyzwala alert. Ponowne wyzwolenie
+wymaga opuszczenia pasma histerezy oraz upływu cooldownu (domyślnie 1440 min).
+Dla progu ceny ponowne uzbrojenie następuje przy kursie ≤ próg × (1 − h)
+(`above`) lub ≥ próg × (1 + h) (`below`). Dla zmiany dziennej h = 0,005 oznacza
+0,5 punktu procentowego; `both` uzbraja się w paśmie |zmiana| ≤ max(0, próg − h).
+Równość progu nie wyzwala alertu. Nowa sesja zmiany dziennej rozpoczyna nową
+obserwację, ale zachowuje cooldown. Obserwacje powtórzone lub starsze od ostatniej
+przetworzonej są pomijane. `stale`, brak poprzedniego zamknięcia i blokada jakości
+nie wyzwalają alertu ani nie uzbrajają go ponownie (T-AL-01).
+
+BL-406 (kolejna paczka): podgląd kreatora przy zapisie informuje, gdy warunek
+jest już spełniony i alert wyzwoli się przy najbliższym świeżym odświeżeniu.
