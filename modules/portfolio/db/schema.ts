@@ -572,11 +572,9 @@ export const portfolioValuationsDaily = portfolioSchema.table(
     marketValue: numeric("market_value", { precision: 20, scale: 8 }).notNull(),
     cash: numeric("cash", { precision: 20, scale: 8 }).notNull(),
     totalValue: numeric("total_value", { precision: 20, scale: 8 }).notNull(),
-    totalValuePln: numeric("total_value_pln", { precision: 20, scale: 8 }).notNull(),
-    externalFlow: numeric("external_flow", { precision: 20, scale: 8 }).notNull().default(sql`0`),
-    externalFlowPln: numeric("external_flow_pln", { precision: 20, scale: 8 })
-      .notNull()
-      .default(sql`0`),
+    totalValuePln: numeric("total_value_pln", { precision: 20, scale: 8 }),
+    externalFlow: numeric("external_flow", { precision: 20, scale: 8 }).default(sql`0`),
+    externalFlowPln: numeric("external_flow_pln", { precision: 20, scale: 8 }).default(sql`0`),
     fxRateToPln: numeric("fx_rate_to_pln", { precision: 18, scale: 8 }),
     asOf: timestamp("as_of", { withTimezone: true, mode: "string" }).notNull(),
     isComplete: boolean("is_complete").notNull().default(sql`true`),

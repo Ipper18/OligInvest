@@ -330,6 +330,7 @@ source = { editable = "." }
 dependencies = [
     { name = "bullmq" },
     { name = "jsonschema" },
+    { name = "numpy" },
     { name = "psycopg", extra = ["binary"] },
 ]
 
@@ -347,6 +348,7 @@ dev = [
 requires-dist = [
     { name = "bullmq", specifier = "==3.2.2" },
     { name = "jsonschema", specifier = "==4.26.0" },
+    { name = "numpy", specifier = "==2.5.4" },
     { name = "psycopg", extras = ["binary"], specifier = "==3.3.5" },
 ]
 

@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
+import { recomputePortfolio } from "@oliginvest/mod-portfolio/jobs";
 import { sql } from "drizzle-orm";
 
-export async function testPortfolioReads({ request, database, owner, instrumentId }) {
+export async function testPortfolioReads({ request, database, owner, instrumentId, repository }) {
   const post = async (path, body) => {
     const response = await request(path, "POST", body, { "Idempotency-Key": randomUUID() });
     assert.equal(response.status, 201, `${path}: ${JSON.stringify(await response.clone().json())}`);
@@ -145,7 +146,55 @@ export async function testPortfolioReads({ request, database, owner, instrumentI
   assert.equal(position.marketValueBase, null);
   assert.equal(position.costBasis, null);
   assert.equal(position.weight, null);
-  for (const path of ["summary", "day-change", "positions", "cash", "lots", "realized"]) {
+  // BL-302: history reads stored daily valuations; a missing rate or flow value stays null.
+  await recomputePortfolio(
+    repository,
+    { userId: owner.userId, accountIds: [], fromDate: "1970-01-01", reason: "recompute" },
+    async () => {},
+    () => new Date("2026-10-13T12:00:00Z"),
+  );
+  const ike = await get(`history?accountId=${accounts[2].id}&from=2026-10-12`);
+  assert.deepEqual(ike.t, [Date.parse("2026-10-12") / 1000, Date.parse("2026-10-13") / 1000]);
+  assert.deepEqual(ike.value, [14, 15]);
+  assert.deepEqual(ike.netContributions, [14, 14]);
+  assert.deepEqual(ike.flows, [
+    {
+      date: "2026-10-12",
+      amount: { amount: "14.00", currency: "PLN" },
+      type: "SECURITY_TRANSFER_IN",
+    },
+  ]);
+  assert.equal(ike.meta.stale, false);
+  assert.equal(ike.decimated, false);
+  const gap = await get(`history?accountId=${accounts[0].id}&from=2026-10-12`);
+  assert.deepEqual(gap.value, [null, null], "no FX for the USD position: a gap, never 0");
+  assert.deepEqual(gap.netContributions, [null, null], "unvalued transfer: unknown contributions");
+  assert.equal(gap.meta.stale, true);
+  await database.transaction(owner, async (tx) => {
+    const rows = (
+      await tx.execute(
+        sql`SELECT external_flow_pln,is_complete FROM portfolio.valuations_daily WHERE account_id=${accounts[0].id}::uuid AND valuation_date='2026-10-12'`,
+      )
+    ).rows;
+    assert.deepEqual(rows, [{ external_flow_pln: null, is_complete: false }]);
+  });
+  const weekly = await get(`history?accountId=${accounts[2].id}&interval=1mo&maxPoints=50`);
+  assert.equal(weekly.value.at(-1), 15);
+  for (const query of ["from=2026-10-13&to=2026-10-12", "to=2026-10-14", "maxPoints=10"])
+    assert.equal((await request(`history?${query}`)).status, 422, query);
+  const foreignHistory = await (
+    await request(`history?accountId=${accounts[2].id}`, "GET", undefined, { "x-owner": "b" })
+  ).json();
+  assert.deepEqual(foreignHistory.value, []);
+  for (const path of [
+    "summary",
+    "day-change",
+    "positions",
+    "cash",
+    "lots",
+    "realized",
+    "history",
+  ]) {
     const other = await (
       await request(`${path}?${selection}`, "GET", undefined, { "x-owner": "b" })
     ).json();

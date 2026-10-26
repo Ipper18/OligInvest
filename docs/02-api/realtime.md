@@ -60,7 +60,7 @@ Schematy `data` są zdefiniowane w `packages/contracts` (Zod, eksport JSON Schem
 | `alerts.alert.triggered` | jobs | wyzwolenie reguły | `eventId`, `ruleId`, `instrumentId?`, `message`, `triggeredAt` | toast w aplikacji (push i e-mail idą osobno — `notifications`) |
 | `analytics.run.progress` | jobs | postęp analizy (co ≥ 2 s lub co 10 %) | `runId`, `progress` (0–100), `stage` | pasek postępu |
 | `analytics.run.completed` | jobs | analiza zakończona | `runId`, `type` | pobiera `GET /analytics/runs/{runId}` |
-| `analytics.run.failed` | jobs | błąd, limit czasu, anulowanie | `runId`, `errorCode` | komunikat z kodem; bez ponawiania automatycznego |
+| `analytics.run.failed` | jobs | błąd, limit czasu, anulowanie | `runId`, `errorCode` (kod z `AnalyticsRun.error.code` albo `CANCELLED`) | komunikat z kodem; bez ponawiania automatycznego |
 | `identity.export.ready` | jobs | archiwum RODO gotowe | `exportId` | przycisk „Pobierz” (step-up przy pobraniu) |
 | `flags.changed` | api | zmiana flagi przez admina | `keys[]` | pobiera `GET /me`, przebudowuje nawigację; ekran wyłączonego modułu → komunikat i powrót |
 | `auth.session.revoked` | api | wylogowanie zdalne, zmiana roli, reset 2FA | `reason` (`revoked`, `role_changed`, `mfa_reset`, `password_reset`) | czyści pamięć zapytań, przechodzi do logowania |

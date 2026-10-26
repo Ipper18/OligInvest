@@ -33,6 +33,7 @@
     "@oliginvest/mod-portfolio": "workspace:*"
   },
   "optionalDependencies": {
+    "@oliginvest/mod-analytics": "workspace:*",
     "@oliginvest/mod-education": "workspace:*"
   },
   "devDependencies": {

@@ -7,6 +7,9 @@ import { API } from "typescript/unstable/sync";
 
 const FOUNDATIONS = ["identity", "notifications", "market", "portfolio"];
 const ENTRIES = ["./contracts", "./jobs", "./server", "./ui"];
+// Functional modules can be removed (moduly.md § 8.2, CI "build without <module>"): apps declare
+// them only in optionalDependencies and load them in the composition registry.
+const FEATURE_PACKAGE = /^@oliginvest\/mod-(analytics|alerts|education|admin|quick-actions)$/u;
 const SECTIONS = ["dependencies", "devDependencies", "peerDependencies", "optionalDependencies"];
 const BUILTINS = new Set(builtinModules.flatMap((name) => [name, `node:${name}`]));
 const IGNORED = new Set([
@@ -70,6 +73,7 @@ function importReferences(source) {
   function visit(node) {
     let literal;
     let found = false;
+    let dynamic = false;
     if (node.kind === SyntaxKind.ImportDeclaration || node.kind === SyntaxKind.ExportDeclaration) {
       literal = node.moduleSpecifier;
       found = literal !== undefined;
@@ -90,6 +94,7 @@ function importReferences(source) {
       ) {
         literal = node.arguments[0];
         found = true;
+        dynamic = expression.kind === SyntaxKind.ImportKeyword;
       }
     }
     if (found) {
@@ -98,7 +103,11 @@ function importReferences(source) {
         [SyntaxKind.StringLiteral, SyntaxKind.NoSubstitutionTemplateLiteral].includes(literal.kind)
           ? literal.text
           : undefined;
-      references.push({ specifier, reexport: node.kind === SyntaxKind.ExportDeclaration });
+      references.push({
+        specifier,
+        reexport: node.kind === SyntaxKind.ExportDeclaration,
+        dynamic,
+      });
     }
     node.forEachChild(visit);
   }
@@ -136,6 +145,9 @@ export function checkDependencies(root) {
     }
     for (const [name, version] of Object.entries(pkg.dependencies)) {
       const target = byName.get(name);
+      const optional = Object.hasOwn(pkg.manifest.optionalDependencies ?? {}, name);
+      if (pkg.group === "apps" && FEATURE_PACKAGE.test(name) && !optional)
+        report(path, `${name}: functional module must be an optional dependency`);
       if (target) {
         edges.get(pkg).add(target);
         const error = layerError(pkg, target);
@@ -181,7 +193,7 @@ export function checkDependencies(root) {
           }
           if (project.program.getSyntacticDiagnostics(path).length)
             report(path, "invalid source syntax");
-          for (const { specifier, reexport } of importReferences(source)) {
+          for (const { specifier, reexport, dynamic } of importReferences(source)) {
             if (specifier === undefined) {
               report(path, "import requires a literal specifier");
               continue;
@@ -208,7 +220,14 @@ export function checkDependencies(root) {
             )
               report(path, `${specifier}: undeclared dependency`);
             if (!target) {
-              if (name.startsWith("@oliginvest/"))
+              // The registry's dynamic import of an omitted optional module resolves to "absent" at
+              // runtime; it is checked like any other import in the build that includes the module.
+              const optionalLoad =
+                dynamic &&
+                pkg.group === "apps" &&
+                FEATURE_PACKAGE.test(name) &&
+                Object.hasOwn(pkg.manifest.optionalDependencies ?? {}, name);
+              if (name.startsWith("@oliginvest/") && !optionalLoad)
                 report(path, `${specifier}: missing workspace import`);
               continue;
             }

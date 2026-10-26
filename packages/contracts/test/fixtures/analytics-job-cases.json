@@ -27,6 +27,7 @@
         "withdrawals": [],
         "inflationRate": 0.025,
         "taxMode": "belka_simplified",
+        "annualCostRate": 0.005,
         "goal": {
           "amount": "1000000",
           "currency": "PLN"

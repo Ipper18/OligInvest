@@ -263,6 +263,11 @@ try {
   );
   await testOnboardingStorage({ host, port, database: migrated, passwords });
   console.log("Onboarding: persistent progress, skip/restart/complete and owner isolation PASS");
+  const { testAnalyticsStorage } = await import("../../../apps/api/integration/analytics.mjs");
+  await testAnalyticsStorage({ host, port, database: migrated, passwords });
+  console.log(
+    "Analytics runs: roles, quota, idempotency, snapshot, cancel, RLS result writes and SSE PASS",
+  );
   const roleSettings = () =>
     withClient(
       migrated,

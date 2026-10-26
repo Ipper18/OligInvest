@@ -210,6 +210,28 @@ DO $$ BEGIN
   RAISE NOTICE 'OK: account deletion removed consent events and portfolio rows';
 END $$;
 
+\echo '== analytics.run_owner: system context only, owner never exposed to users (BL-312) =='
+SET ROLE oliginvest_app;
+BEGIN; SET LOCAL app.user_id = '0198a000-0000-7000-8000-00000000000b'; SET LOCAL app.role = 'user';
+INSERT INTO analytics.analytics_runs (id, user_id, type, params, input_snapshot, algorithm_version)
+  VALUES ('0198a000-0000-7000-8000-0000000000f1', '0198a000-0000-7000-8000-00000000000b', 'monte_carlo', '{}', '{}', 'test');
+COMMIT;
+BEGIN; SET LOCAL app.role = 'system';
+DO $$ BEGIN
+  IF analytics.run_owner('0198a000-0000-7000-8000-0000000000f1') IS DISTINCT FROM '0198a000-0000-7000-8000-00000000000b'
+  THEN RAISE EXCEPTION 'RUN OWNER NOT FOUND IN SYSTEM CONTEXT'; END IF;
+  IF EXISTS (SELECT 1 FROM analytics.analytics_runs) THEN RAISE EXCEPTION 'SYSTEM CONTEXT SEES RUNS'; END IF;
+END $$;
+COMMIT;
+BEGIN; SET LOCAL app.user_id = '0198a000-0000-7000-8000-00000000000c'; SET LOCAL app.role = 'user';
+DO $$ BEGIN
+  IF analytics.run_owner('0198a000-0000-7000-8000-0000000000f1') IS NOT NULL THEN RAISE EXCEPTION 'RUN OWNER LEAKS TO USERS'; END IF;
+  UPDATE analytics.analytics_runs SET status = 'done' WHERE id = '0198a000-0000-7000-8000-0000000000f1';
+  IF FOUND THEN RAISE EXCEPTION 'FOREIGN RUN UPDATED'; END IF;
+END $$;
+COMMIT;
+RESET ROLE;
+
 \echo '== uuidv7 default works =='
 SELECT uuid_extract_version(id) AS uuid_version FROM portfolio.accounts LIMIT 1;
 \echo 'ALL RLS SMOKE TESTS PASSED'

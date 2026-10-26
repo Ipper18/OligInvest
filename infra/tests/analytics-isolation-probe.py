@@ -51,3 +51,17 @@ for statement in denied:
         continue
     raise RuntimeError("Analytics role exceeded market read access")
 print("PASS: analytics_ro reads market data and quality issues only, without writes")
+
+# BL-313: every Monte Carlo market-data query runs as analytics_ro (syntax and grants).
+from oliginvest_analytics import market_data  # noqa: E402
+
+probe_id = "00000000-0000-7000-8000-000000000001"
+for query, params in (
+    (market_data._HOLDS, ([probe_id],)),
+    (market_data._CURRENCIES, ([probe_id],)),
+    (market_data._CLOSES, (probe_id, "2026-10-01")),
+    (market_data._FX, ("USD", "2026-10-01")),
+    (market_data._RISK_FREE, ("2026-10-01",)),
+):
+    connection.execute(query, params).fetchall()
+print("PASS: Monte Carlo market-data queries run as analytics_ro")
