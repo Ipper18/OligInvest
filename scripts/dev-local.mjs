@@ -7,6 +7,24 @@ import { childEnvironment } from "./dev-environment.mjs";
 // Messages contain only fixed configuration guidance, never input values or provider errors.
 export class DevelopmentError extends Error {}
 
+/**
+ * node:util parseEnv treats an unquoted "#" as the start of a comment and silently truncates the
+ * value (e.g. a password). Compare each raw line with the parsed result and stop instead; the
+ * message names only the key, never the value.
+ */
+export function parseDevelopmentEnv(text) {
+  const parsed = parseEnv(text);
+  for (const line of text.split(/\r?\n/u)) {
+    const match = /^\s*(?:export\s+)?([\w.-]+)\s*=\s*(.*?)\s*$/u.exec(line);
+    if (!match || /^["'`]/u.test(match[2]) || !match[2].includes("#")) continue;
+    if (parsed[match[1]] !== match[2])
+      throw new DevelopmentError(
+        `${match[1]} in .env contains an unquoted "#", which starts a comment and truncates the value; wrap the value in single quotes`,
+      );
+  }
+  return parsed;
+}
+
 export function requireDevelopment(env) {
   if (env.NODE_ENV !== "development" || env.DB_NAME !== "oliginvest_dev")
     throw new DevelopmentError("Local accounts require development and DB_NAME=oliginvest_dev");
@@ -76,7 +94,7 @@ export async function persistDevelopmentSecrets(dev, path) {
   requireDevelopment(dev);
   let file = {};
   try {
-    file = parseEnv(await readFile(path, "utf8"));
+    file = parseDevelopmentEnv(await readFile(path, "utf8"));
   } catch (error) {
     if (error.code !== "ENOENT") throw error;
   }

@@ -4,7 +4,6 @@ import { once } from "node:events";
 import { readFile } from "node:fs/promises";
 import { isIP } from "node:net";
 import { resolve } from "node:path";
-import { parseEnv } from "node:util";
 import { prepareDevelopment } from "../packages/db/scripts/prepare-development.mjs";
 import { childEnvironment } from "./dev-environment.mjs";
 import {
@@ -12,6 +11,7 @@ import {
   DevelopmentError,
   developmentOptions,
   developmentProfile,
+  parseDevelopmentEnv,
   persistDevelopmentSecrets,
   requireOwnerTerminal,
 } from "./dev-local.mjs";
@@ -90,7 +90,7 @@ try {
   } else {
     let file = {};
     try {
-      file = parseEnv(await readFile(resolve(repository, ".env"), "utf8"));
+      file = parseDevelopmentEnv(await readFile(resolve(repository, ".env"), "utf8"));
     } catch (error) {
       if (error.code !== "ENOENT") throw error;
     }
