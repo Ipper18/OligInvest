@@ -1,6 +1,8 @@
+import { existsSync } from "node:fs";
 import { describe, expect, test } from "vitest";
 import { gatePath, safeReturnTo } from "../src/auth/navigation.ts";
 import { parseStream, retryDelay } from "../src/sse/transport.ts";
+import uiModules from "../src/ui-modules.json" with { type: "json" };
 
 test("return locations cannot escape this origin or enter auth redirect loops", () => {
   for (const value of [
@@ -28,6 +30,15 @@ test("MFA and legal gates are ordered before private content", () => {
       legal: { termsAcceptanceRequired: true },
     }),
   ).toBe("/akceptacja-regulaminu");
+});
+test("navigation lists only sections that have screens", () => {
+  const hrefs = uiModules.flatMap((module) => (module.nav ?? []).map((item) => item.href));
+  expect(hrefs).not.toContain("/alerty");
+  expect(hrefs).not.toContain("/analizy");
+  for (const href of hrefs)
+    expect(existsSync(new URL(`../src/app/(app)${href}/page.tsx`, import.meta.url)), href).toBe(
+      true,
+    );
 });
 describe("SSE parser", () => {
   test("arbitrary byte boundaries preserve UTF-8, CRLF and multiline data; partial frames are discarded", async () => {
