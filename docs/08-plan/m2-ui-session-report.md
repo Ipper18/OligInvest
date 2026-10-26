@@ -1,16 +1,16 @@
 # M2-UI — stan bieżący
 
 **Cel:** przekazać stan BL-202/203/204/205/207/214/216 i ekranów rynku.
-**2026-10-23**, `feat/m2-ui`, [roboczy PR #17](https://github.com/Ipper18/OligInvest/pull/17).
+**2026-10-26**, `feat/m2-ui`, [roboczy PR #17](https://github.com/Ipper18/OligInvest/pull/17).
 Statusy `w toku` do zielonego CI i wspólnego DoD; nakład/odchylenie niezmierzone. M2 nie jest zamknięte.
 
-## Scalenie i naprawa CI
+## Synchronizacja z main
 
-- Merge `origin/main` (`31b5f3f`, PR #18) zapisany i wypchnięty jako `f5b0e1e`. Zachowano poprawki WebKit i auth z main. Jedyny konflikt: test zgodności tekstów — obie strony miały 30 s; przyjęto wspólną stałą `BULK_TEST_TIMEOUT_MS` z main, bez zmiany asercji.
-- Odczyt nieudanych kroków i ich raportów: `deps-audit` 39671596120 blokował Vite 8.3.0 / GHSA-587h-7wmj-h5pm (7,5; poprawka od 8.3.3). Merge wprowadza 8.3.4. `images` 39671595910 blokował Caddy z Go 1.26.9 / GO-2026-6809 (brak oceny CVSS, kontrola odrzuca nieznaną ocenę); poprawka od 1.26.10, obecna w scalonym Dockerfile. Nie dodano wyjątków audytu ani nie zmieniono progów.
-- Frozen install PASS. Kontrole zmienionych pakietów i zależnych: 55/56 PASS, jedyny błąd skanu chunków wynikał z nałożenia dwóch lokalnych buildów. Po zakończeniu buildów komplet web **36/36 PASS**, bez zmian w teście. Granice modułów PASS; produkcyjny build web PASS.
-- WebKit: powłoka/auth oraz onboarding **15/15 PASS** (axe, klawiatura, zapis/replay, bramki i returnTo). Initial budgets PASS; powłoka **28,96/30 KiB**; onboarding razem **185,18/190**, driver **7,12/8**. Limity bez zmian.
-- Końcowy odczyt `gh pr checks` raz po ostatnim pushu; wynik w odpowiedzi sesji. Pełne audyty zależności i obrazów pozostawiono CI; lokalnie potwierdzono poprawione wersje względem zakresów w raportach błędów.
+- Scalono `origin/main` do `f6adccd`: PR #25 (Zod/łatka Caddy), dokumentację #26–#31 i #32 (pgBackRest 2.59.3, Caddy bez curl, R-43). Poprawki WebKit z wcześniejszego merge #18 pozostają zachowane. PR #17 nie jest scalany do main.
+- Jedyny konflikt: backlog. Zachowano statusy odbioru właściciela z main, w tym BL-208; względem main dodano wyłącznie statusy siedmiu zadań M2-UI. BL-207 nadal obejmuje UI, backend/integracja w osobnej sesji.
+- Education wyrównano do Zod **4.6.7**, również rozstrzygnięcie peer dependency `@hono/zod-openapi`. Pierwszy test wykrył pozostały po automatycznym merge wpis peer 4.6.5; przeliczenie lockfile usunęło konflikt typów. Brak nowych wersji innych pakietów względem scalonego lockfile.
+- Frozen install PASS. `lint typecheck test --filter=...[origin/main] --concurrency=3`: **66/66 PASS**. OpenAPI **68 implemented / 117 pending**, test kontraktu **25/25 PASS**, typy klienta aktualne. Granice modułów PASS; initial budgets PASS, powłoka **28,96/30 KiB**. Limity i asercje bez zmian.
+- W tej sesji nie powtarzano E2E, DB ani skanowania obrazów; pełną macierz wykonuje CI. Wcześniej po #18 WebKit powłoka/auth/onboarding **15/15 PASS**, onboarding razem **185,18/190 KiB**, driver **7,12/8**. Końcowy odczyt `gh pr checks` raz po pushu — wynik w odpowiedzi sesji.
 
 ## Zakres paczki
 

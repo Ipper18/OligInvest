@@ -36,7 +36,7 @@
     "@oliginvest/db": "workspace:*",
     "@oliginvest/mod-market": "workspace:*",
     "hono": "4.13.8",
-    "zod": "4.6.5",
+    "zod": "4.6.7",
     "drizzle-orm": "0.45.2",
     "@oliginvest/mod-identity": "workspace:*",
     "@oliginvest/platform": "workspace:*"
