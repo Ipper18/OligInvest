@@ -1,24 +1,28 @@
 # M4 — backend: stan bieżący
 
-**Cel:** przekazać stan BL-403/404/405 i backendu BL-407/408 oraz pozostałe warunki odbioru.
+**Cel:** przekazać stan BL-403/404/405 i backendu BL-407/408 oraz poprawki CI PR #38.
 
-**2026-10-27**, `feat/m4-backend`, osobny worktree. Lokalny checkpoint przed scaleniem; `origin/main` scalony do `3f01ea6` (#34). #36 pozostaje otwartym PR, nie ma go na `main`. Publikacja jako draft PR; CI sprawdzane jeden raz na końcu, bez oczekiwania i pętli. Statusy pozostają `w toku` do zielonego CI i wspólnego DoD.
+**2026-10-27**, `feat/m4-backend`, osobny worktree, [draft PR #38](https://github.com/Ipper18/OligInvest/pull/38). Poprawki zapisane w `8e61c04`, następnie merge `89ea2cc` z `origin/main` do `2477dea`: #37 (zależności), #36 (demo) i #39 (analizy). Konflikt rejestru ryzyk rozwiązany przez zachowanie R-45 oraz R-46–R-49 z main. Statusy `w toku` do zielonego CI i wspólnego DoD.
 
-## Zrobione
+## Zakres backendu
 
-- Powiadomienia e-mail/fallback, preferencje i historia właściciela, cisza w jego strefie, łączenie odłożonych wyzwoleń reguły. Wiadomości bezpieczeństwa/resetu omijają ciszę. Limit 300 prób SMTP/dobę UTC, z rezerwą 50 dla kont/bezpieczeństwa.
-- Trzy alerty cenowe, ewaluacja notowań/EOD, Decimal, histereza/cooldown, blokada stale/BLOCK, publikacja po commit i odzyskiwanie zdarzeń. Treści z czasem wyzwolenia i źródłem/czasem danych, bez kwot portfela i zaleceń.
-- PAT: CSPRNG, tylko hash w bazie, step-up, zakresy, limity, odwołanie, nowa sieć i przypomnienie o wygaśnięciu. Replay 24 h odtwarza metadane z `tokenShown:false`, bez sekretu i duplikatu; test awarii kolejki i odzyskiwania przypomnienia.
-- Pięć `/quick/*`, JSON/text pl-PL, pieniądze jako tekst z przecinkiem/kropką, duplikaty i niejednoznaczny ticker. Niepełna wycena: 200, kwoty null, `incomplete` i powody; bez zer zastępczych. Walidacja zapisu bez utraty precyzji. Kontrakty, klient i instrukcje aktualne.
-- Build i import API/jobs przy fizycznym braku kolejno `alerts` i `quick-actions`: PASS; opcjonalne zależności i rejestry modułów.
+Powiadomienia e-mail/fallback, ciche godziny i deduplikacja; rezerwa 50 z 300 prób SMTP/dobę. Trzy alerty cenowe z histerezą/cooldownem, blokadą stale/BLOCK, czasem i źródłem danych, bez kwot portfela i zaleceń. PAT: CSPRNG/hash, step-up, zakresy, limity, odwołanie, nowa sieć i przypomnienia; replay 24 h bez sekretu. Pięć `/quick/*`, tekstowe pieniądze z przecinkiem/kropką; niepełna wycena to 200, null, `incomplete` i powody.
 
-## Dowody lokalne i ograniczenia
+## Poprawki znalezione przez CI i test
 
-- Zmienione pakiety i zależne: lint/typecheck/test 84/84 PASS; core 99,58% linii i 100% funkcji, wektor alertu. API/jobs build 18/18 PASS.
-- `pnpm db:test`: PASS, PostgreSQL 18.6, migracje/RLS/izolacja, integracja M4, zero różnic schematu. Kontrole repozytorium, dokumentów, zależności i języka, Redocly, OpenAPI 92 operacje/93 pending oraz klient: PASS.
-- Wcześniej przez brak `uv` pomijano Ruff, mypy, pytest i pełną macierz buildów. Obecnie `uv 0.12.16` działa: frozen sync, build Python, Ruff, mypy `--platform linux` PASS; pytest 151 PASS, 1 SKIP (`test_node_to_python_real_valkey`, wymaga runnera Compose). **Aktualnie brak pominięć z powodu braku uv.** Natywny mypy Windows zgłasza istniejące `os.killpg` w M3; wersja docelowa Linux przechodzi.
-- Pełne obrazy, E2E, macierz całego monorepo i integracja kolejek pozostają w CI. Pomiar quick <300 ms dotyczy syntetycznej integracji, nie odbioru obciążeniowego serwera.
+- TS2883: jawne adnotacje `alertsModule`, `quickModule`, `conflictError` i `rateLimitedError`, oparte na publicznych eksportach. Zachowane opcjonalne ładowanie modułów; tsconfig bez zmian.
+- `test-monitoring.mjs` konfiguruje prawdziwy limiter na Valkey. Sprawdza naliczenie puli zwykłej/całkowitej i odmowę wysyłki po 250 zwykłych próbach. Produkcyjna odmowa przy braku konfiguracji pozostaje.
+- **Test integracyjny ujawnił dodatkowy błąd limitera poczty:** `runCommand` adaptera BullMQ/ioredis wywołuje metodę klienta o podanej nazwie; wielkie `INCR`/`EXPIRE` powodowały `TypeError`. Produkcyjne wywołania poprawiono na `incr`/`expire`. Nie zmieniono limitów, rezerwy ani kontroli błędów.
+- Nie naprawiano samodzielnie deps-audit, zależności ani `osv-scanner.toml`; aktualizacje weszły wyłącznie przez merge #37.
 
-## Dalszy zakres i decyzje
+## Dowody po scaleniu
 
-M4 nie jest zamknięte: PWA, Web Push, ekrany (także PAT), Skróty/HTTP Shortcuts i testy urządzeń są w kolejnej paczce. Zależność od BL-402 odłożona przez właściciela. Jedna paczka pięciu zadań na jego życzenie; estymata 11,5 dnia obejmuje odłożony ekran PAT, rzeczywisty nakład niezmierzony. Zatwierdzone korekty kontraktów zapisane w AUTH/API/OBL; bez nowego ADR i nowych bibliotek zewnętrznych. Nowe ryzyko: **R-45**, możliwe powtórzenie SMTP po awarii między wysłaniem a zapisem potwierdzenia. Nie zmieniano wyjątków deps-audit ani obrazów.
+- Pełne `pnpm ci:build -- alerts` oraz `-- quick-actions`: **21/21 PASS każdy**, świeże kopie z frozen install, deklaracjami TS i buildem web/Python.
+- Zmienione pakiety i zależne: lint/typecheck **60/60 PASS**; unit **42/42 PASS** przy `--concurrency=1` i `--maxWorkers=2`, bez zmiany timeoutów. Core: 99,58% linii, 100% funkcji. Wcześniej równoległe uruchomienie miało timeouty smoke (5 s), a web zgłosił za mały plik stronicowania Windows/SWC; powtórzenia po ograniczeniu równoległości przeszły.
+- `pnpm db:test`: PASS, PostgreSQL 18.6, RLS/izolacja, PAT/notifications/alerts/quick, zero różnic schematu. Monitoring: PostgreSQL + Valkey + Mailpit, restart/retry i limit SMTP PASS (lokalnie przekierowano wyłącznie katalog logów runnera do git-dir worktree).
+- Granice modułów, dokumentacja/repozytorium, klient API i OpenAPI **93 implemented / 92 pending**: PASS. `uv` dostępne; nie ma pominięć przez jego brak. Python unit i pełne E2E/obrazy pozostawiono CI w tej poprawce.
+- CI: jedno końcowe sprawdzenie po pushu, bez oczekiwania/pollingu; wynik w podsumowaniu sesji.
+
+## Pozostało
+
+M4 nie jest zamknięte: PWA/Web Push, ekrany (w tym PAT), Skróty i testy urządzeń w kolejnej paczce. Zależność od BL-402 odłożona przez właściciela. Estymata paczki 11,5 dnia obejmuje odłożony ekran PAT, rzeczywisty nakład niezmierzony. Bez nowego ADR. Ryzyko M4 **R-45**: duplikat SMTP po awarii między wysłaniem a zapisem potwierdzenia; brak nowych ryzyk w tej poprawce CI.
