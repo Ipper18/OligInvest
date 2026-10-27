@@ -199,3 +199,66 @@ test("done results carry only a distribution with assumptions; holds and cancell
   expect(analyticsCancelKey(done.runId)).toBe(`bull:analytics:cancel:${done.runId}`);
   expect(() => analyticsCancelKey("../x")).toThrow();
 });
+
+test("BL-556/BL-560 results: ranges with nullable refusals, contributions as PLN text", () => {
+  const envelope = {
+    v: 1,
+    runId: "0192f0c4-7b1e-7c3a-9f00-000000000001",
+    status: "done",
+    finishedAt: "2026-10-27T10:00:00Z",
+    durationMs: 10,
+    assumptions: {},
+    warnings: [],
+    reproducibility: { algorithmVersion: "stress-1.0.0", dataVersion: {}, libraries: {} },
+  };
+  const refused = {
+    key: "covid_2020",
+    name: "Krach pandemiczny 2020",
+    kind: "historical",
+    status: "coverage_too_low",
+    portfolioReturn: null,
+    portfolioLoss: null,
+    returnRange: null,
+    coverageRatio: 0.5,
+    ownHistoryRatio: 0,
+    positions: [
+      { instrumentId: "0192f0c4-7b1e-7c3a-9f00-000000000002", series: "none", returnRatio: null },
+    ],
+  };
+  const stress = { kind: "stress_test", currency: "PLN", scenarios: [refused] };
+  expect(analyticsResultSchema.safeParse({ ...envelope, result: stress }).success).toBe(true);
+  const float = {
+    ...refused,
+    status: "ok",
+    portfolioReturn: -0.1,
+    portfolioLoss: { amount: 12.5, currency: "PLN" },
+  };
+  expect(
+    analyticsResultSchema.safeParse({ ...envelope, result: { ...stress, scenarios: [float] } })
+      .success,
+  ).toBe(false);
+  const contribution = (amount) => ({ probability: 0.5, monthlyContribution: amount });
+  const goal = {
+    kind: "goal",
+    target: { amount: "100000", currency: "PLN" },
+    targetReal: { amount: "78000.10", currency: "PLN" },
+    horizonYears: 10,
+    requirements: [{ ...contribution({ amount: "512.34", currency: "PLN" }), alreadyMet: false }],
+    sensitivity: ["mean_minus_2pp", "mean_plus_2pp"]
+      .map((scenario) => ({ scenario, requirements: [contribution(null)] }))
+      .concat(
+        [3, 12].map((meanBlockMonths) => ({
+          scenario: "block_length",
+          meanBlockMonths,
+          requirements: [contribution({ amount: "0.00", currency: "PLN" })],
+        })),
+      ),
+  };
+  const done = { ...envelope, reproducibility: { ...envelope.reproducibility, seed: 3 } };
+  expect(analyticsResultSchema.safeParse({ ...done, result: goal }).success).toBe(true);
+  const negative = {
+    ...goal,
+    requirements: [{ ...contribution({ amount: "-1.00", currency: "PLN" }), alreadyMet: false }],
+  };
+  expect(analyticsResultSchema.safeParse({ ...done, result: negative }).success).toBe(false);
+});

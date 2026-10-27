@@ -21,6 +21,10 @@ from .contracts import VERSION, InvalidJob, ValidatedJob, check_result, validate
 from .execution import Outcome, execute
 from .market_data import Database, DataQualityHold, load_inputs
 from .montecarlo import MIN_HISTORY_MONTHS
+from .stress_data import load_stress_inputs
+
+# Analyses whose market data the parent reads before the child process starts.
+MARKET_DATA_TYPES = ("monte_carlo", "goal", "stress_test")
 
 ANALYTICS_QUEUE = "analytics"
 RESULTS_QUEUE = "analytics-results"
@@ -208,6 +212,8 @@ async def _market_inputs(
         ) as connection:
             await connection.set_read_only(True)
             async with connection.cursor() as cursor:
+                if job.type == "stress_test":
+                    return await load_stress_inputs(cursor, job.data)
                 inputs = await load_inputs(
                     cursor, proxies, job.data["portfolio"]["asOf"]
                 )
@@ -223,6 +229,7 @@ async def _market_inputs(
         "cash_rate": inputs.cash_rate,
         "cash_rate_date": inputs.cash_rate_date,
         "data_version": dict(inputs.data_version),
+        "tickers": dict(inputs.tickers),
     }
 
 
@@ -277,7 +284,7 @@ async def run_worker(config: Config, stop: asyncio.Event) -> None:
             if await cancelled():
                 return Outcome("cancelled")
             data = None
-            if validated.type == "monte_carlo":
+            if validated.type in MARKET_DATA_TYPES:
                 await progress(5, "loading_data")
                 outcome = await _market_inputs(config.database, validated)
                 if isinstance(outcome, Outcome):

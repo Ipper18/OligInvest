@@ -158,6 +158,7 @@ test("public OpenAPI 3.1 is generated from registered Zod routes", async () => {
     "/analytics/runs",
     "/analytics/runs/{runId}",
     "/analytics/runs/{runId}/cancel",
+    "/analytics/stress-scenarios",
     "/change-password",
     "/education/onboarding",
     "/get-session",

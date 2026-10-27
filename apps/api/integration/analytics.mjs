@@ -397,7 +397,175 @@ export async function testAnalyticsStorage(settings) {
     assert.equal((await request(`runs/${held.id}`)).status, 404);
     await results.handleResult(workerResult(held.id));
     assert.equal(published.at(-1).data.errorCode, "DATA_QUALITY_HOLD", "no event for deleted run");
+
+    // BL-556: scenarios — built-in ones, replaced or hidden by admin rows, malformed rows hidden.
+    await database.transaction({ userId: null, role: "system" }, async (tx) => {
+      await tx.execute(
+        sql`UPDATE platform.role_limits SET limits='{"analytics_heavy_per_day":50}' WHERE role='pro'`,
+      );
+      await tx.execute(
+        sql`INSERT INTO analytics.stress_scenarios(key,name,kind,start_date,end_date,shocks,description,enabled)VALUES
+          ('gfc_2008','GFC','historical','2008-09-01','2009-03-09','{}','Hidden by admin.',false),
+          ('itest_wig_drop','WIG −30 %','hypothetical',NULL,NULL,${JSON.stringify({ items: [{ kind: "index_shock", instrumentId: proxies.WIG, shock: -0.3 }] })}::jsonb,'Preset.',true),
+          ('itest_broken','Broken','hypothetical',NULL,NULL,'{"items":[{"kind":"fx_shock"}]}','Malformed.',true),
+          ('itest_future','Future','historical','2026-09-01','2026-10-30','{}','Ends after the snapshot.',true)`,
+      );
+    });
+    const scenarios = await request("stress-scenarios");
+    assert.equal(scenarios.status, 200);
+    const scenarioKeys = (await scenarios.json()).data.map((s) => s.key).sort();
+    assert.deepEqual(scenarioKeys, [
+      "covid_2020",
+      "inflation_2022",
+      "itest_future",
+      "itest_wig_drop",
+    ]);
+
+    // stress_test: scenarios resolved by api, shock defaults explicit, no seed, 422 on bad input.
+    const stress = {
+      type: "stress_test",
+      params: {
+        historical: ["covid_2020"],
+        hypothetical: [
+          { kind: "correlation_shock" },
+          { kind: "index_shock", instrumentId: proxies.WIG, shock: -0.3 },
+        ],
+      },
+    };
+    const stressCreated = await create(stress);
+    assert.equal(stressCreated.status, 202, JSON.stringify(await stressCreated.clone().json()));
+    const stressRun = await stressCreated.json();
+    assert.equal(stressRun.reproducibility.algorithmVersion, "stress-1.0.0");
+    assert.equal(stressRun.reproducibility.seed, undefined, "deterministic analysis");
+    const stressJob = queued.at(-1);
+    assert.equal(stressJob.type, "stress_test");
+    assert.equal(stressJob.seed, undefined);
+    assert.deepEqual(stressJob.params.historical, [
+      { key: "covid_2020", name: "Krach pandemiczny 2020", from: "2020-02-19", to: "2020-03-23" },
+    ]);
+    assert.deepEqual(stressJob.params.hypothetical[0], {
+      kind: "correlation_shock",
+      correlation: 0.9,
+    });
+    assert.equal(stressJob.portfolio.positions.length, 2);
+    assert.equal(stressRun.assumptions.scenarioSource.covid_2020, "builtin");
+    for (const [params, path] of [
+      [{ historical: ["gfc_2008"] }, "historical.0"],
+      [{ historical: ["itest_future"] }, "historical.0"],
+      [{ historical: ["covid_2020", "covid_2020"] }, "historical"],
+      [{ hypothetical: [{ kind: "index_shock", shock: -0.3 }] }, "hypothetical.0"],
+      [{ hypothetical: [{ kind: "fx_shock", currency: "CHF", shock: 0.1 }] }, "hypothetical.0"],
+      [
+        { hypothetical: [{ kind: "index_shock", instrumentId: randomUUID(), shock: -0.1 }] },
+        "hypothetical.0.instrumentId",
+      ],
+    ]) {
+      const refused = await create({ type: "stress_test", params });
+      assert.equal(refused.status, 422, JSON.stringify(params));
+      const problem = await refused.json();
+      assert.equal(problem.code, "PARAMETERS_OUT_OF_BOUNDS");
+      assert.equal(problem.errors[0].path, path);
+    }
+    // Only accounts given: every enabled historical scenario that ends before the snapshot.
+    await create({ type: "stress_test", params: { accountIds: [account] } });
+    assert.deepEqual(
+      queued.at(-1).params.historical.map((h) => h.key),
+      ["covid_2020", "inflation_2022"],
+    );
+
+    // goal: defaults explicit in params and job, probabilities ascending, PLN target only.
+    const goalCreated = await create({
+      type: "goal",
+      params: {
+        target: { amount: "250000", currency: "PLN" },
+        horizonYears: 12,
+        probabilities: [0.9, 0.5],
+      },
+    });
+    assert.equal(goalCreated.status, 202, JSON.stringify(await goalCreated.clone().json()));
+    const goalRun = await goalCreated.json();
+    assert.deepEqual(goalRun.params.probabilities, [0.5, 0.9]);
+    assert.equal(goalRun.params.taxMode, "belka_simplified");
+    assert.equal(goalRun.reproducibility.algorithmVersion, "goal-1.0.0");
+    const goalJob = queued.at(-1);
+    assert.deepEqual(
+      [goalJob.params.indexToInflation, goalJob.params.annualCostRate, goalJob.params.paths],
+      [true, 0, 5000],
+    );
+    assert.equal(goalJob.seed, goalRun.params.seed);
+    const usdGoal = await create({
+      type: "goal",
+      params: { target: { amount: "1000", currency: "USD" }, horizonYears: 5 },
+    });
+    assert.equal(usdGoal.status, 422);
+    assert.equal(
+      (
+        await create(
+          {
+            type: "goal",
+            params: { target: { amount: "1000", currency: "PLN" }, horizonYears: 5 },
+          },
+          randomUUID(),
+          "basic",
+        )
+      ).status,
+      403,
+    );
+
+    // jobs: a stress result lands on its run; a result of another kind never does.
+    const stressResult = {
+      v: 1,
+      runId: stressRun.id,
+      status: "done",
+      finishedAt: "2026-10-20T12:02:00.000Z",
+      durationMs: 300,
+      result: {
+        kind: "stress_test",
+        currency: "PLN",
+        scenarios: [
+          {
+            key: "covid_2020",
+            name: "Krach pandemiczny 2020",
+            kind: "historical",
+            status: "ok",
+            periodFrom: "2020-02-19",
+            periodTo: "2020-03-23",
+            troughDate: "2020-03-20",
+            portfolioReturn: -0.05,
+            portfolioLoss: { amount: "200.03", currency: "PLN" },
+            returnRange: { low: -0.11, high: 0, basis: "window_path" },
+            coverageRatio: 1,
+            ownHistoryRatio: 0,
+            positions: [{ instrumentId: stock, series: "proxy", returnRatio: -0.1 }],
+          },
+        ],
+      },
+      assumptions: { method: "conditional_scenarios_on_current_positions" },
+      warnings: [{ code: "PROXY_SUBSTITUTED", severity: "warning", message: "Synthetic." }],
+      reproducibility: {
+        algorithmVersion: "stress-1.0.0",
+        dataVersion: { "scenario:covid_2020": "2020-02-19..2020-03-23" },
+        libraries: { numpy: "2.5.0" },
+      },
+    };
+    await results.handleResult(stressResult);
+    const storedStress = await (await request(`runs/${stressRun.id}`)).json();
+    assert.equal(storedStress.status, "done");
+    assert.equal(storedStress.result.scenarios[0].portfolioLoss.amount, "200.03");
+    assert.equal(storedStress.reproducibility.seed, undefined);
+    await results.handleResult(workerResult(goalRun.id));
+    const mismatched = await (await request(`runs/${goalRun.id}`)).json();
+    assert.deepEqual([mismatched.status, mismatched.error.code], ["failed", "INTERNAL"]);
+    assert.deepEqual(
+      [published.at(-1).event, published.at(-1).data.errorCode],
+      ["analytics.run.failed", "INTERNAL"],
+    );
   } finally {
+    await database.transaction({ userId: null, role: "system" }, (tx) =>
+      tx.execute(
+        sql`DELETE FROM analytics.stress_scenarios WHERE key IN ('gfc_2008','itest_wig_drop','itest_broken','itest_future')`,
+      ),
+    );
     await auth.transaction(async (tx) => {
       await tx.execute(
         sql`DELETE FROM auth.users WHERE id=ANY(${sql.param(Object.values(users))}::uuid[])`,

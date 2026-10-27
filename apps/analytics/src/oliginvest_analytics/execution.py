@@ -65,7 +65,7 @@ def _parse(output: bytes | None) -> Outcome:
         result = outcome.get("result")
         if isinstance(result, dict):
             return Outcome("done", result=result)
-    for code in ("MEMORY_LIMIT", "INSUFFICIENT_DATA"):
+    for code in ("MEMORY_LIMIT", "INSUFFICIENT_DATA", "COVERAGE_TOO_LOW"):
         if outcome == {"status": "failed", "code": code}:
             return Outcome("failed", code=code)
     return Outcome("failed", code="INTERNAL")
