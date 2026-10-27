@@ -55,11 +55,12 @@ Pytania do właściciela przed udostępnieniem ekranów: (1) czy ostrzeżenie `C
 - § 12.6 mówi o wyszukiwaniu binarnym; implementacja liczy jego granicę dokładnie (liniowość ścieżek przy wspólnych liczbach losowych), test porównuje z bisekcją — opisane w dokumencie.
 - Lokalnie Node 22 zamiast 24 i `xlsx` z rejestru npm zamiast tarballa SheetJS (host zablokowany przez politykę sieci) — tylko do lokalnych kontroli, lockfile i `package.json` bez zmian.
 
-## Decyzje do potwierdzenia (bez ADR)
+## Decyzje właściciela (2026-10-27)
 
-1. `CRISIS_TESTS_SEPARATE` zamiast `CRISIS_TESTS_UNAVAILABLE` w MC (warunek właściciela z 2026-10-21 dotyczył informacji o braku testów kryzysowych).
-2. Kalkulator celu: model stały (bootstrap stacjonarny, blok 6 mies., cała historia), wpłata domyślnie indeksowana inflacją, cel nominalny porównywany z wartością po podatku.
-3. Szoki hipotetyczne: okno 60 miesięcy, przedział normalny 90 %, szok indeksu w walucie notowania indeksu.
+1. `CRISIS_TESTS_SEPARATE` zamiast `CRISIS_TESTS_UNAVAILABLE` w MC — zaakceptowane.
+2. Kalkulator celu: model stały (bootstrap stacjonarny, blok 6 mies., cała historia), wpłata domyślnie indeksowana inflacją (`indexToInflation` można wyłączyć), cel nominalny porównywany z wartością po podatku — zaakceptowane.
+3. Szoki hipotetyczne: okno 60 miesięcy, przedział normalny 90 %, szok indeksu w walucie notowania indeksu — zaakceptowane; wpływ kursu przy `index_shock` wyłącznie przez historyczną betę na stopach w PLN, ekran podaje walutę szoku (§ 12.3).
+4. Scenariuszy 2011 i 2015 (CHF/PLN) nie dodajemy — portfel nie ma ekspozycji na CHF.
 
 ## Nowe ryzyka
 
