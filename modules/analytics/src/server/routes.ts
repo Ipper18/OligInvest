@@ -10,6 +10,7 @@ import {
   analyticsRunPage,
   analyticsRunStatus,
   analyticsRunType,
+  stressScenarioList,
 } from "../contracts.js";
 import { type AnalyticsRepository, HEAVY_TYPES } from "./runs.js";
 
@@ -165,6 +166,18 @@ export function mountAnalytics(api: OpenAPIHono<AppEnv>, deps: AnalyticsDependen
         409: conflict,
       },
     }),
+    scenarios: createRoute({
+      method: "get",
+      path: "/analytics/stress-scenarios",
+      operationId: "listStressScenarios",
+      tags: ["analytics"],
+      security,
+      responses: {
+        200: json(stressScenarioList, "Scenariusze."),
+        401: marketError,
+        404: marketError,
+      },
+    }),
     limits: createRoute({
       method: "get",
       path: "/analytics/limits",
@@ -234,6 +247,10 @@ export function mountAnalytics(api: OpenAPIHono<AppEnv>, deps: AnalyticsDependen
       parsed.data.runId,
     );
     return c.json(analyticsRun.parse(run), 202);
+  });
+  api.get(routes.scenarios.path, async (c) => {
+    const data = await (await deps.repository()).listScenarios(await principalOf(c.req.raw));
+    return c.json(stressScenarioList.parse(data), 200);
   });
   api.get(routes.limits.path, async (c) => {
     const data = await (await deps.repository()).limits(await principalOf(c.req.raw));

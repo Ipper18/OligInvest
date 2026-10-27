@@ -85,7 +85,6 @@
   "listPushSubscriptions",
   "listScreenerPresets",
   "listStrategies",
-  "listStressScenarios",
   "listTargetAllocations",
   "quickCreateTransaction",
   "quickGetAlerts",

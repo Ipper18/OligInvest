@@ -64,15 +64,15 @@ def job(
 def window(**bars: Any) -> dict[str, Any]:
     base = {
         STOCK: [
-            ("2020-02-18", 100.0, 5.0),
-            ("2020-03-02", 80.0, 5.0),
-            ("2020-03-23", 90.0, 5.0),
+            ("2020-02-18", 100.0, False),
+            ("2020-03-02", 80.0, False),
+            ("2020-03-23", 90.0, False),
         ],
-        WIG: [("2020-02-18", 50.0, None), ("2020-03-23", 40.0, None)],
+        WIG: [("2020-02-18", 50.0, False), ("2020-03-23", 40.0, False)],
         SPX: [
-            ("2020-02-18", 1000.0, None),
-            ("2020-03-02", 950.0, None),
-            ("2020-03-20", 900.0, None),
+            ("2020-02-18", 1000.0, False),
+            ("2020-03-02", 950.0, False),
+            ("2020-03-20", 900.0, False),
         ],
     }
     base.update(bars)
@@ -150,8 +150,8 @@ def test_data_after_the_window_does_not_change_the_result() -> None:
     later = window()
     later["bars"][STOCK] = [
         *later["bars"][STOCK],
-        ("2020-03-24", 10.0, 5.0),
-        ("2026-10-01", 500.0, 5.0),
+        ("2020-03-24", 10.0, False),
+        ("2026-10-01", 500.0, False),
     ]
     later["fx"]["USD"] = [*later["fx"]["USD"], ("2020-03-24", 9.0)]
     assert run_stress_test(
@@ -160,7 +160,7 @@ def test_data_after_the_window_does_not_change_the_result() -> None:
 
 
 def test_edges_need_a_close_at_most_seven_days_old() -> None:
-    bars = [("2020-02-11", 100.0, 1.0), ("2020-03-23", 90.0, 1.0)]
+    bars = [("2020-02-11", 100.0, False), ("2020-03-23", 90.0, False)]
     assert (
         window_series(bars, None, "2020-02-19", "2020-03-23") is None
     )  # 8 days before
@@ -219,9 +219,9 @@ def test_illiquid_series_is_flagged() -> None:
     idle = window(
         **{
             STOCK: [
-                ("2020-02-18", 100.0, 5.0),
-                ("2020-03-02", 100.0, 0.0),
-                ("2020-03-23", 90.0, 0.0),
+                ("2020-02-18", 100.0, False),
+                ("2020-03-02", 100.0, True),
+                ("2020-03-23", 90.0, True),
             ]
         }
     )

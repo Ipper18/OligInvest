@@ -35,9 +35,9 @@ class Cursor:
             ]
         elif "bars_daily" in query and "BETWEEN" in query:
             self.rows = [
-                (STOCK, "2020-02-18", "100.5", "10"),
-                (STOCK, "2020-03-23", "90", None),
-                (SPX, "2020-02-18", "1000", None),
+                (STOCK, "2020-02-18", "100.5", False),
+                (STOCK, "2020-03-23", "90", True),
+                (SPX, "2020-02-18", "1000", False),
             ]
         elif "fx_rates" in query and "BETWEEN" in query:
             self.rows = [("2020-02-18", "4.0123")]
@@ -92,8 +92,8 @@ def test_windows_rates_and_versions_without_user_tables() -> None:
     )
     window = data["historical"]["covid_2020"]
     assert window["bars"][STOCK] == [
-        ("2020-02-18", 100.5, 10.0),
-        ("2020-03-23", 90.0, None),
+        ("2020-02-18", 100.5, False),
+        ("2020-03-23", 90.0, True),
     ]
     assert window["fx"] == {"USD": [("2020-02-18", 4.0123)]}
     assert data["monthly"]["closes"][WIG] == {"2021-01": 50000.0}

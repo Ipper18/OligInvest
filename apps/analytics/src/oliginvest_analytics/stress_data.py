@@ -1,6 +1,6 @@
 """Market data for stress tests, read by the worker parent as `oliginvest_analytics_ro` (§ 12.3).
 
-Only market tables: adjusted daily closes and volumes inside each historical window, NBP rates for
+Only market tables: adjusted daily closes and no-trade flags inside each historical window, NBP rates for
 the same range, month-end closes and rates of the beta window, the catalogue and open BLOCK
 findings. User data never comes from the database — positions travel in the job.
 """
@@ -15,15 +15,17 @@ from .stress import BETA_MONTHS
 
 # Ten calendar days before the window: the start point may be up to 7 days old (§ 12.3).
 _WINDOW_BARS = """SELECT instrument_id::text, session_date::text,
-  (close * adjustment_factor)::text, volume::text
+  (close * adjustment_factor)::text, no_trades
 FROM market.bars_daily
 WHERE instrument_id = ANY(%s::uuid[])
   AND session_date BETWEEN %s::date - 10 AND %s::date
 ORDER BY instrument_id, session_date"""
-_WINDOW_FX = """SELECT DISTINCT ON (rate_date) rate_date::text, rate::text
+# NBP table A only: another source on a day without a table would break the carry-forward.
+_WINDOW_FX = """SELECT rate_date::text, rate::text
 FROM market.fx_rates
-WHERE base = %s AND quote = 'PLN' AND rate_date BETWEEN %s::date - 10 AND %s::date
-ORDER BY rate_date, (source = 'nbp') DESC"""
+WHERE base = %s AND quote = 'PLN' AND source = 'nbp'
+  AND rate_date BETWEEN %s::date - 10 AND %s::date
+ORDER BY rate_date"""
 # Month-end closes of the BETA_MONTHS + 1 complete months before the snapshot month.
 _MONTH_CLOSES = """SELECT DISTINCT ON (instrument_id, date_trunc('month', session_date))
   instrument_id::text, to_char(session_date, 'YYYY-MM'), (close * adjustment_factor)::text
@@ -81,11 +83,11 @@ async def load_stress_inputs(cursor: Cursor, job: Mapping[str, Any]) -> dict[str
     for scenario in params["historical"]:
         start, end = scenario["from"], scenario["to"]
         await cursor.execute(_WINDOW_BARS, (ids, start, end))
-        bars: dict[str, list[tuple[str, float, float | None]]] = {}
-        for instrument, day, close, volume in await cursor.fetchall():
+        bars: dict[str, list[tuple[str, float, bool]]] = {}
+        for instrument, day, close, no_trades in await cursor.fetchall():
             value = _number(close)
             if value is not None:
-                bars.setdefault(instrument, []).append((day, value, _number(volume)))
+                bars.setdefault(instrument, []).append((day, value, bool(no_trades)))
         fx: dict[str, list[tuple[str, float]]] = {}
         for currency in foreign:
             await cursor.execute(_WINDOW_FX, (currency, start, end))

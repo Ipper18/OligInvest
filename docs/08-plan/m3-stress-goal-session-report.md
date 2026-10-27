@@ -16,7 +16,7 @@
 | 4 | Ryzyko USD/PLN maskuje wynik lokalny | w 2008 słabnący złoty „zamortyzował” spadek akcji USA w PLN | zwroty w PLN (kursy NBP) i równolegle `localReturnRatio` w walucie notowania |
 | 5 | Beta z okresu spokoju niedoszacowuje kryzysu (ukryta krótka korelacja) | w krachu korelacje → 1, beta rośnie | przedział bety 90 %, osobny szok korelacji, ostrzeżenia `LINEAR_SINGLE_FACTOR` i `LOW_FACTOR_FIT` (R² < 0,3) |
 | 6 | Szok korelacji na rozkładzie normalnym ma cienkie ogony | P5 miesięczny zaniża skrajne straty | jawne założenie i ostrzeżenie `NORMAL_TAILS`; porównanie z korelacjami historycznymi (`baselineRange`) |
-| 7 | Niepłynne serie (świece bez obrotu) zaniżają zmienność i stratę | spółka bez transakcji „nie spadła” w 2008 | flaga `illiquid` pozycji i ostrzeżenie `ILLIQUID_SERIES` (> 20 % sesji bez obrotu w oknie) |
+| 7 | Niepłynne serie (świece bez obrotu) zaniżają zmienność i stratę | spółka bez transakcji „nie spadła” w 2008 | flaga `illiquid` pozycji i ostrzeżenie `ILLIQUID_SERIES` (> 20 % sesji okna bez transakcji, `no_trades`; tylko własna seria) |
 | 8 | Kalkulator celu czytany jako obietnica | „wpłacaj 1 200 zł i będziesz mieć 500 000 zł” | trzy poziomy p jako przedział, tabela wrażliwości (±2 p.p., okna, długość bloku), ostrzeżenie `MODEL_PROBABILITY`, cel także w złotych dzisiejszych (`targetReal`) |
 | 9 | Pominięty podatek i koszty zaniżają wymaganą wpłatę | procent składany bez Belki i TER | `taxMode` (domyślnie `belka_simplified`) i `annualCostRate` w parametrach celu; ostrzeżenia kosztowe jak w MC |
 | 10 | Okno scenariusza po dniu migawki (look-ahead) | admin definiuje okno kończące się „jutro” | odmowa 422, gdy okno kończy się w dniu migawki lub później |

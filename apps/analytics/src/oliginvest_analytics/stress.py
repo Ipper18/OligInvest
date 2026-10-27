@@ -26,15 +26,15 @@ EDGE_TOLERANCE_DAYS = 7  # the last close before a window edge may be at most th
 BETA_MONTHS = 60  # monthly PLN returns before the snapshot month
 Z90 = 1.6448536269514722  # two-sided 90 % (normal approximation)
 LOW_FIT_R2 = 0.3
-ILLIQUID_SHARE = 0.2  # sessions without turnover in the window
+ILLIQUID_SHARE = 0.2  # sessions without trades (GPW `no_trades`) in the window
 DEFAULT_CORRELATION = 0.9
 CENT = Decimal("0.01")
 
 type Array = npt.NDArray[np.float64]
 type Progress = Callable[[int, str], None]
 type Bars = Sequence[
-    tuple[str, float, float | None]
-]  # (session date, adjusted close, volume)
+    tuple[str, float, bool]
+]  # (session date, adjusted close, no trades)
 
 
 class CoverageTooLow(ValueError):
@@ -120,13 +120,14 @@ def window_series(
         if rate is not None:
             dates.append(day)
             ratios.append(close * rate / base)
-    volumes = [v for _, _, v in window[1:] if v is not None]
-    idle = sum(1 for v in volumes if v == 0)
+    # Index bars carry no volume; the GPW flag of a session without trades is the signal.
+    sessions = window[1:]
+    idle = sum(1 for _, _, no_trades in sessions if no_trades)
     return WindowSeries(
         dates,
         ratios,
         window[-1][1] / base_close - 1,
-        bool(volumes) and idle / len(volumes) > ILLIQUID_SHARE,
+        bool(sessions) and idle / len(sessions) > ILLIQUID_SHARE,
     )
 
 
@@ -327,15 +328,16 @@ def historical_scenario(
                 "localReturnRatio": _r(own_series.local_return),
                 "proxyReturnRatio": None if proxy is None else _r(proxy.ratios[-1] - 1),
                 "loss": _loss(p.value, result),
-                "illiquid": own_series.illiquid,
+                "illiquid": own_series.illiquid
+                and chosen[p.instrument] == "instrument",
             }
         )
-        if own_series.illiquid:
+        if own_series.illiquid and chosen[p.instrument] == "instrument":
             notes.add(
                 "ILLIQUID_SERIES",
                 "warning",
-                "Część serii ma ponad 20 % sesji bez obrotu w oknie scenariusza; zamknięcia mogą "
-                "być nieaktualne, a spadek zaniżony.",
+                "Część instrumentów ma ponad 20 % sesji bez transakcji w oknie scenariusza; "
+                "zamknięcia mogą być nieaktualne, a spadek zaniżony.",
             )
     returns = path / float(base) - 1
     end_return = float(returns[-1])
