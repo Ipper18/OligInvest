@@ -137,8 +137,8 @@ export async function startJobs(
         async (security) => {
           const client = await healthQueue.getBackend().client;
           await reserveMail(async (key) => {
-            const count = Number(await client.runCommand("INCR", [key]));
-            await client.runCommand("EXPIRE", [key, "172800"]);
+            const count = Number(await client.runCommand("incr", [key]));
+            await client.runCommand("expire", [key, "172800"]);
             if (!Number.isSafeInteger(count) || count < 1)
               throw new Error("MAIL_QUOTA_UNAVAILABLE");
             return count;

@@ -68,20 +68,31 @@ export type AnalyticsRepository =
     ? unknown
     : InstanceType<AnalyticsModule["AnalyticsRepository"]>;
 
-export const alertsModule = await optionalModule(async () => ({
-  // biome-ignore lint/suspicious/noTsIgnore: Package may be omitted from the build.
-  // @ts-ignore
-  ...(await import("@oliginvest/mod-alerts/contracts")),
-  // biome-ignore lint/suspicious/noTsIgnore: Package may be omitted from the build.
-  // @ts-ignore
-  ...(await import("@oliginvest/mod-alerts/server")),
+// Keep public namespace types instead of expanding Zod internals during declaration emit.
+// biome-ignore lint/suspicious/noTsIgnore: Package may be omitted from the build.
+// @ts-ignore
+const loadAlertsContracts = () => import("@oliginvest/mod-alerts/contracts");
+// biome-ignore lint/suspicious/noTsIgnore: Package may be omitted from the build.
+// @ts-ignore
+const loadAlertsServer = () => import("@oliginvest/mod-alerts/server");
+// biome-ignore lint/suspicious/noTsIgnore: Package may be omitted from the build.
+// @ts-ignore
+const loadQuickContracts = () => import("@oliginvest/mod-quick-actions/contracts");
+// biome-ignore lint/suspicious/noTsIgnore: Package may be omitted from the build.
+// @ts-ignore
+const loadQuickServer = () => import("@oliginvest/mod-quick-actions/server");
+
+type AlertsModule = Awaited<ReturnType<typeof loadAlertsContracts>> &
+  Awaited<ReturnType<typeof loadAlertsServer>>;
+type QuickModule = Awaited<ReturnType<typeof loadQuickContracts>> &
+  Awaited<ReturnType<typeof loadQuickServer>>;
+
+export const alertsModule: AlertsModule | undefined = await optionalModule(async () => ({
+  ...(await loadAlertsContracts()),
+  ...(await loadAlertsServer()),
 }));
 
-export const quickModule = await optionalModule(async () => ({
-  // biome-ignore lint/suspicious/noTsIgnore: Package may be omitted from the build.
-  // @ts-ignore
-  ...(await import("@oliginvest/mod-quick-actions/contracts")),
-  // biome-ignore lint/suspicious/noTsIgnore: Package may be omitted from the build.
-  // @ts-ignore
-  ...(await import("@oliginvest/mod-quick-actions/server")),
+export const quickModule: QuickModule | undefined = await optionalModule(async () => ({
+  ...(await loadQuickContracts()),
+  ...(await loadQuickServer()),
 }));
