@@ -74,6 +74,22 @@ Składnia zweryfikowana w dokumentacji: <https://code.claude.com/docs/en/mcp> (o
 | `alphavantage` | http `https://mcp.alphavantage.co/mcp?apikey=…` | [alphavantage/alpha_vantage_mcp](https://github.com/alphavantage/alpha_vantage_mcp) (MIT). Parametr `apikey` w URL jest oznaczony jako deprecated na rzecz logowania OAuth — działa; alternatywa: usunąć `?apikey` i zalogować się przez `/mcp` | `ALPHAVANTAGE_API_KEY` (darmowy) | ✓ Connected (bez klucza narzędzia zwrócą błąd) |
 | `twelvedata` | http `https://mcp.twelvedata.com/mcp` | [twelvedata/mcp](https://github.com/twelvedata/mcp) | logowanie OAuth w przeglądarce | ! Needs authentication — `/mcp` w sesji interaktywnej |
 
+**Zmiana 2026-10-23 (budżet tokenów):** w `.mcp.json` zostają tylko `context7` i `playwright`. Każdy serwer z `.mcp.json`
+dokłada swoje narzędzia i instrukcje do kontekstu każdej sesji (sam `alphavantage` — ok. 130 nazw narzędzi), a te trzy
+były w praktyce nieużywane: `github` zastępuje zalogowane CLI `gh` (MCP bez tokena zwracał błąd nagłówka
+`Authorization`), `alphavantage` i `twelvedata` służą tylko do okazjonalnej eksploracji danych. Audyt powyżej pozostaje
+aktualny — serwery dodaje się lokalnie (zakres `local`, zapis w `~/.claude.json` dla bieżącego katalogu, poza repo) na
+czas eksploracji i usuwa po niej:
+
+```bash
+claude mcp add --transport http --scope local alphavantage 'https://mcp.alphavantage.co/mcp?apikey=${ALPHAVANTAGE_API_KEY}'
+claude mcp add --transport http --scope local twelvedata https://mcp.twelvedata.com/mcp
+claude mcp remove --scope local alphavantage
+```
+
+Apostrofy zostawiają `${ALPHAVANTAGE_API_KEY}` jako tekst rozwijany przez Claude Code przy starcie, więc klucz nie trafia
+do pliku konfiguracji.
+
 Odrzucone/odłożone: lokalne serwery yfinance (`uvx yfinance-market-mcp`) — wymagają `uv`, którego nie ma na maszynie; do rozważenia w Fazie 1, jeśli zdalne serwery okażą się niewystarczające.
 
 ---
