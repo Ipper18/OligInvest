@@ -244,6 +244,13 @@ $$\Delta_{\text{dzień}} = V(t) - V(\text{zamknięcie } D{-}1) - F_{\text{dzień
 
 Przykład: 53 120,55 − 52 340,10 − 500,00 (wpłata dziś) = **280,45 PLN (0,53%)**; procent względem `V(D−1) + F_dzień` = 52 840,10 — ta sama baza co stopa dnia w TWR (§ 6.2), więc duża wpłata nie zawyża procentu (decyzja właściciela 2026-09-24, przegląd C-13; wcześniej `V(D−1)` i 0,54%).
 
+**Brak sesji po ostatnim zamknięciu (poprawka po demo 2026-10-26):** jeśli żaden instrument z
+portfela nie ma ceny z dnia sesji późniejszego niż jego zamknięcie z `D−1` (weekend, święto, przed
+otwarciem), `V(t)` powtarza tylko to zamknięcie — wynik dnia, jego procent, wkłady instrumentów i
+reszta są `null` (nigdy 0 — zasada z decyzji 2026-10-08), a `meta.staleReason = market_closed`; strumień
+SSE pomija wtedy `summary`. Portfel bez instrumentów nie czeka na sesję. Funkcja:
+`core.hasSessionSincePreviousClose`.
+
 **Rozbicie na instrumenty (decyzja właściciela 2026-10-13, BL-147):**
 `Δ_i = V_i(t) − V_i(D−1) + C_i − F_i`, gdzie `C_i` to podpisane przepływy
 gotówki operacji instrumentu w dniu (kupno, sprzedaż, dywidenda, przypisane opłaty,

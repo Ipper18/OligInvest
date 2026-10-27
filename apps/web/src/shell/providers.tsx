@@ -9,6 +9,7 @@ import { submitAction } from "../auth/actions";
 import { clearPrivateState, onLogout, onRemoteLogout } from "../auth/logout";
 import { updateImportCache, updatePortfolioCache } from "../portfolio/stream-cache";
 import { connectStream, type StreamState } from "../sse/transport";
+import { connectionStatus } from "./connection-status";
 import { Navigation } from "./navigation";
 export const queryKey = (userId: string, ...parts: unknown[]) => [userId, ...parts];
 export function Providers({
@@ -184,7 +185,7 @@ export function Providers({
         toolbar={
           <div className="oi-toolbar">
             <span role="status" className="oi-connection">
-              {appMessages[state]}
+              {appMessages[connectionStatus(state, paused)]}
             </span>
             <Button
               onClick={() => {
