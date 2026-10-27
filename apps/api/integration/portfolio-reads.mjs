@@ -201,4 +201,42 @@ export async function testPortfolioReads({ request, database, owner, instrumentI
     assert(!JSON.stringify(other).includes(accounts[0].id));
     assert(!JSON.stringify(other).includes(instrumentId));
   }
+  // Demo 2026-10-26: the latest quote repeats the previous close (no session yet) — no day
+  // result instead of 0.
+  const closed = randomUUID();
+  await database.transaction(owner, async (tx) => {
+    await tx.execute(
+      sql`INSERT INTO market.instruments(id,mic,ticker,name,type,currency) VALUES(${closed}::uuid,'XWAR',${`C${closed.slice(0, 8)}`},'Synthetic no session','stock','PLN')`,
+    );
+    await tx.execute(
+      sql`INSERT INTO market.bars_daily(instrument_id,session_date,close,source) VALUES(${closed}::uuid,'2026-10-12',7,'gpw')`,
+    );
+    await tx.execute(
+      sql`INSERT INTO market.quotes_latest(instrument_id,price,as_of,fetched_at,source,delay_minutes) VALUES(${closed}::uuid,7,'2026-10-12T15:00:00Z','2026-10-13T11:55:00Z','yahoo',15)`,
+    );
+  });
+  const idle = await post("accounts", {
+    name: "No session",
+    accountType: "regular",
+    broker: "xtb",
+    currency: "PLN",
+  });
+  await post("transactions", {
+    accountId: idle.id,
+    type: "SECURITY_TRANSFER_IN",
+    instrumentId: closed,
+    tradeDate: "2026-10-09",
+    quantity: "2",
+    acquisitionCost: { amount: "10", currency: "PLN" },
+    acquiredOn: "2026-10-09",
+  });
+  const noSession = await get(`day-change?accountId=${idle.id}`);
+  assert.equal(noSession.currentValue.amount, "14.00000000");
+  assert.equal(noSession.previousValue.amount, "14.00000000");
+  assert.equal(noSession.change, null, "no session since the previous close: null, never 0");
+  assert.equal(noSession.changeRatio, null);
+  assert.equal(noSession.positions[0].change, null);
+  assert.equal(noSession.residualChange, null);
+  assert.equal(noSession.meta.staleReason, "market_closed");
+  assert.equal((await get(`summary?accountId=${idle.id}`)).dayChange, null);
 }

@@ -5,7 +5,7 @@ import { DataTable } from "@oliginvest/ui/table";
 import { useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
+import { useRef, useState, useTransition } from "react";
 import { FormError, InstrumentPicker } from "../portfolio/forms";
 import { Amount, Freshness, ratio } from "../portfolio/presentation";
 import { QueryNotice, useResource } from "../portfolio/query";
@@ -15,6 +15,9 @@ import { mutateWatchlist } from "./watchlist-actions";
 function useWatchlistMutation(userId: string) {
   const [pending, setPending] = useState(false),
     [error, setError] = useState<{ code: string; requestId: string } | null>(null);
+  // A save is complete only once the refreshed server view is rendered; until then the controls
+  // stay disabled, so a reload or the next action never interrupts the refresh.
+  const [refreshing, startRefresh] = useTransition();
   const attempt = useRef<{ signature: string; key: string } | null>(null);
   const cache = useQueryClient(),
     router = useRouter();
@@ -22,7 +25,7 @@ function useWatchlistMutation(userId: string) {
     action: Parameters<typeof mutateWatchlist>[0],
     args: Parameters<typeof mutateWatchlist>[1],
   ) => {
-    if (pending) return false;
+    if (pending || refreshing) return false;
     const signature = JSON.stringify([action, args]);
     if (attempt.current?.signature !== signature)
       attempt.current = { signature, key: crypto.randomUUID() };
@@ -36,7 +39,7 @@ function useWatchlistMutation(userId: string) {
       }
       attempt.current = null;
       await cache.invalidateQueries({ queryKey: [userId, "market"] });
-      router.refresh();
+      startRefresh(() => router.refresh());
       return true;
     } catch {
       setError({ code: "SERVICE_UNAVAILABLE", requestId: "" });
@@ -45,7 +48,7 @@ function useWatchlistMutation(userId: string) {
       setPending(false);
     }
   };
-  return { pending, error, run };
+  return { pending: pending || refreshing, error, run };
 }
 export function WatchlistsScreen({
   userId,

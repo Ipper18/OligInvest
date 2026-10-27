@@ -21,23 +21,11 @@
   },
   {
     "id": "alerts",
-    "nav": [
-      {
-        "href": "/alerty",
-        "labelKey": "nav.alerts",
-        "permission": "alerts:manage"
-      }
-    ]
+    "nav": []
   },
   {
     "id": "analytics",
-    "nav": [
-      {
-        "href": "/analizy",
-        "labelKey": "nav.analytics",
-        "permission": "analytics:run:light"
-      }
-    ]
+    "nav": []
   },
   {
     "id": "education",

@@ -56,6 +56,17 @@ test("Start exposes daily contributions and residual without substituting zero f
   await expect(table.getByRole("row", { name: /Gotówka i pozostałe.*Brak danych/ })).toBeVisible();
   await expect(table.getByRole("row", { name: /TEST.*Brak danych/ })).toBeVisible();
 });
+test("connection status and the pause/resume button agree", async ({ page }) => {
+  await page.goto("/");
+  const status = page.locator(".oi-connection");
+  await expect(page.getByRole("button", { name: "Wstrzymaj aktualizacje" })).toBeVisible();
+  await expect(status).not.toHaveText("Aktualizacje wstrzymane");
+  await page.getByRole("button", { name: "Wstrzymaj aktualizacje" }).click();
+  await expect(status).toHaveText("Aktualizacje wstrzymane");
+  await page.getByRole("button", { name: "Wznów aktualizacje" }).click();
+  await expect(page.getByRole("button", { name: "Wstrzymaj aktualizacje" })).toBeVisible();
+  await expect(status).not.toHaveText("Aktualizacje wstrzymane");
+});
 test("MVP portfolio routes render at phone width", async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 800 });
   for (const route of [
