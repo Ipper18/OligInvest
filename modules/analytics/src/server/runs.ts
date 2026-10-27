@@ -4,14 +4,25 @@ import {
   ANALYTICS_LIMITS,
   ANALYTICS_TIMEOUTS_SECONDS,
   type AnalyticsJob,
+  goalJobSchema,
   monteCarloJobSchema,
+  stressTestJobSchema,
 } from "@oliginvest/contracts";
 import { Decimal, roundHalfUp, toDecimal } from "@oliginvest/core";
 import type { AppDatabase, DatabaseContext, DatabaseTransaction } from "@oliginvest/db";
 import { ProblemError } from "@oliginvest/platform";
 import { sql } from "drizzle-orm";
 import { z } from "zod";
-import type { AnalyticsRun, AnalyticsRunInput, MonteCarloParams } from "../contracts.js";
+import {
+  type AnalyticsRun,
+  type AnalyticsRunInput,
+  type GoalParams,
+  type MonteCarloParams,
+  type StressScenario,
+  type StressTestParams,
+  stressHypothetical,
+  stressScenario,
+} from "../contracts.js";
 
 /** Heavy analyses need `analytics:run:heavy` and count against the daily role quota (FR-07.06). */
 export const HEAVY_TYPES = new Set([
@@ -22,10 +33,50 @@ export const HEAVY_TYPES = new Set([
   "goal",
 ]);
 /** Types computed by this release; the remaining FR-04 analyses answer 404 until implemented. */
-export const IMPLEMENTED_TYPES = new Set(["monte_carlo"]);
+export const IMPLEMENTED_TYPES = new Set(["monte_carlo", "stress_test", "goal"]);
 /** Used when `platform.role_limits` has no row (example value of schema.sql). */
 export const DEFAULT_HEAVY_RUNS_PER_DAY = 20;
-export const ALGORITHM_VERSIONS = { monte_carlo: "mc-1.0.0" } as const;
+export const ALGORITHM_VERSIONS = {
+  monte_carlo: "mc-1.0.0",
+  stress_test: "stress-1.0.0",
+  goal: "goal-1.0.0",
+} as const;
+/** § 12.3 defaults; a row of `analytics.stress_scenarios` with the same key replaces one. */
+export const BUILTIN_STRESS_SCENARIOS: readonly StressScenario[] = [
+  {
+    key: "gfc_2008",
+    name: "Kryzys finansowy 2008",
+    kind: "historical",
+    startDate: "2008-09-01",
+    endDate: "2009-03-09",
+    shocks: {},
+    description: "Od upadku Lehman Brothers do dna rynków akcji w marcu 2009 (§ 12.3).",
+    enabled: true,
+  },
+  {
+    key: "covid_2020",
+    name: "Krach pandemiczny 2020",
+    kind: "historical",
+    startDate: "2020-02-19",
+    endDate: "2020-03-23",
+    shocks: {},
+    description: "Spadek rynków od szczytu z lutego do dna z marca 2020 (§ 12.3).",
+    enabled: true,
+  },
+  {
+    key: "inflation_2022",
+    name: "Inflacja i podwyżki stóp 2022",
+    kind: "historical",
+    startDate: "2022-01-03",
+    endDate: "2022-10-12",
+    shocks: {},
+    description: "Wzrost inflacji i stóp procentowych, spadek akcji i obligacji (§ 12.3).",
+    enabled: true,
+  },
+];
+/** Admin windows longer than this are skipped (§ 12.3: data volume of the job). */
+export const MAX_SCENARIO_DAYS = 1096;
+const DEFAULT_CORRELATION = 0.9;
 const DISCLAIMER = { key: "analysis", version: "2026-09" } as const;
 const ERROR_MESSAGES: Record<(typeof ANALYTICS_ERROR_CODES)[number], string> = {
   TIMEOUT: "Analiza przekroczyła limit czasu.",
@@ -200,37 +251,15 @@ export class AnalyticsRepository {
         if ((await this.heavyUsedToday(tx)) >= perDay)
           throw new ProblemError("QUOTA_EXCEEDED", { retryAfterSeconds: 3600 });
       }
-      const params = monteCarloDefaults(input.params as MonteCarloParams);
-      const { portfolio, assumptions, warnings } = await this.snapshot(tx, params);
-      const seed = params.seed ?? randomInt(0, 2 ** 47);
-      const stored = { ...params, seed };
+      const requestedAt = iso(this.now());
+      const prepared = await this.prepare(tx, input);
       const row = (
         await tx.execute(
-          sql`INSERT INTO analytics.analytics_runs(user_id,type,params,input_snapshot,assumptions,warnings,seed,algorithm_version) VALUES(${context.userId}::uuid,${input.type},${JSON.stringify(stored)}::jsonb,${JSON.stringify({ portfolio })}::jsonb,${JSON.stringify(assumptions)}::jsonb,${JSON.stringify(warnings)}::jsonb,${seed},${ALGORITHM_VERSIONS.monte_carlo}) RETURNING id::text,created_at AS "createdAt"`,
+          sql`INSERT INTO analytics.analytics_runs(user_id,type,params,input_snapshot,assumptions,warnings,seed,algorithm_version) VALUES(${context.userId}::uuid,${input.type},${JSON.stringify(prepared.stored)}::jsonb,${JSON.stringify({ portfolio: prepared.portfolio })}::jsonb,${JSON.stringify(prepared.assumptions)}::jsonb,${JSON.stringify(prepared.warnings)}::jsonb,${prepared.seed},${prepared.algorithm}) RETURNING id::text,created_at AS "createdAt"`,
         )
       ).rows[0];
       const runId = z.uuid().parse(row?.id);
-      const job = monteCarloJobSchema.parse({
-        v: 1,
-        runId,
-        type: "monte_carlo",
-        requestedAt: iso(this.now()),
-        params: {
-          horizonYears: params.horizonYears,
-          paths: params.paths,
-          model: params.model,
-          meanBlockMonths: params.meanBlockMonths,
-          historyWindow: params.historyWindow,
-          contributions: params.contributions,
-          withdrawals: params.withdrawals,
-          inflationRate: params.inflationRate,
-          taxMode: params.taxMode,
-          annualCostRate: params.annualCostRate,
-          ...(params.goal ? { goal: params.goal } : {}),
-        },
-        portfolio,
-        seed,
-      });
+      const job = prepared.job(runId, requestedAt);
       if (Buffer.byteLength(JSON.stringify(job)) > ANALYTICS_LIMITS.jobPayloadBytes)
         throw outOfBounds("portfolio", "too_large", "Migawka portfela jest zbyt duża.");
       const run = runDto((await tx.execute(sql`${SELECT_RUN} WHERE id=${runId}::uuid`)).rows[0]);
@@ -250,8 +279,190 @@ export class AnalyticsRepository {
     return created.run;
   }
 
+  /** Defaults made explicit, snapshot and the queue job of one run type (moduly.md § 5.2.1). */
+  private async prepare(tx: DatabaseTransaction, input: AnalyticsRunInput) {
+    if (input.type === "stress_test") return this.prepareStress(tx, input.params);
+    if (input.type === "goal") {
+      const params = goalDefaults(input.params as GoalParams);
+      const { portfolio, assumptions, warnings } = await this.snapshot(tx, params);
+      const seed = params.seed ?? randomInt(0, 2 ** 47);
+      return {
+        stored: { ...params, seed },
+        portfolio,
+        assumptions,
+        warnings,
+        seed,
+        algorithm: ALGORITHM_VERSIONS.goal,
+        job: (runId: string, requestedAt: string): AnalyticsJob =>
+          goalJobSchema.parse({
+            v: 1,
+            runId,
+            type: "goal",
+            requestedAt,
+            params: {
+              target: params.target,
+              horizonYears: params.horizonYears,
+              probabilities: params.probabilities,
+              paths: params.paths,
+              inflationRate: params.inflationRate,
+              indexToInflation: params.indexToInflation,
+              taxMode: params.taxMode,
+              annualCostRate: params.annualCostRate,
+            },
+            portfolio,
+            seed,
+          }),
+      };
+    }
+    const params = monteCarloDefaults(input.params as MonteCarloParams);
+    const { portfolio, assumptions, warnings } = await this.snapshot(tx, params);
+    const seed = params.seed ?? randomInt(0, 2 ** 47);
+    return {
+      stored: { ...params, seed },
+      portfolio,
+      assumptions,
+      warnings,
+      seed,
+      algorithm: ALGORITHM_VERSIONS.monte_carlo,
+      job: (runId: string, requestedAt: string): AnalyticsJob =>
+        monteCarloJobSchema.parse({
+          v: 1,
+          runId,
+          type: "monte_carlo",
+          requestedAt,
+          params: {
+            horizonYears: params.horizonYears,
+            paths: params.paths,
+            model: params.model,
+            meanBlockMonths: params.meanBlockMonths,
+            historyWindow: params.historyWindow,
+            contributions: params.contributions,
+            withdrawals: params.withdrawals,
+            inflationRate: params.inflationRate,
+            taxMode: params.taxMode,
+            annualCostRate: params.annualCostRate,
+            ...(params.goal ? { goal: params.goal } : {}),
+          },
+          portfolio,
+          seed,
+        }),
+    };
+  }
+
+  /** § 12.3: scenarios resolved here (the worker cannot read analytics tables), no seed. */
+  private async prepareStress(tx: DatabaseTransaction, raw: unknown) {
+    const params = raw as StressTestParams;
+    const hypothetical = stressShocks(params.hypothetical ?? []);
+    const factors = [
+      ...new Set(hypothetical.flatMap((h) => (h.kind === "index_shock" ? [h.instrumentId] : []))),
+    ];
+    if (factors.length) {
+      const known = new Set(
+        (
+          await tx.execute(
+            sql`SELECT id::text FROM market.instruments WHERE id=ANY(${sql.param(factors)}::uuid[])`,
+          )
+        ).rows.map((r) => String(r.id)),
+      );
+      const index = hypothetical.findIndex(
+        (h) => h.kind === "index_shock" && !known.has(h.instrumentId),
+      );
+      if (index >= 0)
+        throw outOfBounds(
+          `hypothetical.${index}.instrumentId`,
+          "unknown_instrument",
+          "Nieznany instrument szoku.",
+        );
+    }
+    const keys = params.historical ?? [];
+    if (new Set(keys).size !== keys.length)
+      throw outOfBounds("historical", "duplicate", "Scenariusz powtórzony.");
+    const { portfolio, assumptions, warnings } = await this.snapshot(tx, params);
+    const available = new Map(
+      (await this.scenarios(tx)).filter((s) => s.kind === "historical").map((s) => [s.key, s]),
+    );
+    const before = (s: StressScenario) => String(s.endDate) < portfolio.asOf;
+    let chosen: StressScenario[];
+    if (!keys.length && !hypothetical.length) chosen = [...available.values()].filter(before);
+    else
+      chosen = keys.map((key, index) => {
+        const scenario = available.get(key);
+        if (!scenario)
+          throw outOfBounds(`historical.${index}`, "unknown_scenario", "Nieznany scenariusz.");
+        if (!before(scenario))
+          throw outOfBounds(
+            `historical.${index}`,
+            "after_snapshot",
+            "Okno scenariusza musi kończyć się przed dniem migawki portfela.",
+          );
+        return scenario;
+      });
+    if (!chosen.length && !hypothetical.length)
+      throw outOfBounds("historical", "no_scenarios", "Brak scenariuszy do policzenia.");
+    const historical = chosen.map((s) => ({
+      key: s.key,
+      name: s.name,
+      from: String(s.startDate),
+      to: String(s.endDate),
+    }));
+    return {
+      stored: {
+        ...(params.accountIds ? { accountIds: params.accountIds } : {}),
+        historical: historical.map((h) => h.key),
+        hypothetical,
+      },
+      portfolio,
+      assumptions: {
+        ...assumptions,
+        scenarioSource: Object.fromEntries(
+          chosen.map((s) => [
+            s.key,
+            BUILTIN_STRESS_SCENARIOS.some((b) => b.key === s.key && sameScenario(b, s))
+              ? "builtin"
+              : "admin",
+          ]),
+        ),
+      },
+      warnings,
+      seed: null,
+      algorithm: ALGORITHM_VERSIONS.stress_test,
+      job: (runId: string, requestedAt: string): AnalyticsJob =>
+        stressTestJobSchema.parse({
+          v: 1,
+          runId,
+          type: "stress_test",
+          requestedAt,
+          params: { historical, hypothetical },
+          portfolio,
+        }),
+    };
+  }
+
+  /** Enabled scenarios: built-in ones replaced by admin rows with the same key (§ 12.3). */
+  private async scenarios(tx: DatabaseTransaction): Promise<StressScenario[]> {
+    const rows = (
+      await tx.execute(
+        sql`SELECT key,name,kind,start_date::text AS "startDate",end_date::text AS "endDate",shocks,description,enabled FROM analytics.stress_scenarios ORDER BY key`,
+      )
+    ).rows;
+    const merged = new Map(BUILTIN_STRESS_SCENARIOS.map((s) => [s.key, s]));
+    for (const row of rows) {
+      const parsed = stressScenario.safeParse(
+        Object.fromEntries(Object.entries(row).filter(([, value]) => value !== null)),
+      );
+      // A malformed admin row hides the key rather than reaching a computation.
+      if (!parsed.success || !validScenario(parsed.data)) merged.delete(String(row.key));
+      else merged.set(parsed.data.key, parsed.data);
+    }
+    return [...merged.values()].filter((s) => s.enabled);
+  }
+
+  async listScenarios(context: Owner) {
+    return this.database.transaction(context, async (tx) => ({ data: await this.scenarios(tx) }));
+  }
+
   /** § 12.1: positions from the latest stored valuation, mapped to long-history proxies. */
-  private async snapshot(tx: DatabaseTransaction, params: MonteCarloParamsFilled) {
+  private async snapshot(tx: DatabaseTransaction, params: SnapshotParams) {
     const accounts = (
       await tx.execute(
         sql`SELECT id::text,account_type AS "accountType" FROM portfolio.accounts WHERE closed_on IS NULL`,
@@ -483,7 +694,74 @@ export class AnalyticsRepository {
   }
 }
 
-type MonteCarloParamsFilled = ReturnType<typeof monteCarloDefaults>;
+type SnapshotParams = {
+  accountIds?: string[] | undefined;
+  proxyOverrides?: { instrumentId: string; proxyInstrumentId: string }[] | undefined;
+};
+type Shock =
+  | { kind: "index_shock"; instrumentId: string; shock: number }
+  | { kind: "fx_shock"; currency: "USD" | "EUR"; shock: number }
+  | { kind: "correlation_shock"; correlation: number };
+
+/** OpenAPI keeps one flat shape; each kind needs exactly its own fields (422 otherwise). */
+export function stressShocks(items: readonly unknown[]): Shock[] {
+  return items.map((raw, index) => {
+    const item = stressHypothetical.parse(raw);
+    const path = `hypothetical.${index}`;
+    const extra = (allowed: string[]) =>
+      Object.keys(item).filter((key) => key !== "kind" && !allowed.includes(key));
+    const invalid = (message: string) => outOfBounds(path, "shock", message);
+    if (item.kind === "index_shock") {
+      if (
+        item.instrumentId === undefined ||
+        item.shock === undefined ||
+        extra(["instrumentId", "shock"]).length
+      )
+        throw invalid("Szok indeksu wymaga instrumentId i shock.");
+      return { kind: item.kind, instrumentId: item.instrumentId, shock: item.shock };
+    }
+    if (item.kind === "fx_shock") {
+      if (
+        (item.currency !== "USD" && item.currency !== "EUR") ||
+        item.shock === undefined ||
+        extra(["currency", "shock"]).length
+      )
+        throw invalid("Szok kursu wymaga currency (USD lub EUR) i shock.");
+      return { kind: item.kind, currency: item.currency, shock: item.shock };
+    }
+    if (extra(["correlation"]).length) throw invalid("Szok korelacji przyjmuje tylko correlation.");
+    return { kind: item.kind, correlation: item.correlation ?? DEFAULT_CORRELATION };
+  });
+}
+
+function validScenario(s: StressScenario) {
+  if (s.kind === "historical") {
+    if (!s.startDate || !s.endDate || s.startDate >= s.endDate) return false;
+    const days = (Date.parse(s.endDate) - Date.parse(s.startDate)) / 86_400_000;
+    return days <= MAX_SCENARIO_DAYS;
+  }
+  const items = (s.shocks as { items?: unknown } | undefined)?.items;
+  if (!Array.isArray(items) || !items.length || items.length > 10) return false;
+  try {
+    stressShocks(items);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function sameScenario(a: StressScenario, b: StressScenario) {
+  return a.startDate === b.startDate && a.endDate === b.endDate && a.name === b.name;
+}
+
+/** Defaults of the OpenAPI schema made explicit; the job carries every parameter (§ 5.2.1). */
+export function goalDefaults(params: GoalParams) {
+  if (params.target.currency !== "PLN" || !toDecimal(params.target.amount).isPositive())
+    throw outOfBounds("target", "currency", "Cel musi być dodatnią kwotą w PLN.");
+  if (new Set(params.probabilities).size !== params.probabilities.length)
+    throw outOfBounds("probabilities", "duplicate", "Prawdopodobieństwo powtórzone.");
+  return { ...params, probabilities: [...params.probabilities].sort((a, b) => a - b) };
+}
 /** Defaults of the OpenAPI schema made explicit; the job carries every parameter (§ 5.2.1). */
 export function monteCarloDefaults(params: MonteCarloParams) {
   const flows = (items: MonteCarloParams["contributions"], path: string) =>

@@ -76,7 +76,6 @@
   "listPushSubscriptions",
   "listScreenerPresets",
   "listStrategies",
-  "listStressScenarios",
   "listTargetAllocations",
   "replaceImportTemplate",
   "replaceScreenerPreset",

@@ -232,6 +232,25 @@ export function dayChange(input: {
   });
 }
 
+/**
+ * Whether a session happened after the previous close (§ 5.1): some instrument has a current price
+ * from a later session date than its close at D−1. Without one (weekend, holiday, before the open)
+ * V(t) only repeats that close, so the day result is unknown (`null`), never 0. A portfolio without
+ * instruments has no session to wait for.
+ */
+export function hasSessionSincePreviousClose(input: {
+  readonly instrumentIds: readonly string[];
+  readonly quotesNow: readonly Pick<Quote, "instrumentId" | "asOf">[];
+  readonly quotesPrevClose: readonly Pick<Quote, "instrumentId" | "asOf">[];
+}): boolean {
+  if (input.instrumentIds.length === 0) return true;
+  return input.instrumentIds.some((id) => {
+    const now = input.quotesNow.find((q) => q.instrumentId === id);
+    const previous = input.quotesPrevClose.find((q) => q.instrumentId === id);
+    return now !== undefined && (!previous || now.asOf.slice(0, 10) > previous.asOf.slice(0, 10));
+  });
+}
+
 export interface ExternalFlow {
   readonly transactionId: string;
   readonly accountId: string;

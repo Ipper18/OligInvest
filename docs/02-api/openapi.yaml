@@ -5880,6 +5880,7 @@ components:
     StressTestParams:
       type: object
       minProperties: 1
+      description: 'FR-04.04, obliczenia-finansowe.md § 12.3. Brak `historical` i `hypothetical` = wszystkie włączone scenariusze historyczne. `index_shock` wymaga `instrumentId` i `shock`, `fx_shock` — `currency` (USD lub EUR) i `shock`, `correlation_shock` — opcjonalnie `correlation` (domyślnie 0,9); inne pola → 422. Okno scenariusza historycznego musi kończyć się przed dniem migawki portfela.'
       properties:
         accountIds: {type: array, maxItems: 20, items: {$ref: '#/components/schemas/Uuid'}}
         historical: {type: array, maxItems: 10, items: {type: string, pattern: '^[a-z0-9_]{3,40}$'}, example: [gfc_2008, covid_2020]}
@@ -5983,6 +5984,9 @@ components:
         probabilities: {type: array, minItems: 1, maxItems: 3, items: {type: number, enum: [0.5, 0.75, 0.9]}, default: [0.5, 0.75, 0.9]}
         paths: {type: integer, minimum: 100, maximum: 10000, default: 5000}
         inflationRate: {type: number, minimum: 0, maximum: 0.2, default: 0.025}
+        indexToInflation: {type: boolean, default: true, description: 'Wpłata indeksowana inflacją; wynik to wpłata pierwszego miesiąca.'}
+        taxMode: {type: string, enum: [belka_simplified, none], default: belka_simplified}
+        annualCostRate: {type: number, minimum: 0, maximum: 0.05, default: 0, description: 'Roczny koszt (TER + przewalutowanie) jako ułamek, jak w MonteCarloParams.'}
         seed: {type: integer, minimum: 0}
     RebalanceParams:
       type: object
@@ -6125,33 +6129,68 @@ components:
             return: {$ref: '#/components/schemas/NumberSeries'}
     StressTestResult:
       type: object
-      required: [kind, scenarios]
+      description: 'Scenariusze warunkowe na bieżących pozycjach (obliczenia-finansowe.md § 12.3) — nie prognoza. Kwoty strat dodatnie przy spadku wartości.'
+      required: [kind, currency, scenarios]
       properties:
         kind: {type: string, const: stress_test}
+        currency: {$ref: '#/components/schemas/CurrencyCode'}
         scenarios:
           type: array
           items:
             type: object
-            required: [key, name, kind, portfolioReturn, portfolioLoss, coverageRatio]
+            required: [key, name, kind, status, portfolioReturn, portfolioLoss, returnRange, coverageRatio, ownHistoryRatio, positions]
             properties:
               key: {type: string}
               name: {type: string}
               kind: {type: string, enum: [historical, hypothetical]}
+              shockKind: {type: string, enum: [index_shock, fx_shock, correlation_shock], description: 'Tylko scenariusze hipotetyczne.'}
+              shock: {type: number, description: 'Wielkość szoku (ułamek) — index_shock i fx_shock.'}
+              shockInstrumentId: {$ref: '#/components/schemas/Uuid'}
+              shockCurrency: {$ref: '#/components/schemas/CurrencyCode'}
+              correlation: {type: number, description: 'Tylko correlation_shock.'}
+              status: {type: string, enum: [ok, coverage_too_low, insufficient_data], description: 'Inny niż `ok` → liczby `null` (odmowa z wyjaśnieniem).'}
               periodFrom: {$ref: '#/components/schemas/LocalDate'}
               periodTo: {$ref: '#/components/schemas/LocalDate'}
-              portfolioReturn: {type: number}
-              portfolioLoss: {$ref: '#/components/schemas/Money'}
-              coverageRatio: {type: number, description: 'Udział wartości pokrytej danymi lub proxy (< 0.8 → odmowa).'}
+              troughDate: {oneOf: [{$ref: '#/components/schemas/LocalDate'}, {type: 'null'}]}
+              portfolioReturn: {type: [number, 'null'], description: 'Historyczny: koniec okna; hipotetyczny: β̂·szok; korelacja: dolny koniec przedziału.'}
+              portfolioLoss: {oneOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}]}
+              returnRange:
+                oneOf:
+                  - type: object
+                    required: [low, high, basis]
+                    properties:
+                      low: {type: number}
+                      high: {type: number}
+                      basis: {type: string, enum: [window_path, beta_ci90, one_month_p5_p95]}
+                  - {type: 'null'}
+              baselineRange:
+                type: object
+                description: 'Tylko correlation_shock: ten sam przedział przy korelacjach historycznych.'
+                required: [low, high]
+                properties:
+                  low: {type: number}
+                  high: {type: number}
+              translationReturn: {type: [number, 'null'], description: 'Tylko fx_shock: efekt czysto przeliczeniowy (udział waluty × szok).'}
+              coverageRatio: {type: number, description: 'Udział wartości pozycji (bez gotówki) pokrytej własną serią lub proxy (< 0.8 → odmowa).'}
+              ownHistoryRatio: {type: number, description: 'Udział wartości pozycji pokrytej własną serią instrumentu.'}
               positions:
                 type: array
                 items:
                   type: object
-                  required: [instrumentId, returnRatio]
+                  required: [instrumentId, series, returnRatio]
                   properties:
                     instrumentId: {$ref: '#/components/schemas/Uuid'}
                     proxyInstrumentId: {$ref: '#/components/schemas/Uuid'}
-                    returnRatio: {type: number}
-                    loss: {$ref: '#/components/schemas/Money'}
+                    series: {type: string, enum: [instrument, proxy, none]}
+                    returnRatio: {type: [number, 'null']}
+                    localReturnRatio: {type: [number, 'null'], description: 'Historyczny: zwrot w walucie notowania serii.'}
+                    proxyReturnRatio: {type: [number, 'null'], description: 'Historyczny: zwrot proxy w PLN dla porównania z własną serią.'}
+                    loss: {oneOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}]}
+                    beta: {type: [number, 'null']}
+                    betaLow: {type: [number, 'null']}
+                    betaHigh: {type: [number, 'null']}
+                    volatility: {type: [number, 'null'], description: 'correlation_shock: miesięczne odchylenie standardowe.'}
+                    illiquid: {type: boolean}
     RiskSnapshot:
       type: object
       required: [volatility, maxDrawdown, largestWeight, averageCorrelation]
@@ -6234,19 +6273,39 @@ components:
         lookAheadCheck: {type: string, enum: [passed, failed]}
     GoalResult:
       type: object
-      required: [kind, target, horizonYears, requirements]
+      description: 'Wymagana miesięczna wpłata dla prawdopodobieństw p w modelu Monte Carlo (obliczenia-finansowe.md § 12.6) — przedział, nie obietnica.'
+      required: [kind, target, targetReal, horizonYears, requirements, sensitivity]
       properties:
         kind: {type: string, const: goal}
         target: {$ref: '#/components/schemas/Money'}
+        targetReal: {$ref: '#/components/schemas/Money'}
         horizonYears: {type: integer}
         requirements:
           type: array
           items:
             type: object
-            required: [probability, monthlyContribution]
+            required: [probability, monthlyContribution, alreadyMet]
             properties:
               probability: {type: number}
-              monthlyContribution: {$ref: '#/components/schemas/Money'}
+              monthlyContribution: {oneOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}], description: 'Wpłata pierwszego miesiąca zaokrąglona w górę do grosza; `null` = poza zakresem modelu.'}
+              alreadyMet: {type: boolean}
+        sensitivity:
+          type: array
+          description: Obowiązkowa tabela wrażliwości (§ 12.6).
+          items:
+            type: object
+            required: [scenario, requirements]
+            properties:
+              scenario: {type: string, enum: [mean_minus_2pp, mean_plus_2pp, last_10y, full_history, block_length]}
+              meanBlockMonths: {type: integer, minimum: 1, maximum: 24}
+              requirements:
+                type: array
+                items:
+                  type: object
+                  required: [probability, monthlyContribution]
+                  properties:
+                    probability: {type: number}
+                    monthlyContribution: {oneOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}]}
     RebalanceResult:
       type: object
       required: [kind, orders, before, after, cashRemaining, totalCosts]
@@ -6346,6 +6405,7 @@ components:
         timeoutsSeconds: {type: object, additionalProperties: {type: integer}, example: {monte_carlo: 60, optimization: 120, backtest: 300}}
     StressScenarioInput:
       type: object
+      description: 'Historyczny: `startDate` < `endDate`, okno ≤ 1096 dni. Hipotetyczny: `shocks.items` — lista szoków w formacie `StressTestParams.hypothetical`.'
       required: [name, kind, description, enabled]
       properties:
         name: {type: string, maxLength: 80}
@@ -6356,12 +6416,18 @@ components:
         description: {type: string, maxLength: 1000}
         enabled: {type: boolean}
     StressScenario:
-      allOf:
-        - {$ref: '#/components/schemas/StressScenarioInput'}
-        - type: object
-          required: [key]
-          properties:
-            key: {type: string, example: covid_2020}
+      type: object
+      description: 'Scenariusz wbudowany (obliczenia-finansowe.md § 12.3) albo wiersz `analytics.stress_scenarios` o tym samym kluczu, który go zastępuje. Lista zawiera tylko scenariusze włączone.'
+      required: [key, name, kind, description, enabled]
+      properties:
+        key: {type: string, pattern: '^[a-z0-9_]{3,40}$', example: covid_2020}
+        name: {type: string, maxLength: 80}
+        kind: {type: string, enum: [historical, hypothetical]}
+        startDate: {$ref: '#/components/schemas/LocalDate'}
+        endDate: {$ref: '#/components/schemas/LocalDate'}
+        shocks: {type: object}
+        description: {type: string, maxLength: 1000}
+        enabled: {type: boolean}
     StrategyOperand:
       oneOf:
         - type: object

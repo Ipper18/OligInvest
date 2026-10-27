@@ -180,6 +180,7 @@ export const stressTestJobSchema = job("stress_test", {
       .array(
         object({
           key: z.string().regex(/^[a-z0-9_]{3,40}$/),
+          name: z.string().min(1).max(80),
           from: localDate,
           to: localDate,
         }).refine(ordered, { message: "Range must end after it starts" }),
@@ -347,6 +348,10 @@ export const goalJobSchema = job("goal", {
       .refine(unique, { message: "Duplicate probability" }),
     paths,
     inflationRate,
+    // BL-560: the Monte Carlo of § 12.1 with one monthly contribution plan (§ 12.6).
+    indexToInflation: z.boolean(),
+    taxMode: z.enum(["belka_simplified", "none"]),
+    annualCostRate: ratio(0, 0.05),
   }),
   portfolio: portfolioSnapshot,
   seed,
@@ -409,6 +414,93 @@ export const monteCarloResultSchema = object({
       { message: "Sensitivity needs at least two block lengths" },
     ),
 });
+// BL-556 (§ 12.3): conditional scenarios on today's positions, every number with its range.
+const pln = (pattern: RegExp) =>
+  object({ amount: z.string().regex(pattern), currency: z.literal("PLN") });
+const signedPln = pln(/^-?[0-9]{1,14}(\.[0-9]{1,2})?$/);
+const nullableNumber = z.number().nullable();
+const range = object({ low: z.number(), high: z.number() });
+export const stressTestResultSchema = object({
+  kind: z.literal("stress_test"),
+  currency: z.literal("PLN"),
+  scenarios: z
+    .array(
+      object({
+        key: z.string().regex(/^[a-z0-9_]{3,40}$/),
+        name: z.string().min(1).max(120),
+        kind: z.enum(["historical", "hypothetical"]),
+        shockKind: z.enum(["index_shock", "fx_shock", "correlation_shock"]).optional(),
+        shock: ratio(-0.9, 0.9).optional(),
+        shockInstrumentId: uuid.optional(),
+        shockCurrency: z.enum(["USD", "EUR"]).optional(),
+        correlation: ratio(0, 1).optional(),
+        status: z.enum(["ok", "coverage_too_low", "insufficient_data"]),
+        periodFrom: localDate.optional(),
+        periodTo: localDate.optional(),
+        troughDate: localDate.nullable().optional(),
+        portfolioReturn: nullableNumber,
+        portfolioLoss: signedPln.nullable(),
+        returnRange: object({
+          low: z.number(),
+          high: z.number(),
+          basis: z.enum(["window_path", "beta_ci90", "one_month_p5_p95"]),
+        }).nullable(),
+        baselineRange: range.optional(),
+        translationReturn: nullableNumber.optional(),
+        coverageRatio: ratio(0, 1),
+        ownHistoryRatio: ratio(0, 1),
+        positions: z
+          .array(
+            object({
+              instrumentId: uuid,
+              proxyInstrumentId: uuid.optional(),
+              series: z.enum(["instrument", "proxy", "none"]),
+              returnRatio: nullableNumber,
+              localReturnRatio: nullableNumber.optional(),
+              proxyReturnRatio: nullableNumber.optional(),
+              loss: signedPln.nullable().optional(),
+              beta: nullableNumber.optional(),
+              betaLow: nullableNumber.optional(),
+              betaHigh: nullableNumber.optional(),
+              volatility: nullableNumber.optional(),
+              illiquid: z.boolean().optional(),
+            }),
+          )
+          .max(ANALYTICS_LIMITS.portfolioPositions),
+      }),
+    )
+    .min(1)
+    .max(20),
+});
+// BL-560 (§ 12.6): the required first-month contribution per probability; null = out of range.
+const contribution = pln(/^[0-9]{1,14}(\.[0-9]{1,2})?$/).nullable();
+const probability = z.union([z.literal(0.5), z.literal(0.75), z.literal(0.9)]);
+const requirements = z
+  .array(object({ probability, monthlyContribution: contribution }))
+  .min(1)
+  .max(3);
+export const goalResultSchema = object({
+  kind: z.literal("goal"),
+  target: positivePln,
+  targetReal: positivePln,
+  horizonYears,
+  requirements: z
+    .array(object({ probability, monthlyContribution: contribution, alreadyMet: z.boolean() }))
+    .min(1)
+    .max(3),
+  sensitivity: z
+    .array(
+      z.discriminatedUnion("scenario", [
+        object({
+          scenario: z.enum(["mean_minus_2pp", "mean_plus_2pp", "last_10y", "full_history"]),
+          requirements,
+        }),
+        object({ scenario: z.literal("block_length"), meanBlockMonths: int(1, 24), requirements }),
+      ]),
+    )
+    .min(4)
+    .max(6),
+});
 const warning = object({
   code: z.string().regex(/^[A-Z][A-Z0-9_]{1,63}$/),
   severity: z.enum(["info", "warning", "critical"]),
@@ -430,11 +522,15 @@ export const analyticsResultSchema = z.discriminatedUnion("status", [
   object({
     ...envelope,
     status: z.literal("done"),
-    result: monteCarloResultSchema,
+    result: z.discriminatedUnion("kind", [
+      monteCarloResultSchema,
+      stressTestResultSchema,
+      goalResultSchema,
+    ]),
     assumptions,
     warnings: z.array(warning).max(20),
     reproducibility: object({
-      seed,
+      seed: seed.optional(),
       algorithmVersion: z.string().regex(/^[a-z0-9_.-]{1,40}$/),
       dataVersion: z.record(z.string().max(80), z.string().max(80)),
       libraries: z.record(z.string().regex(/^[a-z0-9_.-]{1,40}$/), z.string().max(40)),

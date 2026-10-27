@@ -208,17 +208,26 @@ def _goal_probability(liquidation: Array, goal: float | None) -> float | None:
     return None if goal is None else round(float((liquidation >= goal).mean()), 4)
 
 
-def run_monte_carlo(
-    job: Mapping[str, Any], inputs: MarketInputs, progress: Progress | None = None
-) -> dict[str, Any]:
-    report = progress or (lambda _p, _s: None)
-    params, portfolio = job["params"], job["portfolio"]
-    seed = int(job["seed"])
-    months_total = params["horizonYears"] * 12
+@dataclass(frozen=True)
+class PortfolioSeries:
+    """The snapshot as a constant mix of proxies (§ 12.1), shared with the goal calculator."""
+
+    full: (
+        Array  # monthly risky-portfolio returns over the common history (oldest first)
+    )
+    weights: dict[str, float]  # proxy id → weight within the risky part
+    total: Decimal  # positions + cash, PLN
+    cash: Decimal
+    cash_share: float
+    cash_monthly: float
+
+
+def portfolio_series(
+    portfolio: Mapping[str, Any], inputs: MarketInputs
+) -> PortfolioSeries:
     history = len(inputs.months)
     if history < MIN_HISTORY_MONTHS:
         raise InsufficientData(history)
-
     # Weights in Decimal at the boundary, statistics in float64 (§ 0.1).
     risky_values: dict[str, Decimal] = {}
     for position in portfolio["positions"]:
@@ -237,9 +246,95 @@ def run_monte_carlo(
     full = np.zeros(history)
     for proxy, weight in weights.items():
         full += weight * np.asarray(inputs.returns[proxy], dtype=np.float64)
-    cash_share = float(cash / total)
     cash_rate = inputs.cash_rate if inputs.cash_rate is not None else 0.0
-    cash_monthly = (1 + cash_rate) ** (1 / 12) - 1
+    return PortfolioSeries(
+        full,
+        weights,
+        total,
+        cash,
+        float(cash / total),
+        (1 + cash_rate) ** (1 / 12) - 1,
+    )
+
+
+def cost_warning(annual_cost: float) -> dict[str, str]:
+    if annual_cost == 0:
+        return {
+            "code": "COSTS_NOT_MODELLED",
+            "severity": "info",
+            "message": "Roczny koszt ustawiono na 0 %: opłaty funduszy i przewalutowanie są "
+            "pominięte, a prowizje transakcyjne są poza modelem; rzeczywiste wartości będą niższe.",
+        }
+    return {
+        "code": "TRANSACTION_COSTS_NOT_MODELLED",
+        "severity": "info",
+        "message": f"Roczny koszt {annual_cost:.2%} (opłaty funduszy i przewalutowanie) "
+        "odejmowany raz w roku; prowizje transakcyjne są poza modelem.",
+    }
+
+
+def common_warnings(
+    portfolio: Mapping[str, Any], inputs: MarketInputs, mix: PortfolioSeries
+) -> list[dict[str, str]]:
+    """Disclosures shared by the analyses on Monte Carlo inputs (BL-318)."""
+    warnings: list[dict[str, str]] = []
+    largest = max(
+        (_amount(p["value"]) / mix.total for p in portfolio["positions"]),
+        default=Decimal(0),
+    )
+    if largest > Decimal(str(CONCENTRATION_LIMIT)):
+        warnings.append(
+            {
+                "code": "CONCENTRATION_NOT_MODELLED",
+                "severity": "warning",
+                "message": f"Największa pozycja to {float(largest):.0%} portfela; proxy indeksowe "
+                "nie oddają ryzyka pojedynczego instrumentu, więc rozrzut jest niedoszacowany.",
+            }
+        )
+    history = len(inputs.months)
+    if history < SHORT_HISTORY_MONTHS:
+        warnings.append(
+            {
+                "code": "SHORT_HISTORY",
+                "severity": "warning",
+                "message": f"Historia proxy obejmuje {history} miesięcy (< 20 lat); "
+                "sprawdź tabelę wrażliwości.",
+            }
+        )
+    if inputs.cash_rate is None and mix.cash > 0:
+        warnings.append(
+            {
+                "code": "RISK_FREE_MISSING",
+                "severity": "warning",
+                "message": "Brak stopy referencyjnej NBP — gotówka bez oprocentowania (założenie).",
+            }
+        )
+    return warnings
+
+
+def proxy_assumptions(
+    inputs: MarketInputs, weights: Mapping[str, float]
+) -> dict[str, Any]:
+    return {
+        "proxySeries": {proxy: inputs.tickers.get(proxy, proxy) for proxy in weights},
+        "proxyReturnType": {
+            proxy: RETURN_TYPES.get(inputs.tickers.get(proxy, ""), "unknown")
+            for proxy in weights
+        },
+    }
+
+
+def run_monte_carlo(
+    job: Mapping[str, Any], inputs: MarketInputs, progress: Progress | None = None
+) -> dict[str, Any]:
+    report = progress or (lambda _p, _s: None)
+    params, portfolio = job["params"], job["portfolio"]
+    seed = int(job["seed"])
+    months_total = params["horizonYears"] * 12
+    history = len(inputs.months)
+    mix = portfolio_series(portfolio, inputs)
+    full, weights, total = mix.full, mix.weights, mix.total
+    cash_share, cash_monthly = mix.cash_share, mix.cash_monthly
 
     inflation = float(params["inflationRate"])
     contributions = flow_schedule(params["contributions"], months_total, inflation)
@@ -336,56 +431,15 @@ def run_monte_carlo(
     }
     used = windowed.size
     warnings: list[dict[str, str]] = [
+        cost_warning(annual_cost),
         {
-            "code": "COSTS_NOT_MODELLED",
+            "code": "CRISIS_TESTS_SEPARATE",
             "severity": "info",
-            "message": "Roczny koszt ustawiono na 0 %: opłaty funduszy i przewalutowanie są "
-            "pominięte, a prowizje transakcyjne są poza modelem; rzeczywiste wartości będą niższe.",
-        }
-        if annual_cost == 0
-        else {
-            "code": "TRANSACTION_COSTS_NOT_MODELLED",
-            "severity": "info",
-            "message": f"Roczny koszt {annual_cost:.2%} (opłaty funduszy i przewalutowanie) "
-            "odejmowany raz w roku; prowizje transakcyjne są poza modelem.",
+            "message": "Wynik nie pokazuje zachowania portfela w konkretnym kryzysie; scenariusze "
+            "2008, 2020 i 2022 są w osobnej analizie testów warunków skrajnych.",
         },
-        {
-            "code": "CRISIS_TESTS_UNAVAILABLE",
-            "severity": "info",
-            "message": "Testy w okresach kryzysów (BL-556: m.in. 2008, 2020, 2022) nie są jeszcze "
-            "dostępne; wynik nie pokazuje zachowania portfela w konkretnym kryzysie.",
-        },
+        *common_warnings(portfolio, inputs, mix),
     ]
-    largest = max(
-        (_amount(p["value"]) / total for p in portfolio["positions"]),
-        default=Decimal(0),
-    )
-    if largest > Decimal(str(CONCENTRATION_LIMIT)):
-        warnings.append(
-            {
-                "code": "CONCENTRATION_NOT_MODELLED",
-                "severity": "warning",
-                "message": f"Największa pozycja to {float(largest):.0%} portfela; proxy indeksowe "
-                "nie oddają ryzyka pojedynczego instrumentu, więc rozrzut jest niedoszacowany.",
-            }
-        )
-    if history < SHORT_HISTORY_MONTHS:
-        warnings.append(
-            {
-                "code": "SHORT_HISTORY",
-                "severity": "warning",
-                "message": f"Historia proxy obejmuje {history} miesięcy (< 20 lat); "
-                "sprawdź tabelę wrażliwości.",
-            }
-        )
-    if inputs.cash_rate is None and cash > 0:
-        warnings.append(
-            {
-                "code": "RISK_FREE_MISSING",
-                "severity": "warning",
-                "message": "Brak stopy referencyjnej NBP — gotówka bez oprocentowania (założenie).",
-            }
-        )
     if main.depleted > 0:
         warnings.append(
             {
@@ -401,7 +455,7 @@ def run_monte_carlo(
         "meanBlockMonths": params["meanBlockMonths"],
         "sensitivityBlockMonths": block_lengths,
         "sensitivityBlockModel": "stationary_bootstrap",
-        "crisisTests": "unavailable (BL-556)",
+        "crisisTests": "separate analysis (stress_test, BL-556)",
         "degreesOfFreedom": NU if params["model"] == "parametric_t" else None,
         "historyWindow": params["historyWindow"],
         "historyFrom": inputs.months[-used],
@@ -424,11 +478,7 @@ def run_monte_carlo(
         "annualCostRate": annual_cost,
         "annualCostApplication": "value_deduction_every_12_months",
         "transactionCosts": "none",
-        "proxySeries": {proxy: inputs.tickers.get(proxy, proxy) for proxy in weights},
-        "proxyReturnType": {
-            proxy: RETURN_TYPES.get(inputs.tickers.get(proxy, ""), "unknown")
-            for proxy in weights
-        },
+        **proxy_assumptions(inputs, weights),
         "sensitivityShiftAnnual": SENSITIVITY_SHIFT,
         "goalBasis": "after_simplified_tax" if tax else "market_value",
     }

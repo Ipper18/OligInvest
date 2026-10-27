@@ -7,6 +7,7 @@ import {
   externalFlows,
   fxRate,
   grossValue,
+  hasSessionSincePreviousClose,
   isoDate,
   moneyToJson,
   price,
@@ -357,11 +358,12 @@ export async function livePortfolioValuation(
       date: isoDate(date),
     });
     const previous = state.ledgerOn(addDays(date, -1)),
+      previousQuotes = state.quotesOn(addDays(date, -1)),
       previousValue = valuePortfolio({
         accounts: state.accounts,
         positions: previous.positions,
         cash: previous.cash,
-        quotes: state.quotesOn(addDays(date, -1)),
+        quotes: previousQuotes,
         fxRates: state.fx,
         date: addDays(date, -1),
       });
@@ -373,7 +375,15 @@ export async function livePortfolioValuation(
           source: string;
         }
       | undefined;
-    if (valuation.isComplete && previousValue.isComplete) {
+    // Without a session since the previous close the stream sends no day result (§ 5.1).
+    const session = hasSessionSincePreviousClose({
+      instrumentIds: [
+        ...new Set([...ledger.positions, ...previous.positions].map((p) => p.instrumentId)),
+      ],
+      quotesNow: [...selected.values()],
+      quotesPrevClose: previousQuotes,
+    });
+    if (session && valuation.isComplete && previousValue.isComplete) {
       try {
         const flows = externalFlows(state.transactions, {
           level: "portfolio",

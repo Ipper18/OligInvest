@@ -36,7 +36,7 @@ export function createAnalyticsResults(options: {
     const result: AnalyticsResult = analyticsResultSchema.parse(raw);
     const userId = await ownerOf(result.runId);
     if (!userId) return; // Deleted by its owner meanwhile: nothing to store.
-    const type = await asOwner(userId, async (tx) => {
+    const stored = await asOwner(userId, async (tx) => {
       const current = (
         await tx.execute(
           sql`SELECT type,assumptions,warnings FROM analytics.analytics_runs WHERE id=${result.runId}::uuid AND status IN ('queued','running') FOR UPDATE`,
@@ -44,6 +44,13 @@ export function createAnalyticsResults(options: {
       ).rows[0];
       if (!current) return undefined;
       const finished = sql`finished_at=${result.finishedAt}::timestamptz,duration_ms=${result.durationMs},started_at=coalesce(started_at,${result.finishedAt}::timestamptz-make_interval(secs=>${result.durationMs / 1000}))`;
+      // A result of another analysis kind never lands on this run (defence in depth).
+      if (result.status === "done" && result.result.kind !== current.type) {
+        await tx.execute(
+          sql`UPDATE analytics.analytics_runs SET status='failed',error='INTERNAL',${finished} WHERE id=${result.runId}::uuid`,
+        );
+        return { type: String(current.type), errorCode: "INTERNAL" };
+      }
       if (result.status === "done") {
         const assumptions = {
           ...((current.assumptions as object | null) ?? {}),
@@ -61,19 +68,21 @@ export function createAnalyticsResults(options: {
         await tx.execute(
           sql`UPDATE analytics.analytics_runs SET status=${result.status},error=${result.status === "failed" ? result.error.code : null},${finished} WHERE id=${result.runId}::uuid`,
         );
-      return String(current.type);
+      return { type: String(current.type), errorCode: undefined };
     });
-    if (!type) return;
+    if (!stored) return;
+    const { type, errorCode } = stored;
     await options.publish(
       userId,
-      result.status === "done"
+      result.status === "done" && !errorCode
         ? { event: "analytics.run.completed", data: { v: 1, runId: result.runId, type } }
         : {
             event: "analytics.run.failed",
             data: {
               v: 1,
               runId: result.runId,
-              errorCode: result.status === "failed" ? result.error.code : "CANCELLED",
+              errorCode:
+                errorCode ?? (result.status === "failed" ? result.error.code : "CANCELLED"),
             },
           },
     );

@@ -92,6 +92,7 @@ test("Zod document matches all implemented operations and pending is the exact r
     "listNotificationDeliveries",
     "listPersonalAccessTokens",
     "listPositions",
+    "listStressScenarios",
     "listTransactions",
     "listWatchlists",
     "openEventStream",

@@ -2,7 +2,7 @@
 // document 1:1; `pnpm check:contracts` compares the generated OpenAPI with it.
 import { z } from "@hono/zod-openapi";
 import { ANALYTICS_ERROR_CODES } from "@oliginvest/contracts";
-import { moneySchema, object } from "@oliginvest/mod-portfolio/contracts";
+import { moneySchema, nullableMoney, object } from "@oliginvest/mod-portfolio/contracts";
 
 const uuid = z.uuid();
 const date = z.string().date();
@@ -96,28 +96,25 @@ const optimizationParams = object({
   resamples: int(0, 500).default(200),
   riskFreeRate: num(0, 0.5).optional(),
 }).openapi("OptimizationParams");
-const stressTestParams = object({
+export const stressHypothetical = object({
+  kind: z.enum(["index_shock", "fx_shock", "correlation_shock"]),
+  instrumentId: uuid.optional(),
+  currency: z
+    .string()
+    .regex(/^[A-Z]{3}$/)
+    .optional(),
+  shock: num(-0.9, 0.9).optional(),
+  correlation: num(0, 1).optional(),
+});
+export const stressTestParams = object({
   accountIds,
   historical: z
     .array(z.string().regex(/^[a-z0-9_]{3,40}$/))
     .max(10)
     .optional(),
-  hypothetical: z
-    .array(
-      object({
-        kind: z.enum(["index_shock", "fx_shock", "correlation_shock"]),
-        instrumentId: uuid.optional(),
-        currency: z
-          .string()
-          .regex(/^[A-Z]{3}$/)
-          .optional(),
-        shock: num(-0.9, 0.9).optional(),
-        correlation: num(0, 1).optional(),
-      }),
-    )
-    .max(10)
-    .optional(),
+  hypothetical: z.array(stressHypothetical).max(10).optional(),
 }).openapi("StressTestParams", { minProperties: 1 });
+export type StressTestParams = z.infer<typeof stressTestParams>;
 const whatIfParams = object({
   accountIds,
   changes: z
@@ -212,7 +209,7 @@ const backtestParams = object({
 })
   .refine((p) => (p.strategyId === undefined) !== (p.strategy === undefined))
   .openapi("BacktestParams", { oneOf: [{ required: ["strategyId"] }, { required: ["strategy"] }] });
-const goalParams = object({
+export const goalParams = object({
   accountIds,
   target: moneySchema,
   horizonYears: int(1, 40),
@@ -228,8 +225,12 @@ const goalParams = object({
     .default([0.5, 0.75, 0.9]),
   paths: int(100, 10000).default(5000),
   inflationRate: num(0, 0.2).default(0.025),
+  indexToInflation: z.boolean().default(true),
+  taxMode: z.enum(["belka_simplified", "none"]).default("belka_simplified"),
+  annualCostRate: num(0, 0.05).default(0),
   seed,
 }).openapi("GoalParams");
+export type GoalParams = z.infer<typeof goalParams>;
 const targetWeight = object({
   instrumentId: uuid.optional(),
   assetClass: z.string().optional(),
@@ -343,28 +344,59 @@ const optimizationResult = object({
     return: numberSeries.optional(),
   }).optional(),
 }).openapi("OptimizationResult");
+const nullableNumber = z.number().nullable();
 const stressTestResult = object({
   kind: constant("stress_test"),
+  currency: z.string().regex(/^[A-Z]{3}$/),
   scenarios: z.array(
     object({
       key: z.string(),
       name: z.string(),
       kind: z.enum(["historical", "hypothetical"]),
+      shockKind: z.enum(["index_shock", "fx_shock", "correlation_shock"]).optional(),
+      shock: z.number().optional(),
+      shockInstrumentId: uuid.optional(),
+      shockCurrency: z
+        .string()
+        .regex(/^[A-Z]{3}$/)
+        .optional(),
+      correlation: z.number().optional(),
+      status: z.enum(["ok", "coverage_too_low", "insufficient_data"]),
       periodFrom: date.optional(),
       periodTo: date.optional(),
-      portfolioReturn: z.number(),
-      portfolioLoss: moneySchema,
-      coverageRatio: z.number(),
-      positions: z
-        .array(
+      troughDate: z.union([date, z.null()]).openapi({}, oneOf).optional(),
+      portfolioReturn: nullableNumber,
+      portfolioLoss: nullableMoney,
+      returnRange: z
+        .union([
           object({
-            instrumentId: uuid,
-            proxyInstrumentId: uuid.optional(),
-            returnRatio: z.number(),
-            loss: moneySchema.optional(),
+            low: z.number(),
+            high: z.number(),
+            basis: z.enum(["window_path", "beta_ci90", "one_month_p5_p95"]),
           }),
-        )
-        .optional(),
+          z.null(),
+        ])
+        .openapi({}, oneOf),
+      baselineRange: object({ low: z.number(), high: z.number() }).optional(),
+      translationReturn: nullableNumber.optional(),
+      coverageRatio: z.number(),
+      ownHistoryRatio: z.number(),
+      positions: z.array(
+        object({
+          instrumentId: uuid,
+          proxyInstrumentId: uuid.optional(),
+          series: z.enum(["instrument", "proxy", "none"]),
+          returnRatio: nullableNumber,
+          localReturnRatio: nullableNumber.optional(),
+          proxyReturnRatio: nullableNumber.optional(),
+          loss: nullableMoney.optional(),
+          beta: nullableNumber.optional(),
+          betaLow: nullableNumber.optional(),
+          betaHigh: nullableNumber.optional(),
+          volatility: nullableNumber.optional(),
+          illiquid: z.boolean().optional(),
+        }),
+      ),
     }),
   ),
 }).openapi("StressTestResult");
@@ -428,8 +460,30 @@ const backtestResult = object({
 const goalResult = object({
   kind: constant("goal"),
   target: moneySchema,
+  targetReal: moneySchema,
   horizonYears: z.number().int(),
-  requirements: z.array(object({ probability: z.number(), monthlyContribution: moneySchema })),
+  requirements: z.array(
+    object({
+      probability: z.number(),
+      monthlyContribution: nullableMoney,
+      alreadyMet: z.boolean(),
+    }),
+  ),
+  sensitivity: z.array(
+    object({
+      scenario: z.enum([
+        "mean_minus_2pp",
+        "mean_plus_2pp",
+        "last_10y",
+        "full_history",
+        "block_length",
+      ]),
+      meanBlockMonths: int(1, 24).optional(),
+      requirements: z.array(
+        object({ probability: z.number(), monthlyContribution: nullableMoney }),
+      ),
+    }),
+  ),
 }).openapi("GoalResult");
 const decimalString = z
   .string()
@@ -525,3 +579,17 @@ export const analyticsLimits = object({
   bounds: z.record(z.string(), z.number()),
   timeoutsSeconds: z.record(z.string(), z.number().int()).optional(),
 }).openapi("AnalyticsLimits");
+
+/** § 12.3: built-in scenario or the `analytics.stress_scenarios` row with the same key. */
+export const stressScenario = object({
+  key: z.string().regex(/^[a-z0-9_]{3,40}$/),
+  name: z.string().max(80),
+  kind: z.enum(["historical", "hypothetical"]),
+  startDate: date.optional(),
+  endDate: date.optional(),
+  shocks: z.record(z.string(), z.unknown()).optional(),
+  description: z.string().max(1000),
+  enabled: z.boolean(),
+}).openapi("StressScenario");
+export type StressScenario = z.infer<typeof stressScenario>;
+export const stressScenarioList = object({ data: z.array(stressScenario) });

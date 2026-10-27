@@ -65,3 +65,15 @@ for query, params in (
 ):
     connection.execute(query, params).fetchall()
 print("PASS: Monte Carlo market-data queries run as analytics_ro")
+
+# BL-556: stress-test windows and beta months run as analytics_ro too.
+from oliginvest_analytics import stress_data  # noqa: E402
+
+for query, params in (
+    (stress_data._WINDOW_BARS, ([probe_id], "2020-02-19", "2020-03-23")),
+    (stress_data._WINDOW_FX, ("USD", "2020-02-19", "2020-03-23")),
+    (stress_data._MONTH_CLOSES, ([probe_id], "2026-10-01", "2026-10-01", 61)),
+    (stress_data._MONTH_FX, ("USD", "2026-10-01", "2026-10-01", 61)),
+):
+    connection.execute(query, params).fetchall()
+print("PASS: stress-test market-data queries run as analytics_ro")
