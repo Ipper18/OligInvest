@@ -244,6 +244,8 @@ Backend M4 udostępnia wyłącznie schematy `PriceAlert*` dla trzech typów ceno
 
 Zdarzenie alertu i stan reguły są zapisywane w jednej transakcji; publikacja do kolejki i SSE następuje po zatwierdzeniu. Niepotwierdzone zdarzenia i ewaluację odzyskuje cykliczne zadanie co minutę. SMTP i baza nie tworzą jednej transakcji rozproszonej: awaria po przyjęciu wiadomości przez SMTP może spowodować ponowienie (R-45).
 
+`QuickRepository` otrzymuje od warstwy składania API repozytorium portfela, funkcję `readPortfolio` oraz odczyt notowań `MarketRepository.quotes`. Importy ich implementacji w `quick-actions` są wyłącznie typami. Dzięki temu publiczny eksport `quick-actions/server` nie ładuje tras HTTP, importów brokerskich ani całych eksportów serwerowych fundamentów. API przekazuje te same istniejące implementacje; RLS, wycena i walidacja nie są kopiowane, a pierwsze żądanie nie uruchamia odroczonego importu.
+
 ## 6. Uprawnienia (RBAC) i zakresy PAT
 
 | Uprawnienie | user | pro | admin | Zakres PAT |

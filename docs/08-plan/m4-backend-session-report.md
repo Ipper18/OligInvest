@@ -1,28 +1,30 @@
 # M4 — backend: stan bieżący
 
-**Cel:** przekazać stan BL-403/404/405 i backendu BL-407/408 oraz poprawki CI PR #38.
+**Cel:** przekazać stan BL-403/404/405 i backendu BL-407/408 oraz poprawki CI [PR #38](https://github.com/Ipper18/OligInvest/pull/38).
 
-**2026-10-27**, `feat/m4-backend`, osobny worktree, [draft PR #38](https://github.com/Ipper18/OligInvest/pull/38). Poprawki zapisane w `8e61c04`, następnie merge `89ea2cc` z `origin/main` do `2477dea`: #37 (zależności), #36 (demo) i #39 (analizy). Konflikt rejestru ryzyk rozwiązany przez zachowanie R-45 oraz R-46–R-49 z main. Statusy `w toku` do zielonego CI i wspólnego DoD.
+**2026-10-27**, `feat/m4-backend`, osobny worktree. Scalony `origin/main` do `52ca91a` (#23), po wcześniejszych #37/#36/#39. #40 przy końcowym fetchu nadal poza main. Statusy `w toku` do zielonego CI i wspólnego DoD.
 
-## Zakres backendu
+## Zakres i wcześniejsze poprawki
 
-Powiadomienia e-mail/fallback, ciche godziny i deduplikacja; rezerwa 50 z 300 prób SMTP/dobę. Trzy alerty cenowe z histerezą/cooldownem, blokadą stale/BLOCK, czasem i źródłem danych, bez kwot portfela i zaleceń. PAT: CSPRNG/hash, step-up, zakresy, limity, odwołanie, nowa sieć i przypomnienia; replay 24 h bez sekretu. Pięć `/quick/*`, tekstowe pieniądze z przecinkiem/kropką; niepełna wycena to 200, null, `incomplete` i powody.
+Powiadomienia e-mail/fallback, cisza i deduplikacja; rezerwa 50 z 300 prób SMTP/dobę. Alerty cenowe, histereza/cooldown, blokada stale/BLOCK, fakty bez kwot portfela i zaleceń. PAT z hash-only/CSPRNG, step-up, zakresami i przypomnieniami; replay bez sekretu. Pięć `/quick/*`, tekstowe pieniądze, niepełne dane jako 200/null/incomplete/powody.
 
-## Poprawki znalezione przez CI i test
+TS2883 usunięto jawnymi typami, bez zmiany tsconfig. Test monitoringu konfiguruje limiter Valkey i sprawdza wyczerpanie puli. **Test ujawnił błąd produkcyjny:** adapter BullMQ/ioredis wymaga nazw metod `incr`/`expire`, a `INCR`/`EXPIRE` powodowały TypeError. Poprawiono wywołania, zachowując limity i odmowę przy braku konfiguracji. Zależności zaktualizowano wyłącznie przez merge #37.
 
-- TS2883: jawne adnotacje `alertsModule`, `quickModule`, `conflictError` i `rateLimitedError`, oparte na publicznych eksportach. Zachowane opcjonalne ładowanie modułów; tsconfig bez zmian.
-- `test-monitoring.mjs` konfiguruje prawdziwy limiter na Valkey. Sprawdza naliczenie puli zwykłej/całkowitej i odmowę wysyłki po 250 zwykłych próbach. Produkcyjna odmowa przy braku konfiguracji pozostaje.
-- **Test integracyjny ujawnił dodatkowy błąd limitera poczty:** `runCommand` adaptera BullMQ/ioredis wywołuje metodę klienta o podanej nazwie; wielkie `INCR`/`EXPIRE` powodowały `TypeError`. Produkcyjne wywołania poprawiono na `incr`/`expire`. Nie zmieniono limitów, rezerwy ani kontroli błędów.
-- Nie naprawiano samodzielnie deps-audit, zależności ani `osv-scanner.toml`; aktualizacje weszły wyłącznie przez merge #37.
+## Przyczyna timeoutu importu quick-actions i naprawa
 
-## Dowody po scaleniu
+`quick-actions/server` importował wartości z całych eksportów `portfolio/server` i `market/server`: oprócz potrzebnego odczytu uruchamiał ładowanie tras HTTP, importów brokerskich, przeliczania portfela i schematów DB. W grafie był także cykl `market/routes → watchlist-routes → routes`; nie stwierdzono zakleszczenia, lecz nadmiarowe ładowanie i transformację przy równoległych testach.
 
-- Pełne `pnpm ci:build -- alerts` oraz `-- quick-actions`: **21/21 PASS każdy**, świeże kopie z frozen install, deklaracjami TS i buildem web/Python.
-- Zmienione pakiety i zależne: lint/typecheck **60/60 PASS**; unit **42/42 PASS** przy `--concurrency=1` i `--maxWorkers=2`, bez zmiany timeoutów. Core: 99,58% linii, 100% funkcji. Wcześniej równoległe uruchomienie miało timeouty smoke (5 s), a web zgłosił za mały plik stronicowania Windows/SWC; powtórzenia po ograniczeniu równoległości przeszły.
-- `pnpm db:test`: PASS, PostgreSQL 18.6, RLS/izolacja, PAT/notifications/alerts/quick, zero różnic schematu. Monitoring: PostgreSQL + Valkey + Mailpit, restart/retry i limit SMTP PASS (lokalnie przekierowano wyłącznie katalog logów runnera do git-dir worktree).
-- Granice modułów, dokumentacja/repozytorium, klient API i OpenAPI **93 implemented / 92 pending**: PASS. `uv` dostępne; nie ma pominięć przez jego brak. Python unit i pełne E2E/obrazy pozostawiono CI w tej poprawce.
-- CI: jedno końcowe sprawdzenie po pushu, bez oczekiwania/pollingu; wynik w podsumowaniu sesji.
+API przekazuje teraz istniejące `readPortfolio` i instancję `MarketRepository` do `QuickRepository`. W quick-actions pozostały wyłącznie importy typów tych implementacji. RLS, wycena i walidacja są współdzielone; nie skopiowano logiki ani nie przeniesiono ciężkiego importu na pierwsze żądanie. Publiczne eksporty fundamentów i granice modułów pozostają zgodne z MOD.
+
+Pojedynczy lokalny pomiar zimnego importu Node: **362 → 298 modułów, 428 → 277 ms** (diagnostyka, nie p95). Serwerowe pliki obu fundamentów i wskazany cykl nie są już osiągalne podczas importu quick-actions. Pozostają wymagane kontrakty, Zod/OpenAPI, Decimal, SQL i platforma. Test regresji blokuje dołączenie eksportów serwerowych i sprawdza wstrzyknięte odczyty portfela/notowań: przed poprawką FAIL, po poprawce PASS. **Nie podniesiono żadnego timeoutu**, także dla pojedynczego smoke.
+
+## Dowody bieżącej poprawki
+
+- Polecenia z kroku definicji joba db: lint/typecheck/test/build dla db, API i wszystkich modułów, dodatkowo `--force`, domyślna równoległość: **51/51 PASS, zero cache**. Smoke `public entry point: server`: **468 ms** przy limicie 5000 ms; quick-actions 9/9 testów.
+- `pnpm db:test`: PASS, PostgreSQL 18.6, izolacja/RLS, rzeczywiste trasy PAT/quick i wycena, zero różnic schematu.
+- Build API, OpenAPI (93 implemented / 92 pending), klient, granice modułów i dokumentacja: PASS. Wcześniejsze pełne buildy bez alerts/quick-actions po 21/21 PASS.
+- Jedno końcowe sprawdzenie CI po pushu; bez pollingu. Anulowane matrix.check/matrix.name ignorowane zgodnie z decyzją właściciela. Zgłoszone błędy „WebKit encountered an internal error” to znane **R-41**; bez zmian WebKit/E2E w tej poprawce. `uv` dostępne, testów Pythona/obrazów/E2E nie powtarzano dla tej zmiany importów.
 
 ## Pozostało
 
-M4 nie jest zamknięte: PWA/Web Push, ekrany (w tym PAT), Skróty i testy urządzeń w kolejnej paczce. Zależność od BL-402 odłożona przez właściciela. Estymata paczki 11,5 dnia obejmuje odłożony ekran PAT, rzeczywisty nakład niezmierzony. Bez nowego ADR. Ryzyko M4 **R-45**: duplikat SMTP po awarii między wysłaniem a zapisem potwierdzenia; brak nowych ryzyk w tej poprawce CI.
+PWA/Web Push, ekrany (także PAT), Skróty i testy urządzeń w kolejnej paczce; M4 niezamknięte. Estymata paczki 11,5 dnia obejmuje odłożony ekran PAT, rzeczywisty nakład niezmierzony. Bez nowego ADR i nowych ryzyk; pozostaje **R-45** (duplikat SMTP po awarii między wysłaniem a potwierdzeniem).

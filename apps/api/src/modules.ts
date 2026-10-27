@@ -33,6 +33,7 @@ export {
   mountPortfolio,
   type PortfolioDependencies,
   PortfolioRepository,
+  readPortfolio,
 } from "@oliginvest/mod-portfolio/server";
 
 /**

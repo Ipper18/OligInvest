@@ -16,8 +16,8 @@ import {
   quickMessages,
 } from "@oliginvest/i18n";
 import { summarySchema } from "@oliginvest/mod-market/contracts";
-import { MarketRepository } from "@oliginvest/mod-market/server";
-import { type PortfolioRepository, readPortfolio } from "@oliginvest/mod-portfolio/server";
+import type { MarketRepository } from "@oliginvest/mod-market/server";
+import type { PortfolioRepository, readPortfolio } from "@oliginvest/mod-portfolio/server";
 import { ProblemError } from "@oliginvest/platform";
 import { sql } from "drizzle-orm";
 import { z } from "zod";
@@ -119,9 +119,13 @@ export function quickText(kind: "portfolio" | "today" | "quote", input: unknown)
   return `${line}\n${formatMessage(quickMessages.freshness, { time: new Intl.DateTimeFormat("pl-PL", { timeZone: "Europe/Warsaw", dateStyle: "short", timeStyle: "short" }).format(new Date(value.asOf)), delay: String(value.delayMinutes), source: value.source, stale: value.stale ? quickMessages.stale : "" })}`;
 }
 export class QuickRepository {
-  constructor(readonly portfolio: PortfolioRepository) {}
+  constructor(
+    readonly portfolio: PortfolioRepository,
+    private readonly portfolioRead: typeof readPortfolio,
+    private readonly market: Pick<MarketRepository, "quotes">,
+  ) {}
   async snapshot(context: DatabaseContext, kind: "portfolio" | "today") {
-    const value = await readPortfolio(this.portfolio, context, "getQuickSnapshot", {
+    const value = await this.portfolioRead(this.portfolio, context, "getQuickSnapshot", {
       view: "economic",
       groupBy: "instrument",
     });
@@ -140,11 +144,7 @@ export class QuickRepository {
   }
   async quote(context: DatabaseContext, ticker: string, mic?: string) {
     const instrument = await this.portfolio.read(context, (tx) => this.resolve(tx, ticker, mic));
-    const quote = (
-      await new MarketRepository(this.portfolio.database, this.portfolio.now).quotes(context, [
-        instrument.id,
-      ])
-    )[0];
+    const quote = (await this.market.quotes(context, [instrument.id]))[0];
     if (!quote) throw new ProblemError("NOT_FOUND");
     return quickQuote.parse({
       ticker: instrument.ticker,

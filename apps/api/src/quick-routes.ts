@@ -4,7 +4,14 @@ import { type AppEnv, ProblemError } from "@oliginvest/platform";
 import { sql } from "drizzle-orm";
 import { PatService } from "./auth/pat-service.js";
 import type { AuthRouteDependencies } from "./auth/routes.js";
-import { alertsModule, marketError, type PortfolioDependencies, quickModule } from "./modules.js";
+import {
+  alertsModule,
+  MarketRepository,
+  marketError,
+  type PortfolioDependencies,
+  quickModule,
+  readPortfolio,
+} from "./modules.js";
 import { conflictError, rateLimitedError } from "./rate-limited-response.js";
 
 const format = z.enum(["json", "text"]).default("json");
@@ -138,7 +145,12 @@ export function mountQuick(
             : c.json(result, 200);
         }
         if (!portfolio) throw new ProblemError("SERVICE_UNAVAILABLE");
-        const repository = new QuickRepository(await portfolio.repository());
+        const portfolioRepository = await portfolio.repository();
+        const repository = new QuickRepository(
+          portfolioRepository,
+          readPortfolio,
+          new MarketRepository(portfolioRepository.database, portfolioRepository.now),
+        );
         if (name === "transactions") {
           const result = await repository.create(
             context,
