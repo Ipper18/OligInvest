@@ -33,8 +33,34 @@ Pytania do właściciela przed udostępnieniem ekranów: (1) czy ostrzeżenie `C
 | Koszty | PASS / FIX | test skrajny to wycena bez transakcji (koszty nie dotyczą); w celu `annualCostRate`, prowizje od wpłat poza modelem — ostrzeżenie `TRANSACTION_COSTS_NOT_MODELLED`/`COSTS_NOT_MODELLED` |
 | Reżimy | PASS | test skrajny jest analizą reżimów; cel ma wiersze `last_10y`/`full_history` i długości bloku |
 | Wielkość pozycji | PASS | bieżące wagi z migawki, bez dźwigni, kupno i trzymanie w oknie (bez rebalancingu) — jawne założenie |
-| Wykonanie | FIX → flaga | wycena na zamknięciach bez modelu płynności sprzedaży — flaga `illiquid` i ograniczenie w `10-ograniczenia.md` |
+| Wykonanie | FIX → flaga | wycena na zamknięciach bez modelu płynności sprzedaży — flaga `illiquid` i jawne założenie w § 12.3 (kupno i trzymanie, wycena na zamknięciach) |
 
-## Zakres i dowody
+## Zrobione i dowody
 
-*(uzupełniane na koniec sesji)*
+- **Dokument przed kodem:** `obliczenia-finansowe.md` § 12.3 i § 12.6 (implementacja, znaki kwot, wybór serii, pokrycie, beta, szok korelacji, dokładny kwantyl wpłaty); OpenAPI: `StressTestResult` (statusy, przedziały, `series`, `ownHistoryRatio`, liczby `null` przy odmowie), `GoalParams` (+`indexToInflation`, `taxMode`, `annualCostRate`), `GoalResult` (+`targetReal`, `alreadyMet`, tabela wrażliwości, kwota `null` poza zakresem), `StressScenario` jako płaski obiekt.
+- **Worker (`apps/analytics`):** `stress.py` (`stress-1.0.0`, deterministyczny), `stress_data.py` (tylko tabele `market`, kursy wyłącznie NBP w oknach dziennych, `no_trades` jako sygnał niepłynności), `goal.py` (`goal-1.0.0`, ziarno PCG64), `COVERAGE_TOO_LOW` z procesu potomnego. pytest **180 PASS** (+29: ręcznie policzony przykład okna, dane po oknie nie zmieniają wyniku, tolerancja krawędzi 7 dni, odmowa < 80 %, przejście na proxy przy `BLOCK`, beta = `polyfit`, szok korelacji przy ρ = 1, wpłata = granica bisekcji na pełnej symulacji z podatkiem i bez), ruff, mypy `--strict`. Ręcznie na PostgreSQL 16 (minimalne tabele z `schema.sql`): nowe zapytania, loader → JSON → `runner.run` dla `stress_test` i `goal` z wynikiem zgodnym z kontraktem; cel 10 000 ścieżek × 15 lat w 0,89 s (limit 120 s).
+- **Kontrakty (`packages/contracts`):** zadania i wyniki obu typów, wspólne fikstury TS ↔ Python (+5 przypadków), schemat JSON workera aktualny; vitest 105 PASS.
+- **Moduł (`modules/analytics`) i `api`:** `stress_test` i `goal` w `IMPLEMENTED_TYPES`; scenariusze wbudowane § 12.3 zastępowane lub ukrywane wierszami `analytics.stress_scenarios` (wiersz niepoprawny ukrywa klucz), okno przed dniem migawki, walidacja pól szoku (422 ze ścieżką), `GET /analytics/stress-scenarios` (zdjęte z pending), `jobs` nie zapisuje wyniku innego rodzaju (status `failed`/`INTERNAL` i zdarzenie `failed`). Kontrakt OpenAPI ↔ Zod OK (76 operacji), redocly OK, testy modułu i `api` PASS. Test integracyjny `apps/api/integration/analytics.mjs` rozszerzony (scenariusze admina, odmowy 422, wartości domyślne, zapis wyniku) — **uruchamia CI** (PostgreSQL 18).
+- **Przy okazji (własny błąd z PR #19):** rodzic nie przekazywał `tickers` do procesu potomnego, więc `proxySeries`/`proxyReturnType` w MC pokazywały UUID i `unknown` — poprawione; MC: `CRISIS_TESTS_UNAVAILABLE` → `CRISIS_TESTS_SEPARATE` (odesłanie do testów skrajnych).
+
+## Pominięte i dlaczego
+
+- **Ekrany** (BL-314, ekrany testów skrajnych i celu) — redesign UI w przygotowaniu.
+- **`adminUpsertStressScenario`** — wydzielone do **BL-567**: trasy admina idą przez `Administration.http` (audyt przed/po, step-up) w transakcji roli `oliginvest_auth`, która nie ma praw do `analytics.*`; wymaga zmiany infrastruktury admina w `apps/api`, poza zakresem tej paczki. Do tego czasu scenariusze admina zmienia się w tabeli (R-49).
+- **Testy PostgreSQL 18 / Docker** — zostawione CI (sonda izolacji wykonuje nowe zapytania jako `analytics_ro`).
+
+## Odchylenia i uwagi
+
+- `apps/web/src/api/schema.d.ts` — **jedyny** plik w `apps/web`, wygenerowany `pnpm gen:api-client` (CI `contracts` wymaga aktualności); bez zmian kodu ekranów.
+- § 12.6 mówi o wyszukiwaniu binarnym; implementacja liczy jego granicę dokładnie (liniowość ścieżek przy wspólnych liczbach losowych), test porównuje z bisekcją — opisane w dokumencie.
+- Lokalnie Node 22 zamiast 24 i `xlsx` z rejestru npm zamiast tarballa SheetJS (host zablokowany przez politykę sieci) — tylko do lokalnych kontroli, lockfile i `package.json` bez zmian.
+
+## Decyzje do potwierdzenia (bez ADR)
+
+1. `CRISIS_TESTS_SEPARATE` zamiast `CRISIS_TESTS_UNAVAILABLE` w MC (warunek właściciela z 2026-10-21 dotyczył informacji o braku testów kryzysowych).
+2. Kalkulator celu: model stały (bootstrap stacjonarny, blok 6 mies., cała historia), wpłata domyślnie indeksowana inflacją, cel nominalny porównywany z wartością po podatku.
+3. Szoki hipotetyczne: okno 60 miesięcy, przedział normalny 90 %, szok indeksu w walucie notowania indeksu.
+
+## Nowe ryzyka
+
+R-46 (test skrajny jako „najgorszy przypadek”, ocalali, proxy), R-47 (beta z okresu spokoju), R-48 (wpłata czytana jako obietnica), R-49 (edycja scenariuszy bez audytu do BL-567) — [`ryzyka.md`](ryzyka.md).

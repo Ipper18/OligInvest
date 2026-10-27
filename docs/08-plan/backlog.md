@@ -243,7 +243,7 @@ M3 nie zależy od M4 (etapy mogą iść równolegle).
 | BL-311 | Worker `analytics`: kontrakty zadań (JSON Schema z Zod), walidacja `jsonschema`, rola `analytics_ro`, sieć bez wyjścia, limity CPU/RAM/czasu, testy izolacji | NFR-03.13, NFR-01.07 | [ADR-003](../09-decyzje/ADR-003-hybryda-obliczen-i-kolejki.md), INF | BL-014, BL-022 | 3 | gotowe (nakład niezmierzony) |
 | BL-312 | Moduł `analytics`: uruchomienia, postęp i wynik przez SSE, limity roli, anulowanie, zapis wyników w kontekście RLS | FR-04.01, NFR-01.07 | API, MOD | BL-311, BL-125 | 3 | w toku (Claude Code, `feat/m3-analytics-backend`; właściciel z rekordu przez `analytics.run_owner`; nakład niezmierzony) |
 | BL-313 | Monte Carlo: bootstrap stacjonarny i t-Student, proxy klas aktywów, przepływy, inflacja, podatek; wachlarz, P(cel), rozkład obsunięć, tabela wrażliwości, ziarno | FR-04.02, NFR-08.05 | OBL | BL-312 | 5 | gotowe (Claude Code, [PR #19](https://github.com/Ipper18/OligInvest/pull/19); ograniczenia M3 zaakceptowane przez właściciela 2026-10-21 — długość bloku w założeniach i ≥ 2 wiersze `block_length` w tabeli wrażliwości, jawna informacja o braku testów kryzysowych BL-556; nakład niezmierzony) |
-| BL-314 | Ekran wyników analiz: rozkłady, „jak czytać”, blok założeń, disclaimer, dane do odtworzenia; Monte Carlo: widoczna informacja o niedostępnych testach kryzysowych (BL-556, ostrzeżenie `CRISIS_TESTS_UNAVAILABLE`) i wiersze wrażliwości `block_length` z długością bloku (warunek właściciela 2026-10-21) | FR-04.01, FR-06.06 | EKR, LAW | BL-313 | 2 | todo |
+| BL-314 | Ekran wyników analiz: rozkłady, „jak czytać”, blok założeń, disclaimer, dane do odtworzenia; Monte Carlo: widoczna informacja, że wynik nie pokazuje konkretnego kryzysu (ostrzeżenie `CRISIS_TESTS_SEPARATE`, wcześniej `CRISIS_TESTS_UNAVAILABLE`; testy kryzysowe to osobna analiza BL-556) i wiersze wrażliwości `block_length` z długością bloku (warunek właściciela 2026-10-21) | FR-04.01, FR-06.06 | EKR, LAW | BL-313 | 2 | todo |
 | BL-315 | Kalkulator rebalancingu: alokacje docelowe, tryby `full` i `buy_only`, koszty, szacowany podatek, blokada przy nieuzgodnionych danych — wektor H; przyszła opcja: `buy_only` z wolnej gotówki na rachunku (nie tylko nowej) | FR-04.06 | OBL, VEC, LAW | BL-143, BL-207 | 3 | todo (rdzeń § 12.5 w `packages/core`, PR #3) |
 | BL-316 | Bramkowanie roli `pro` dla analiz ciężkich, komunikaty w UI | FR-07.06 | MOD | BL-312 | 1 | todo |
 | BL-317 | Wektory B–D w pytest kontra empyrical-reloaded | NFR-02.06, NFR-08.02 | OBL | BL-311 | 1 | gotowe (nakład niezmierzony) |
@@ -260,6 +260,7 @@ M3 nie zależy od M4 (etapy mogą iść równolegle).
 - **2026-10-20, BL-312:** trasy `/analytics/*` zgodne z OpenAPI, limity roli, idempotencja, anulowanie; właściciel z `analytics_runs.user_id` przez `analytics.run_owner` (migracja 0008), zapis wyników i postępu w RLS właściciela, SSE.
 - **2026-10-20, BL-313/BL-318:** Monte Carlo w workerze (bootstrap stacjonarny, t-Student, przepływy, inflacja, podatek, wrażliwość), `DATA_QUALITY_HOLD`, pełny backfill WIG i S&P 500; przegląd `strategy-critique` (MEDIUM) i `backtest-review` (FIX) w PR #19.
 - **2026-10-21, BL-313:** decyzje właściciela wdrożone (backfill tabel A NBP od 2002, proxy `^SP500TR` z zapasem `^GSPC`, `annualCostRate`, wiersze `block_length`, informacja o braku testów kryzysowych); ograniczenia M3 zaakceptowane — `gotowe`.
+- **2026-10-27, BL-556/BL-560:** testy warunków skrajnych (okna historyczne na bieżących pozycjach jako przedział ścieżki, szoki z betą i przedziałem 90 %, szok korelacji, jawne proxy, pokrycie 80 %) i kalkulator celu (dokładny kwantyl wpłaty na wspólnych liczbach losowych, tabela wrażliwości) — tylko backend; przegląd `strategy-critique` (MEDIUM) i `backtest-review` (FIX → zasadny); edycja scenariuszy admina wydzielona do BL-567. [Stan](m3-stress-goal-session-report.md).
 
 ## 5. M4 — Alerty, PWA i Skróty
 
@@ -313,18 +314,19 @@ Każde zadanie z analizą przyszłości kończy się przeglądem metodologicznym
 | BL-553 | Statystyki skuteczności decyzji z dziennika | FR-03.12 | OBL | BL-309 | 1,5 | todo |
 | BL-554 | Import generyczny CSV z szablonami mapowania kolumn | FR-03.04 | IMP | BL-145 | 3 | todo |
 | BL-555 | Optymalizacja portfela (min. wariancja, HRP, max-Sharpe z ostrzeżeniem, Black-Litterman, resampling wag) | FR-04.03 | OBL, LAW | BL-312 | 4 | todo |
-| BL-556 | Testy warunków skrajnych: scenariusze historyczne i hipotetyczne, jawne proxy, próg pokrycia 80 %, scenariusze admina | FR-04.04 | OBL | BL-312 | 3 | todo |
+| BL-556 | Testy warunków skrajnych: scenariusze historyczne i hipotetyczne, jawne proxy, próg pokrycia 80 %, scenariusze admina | FR-04.04 | OBL | BL-312 | 3 | w toku (Claude Code, `feat/m3-stress-goal`, tylko backend; scenariusze admina czytane z `analytics.stress_scenarios`, trasa edycji z audytem wydzielona do BL-567; ekran po redesignie UI; nakład niezmierzony) |
 | BL-557 | Analiza „co jeśli” dla hipotetycznej pozycji | FR-04.05 | OBL | BL-312 | 2 | todo |
 | BL-558 | Backtest (vectorbt): strategie regułowe, uniwersum point-in-time GPW, koszty i poślizg, IS/OOS, walk-forward | FR-04.08 | OBL | BL-312, BL-201 | 5 | todo |
 | BL-559 | Raport backtestu: liczba prób, Deflated Sharpe Ratio, reżimy, test anty-look-ahead, definicje strategii w UI | FR-04.08, NFR-07.02 | OBL, LAW | BL-558 | 3 | todo |
-| BL-560 | Kalkulator celu (wspólne liczby losowe, p = 50/75/90 %) | FR-04.09 | OBL | BL-313 | 1,5 | todo |
+| BL-560 | Kalkulator celu (wspólne liczby losowe, p = 50/75/90 %) | FR-04.09 | OBL | BL-313 | 1,5 | w toku (Claude Code, `feat/m3-stress-goal`, tylko backend; dokładny kwantyl zamiast bisekcji, § 12.6; ekran po redesignie UI; nakład niezmierzony) |
 | BL-561 | Screening kandydatów na bazie screenera, z listą spełnionych kryteriów | FR-04.07 | LAW | BL-514 | 1,5 | todo |
 | BL-562 | Alerty na wskaźnikach (te same funkcje co wykres) | FR-05.02 | MOD | BL-404, BL-201 | 2 | todo |
 | BL-563 | Alerty portfelowe (zmiana wartości, obsunięcie, odchylenie alokacji) | FR-05.03 | MOD | BL-404, BL-305 | 1,5 | todo |
 | BL-564 | Spike i wdrożenie OAuth z wymuszonym TOTP za flagą `auth.oauth` (ADR) | FR-07.03 | AUTH, [ADR-004](../09-decyzje/ADR-004-postgres-better-auth-rls.md) | BL-103 | 3 | todo |
 | BL-565 | Migawka offline: tylko w zainstalowanej PWA, po zgodzie, ≤ 30 dni, kasowana przy wylogowaniu i 401 | FR-09.02 | UI, RODO | BL-401 | 2 | todo |
 | BL-566 | Przegląd metodologiczny i zgodności funkcji M5b (checklisty, test języka) | NFR-07.02 | LAW | BL-559, BL-555 | 0,5 | todo |
-| | **Suma etapu** | | | | **38,5** | |
+| BL-567 | Admin: edycja scenariuszy testów skrajnych (`adminUpsertStressScenario`) z audytem przed/po, step-upem i walidacją okna ≤ 1096 dni oraz listy szoków; zapis w kontekście roli aplikacyjnej (rola `oliginvest_auth` nie ma praw do `analytics.*`) | FR-04.04, FR-08.10 | API, OBL | BL-556 | 1 | todo (wydzielone z BL-556 2026-10-27) |
+| | **Suma etapu** | | | | **39,5** | |
 
 ## 8. M6 — Hardening i dostępność
 
@@ -370,9 +372,9 @@ Poza planem etapów; estymacja orientacyjna. Przed startem każde zadanie przech
 | M3 Wyniki historyczne i scenariusze | 19 | 38,5 |  |
 | M4 Alerty, PWA i Skróty | 12 | 23,5 |  |
 | M5a Admin, edukacja, rynek | 15 | 27 |  |
-| M5b Analizy zaawansowane, OAuth, offline | 16 | 38,5 |  |
+| M5b Analizy zaawansowane, OAuth, offline | 17 | 39,5 |  |
 | M6 Hardening i dostępność | 12 | 17 |  |
-| **Razem M0–M6** | **173** | **328** | bez narzutu przeglądu (ok. +30 %) |
+| **Razem M0–M6** | **174** | **329** | bez narzutu przeglądu (ok. +30 %) |
 | Później | 8 | 18,5 | poza planem |
 
 **Pokrycie wymagań:** każde z 151 wymagań FR/NFR z [`../00-przeglad/wymagania.md`](../00-przeglad/wymagania.md) ma co najmniej jedno zadanie (sprawdzone skryptem 2026-09-19: brak wymagań bez zadania, brak zależności wstecz między etapami, M3 i M4 niezależne). Pełna macierz wymaganie → dokument → zadanie: [`../00-przeglad/macierz-pokrycia.md`](../00-przeglad/macierz-pokrycia.md).
