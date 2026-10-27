@@ -58,6 +58,7 @@
   "pending": "Trwa zapisywanie.",
   "live": "Aktualizacje na żywo",
   "polling": "Aktualizacje co minutę",
+  "connecting": "Łączenie z aktualizacjami",
   "paused": "Aktualizacje wstrzymane",
   "pause": "Wstrzymaj aktualizacje",
   "resume": "Wznów aktualizacje",

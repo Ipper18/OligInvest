@@ -5,8 +5,10 @@ import { join } from "node:path";
 import { test } from "node:test";
 import { childEnvironment } from "./dev-environment.mjs";
 import {
+  DevelopmentError,
   developmentOptions,
   developmentProfile,
+  parseDevelopmentEnv,
   persistDevelopmentSecrets,
   requireOwnerTerminal,
 } from "./dev-local.mjs";
@@ -113,5 +115,37 @@ test("no service receives local profile flags, plaintext demo password or raw lo
     );
     for (const key of ["DEV_DEMO_PASSWORD", "DEV_PROFILE", "DEV_AUTH_SECRET", "DEV_AUDIT_KEY"])
       assert.equal(env[key], undefined);
+  }
+});
+
+test("an unquoted # in .env stops startup instead of truncating the value", async () => {
+  const secret = "Demo-pass#2026-long";
+  assert.throws(
+    () => parseDevelopmentEnv(`# comment\nDEV_PROFILE=demo\nDEV_DEMO_PASSWORD=${secret}\n`),
+    (error) =>
+      error instanceof DevelopmentError &&
+      error.message.includes("DEV_DEMO_PASSWORD") &&
+      !error.message.includes("2026-long"),
+  );
+  assert.throws(
+    () => parseDevelopmentEnv("export DEV_DEMO_PASSWORD=abc #def\r\n"),
+    DevelopmentError,
+  );
+  for (const quote of ["'", '"', "`"])
+    assert.equal(
+      parseDevelopmentEnv(`DEV_DEMO_PASSWORD=${quote}${secret}${quote}\n`).DEV_DEMO_PASSWORD,
+      secret,
+    );
+  assert.deepEqual(parseDevelopmentEnv("# DEV_DEMO_PASSWORD=a#b\nDEV_PROFILE=demo\nEMPTY=\n"), {
+    DEV_PROFILE: "demo",
+    EMPTY: "",
+  });
+  const directory = await mkdtemp(join(tmpdir(), "oliginvest-dev-"));
+  const path = join(directory, ".env");
+  try {
+    await writeFile(path, `DEV_DEMO_PASSWORD=${secret}\n`);
+    await assert.rejects(persistDevelopmentSecrets(development, path), DevelopmentError);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
   }
 });

@@ -4,7 +4,7 @@
 module.exports = {
   hooks: {
     readPackage(pkg) {
-      if (pkg.name === "better-auth" && pkg.version === "1.7.5") {
+      if (pkg.name === "better-auth" && pkg.version === "1.7.12") {
         for (const name of ["drizzle-kit", "vitest", "next", "react", "react-dom"]) {
           if (pkg.peerDependenciesMeta?.[name]?.optional !== true)
             throw new Error(`Expected optional Better Auth peer: ${name}`);
