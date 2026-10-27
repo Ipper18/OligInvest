@@ -1,4 +1,7 @@
-"""Queue consumer: contract validation, time-limited execution, results. No DB queries."""
+"""Queue consumer: contract validation, market data, time-limited execution, results.
+
+The only database access is the read-only market data of `market_data.py` (ADR-003).
+"""
 
 import asyncio
 import json
@@ -11,10 +14,17 @@ from pathlib import Path
 from typing import Any
 from uuid import UUID
 
+import psycopg
 from bullmq import Queue, Worker  # type: ignore[import-untyped]
 
 from .contracts import VERSION, InvalidJob, ValidatedJob, check_result, validate_job
 from .execution import Outcome, execute
+from .market_data import Database, DataQualityHold, load_inputs
+from .montecarlo import MIN_HISTORY_MONTHS
+from .stress_data import load_stress_inputs
+
+# Analyses whose market data the parent reads before the child process starts.
+MARKET_DATA_TYPES = ("monte_carlo", "goal", "stress_test")
 
 ANALYTICS_QUEUE = "analytics"
 RESULTS_QUEUE = "analytics-results"
@@ -32,6 +42,16 @@ class Config:
     mode: str
     connection: dict[str, Any]
     heartbeat_key: str
+    database: Database | None = None
+
+
+# api sets this key (TTL 1 h) on cancel; the worker polls it between steps (BL-312).
+def cancel_key(run_id: str) -> str:
+    return f"bull:analytics:cancel:{UUID(run_id)}"
+
+
+PROGRESS_MIN_SECONDS = 2.0
+PROGRESS_MIN_STEP = 10
 
 
 def read_config(env: Mapping[str, str | None]) -> Config:
@@ -69,6 +89,27 @@ def read_config(env: Mapping[str, str | None]) -> Config:
         raise ValueError("Invalid queue endpoint")
     if not 1 <= port <= 65535 or not re.fullmatch(r"[a-zA-Z0-9_-]{1,64}", instance):
         raise ValueError("Invalid queue port or instance")
+    database = None
+    db_host = env.get("DB_HOST") or ""
+    if db_host:
+        db_port = int(env.get("DB_PORT") or "5432")
+        db_name = env.get("DB_NAME") or ""
+        if (
+            not re.fullmatch(r"[a-zA-Z0-9.:[\]_-]{1,253}", db_host)
+            or not 1 <= db_port <= 65535
+            or not re.fullmatch(r"[a-zA-Z0-9_]{1,63}", db_name)
+            or env.get("DB_SSL", "false") not in ("true", "false")
+        ):
+            raise ValueError("Invalid database endpoint")
+        database = Database(
+            db_host,
+            db_port,
+            db_name,
+            secrets["DB_ANALYTICS_RO_PASSWORD"],
+            env.get("DB_SSL") == "true",
+        )
+    elif mode == "production":
+        raise ValueError("Invalid database endpoint")
     return Config(
         str(mode),
         {
@@ -79,6 +120,7 @@ def read_config(env: Mapping[str, str | None]) -> Config:
             "socket_connect_timeout": 1.5,
         },
         f"health:analytics:{instance}",
+        database,
     )
 
 
@@ -135,14 +177,60 @@ async def process_analytics(
         "durationMs": int((time.monotonic() - started) * 1000),
     }
     if outcome.status == "done":
-        result["result"] = outcome.result
-    else:
+        # The child returns result, assumptions, warnings and reproducibility (BL-313).
+        result.update(outcome.result or {})
+    elif outcome.status == "failed":
         result["error"] = {"code": outcome.code}
     if not check_result(result):
         # A shape the contract does not know (e.g. results before BL-313) never leaves.
-        result = {**result, "status": "failed", "error": {"code": "INTERNAL"}}
-        result.pop("result", None)
+        result = {
+            key: value
+            for key, value in result.items()
+            if key in ("v", "runId", "finishedAt", "durationMs")
+        }
+        result |= {"status": "failed", "error": {"code": "INTERNAL"}}
     return result
+
+
+async def _market_inputs(
+    database: Database | None, job: ValidatedJob
+) -> dict[str, Any] | Outcome:
+    """Read-only market data for the job; never user tables (analytics_ro has no grant)."""
+    if database is None:
+        return Outcome("failed", code="INTERNAL")
+    proxies = [p["proxyInstrumentId"] for p in job.data["portfolio"]["positions"]]
+    try:
+        async with await psycopg.AsyncConnection.connect(
+            host=database.host,
+            port=database.port,
+            dbname=database.name,
+            user="oliginvest_analytics_ro",
+            password=database.password,
+            sslmode="require" if database.ssl else "disable",
+            connect_timeout=5,
+            autocommit=False,
+        ) as connection:
+            await connection.set_read_only(True)
+            async with connection.cursor() as cursor:
+                if job.type == "stress_test":
+                    return await load_stress_inputs(cursor, job.data)
+                inputs = await load_inputs(
+                    cursor, proxies, job.data["portfolio"]["asOf"]
+                )
+    except DataQualityHold:
+        return Outcome("failed", code="DATA_QUALITY_HOLD")
+    except (psycopg.Error, OSError, ValueError, ArithmeticError):
+        return Outcome("failed", code="INTERNAL")
+    if len(inputs.months) < MIN_HISTORY_MONTHS:
+        return Outcome("failed", code="INSUFFICIENT_DATA")
+    return {
+        "months": list(inputs.months),
+        "returns": {k: list(v) for k, v in inputs.returns.items()},
+        "cash_rate": inputs.cash_rate,
+        "cash_rate_date": inputs.cash_rate_date,
+        "data_version": dict(inputs.data_version),
+        "tickers": dict(inputs.tickers),
+    }
 
 
 async def check_health(config: Config) -> bool:
@@ -174,8 +262,40 @@ async def run_worker(config: Config, stop: asyncio.Event) -> None:
         return result
 
     async def analyse(job: Any, token: str) -> dict[str, object]:
+        client = results.client
+        state = {"sent": 0.0, "progress": -PROGRESS_MIN_STEP}
+
+        async def progress(value: int, stage: str) -> None:
+            now = time.monotonic()
+            if (
+                value - state["progress"] < PROGRESS_MIN_STEP
+                and now - state["sent"] < PROGRESS_MIN_SECONDS
+            ):
+                return
+            state.update(sent=now, progress=value)
+            await job.updateProgress({"progress": value, "stage": stage})
+
+        async def run(validated: ValidatedJob) -> Outcome:
+            run_id = str(validated.run_id)
+
+            async def cancelled() -> bool:
+                return bool(await client.get(cancel_key(run_id)))
+
+            if await cancelled():
+                return Outcome("cancelled")
+            data = None
+            if validated.type in MARKET_DATA_TYPES:
+                await progress(5, "loading_data")
+                outcome = await _market_inputs(config.database, validated)
+                if isinstance(outcome, Outcome):
+                    return outcome
+                data = outcome
+            return await execute(
+                validated, data=data, on_progress=progress, cancelled=cancelled
+            )
+
         try:
-            result = await process_analytics(job.name, job.data)
+            result = await process_analytics(job.name, job.data, run)
         except InvalidJob:
             log("analytics.job_rejected")
             raise

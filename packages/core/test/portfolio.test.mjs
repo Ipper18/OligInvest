@@ -7,6 +7,7 @@ import {
   dividendTaxView,
   externalFlows,
   fxRate,
+  hasSessionSincePreviousClose,
   isCoreError,
   isoDate,
   money,
@@ -451,6 +452,43 @@ describe("vector F — day result (obliczenia-finansowe.md § 5.1)", () => {
         }),
       ),
     ).toBe("currency_mismatch");
+  });
+});
+
+describe("day result without a session after the previous close (§ 5.1)", () => {
+  const q = (instrumentId, asOf) => ({ instrumentId, asOf });
+  test("a weekend repeating Friday's close has no day result instead of 0", () => {
+    // Regression (demo 2026-10-26): Saturday reused Friday's close for V(t) and V(D−1).
+    const prevClose = [q("PKO", "2026-10-23T00:00:00.000Z"), q("SPY", "2026-10-23T00:00:00.000Z")];
+    expect(
+      hasSessionSincePreviousClose({
+        instrumentIds: ["PKO", "SPY"],
+        quotesNow: [q("PKO", "2026-10-23T15:05:00.000Z"), q("SPY", "2026-10-23T20:00:00.000Z")],
+        quotesPrevClose: prevClose,
+      }),
+    ).toBe(false);
+    expect(
+      hasSessionSincePreviousClose({
+        instrumentIds: ["PKO", "SPY"],
+        quotesNow: [q("PKO", "2026-10-23T00:00:00.000Z"), q("SPY", "2026-10-26T13:45:00.000Z")],
+        quotesPrevClose: prevClose,
+      }),
+    ).toBe(true);
+  });
+  test("no prices or no instruments", () => {
+    expect(
+      hasSessionSincePreviousClose({ instrumentIds: ["PKO"], quotesNow: [], quotesPrevClose: [] }),
+    ).toBe(false);
+    expect(
+      hasSessionSincePreviousClose({
+        instrumentIds: ["PKO"],
+        quotesNow: [q("PKO", "2026-10-26T09:15:00.000Z")],
+        quotesPrevClose: [],
+      }),
+    ).toBe(true);
+    expect(
+      hasSessionSincePreviousClose({ instrumentIds: [], quotesNow: [], quotesPrevClose: [] }),
+    ).toBe(true);
   });
 });
 

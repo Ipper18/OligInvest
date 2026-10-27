@@ -7,6 +7,7 @@ import {
 } from "@oliginvest/data-providers";
 import {
   FrankfurterProvider,
+  FredProvider,
   fetchGpw,
   NbpProvider,
   nbpRanges,
@@ -16,6 +17,7 @@ import type { AppDatabase } from "@oliginvest/db";
 import type { Redis } from "ioredis";
 import {
   BENCHMARK_CONTINUE_MS,
+  BENCHMARK_FULL_HISTORY_FROM,
   BENCHMARK_HISTORY_DAYS,
   BENCHMARK_REFRESH_DAYS,
   BENCHMARKS,
@@ -43,7 +45,34 @@ export const marketSchedules = [
   { job: "market.gpw-completeness", cron: "30 19 * * 1-5", tz: "Europe/Warsaw" },
   // After both GPW (17:05) and US (22:00 Warsaw) closes; outside every quote session.
   { job: "market.benchmarks", cron: "45 23 * * 1-5", tz: "Europe/Warsaw" },
+  // Risk-free rate FRED DGS3MO (BL-319): one request at 06:00 (strategia-cache § 5).
+  { job: "market.macro", cron: "0 6 * * *", tz: "Europe/Warsaw" },
+  // One-time NBP table A backfill since 2002 (BL-313); a no-op once finished.
+  { job: "market.fx-backfill", cron: "15 5 * * *", tz: "Europe/Warsaw" },
 ] as const;
+/**
+ * NBP table A history for Monte Carlo in PLN (owner decision 2026-10-20): the API serves tables
+ * from 2002-01-02, ≤ 93 days per request. Five requests per run (NBP budget 6/min), the run
+ * continues itself a minute later; progress lives in AOF-backed `quota:` keys of valkey-queue.
+ */
+export const NBP_BACKFILL = {
+  start: "2002-01-02",
+  perRun: 5,
+  continueMs: 60_000,
+  next: "quota:nbp:backfill:next",
+  done: "quota:nbp:backfill:done",
+} as const;
+/** DGS3MO starts on 1981-09-01; a first run backfills it in one request, later runs re-read 14 days. */
+export const FRED_DGS3MO = {
+  code: "FRED:DGS3MO",
+  seriesId: "DGS3MO",
+  name: "3-Month Treasury Bill Secondary Market Rate",
+  unit: "percent",
+  frequency: "daily",
+  source: "fred",
+  start: "1981-09-01",
+  refreshDays: 14,
+} as const;
 export function createMarketJobs(options: {
   observeProvider?: (provider: string, result: "ok" | "fail") => void;
   database: AppDatabase;
@@ -55,6 +84,8 @@ export function createMarketJobs(options: {
   report?(name: string, report: GpwCompletenessReport): void;
   now?: () => Date;
   transport?: typeof fetch;
+  /** Optional free FRED key (FRED_API_KEY); without it `market.macro` is skipped. */
+  fredApiKey?: string | undefined;
 }) {
   const now = options.now ?? (() => new Date());
   const repository = new MarketRepository(options.database, now);
@@ -81,6 +112,9 @@ export function createMarketJobs(options: {
   );
   const nbp = new NbpProvider(request("nbp", 6), now);
   const ecb = new FrankfurterProvider(request("ecb", 6), now);
+  const fred = options.fredApiKey
+    ? new FredProvider(request("fred", 10), options.fredApiKey)
+    : undefined;
   /** A currency drift is a § 14 BLOCK on the series; the drifted bars are never stored. */
   async function saveYahooBars(id: string, from: string, to: string) {
     try {
@@ -217,14 +251,20 @@ export function createMarketJobs(options: {
           if (!(await options.queue.get(`benchmark:done:${item.id}:${date}`))) due.push(item);
         let failure: unknown;
         for (const item of due.slice(0, BENCHMARKS_PER_RUN)) {
-          const backfilled = await options.queue.get(`benchmark:backfill:${item.id}`);
+          // A separate marker lets series backfilled for five years fetch their full history once.
+          const marker = item.definition.fullHistory
+            ? `benchmark:backfill-full:${item.id}`
+            : `benchmark:backfill:${item.id}`;
+          const backfilled = await options.queue.get(marker);
           const from =
             backfilled && item.last
               ? addDays(item.last, -BENCHMARK_REFRESH_DAYS)
-              : addDays(date, -BENCHMARK_HISTORY_DAYS);
+              : item.definition.fullHistory
+                ? BENCHMARK_FULL_HISTORY_FROM
+                : addDays(date, -BENCHMARK_HISTORY_DAYS);
           try {
             await saveYahooBars(item.id, from, date);
-            if (!backfilled) await options.queue.set(`benchmark:backfill:${item.id}`, from);
+            if (!backfilled) await options.queue.set(marker, from);
           } catch (error) {
             // Quota delays the whole job. Other failures (also 404 for an unknown symbol) end
             // the series for today, so continuations always progress; the job then fails
@@ -237,6 +277,36 @@ export function createMarketJobs(options: {
         if (due.length > BENCHMARKS_PER_RUN)
           await options.enqueue("market.benchmarks", { date }, BENCHMARK_CONTINUE_MS);
         if (failure) throw failure;
+        return;
+      }
+      case "market.macro": {
+        if (!fred) return;
+        const latest = await store.latestMacroDate(FRED_DGS3MO.code);
+        const from =
+          payload.from ?? (latest ? addDays(latest, -FRED_DGS3MO.refreshDays) : FRED_DGS3MO.start);
+        const observations = await limits.singleFlight(`fred:${FRED_DGS3MO.seriesId}:${from}`, () =>
+          fred.getObservations(FRED_DGS3MO.seriesId, from, payload.to ?? date),
+        );
+        await store.saveMacroObservations(FRED_DGS3MO, observations);
+        return;
+      }
+      case "market.fx-backfill": {
+        if (await options.queue.get(NBP_BACKFILL.done)) return;
+        const end = addDays(repository.today(), -1);
+        const next = (await options.queue.get(NBP_BACKFILL.next)) ?? NBP_BACKFILL.start;
+        const ranges = next <= end ? nbpRanges(next, end) : [];
+        for (const range of ranges.slice(0, NBP_BACKFILL.perRun)) {
+          try {
+            await store.saveFx(await nbp.getTable(range.from, range.to));
+          } catch (error) {
+            // A range without any published table (404) is a fact, not a failure.
+            if (!(error instanceof ProviderError && error.reason === "no_data")) throw error;
+          }
+          await options.queue.set(NBP_BACKFILL.next, addDays(range.to, 1));
+        }
+        if (ranges.length > NBP_BACKFILL.perRun)
+          await options.enqueue("market.fx-backfill", {}, NBP_BACKFILL.continueMs);
+        else await options.queue.set(NBP_BACKFILL.done, end);
         return;
       }
       case "market.backfill":

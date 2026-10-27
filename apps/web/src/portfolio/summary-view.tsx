@@ -1,5 +1,5 @@
 import { portfolioMessages as m } from "@oliginvest/i18n";
-import { DataTable } from "@oliginvest/ui/table";
+import type { DataTable } from "@oliginvest/ui/table";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { Amount, Freshness, ratio, TaxDisclaimer } from "./presentation";
@@ -15,11 +15,15 @@ export function SummaryView({
   day,
   notice,
   dayNotice,
+  explain,
+  Table,
 }: {
   data: Resource<"summary">;
   day: Resource<"day">;
   notice?: ReactNode;
   dayNotice?: ReactNode;
+  explain?: (key: "totalValue" | "dayChange" | "unrealizedPl" | "cash", term: string) => ReactNode;
+  Table: typeof DataTable;
 }) {
   return (
     <>
@@ -33,17 +37,23 @@ export function SummaryView({
       )}
       <dl className="oi-kpis">
         {(["totalValue", "dayChange", "unrealizedPl", "cash"] as const).map((key) => (
-          <div key={key} className="oi-kpi">
-            <dt>{m[key]}</dt>
+          <div key={key} className="oi-kpi" data-onboarding={key}>
+            <dt>
+              {m[key]}
+              {explain?.(key, m[key])}
+            </dt>
             <dd>
               <Amount value={data[key]} signed={key === "dayChange" || key === "unrealizedPl"} />
+              {key === "dayChange" &&
+                !data.dayChange &&
+                day.meta.staleReason === "market_closed" && <small>{m.dayNoSession}</small>}
             </dd>
           </div>
         ))}
       </dl>
       <p>{m.dayHelp}</p>
       {dayNotice}
-      <DataTable
+      <Table
         caption={m.dayChange}
         headings={[m.instrument, m.dayChange, m.contributionRatio]}
         rows={[
@@ -67,7 +77,7 @@ export function SummaryView({
       />
       <Freshness meta={data.meta} />
       {!data.accounts?.length && <p>{m.emptyStart}</p>}
-      <DataTable
+      <Table
         caption={m.accounts}
         headings={[m.account, m.totalValue, m.valueBase]}
         rows={(data.accounts ?? []).map((a) => ({

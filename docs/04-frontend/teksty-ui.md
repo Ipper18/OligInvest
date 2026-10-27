@@ -189,6 +189,8 @@ Błędy pól formularza: „Podaj wartość”, „Wartość musi być większa 
 | Powód: brak danych (`no_data`) | brak danych |
 | Powód: tylko EOD (`eod_only`) | dostępne tylko dane z zamknięcia sesji |
 | Powód: blokada jakości (`data_quality_hold`) | dane wstrzymane z powodu problemów jakości |
+| Jakość WARN | WARN — ostrzeżenie o jakości danych |
+| Jakość BLOCK | BLOCK — dane wyłączone z analiz |
 | Wycena portfela | wycena {time} · notowania opóźnione, kursy NBP |
 | Analiza: w kolejce | W kolejce — pozycja {position} |
 | Analiza: liczy się | Liczymy — {progress}% |
@@ -198,6 +200,7 @@ Błędy pól formularza: „Podaj wartość”, „Wartość musi być większa 
 | Nagłówek objaśnienia wyniku | Jak czytać ten wynik |
 | Widok podatkowy | Widok podatkowy — dzień przychodu: {basis}; koszt przewalutowania: {fxMode} |
 | Nieznany koszt nabycia (`null`, decyzja 2026-10-08) | Koszt nieznany |
+| Wynik dnia bez sesji po ostatnim zamknięciu (`null`, `market_closed`) | Brak wyniku dnia: od ostatniego zamknięcia nie było sesji, więc notowania nie zmieniły się. Wynik pojawi się z pierwszymi notowaniami nowej sesji. |
 | Uzgodnienie po imporcie | Salda zgadzają się co do grosza. / Różnica {value} — sprawdź wiersze oznaczone do rozstrzygnięcia. |
 
 Wyniki analiz zawsze podajemy jako przedział albo rozkład („od {low} do {high}, mediana {median}”), nigdy jako jedną liczbę opisującą przyszłość (LAW § 4.1).
@@ -217,6 +220,55 @@ Wyniki analiz zawsze podajemy jako przedział albo rozkład („od {low} do {hig
 Pełna lista zakazanych zwrotów i ich test w CI: [`../11-zgodnosc-prawna.md`](../11-zgodnosc-prawna.md) § 4.1 oraz `packages/i18n/src/compliance/forbidden-phrases.pl.json`.
 
 ## 10. Gdzie to żyje w kodzie
+
+### M2 — rynek i waluty
+
+Ekran rynku przedstawia indeksy i zamienniki ETF bez rankingu. Etykiety:
+„Rynek”, „Indeksy i benchmarki”, „Indeks”, „Zamiennik ETF”, „Historia od”,
+„Stan dostawców”, „Źródło danych”, „Ostatni udany odczyt”, „Brak notowania”,
+„Dane dostępne”, „Dane ograniczone”, „Dostawca niedostępny”, „Źródło wyłączone”.
+Nawigacja sekcji: „Instrumenty”, „Watchlisty”, „Kursy walut”.
+
+Ekran walut: „Kursy walut”, „Historia kursów względem PLN”, „Waluta”, „Od”, „Do”,
+„Pokaż”, „Data”, „Kurs”, „Tabela NBP”. Gdy odpowiedź pochodzi z ECB, interfejs
+podaje „Kurs zapasowy EBC (Frankfurter)”; nie przypisuje go do tabeli NBP.
+Puste odpowiedzi: „Brak danych dla wybranego okresu”.
+
+Oznaczenie blokady jakości: „BLOCK — dane wyłączone z analiz”.
+Notowanie pozostaje widoczne wraz z przyczyną `data_quality_hold`, źródłem i czasem.
+Ostrzeżenie: „WARN — ostrzeżenie o jakości danych”. Źródłem jest `DataMeta.qualityStatus`
+(zmiana zatwierdzona przez właściciela 2026-10-20); BLOCK ma pierwszeństwo przed WARN.
+Stan dostawcy nie jest podstawą do wyznaczania jakości instrumentu.
+
+### M2 — wskaźniki i wyjaśnienia
+
+Kontrolki: „Wskaźniki”, „Pokaż wskaźniki”, „Parametry wskaźników”, „Oblicz”,
+„Okres”, „Szerokość pasma”, „Okres krótki”, „Okres długi”, „Wygładzanie”.
+Opis: „Wskaźniki opisują historyczne ceny. Nie wskazują działań wobec instrumentu.”
+Brak wartości: „Brak wartości: rozgrzewka lub niepełne dane”.
+Wyjaśnienia: „Co oznacza {term}”, „Definicja”, „Jak czytać”, „Pułapki”,
+„Hasło w słowniku”, „Definicja obliczenia”.
+Glosariusz: „Słownik pojęć”, „Szukaj pojęcia lub synonimu”, „Szukaj”, „Brak pasujących haseł”.
+
+### M2 — watchlisty
+
+Listy i instrumenty można przesuwać przyciskami „W górę” i „W dół”, również klawiaturą.
+Etykiety: „Nazwa listy”, „Nowa lista”, „Utwórz listę”, „Notatka”, „Zapisz notatkę”,
+„Dodaj instrument”, „Usuń listę”, „Usuń instrument”, „Potwierdź usunięcie”.
+Usuwanie wskazuje nazwę listy lub instrumentu; błąd nie usuwa wpisanej notatki.
+
+### M2 — alokacja i onboarding
+
+Alokacja: „Podział według”, „Klasyfikacja instrumentu”, „Klasyfikacja własna”,
+„Klasyfikacja katalogowa”. Stan bez usługi: „Alokacja i zapis klasyfikacji będą
+dostępne po uruchomieniu usługi portfela.” Udziały opisują strukturę według
+dostępnych wycen; nie są alokacją docelową ani sugestią transakcji. Katalog
+`packages/i18n/src/pl/allocation.json` zawiera etykiety pól istniejącego OpenAPI.
+
+Onboarding: „Pomiń”, „Wstecz”, „Dalej”, „Zakończ”, „Uruchom przewodnik ponownie”.
+Błąd: „Nie udało się zapisać postępu przewodnika. Możesz ponowić go w zakładce Nauka.”
+Komunikat zamyka „Zamknij komunikat”. Treść kroków pochodzi z samouczków § 2,
+a katalog `packages/i18n/src/pl/onboarding.json` dostarcza ją do przewodnika.
 
 - Teksty z tego dokumentu trafiają do `packages/i18n/src/pl/<obszar>.json`; komponenty nie zawierają literałów (lint sprawdza to w BL-012).
 - Disclaimery mają osobne, wersjonowane źródło ([`../11-zgodnosc-prawna.md`](../11-zgodnosc-prawna.md) § 4.3 → `packages/i18n/src/pl/disclaimers.json`) i własny test zgodności — nie powtarzamy ich tutaj.
@@ -288,6 +340,7 @@ Teksty uzupełniające BL-121/122/113/116 (2026-10-11), klucze w katalogu `app`:
 | pending | Trwa zapisywanie. |
 | live | Aktualizacje na żywo |
 | polling | Aktualizacje co minutę |
+| connecting | Łączenie z aktualizacjami |
 | paused | Aktualizacje wstrzymane |
 | pause | Wstrzymaj aktualizacje |
 | resume | Wznów aktualizacje |
@@ -298,6 +351,10 @@ Teksty uzupełniające BL-121/122/113/116 (2026-10-11), klucze w katalogu `app`:
 | required | Podaj wartość |
 | copied | Skopiowano. |
 | configurationMissing | Dane usługodawcy nie zostały jeszcze skonfigurowane. |
+
+Stan w nagłówku i przycisk obok nie mogą sobie przeczyć: „Aktualizacje wstrzymane” tylko po wyborze
+„Wstrzymaj aktualizacje” (przycisk pokazuje wtedy „Wznów aktualizacje”); przed połączeniem, po wznowieniu
+i po powrocie z karty w tle stan to „Łączenie z aktualizacjami” (poprawka po demo 2026-10-26).
 
 Kody błędów pozostają z § 7. Teksty dokumentów prawnych pochodzą w całości z dokumentów użytkownika, bez przeredagowania.
 

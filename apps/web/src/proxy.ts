@@ -1,5 +1,6 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import { loadConfig } from "@oliginvest/config";
+import { appMessages } from "@oliginvest/i18n";
 import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { meSchema } from "./api/validation";
@@ -75,9 +76,9 @@ export async function proxy(request: NextRequest) {
             (me.features[`module.${module.id}`] === false ||
               !module.nav?.some((item) => me.permissions.includes(item.permission))))
         )
-          response = NextResponse.rewrite(new URL("/missing-module", request.url), {
+          response = new NextResponse(appMessages.notFound, {
             status: 404,
-            request: { headers },
+            headers: { "Content-Type": "text/plain; charset=utf-8" },
           });
       }
     }

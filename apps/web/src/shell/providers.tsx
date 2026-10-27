@@ -9,6 +9,7 @@ import { submitAction } from "../auth/actions";
 import { clearPrivateState, onLogout, onRemoteLogout } from "../auth/logout";
 import { updateImportCache, updatePortfolioCache } from "../portfolio/stream-cache";
 import { connectStream, type StreamState } from "../sse/transport";
+import { connectionStatus } from "./connection-status";
 import { Navigation } from "./navigation";
 export const queryKey = (userId: string, ...parts: unknown[]) => [userId, ...parts];
 export function Providers({
@@ -34,6 +35,27 @@ export function Providers({
   const stream = useRef<ReturnType<typeof connectStream> | null>(null);
   const router = useRouter();
   const pathname = usePathname();
+  const educationEnabled =
+    me.features["module.education"] !== false && me.permissions.includes("education:use");
+  useEffect(() => {
+    if (!me.id || !educationEnabled) return;
+    let alive = true,
+      dispose = () => {};
+    const timer = setTimeout(() => {
+      void import("../education/onboarding")
+        .then((module) => module.startOnboarding(false, () => alive))
+        .then((cleanup) => {
+          dispose = cleanup;
+          if (!alive) cleanup();
+        })
+        .catch(() => {});
+    }, 1500);
+    return () => {
+      alive = false;
+      clearTimeout(timer);
+      dispose();
+    };
+  }, [me.id, educationEnabled]);
   const [connectionId, setConnectionId] = useState<string | null>(null);
   useEffect(() => {
     if (!connectionId) return;
@@ -83,7 +105,7 @@ export function Providers({
     });
     const unsubscribeRemote = onRemoteLogout(logout);
     // Validation is loaded outside the initial shell bundle; no Zod runtime in initial JS.
-    void import("@oliginvest/contracts/realtime")
+    void import("@oliginvest/contracts/realtime/browser")
       .then(({ realtimeSchemas }) => {
         if (disposed) return;
         stream.current = connectStream({
@@ -163,7 +185,7 @@ export function Providers({
         toolbar={
           <div className="oi-toolbar">
             <span role="status" className="oi-connection">
-              {appMessages[state]}
+              {appMessages[connectionStatus(state, paused)]}
             </span>
             <Button
               onClick={() => {

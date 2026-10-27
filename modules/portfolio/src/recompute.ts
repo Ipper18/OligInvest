@@ -7,6 +7,7 @@ import {
   externalFlows,
   fxRate,
   grossValue,
+  hasSessionSincePreviousClose,
   isoDate,
   moneyToJson,
   price,
@@ -237,32 +238,35 @@ export async function recomputePortfolio(
           fxRates: state.fx,
           date: isoDate(date),
         });
-      let flows: ReturnType<typeof externalFlows> = [],
-        flowsComplete = true;
-      try {
-        flows = externalFlows(
-          state.transactions.filter((t) => t.tradeDate <= date),
-          {
-            level: "account",
-            securityTransferValue: (t) => transferValue(t, state.quotesOn(t.tradeDate)),
-          },
-        );
-      } catch {
-        flowsComplete = false;
-      }
       for (const account of valuation.accounts) {
         const fx = state.fx.onOrBefore(account.currency, "PLN", date);
-        const converted = flows
-          .filter((f) => f.accountId === account.accountId && f.date === date)
-          .flatMap((f) => {
-            const rate = state.fx.onOrBefore(f.amount.currency, account.currency, date);
-            if (!rate) {
-              flowsComplete = false;
-              return [];
-            }
-            return [convertMoney(f.amount, rate)];
-          });
-        const flow = sumMoney(converted, account.currency);
+        // A gap stays NULL (BL-302): an unknown rate or flow value is never stored as 0. Account
+        // flows depend only on the account's own operations of the day, so one unvalued
+        // transfer does not hide the flows of other accounts or days.
+        let flows: ReturnType<typeof externalFlows> = [],
+          flowComplete = true;
+        try {
+          flows = externalFlows(
+            state.transactions.filter(
+              (t) => t.accountId === account.accountId && t.tradeDate === date,
+            ),
+            {
+              level: "account",
+              securityTransferValue: (t) => transferValue(t, state.quotesOn(t.tradeDate)),
+            },
+          );
+        } catch {
+          flowComplete = false;
+        }
+        const converted = flows.flatMap((f) => {
+          const rate = state.fx.onOrBefore(f.amount.currency, account.currency, date);
+          if (!rate) {
+            flowComplete = false;
+            return [];
+          }
+          return [convertMoney(f.amount, rate)];
+        });
+        const flow = flowComplete ? sumMoney(converted, account.currency) : undefined;
         values.push({
           userId: payload.userId,
           accountId: account.accountId,
@@ -270,12 +274,12 @@ export async function recomputePortfolio(
           marketValue: account.marketValue.amount.toFixed(),
           cash: account.cash.amount.toFixed(),
           totalValue: account.total.amount.toFixed(),
-          totalValuePln: account.totalReporting?.amount.toFixed() ?? "0",
-          externalFlow: flow.amount.toFixed(),
-          externalFlowPln: fx ? convertMoney(flow, fx).amount.toFixed() : "0",
+          totalValuePln: account.totalReporting?.amount.toFixed() ?? null,
+          externalFlow: flow?.amount.toFixed() ?? null,
+          externalFlowPln: flow && fx ? convertMoney(flow, fx).amount.toFixed() : null,
           fxRateToPln: fx?.rate.toFixed() ?? null,
           asOf: valuation.asOf ?? `${date}T23:59:59.000Z`,
-          isComplete: account.isComplete && flowsComplete,
+          isComplete: account.isComplete && flowComplete && fx !== undefined,
         });
         for (const p of account.positions)
           positions.push({
@@ -354,11 +358,12 @@ export async function livePortfolioValuation(
       date: isoDate(date),
     });
     const previous = state.ledgerOn(addDays(date, -1)),
+      previousQuotes = state.quotesOn(addDays(date, -1)),
       previousValue = valuePortfolio({
         accounts: state.accounts,
         positions: previous.positions,
         cash: previous.cash,
-        quotes: state.quotesOn(addDays(date, -1)),
+        quotes: previousQuotes,
         fxRates: state.fx,
         date: addDays(date, -1),
       });
@@ -370,7 +375,15 @@ export async function livePortfolioValuation(
           source: string;
         }
       | undefined;
-    if (valuation.isComplete && previousValue.isComplete) {
+    // Without a session since the previous close the stream sends no day result (§ 5.1).
+    const session = hasSessionSincePreviousClose({
+      instrumentIds: [
+        ...new Set([...ledger.positions, ...previous.positions].map((p) => p.instrumentId)),
+      ],
+      quotesNow: [...selected.values()],
+      quotesPrevClose: previousQuotes,
+    });
+    if (session && valuation.isComplete && previousValue.isComplete) {
       try {
         const flows = externalFlows(state.transactions, {
           level: "portfolio",

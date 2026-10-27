@@ -103,7 +103,8 @@ NBP ma do 11 prób co 10 min, kończonych o 14:00 czasu lokalnego (spóźnione z
 4. 15:30–22:00 co 1 min — intraday USA (Yahoo chart v8 jak wyżej; fallback Finnhub 1 zapytanie/symbol).
 5. 18:30 — archiwum GPW (1 XLS = cały rynek) → `market.bars_daily` + korekty 5 sesji.
 6. 23:30 — EOD USA dla pozycji ∪ watchlist (Yahoo; fallback Alpha Vantage z rezerwą 10 zapytań).
-6a. 23:45 — indeksy i benchmarki (`market.benchmarks`, Yahoo chart v8): pierwsze uruchomienie dla serii = backfill ≥ 5 lat (1 zapytanie na serię, trwały znacznik w `valkey-queue`), kolejne = ostatni tydzień; ≤ 2 serie na minutę z kontynuacją co 60 s (BL-206).
+6a. 23:45 — indeksy i benchmarki (`market.benchmarks`, Yahoo chart v8): pierwsze uruchomienie dla serii = backfill ≥ 5 lat, dla proxy Monte Carlo (WIG, S&P 500) cała historia od 1970-01-01 (1 zapytanie na serię, trwały znacznik w `valkey-queue`), kolejne = ostatni tydzień; ≤ 2 serie na minutę z kontynuacją co 60 s (BL-206).
+6b. 05:15 — jednorazowy backfill tabel A NBP od 2002 (`market.fx-backfill`; ≤ 5 żądań na minutę, potem pusty przebieg).
 7. 02:00 — backfill historii (nowe instrumenty, luki wykryte przez `data-scrub`), maks. 20 % kwoty dziennej każdego dostawcy.
 8. Rezerwa: Alpha Vantage 25/dobę = 1 kalendarz + ≤ 10 `NEWS_SENTIMENT` + ≤ 10 EOD fallback + 4 bufor.
 

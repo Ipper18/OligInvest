@@ -12,6 +12,10 @@
     "check:analytics-schema": "node scripts/analytics-schema.mjs check"
   },
   "exports": {
+    "./realtime/browser": {
+      "types": "./dist/realtime-schemas.d.ts",
+      "import": "./dist/realtime-schemas.js"
+    },
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
@@ -26,6 +30,6 @@
     }
   },
   "dependencies": {
-    "zod": "4.6.5"
+    "zod": "4.6.7"
   }
 }

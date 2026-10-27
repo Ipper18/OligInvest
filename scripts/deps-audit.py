@@ -44,7 +44,7 @@ REVIEWED = {
 # License declarations missing/ambiguous in upstream PyPI metadata; see STACK §7.
 METADATA = {
     ("bottleneck", "1.6.0"): "BSD-2-Clause",
-    ("bullmq", "3.2.2"): "MIT",
+    ("bullmq", "3.2.8"): "MIT",
     ("colorama", "0.4.6"): "BSD-3-Clause",
     ("empyrical-reloaded", "0.5.12"): "Apache-2.0",
     ("mypy-extensions", "1.1.0"): "MIT",

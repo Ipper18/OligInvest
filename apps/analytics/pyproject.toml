@@ -1,11 +1,12 @@
 [project]
 name = "oliginvest-analytics"
 version = "0.0.0"
-description = "Szkielet workera analitycznego OligInvest"
+description = "Worker analityczny OligInvest"
 requires-python = ">=3.13,<3.14"
 dependencies = [
-    "bullmq==3.2.2",
+    "bullmq==3.2.8",
     "jsonschema==4.26.0",
+    "numpy==2.5.4",
     "psycopg[binary]==3.3.5",
 ]
 

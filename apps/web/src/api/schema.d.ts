@@ -2656,6 +2656,11 @@ export interface components {
             /** @description Deklarowane opóźnienie źródła (EOD = 0 z `asOf` po sesji). */
             delayMinutes: number;
             stale: boolean;
+            /**
+             * @description Najwyższy otwarty problem jakości instrumentu; BLOCK ma pierwszeństwo. Brak pola oznacza brak zgłoszonych WARN/BLOCK, nie gwarancję jakości. WARN nie blokuje analiz.
+             * @enum {string}
+             */
+            qualityStatus?: "WARN" | "BLOCK";
             staleReason?: components["schemas"]["StaleReason"];
             /** @description Tekst atrybucji źródła (NFR-07.03). */
             attribution?: string;
@@ -4274,6 +4279,11 @@ export interface components {
              * @enum {string}
              */
             taxMode: "belka_simplified" | "none";
+            /**
+             * @description Roczny koszt (TER + przewalutowanie) jako ułamek, odejmowany od wartości raz w roku; prowizje transakcyjne poza modelem.
+             * @default 0
+             */
+            annualCostRate: number;
             goal?: components["schemas"]["Money"];
             proxyOverrides?: {
                 instrumentId: components["schemas"]["Uuid"];
@@ -4318,6 +4328,7 @@ export interface components {
             resamples: number;
             riskFreeRate?: number;
         };
+        /** @description FR-04.04, obliczenia-finansowe.md § 12.3. Brak `historical` i `hypothetical` = wszystkie włączone scenariusze historyczne. `index_shock` wymaga `instrumentId` i `shock`, `fx_shock` — `currency` (USD lub EUR) i `shock`, `correlation_shock` — opcjonalnie `correlation` (domyślnie 0,9); inne pola → 422. Okno scenariusza historycznego musi kończyć się przed dniem migawki portfela. */
         StressTestParams: {
             accountIds?: components["schemas"]["Uuid"][];
             /**
@@ -4445,6 +4456,21 @@ export interface components {
             paths: number;
             /** @default 0.025 */
             inflationRate: number;
+            /**
+             * @description Wpłata indeksowana inflacją; wynik to wpłata pierwszego miesiąca.
+             * @default true
+             */
+            indexToInflation: boolean;
+            /**
+             * @default belka_simplified
+             * @enum {string}
+             */
+            taxMode: "belka_simplified" | "none";
+            /**
+             * @description Roczny koszt (TER + przewalutowanie) jako ułamek, jak w MonteCarloParams.
+             * @default 0
+             */
+            annualCostRate: number;
             seed?: number;
         };
         RebalanceParams: {
@@ -4546,7 +4572,11 @@ export interface components {
             /** @description Obowiązkowa tabela wrażliwości (§ 12.1). */
             sensitivity: {
                 /** @enum {string} */
-                scenario: "mean_minus_2pp" | "mean_plus_2pp" | "last_10y" | "full_history";
+                scenario: "mean_minus_2pp" | "mean_plus_2pp" | "last_10y" | "full_history" | "block_length";
+                /** @description Tylko `block_length`: średnia długość bloku bootstrapu stacjonarnego w tym wierszu. */
+                meanBlockMonths?: number;
+                /** @description Roczny koszt przyjęty w scenariuszu (ułamek). */
+                annualCostRate?: number;
                 endValueP5: number;
                 endValueP50: number;
                 goalProbability?: number | null;
@@ -4574,28 +4604,75 @@ export interface components {
                 return?: components["schemas"]["NumberSeries"];
             };
         };
+        /** @description Scenariusze warunkowe na bieżących pozycjach (obliczenia-finansowe.md § 12.3) — nie prognoza. Kwoty strat dodatnie przy spadku wartości. */
         StressTestResult: {
             /**
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             kind: "stress_test";
+            currency: components["schemas"]["CurrencyCode"];
             scenarios: {
                 key: string;
                 name: string;
                 /** @enum {string} */
                 kind: "historical" | "hypothetical";
+                /**
+                 * @description Tylko scenariusze hipotetyczne.
+                 * @enum {string}
+                 */
+                shockKind?: "index_shock" | "fx_shock" | "correlation_shock";
+                /** @description Wielkość szoku (ułamek) — index_shock i fx_shock. */
+                shock?: number;
+                shockInstrumentId?: components["schemas"]["Uuid"];
+                shockCurrency?: components["schemas"]["CurrencyCode"];
+                /** @description Tylko correlation_shock. */
+                correlation?: number;
+                /**
+                 * @description Inny niż `ok` → liczby `null` (odmowa z wyjaśnieniem).
+                 * @enum {string}
+                 */
+                status: "ok" | "coverage_too_low" | "insufficient_data";
                 periodFrom?: components["schemas"]["LocalDate"];
                 periodTo?: components["schemas"]["LocalDate"];
-                portfolioReturn: number;
-                portfolioLoss: components["schemas"]["Money"];
-                /** @description Udział wartości pokrytej danymi lub proxy (< 0.8 → odmowa). */
+                troughDate?: components["schemas"]["LocalDate"] | null;
+                /** @description Historyczny: koniec okna; hipotetyczny: β̂·szok; korelacja: dolny koniec przedziału. */
+                portfolioReturn: number | null;
+                portfolioLoss: components["schemas"]["Money"] | null;
+                returnRange: {
+                    low: number;
+                    high: number;
+                    /** @enum {string} */
+                    basis: "window_path" | "beta_ci90" | "one_month_p5_p95";
+                } | null;
+                /** @description Tylko correlation_shock: ten sam przedział przy korelacjach historycznych. */
+                baselineRange?: {
+                    low: number;
+                    high: number;
+                };
+                /** @description Tylko fx_shock: efekt czysto przeliczeniowy (udział waluty × szok). */
+                translationReturn?: number | null;
+                /** @description Udział wartości pozycji (bez gotówki) pokrytej własną serią lub proxy (< 0.8 → odmowa). */
                 coverageRatio: number;
-                positions?: {
+                /** @description Udział wartości pozycji pokrytej własną serią instrumentu. */
+                ownHistoryRatio: number;
+                positions: {
                     instrumentId: components["schemas"]["Uuid"];
                     proxyInstrumentId?: components["schemas"]["Uuid"];
-                    returnRatio: number;
-                    loss?: components["schemas"]["Money"];
+                    /** @enum {string} */
+                    series: "instrument" | "proxy" | "none";
+                    returnRatio: number | null;
+                    /** @description Historyczny: zwrot w walucie notowania serii. */
+                    localReturnRatio?: number | null;
+                    /** @description Historyczny: zwrot proxy w PLN dla porównania z własną serią. */
+                    proxyReturnRatio?: number | null;
+                    loss?: components["schemas"]["Money"] | null;
+                    beta?: number | null;
+                    betaLow?: number | null;
+                    betaHigh?: number | null;
+                    /** @description correlation_shock: miesięczne odchylenie standardowe. */
+                    volatility?: number | null;
+                    illiquid?: boolean;
                 }[];
             }[];
         };
@@ -4671,6 +4748,7 @@ export interface components {
             /** @enum {string} */
             lookAheadCheck: "passed" | "failed";
         };
+        /** @description Wymagana miesięczna wpłata dla prawdopodobieństw p w modelu Monte Carlo (obliczenia-finansowe.md § 12.6) — przedział, nie obietnica. */
         GoalResult: {
             /**
              * @description discriminator enum property added by openapi-typescript
@@ -4678,10 +4756,23 @@ export interface components {
              */
             kind: "goal";
             target: components["schemas"]["Money"];
+            targetReal: components["schemas"]["Money"];
             horizonYears: number;
             requirements: {
                 probability: number;
-                monthlyContribution: components["schemas"]["Money"];
+                /** @description Wpłata pierwszego miesiąca zaokrąglona w górę do grosza; `null` = poza zakresem modelu. */
+                monthlyContribution: components["schemas"]["Money"] | null;
+                alreadyMet: boolean;
+            }[];
+            /** @description Obowiązkowa tabela wrażliwości (§ 12.6). */
+            sensitivity: {
+                /** @enum {string} */
+                scenario: "mean_minus_2pp" | "mean_plus_2pp" | "last_10y" | "full_history" | "block_length";
+                meanBlockMonths?: number;
+                requirements: {
+                    probability: number;
+                    monthlyContribution: components["schemas"]["Money"] | null;
+                }[];
             }[];
         };
         RebalanceResult: {
@@ -4733,8 +4824,11 @@ export interface components {
                 };
             };
             error?: {
-                /** @enum {string} */
-                code: "TIMEOUT" | "MEMORY_LIMIT" | "INSUFFICIENT_DATA" | "COVERAGE_TOO_LOW" | "INVALID_PARAMS" | "INTERNAL";
+                /**
+                 * @description `DATA_QUALITY_HOLD` — otwarte zgłoszenie BLOCK na serii wejściowej (obliczenia-finansowe.md § 14).
+                 * @enum {string}
+                 */
+                code: "TIMEOUT" | "MEMORY_LIMIT" | "INSUFFICIENT_DATA" | "COVERAGE_TOO_LOW" | "INVALID_PARAMS" | "INTERNAL" | "DATA_QUALITY_HOLD";
                 message: string;
             };
             createdAt: components["schemas"]["Timestamp"];
@@ -4774,6 +4868,7 @@ export interface components {
                 [key: string]: number;
             };
         };
+        /** @description Historyczny: `startDate` < `endDate`, okno ≤ 1096 dni. Hipotetyczny: `shocks.items` — lista szoków w formacie `StressTestParams.hypothetical`. */
         StressScenarioInput: {
             name: string;
             /** @enum {string} */
@@ -4784,9 +4879,18 @@ export interface components {
             description: string;
             enabled: boolean;
         };
-        StressScenario: components["schemas"]["StressScenarioInput"] & {
+        /** @description Scenariusz wbudowany (obliczenia-finansowe.md § 12.3) albo wiersz `analytics.stress_scenarios` o tym samym kluczu, który go zastępuje. Lista zawiera tylko scenariusze włączone. */
+        StressScenario: {
             /** @example covid_2020 */
             key: string;
+            name: string;
+            /** @enum {string} */
+            kind: "historical" | "hypothetical";
+            startDate?: components["schemas"]["LocalDate"];
+            endDate?: components["schemas"]["LocalDate"];
+            shocks?: Record<string, never>;
+            description: string;
+            enabled: boolean;
         };
         StrategyOperand: {
             /** @enum {string} */

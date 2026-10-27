@@ -1,0 +1,52 @@
+{
+  "title": "Onboarding",
+  "start": "Uruchom przewodnik ponownie",
+  "skip": "Pomiń",
+  "next": "Dalej",
+  "previous": "Wstecz",
+  "done": "Zakończ",
+  "error": "Nie udało się zapisać postępu przewodnika. Możesz ponowić go w zakładce Nauka.",
+  "dismiss": "Zamknij komunikat",
+  "steps": [
+    {
+      "key": "welcome",
+      "title": "Witaj w OligInvest",
+      "text": "Witaj w OligInvest. Pokażemy w minutę, gdzie co jest. Możesz pominąć przewodnik i wrócić do niego w zakładce Nauka."
+    },
+    {
+      "key": "account",
+      "title": "Portfel → Rachunki",
+      "text": "Zacznij od rachunku — takiego samego jak u brokera, np. „XTB — zwykły” albo „XTB — IKE”."
+    },
+    {
+      "key": "import",
+      "title": "Portfel → Import",
+      "text": "Zaimportuj historię z XTB albo mBank. Najpierw zobaczysz podgląd i uzgodnienie z saldem brokera — nic nie zapisze się bez Twojego potwierdzenia."
+    },
+    {
+      "key": "demo",
+      "title": "Nauka → Demo",
+      "text": "Nie masz jeszcze danych? Tryb demo pokazuje fikcyjny portfel, na którym możesz wszystko sprawdzić."
+    },
+    {
+      "key": "value",
+      "title": "Wartość portfela",
+      "text": "Wartość w złotych, z czasem i źródłem danych. „Opóźnione ~15 min” oznacza, że notowania nie są bieżące."
+    },
+    {
+      "key": "day",
+      "title": "Wynik dnia",
+      "text": "Zmiana od wczorajszego zamknięcia, bez dzisiejszych wpłat i wypłat."
+    },
+    {
+      "key": "explainer",
+      "title": "Wyjaśnienia przy liczbach",
+      "text": "Przy każdej liczbie znajdziesz wyjaśnienie: co mierzy, jak ją czytać i na co uważać."
+    },
+    {
+      "key": "footer",
+      "title": "Informacja i edukacja",
+      "text": "OligInvest pomaga analizować i uczyć się — nie doradza. Decyzje podejmujesz samodzielnie."
+    }
+  ]
+}

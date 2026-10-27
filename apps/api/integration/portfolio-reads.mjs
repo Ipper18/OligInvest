@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
+import { recomputePortfolio } from "@oliginvest/mod-portfolio/jobs";
 import { sql } from "drizzle-orm";
 
-export async function testPortfolioReads({ request, database, owner, instrumentId }) {
+export async function testPortfolioReads({ request, database, owner, instrumentId, repository }) {
   const post = async (path, body) => {
     const response = await request(path, "POST", body, { "Idempotency-Key": randomUUID() });
     assert.equal(response.status, 201, `${path}: ${JSON.stringify(await response.clone().json())}`);
@@ -145,11 +146,97 @@ export async function testPortfolioReads({ request, database, owner, instrumentI
   assert.equal(position.marketValueBase, null);
   assert.equal(position.costBasis, null);
   assert.equal(position.weight, null);
-  for (const path of ["summary", "day-change", "positions", "cash", "lots", "realized"]) {
+  // BL-302: history reads stored daily valuations; a missing rate or flow value stays null.
+  await recomputePortfolio(
+    repository,
+    { userId: owner.userId, accountIds: [], fromDate: "1970-01-01", reason: "recompute" },
+    async () => {},
+    () => new Date("2026-10-13T12:00:00Z"),
+  );
+  const ike = await get(`history?accountId=${accounts[2].id}&from=2026-10-12`);
+  assert.deepEqual(ike.t, [Date.parse("2026-10-12") / 1000, Date.parse("2026-10-13") / 1000]);
+  assert.deepEqual(ike.value, [14, 15]);
+  assert.deepEqual(ike.netContributions, [14, 14]);
+  assert.deepEqual(ike.flows, [
+    {
+      date: "2026-10-12",
+      amount: { amount: "14.00", currency: "PLN" },
+      type: "SECURITY_TRANSFER_IN",
+    },
+  ]);
+  assert.equal(ike.meta.stale, false);
+  assert.equal(ike.decimated, false);
+  const gap = await get(`history?accountId=${accounts[0].id}&from=2026-10-12`);
+  assert.deepEqual(gap.value, [null, null], "no FX for the USD position: a gap, never 0");
+  assert.deepEqual(gap.netContributions, [null, null], "unvalued transfer: unknown contributions");
+  assert.equal(gap.meta.stale, true);
+  await database.transaction(owner, async (tx) => {
+    const rows = (
+      await tx.execute(
+        sql`SELECT external_flow_pln,is_complete FROM portfolio.valuations_daily WHERE account_id=${accounts[0].id}::uuid AND valuation_date='2026-10-12'`,
+      )
+    ).rows;
+    assert.deepEqual(rows, [{ external_flow_pln: null, is_complete: false }]);
+  });
+  const weekly = await get(`history?accountId=${accounts[2].id}&interval=1mo&maxPoints=50`);
+  assert.equal(weekly.value.at(-1), 15);
+  for (const query of ["from=2026-10-13&to=2026-10-12", "to=2026-10-14", "maxPoints=10"])
+    assert.equal((await request(`history?${query}`)).status, 422, query);
+  const foreignHistory = await (
+    await request(`history?accountId=${accounts[2].id}`, "GET", undefined, { "x-owner": "b" })
+  ).json();
+  assert.deepEqual(foreignHistory.value, []);
+  for (const path of [
+    "summary",
+    "day-change",
+    "positions",
+    "cash",
+    "lots",
+    "realized",
+    "history",
+  ]) {
     const other = await (
       await request(`${path}?${selection}`, "GET", undefined, { "x-owner": "b" })
     ).json();
     assert(!JSON.stringify(other).includes(accounts[0].id));
     assert(!JSON.stringify(other).includes(instrumentId));
   }
+  // Demo 2026-10-26: the latest quote repeats the previous close (no session yet) — no day
+  // result instead of 0.
+  const closed = randomUUID();
+  await database.transaction(owner, async (tx) => {
+    await tx.execute(
+      sql`INSERT INTO market.instruments(id,mic,ticker,name,type,currency) VALUES(${closed}::uuid,'XWAR',${`C${closed.slice(0, 8)}`},'Synthetic no session','stock','PLN')`,
+    );
+    await tx.execute(
+      sql`INSERT INTO market.bars_daily(instrument_id,session_date,close,source) VALUES(${closed}::uuid,'2026-10-12',7,'gpw')`,
+    );
+    await tx.execute(
+      sql`INSERT INTO market.quotes_latest(instrument_id,price,as_of,fetched_at,source,delay_minutes) VALUES(${closed}::uuid,7,'2026-10-12T15:00:00Z','2026-10-13T11:55:00Z','yahoo',15)`,
+    );
+  });
+  const idle = await post("accounts", {
+    name: "No session",
+    accountType: "regular",
+    broker: "xtb",
+    currency: "PLN",
+  });
+  await post("transactions", {
+    accountId: idle.id,
+    type: "SECURITY_TRANSFER_IN",
+    instrumentId: closed,
+    tradeDate: "2026-10-09",
+    quantity: "2",
+    acquisitionCost: { amount: "10", currency: "PLN" },
+    acquiredOn: "2026-10-09",
+  });
+  const noSession = await get(`day-change?accountId=${idle.id}`);
+  assert.equal(noSession.currentValue.amount, "14.00000000");
+  assert.equal(noSession.previousValue.amount, "14.00000000");
+  assert.equal(noSession.change, null, "no session since the previous close: null, never 0");
+  assert.equal(noSession.changeRatio, null);
+  assert.equal(noSession.positions[0].change, null);
+  assert.equal(noSession.residualChange, null);
+  assert.equal(noSession.meta.staleReason, "market_closed");
+  assert.equal((await get(`summary?accountId=${idle.id}`)).dayChange, null);
 }

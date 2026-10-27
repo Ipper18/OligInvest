@@ -12,6 +12,7 @@ Powiązane: [`../../AGENTS.md`](../../AGENTS.md) (instrukcje stałe — Codex cz
 4. **Codex nie ma dostępu do serwerów ani sekretów.** Zadania infrastrukturalne kończą się skryptem, konfiguracją i instrukcją; wykonuje je właściciel i wkleja wynik (bez sekretów i adresów) do kolejnej sesji.
 5. **Konflikt dokumentacji z rzeczywistością** (np. inna wersja biblioteki, zachowanie niezgodne z opisem): Codex zatrzymuje się, opisuje rozbieżność i proponuje zmianę dokumentu lub ADR — nie „naprawia” dokumentacji po cichu.
 6. Po każdej sesji: aktualizacja statusów w [`backlog.md`](backlog.md), nowe ryzyka w [`ryzyka.md`](ryzyka.md), decyzje wymagające ADR — w raporcie.
+7. Te same paczki i szablon § 3.1 może prowadzić zespół agentów w OpenBot — proces, role i granice: [`orkiestracja-agentow.md`](orkiestracja-agentow.md).
 
 ## 1.1 Zanim zaczniesz (jednorazowo)
 

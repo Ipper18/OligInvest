@@ -4,3 +4,10 @@
 id = "GHSA-67mh-4wv8-2f99"
 ignoreUntil = 2026-12-20
 reason = "approved=2026-09-21; R-24: esbuild 0.18.20 is a development-only transitive dependency of Drizzle Kit through @esbuild-kit/*. The affected esbuild development server is never started. Owner accepted this exception for 90 days on 2026-09-21. Remove on the Drizzle Kit update eliminating @esbuild-kit/*; no overrides or audit fix."
+
+# Owner-approved exception, 2026-10-23; R-43 (docs/08-plan/ryzyka.md).
+# Remove when Lighthouse resolves a trusted chromium-bidi built on zod 4.6.6 or later.
+[[IgnoredVulns]]
+id = "GHSA-mrhx-c7xc-m3w5"
+ignoreUntil = 2026-11-22
+reason = "approved=2026-10-23; R-43: only zod 3.25.76 remains affected, as a development-only dependency of Lighthouse 13.5.0 through puppeteer-core 25.12.0 and chromium-bidi 17.0.2; no 3.x fix exists. Its BiDi protocol parser is not used: Lighthouse drives Chrome over CDP. pnpm trustPolicy rejects chromium-bidi 157.0.8090-0 (trust downgrade), so it is not forced. Application packages use zod 4.6.7. Owner accepted this exception for 30 days on 2026-10-23; no overrides or audit fix."

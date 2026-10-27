@@ -867,9 +867,9 @@ CREATE TABLE portfolio.valuations_daily (
   market_value       numeric(20,8) NOT NULL,                  -- waluta rachunku
   cash               numeric(20,8) NOT NULL,
   total_value        numeric(20,8) NOT NULL,
-  total_value_pln    numeric(20,8) NOT NULL,
-  external_flow      numeric(20,8) NOT NULL DEFAULT 0,        -- F_d (obliczenia-finansowe.md § 6.2)
-  external_flow_pln  numeric(20,8) NOT NULL DEFAULT 0,
+  total_value_pln    numeric(20,8),                           -- NULL: brak kursu do PLN (luka, nigdy 0)
+  external_flow      numeric(20,8) DEFAULT 0,                 -- F_d (obliczenia-finansowe.md § 6.2); NULL: przepływ nieznany
+  external_flow_pln  numeric(20,8) DEFAULT 0,                 -- NULL: przepływ lub kurs nieznany
   fx_rate_to_pln     numeric(18,8),
   as_of              timestamptz   NOT NULL,
   is_complete        boolean       NOT NULL DEFAULT true,     -- false: brak ceny/kursu dla części pozycji
@@ -953,6 +953,16 @@ CREATE TABLE analytics.analytics_runs (
   duration_ms        integer
 );
 CREATE INDEX analytics_runs_user_idx ON analytics.analytics_runs (user_id, created_at DESC);
+
+-- Właściciel uruchomienia analizy (BL-312): jobs dostaje z kolejki wyłącznie runId i odczytuje user_id
+-- z rekordu tą funkcją (tylko kontekst system), a wynik zapisuje już w kontekście RLS właściciela.
+CREATE FUNCTION analytics.run_owner(p_run_id uuid)
+  RETURNS uuid
+  LANGUAGE sql STABLE SECURITY DEFINER SET search_path = pg_catalog, analytics
+  AS $$
+    SELECT r.user_id FROM analytics.analytics_runs r
+    WHERE r.id = p_run_id AND platform.current_app_role() = 'system'
+  $$;
 
 CREATE TABLE analytics.stress_scenarios (                    -- globalne, edytowane przez admina
   key          text        PRIMARY KEY,
@@ -1107,6 +1117,8 @@ CREATE POLICY admin_all ON identity.invitations FOR ALL TO oliginvest_app
 -- Funkcje SECURITY DEFINER działają jako właściciel; przy FORCE RLS właściciel bez polityki nie widzi wierszy.
 -- Rola oliginvest_owner jest używana wyłącznie przez migracje i te funkcje (zasada dla każdej nowej funkcji DEFINER).
 CREATE POLICY definer_functions ON identity.invitations FOR ALL TO oliginvest_owner USING (true) WITH CHECK (true);
+-- analytics.run_owner (BL-312): właściciel czyta wyłącznie user_id uruchomienia, bez zapisu.
+CREATE POLICY definer_functions ON analytics.analytics_runs FOR SELECT TO oliginvest_owner USING (true);
 
 -- 12.4 Audyt: dopisywanie przez każdego, odczyt — admin lub własne wpisy; brak UPDATE/DELETE (brak uprawnień).
 ALTER TABLE platform.audit_log ENABLE ROW LEVEL SECURITY;
@@ -1154,6 +1166,7 @@ GRANT SELECT ON identity.user_directory TO oliginvest_app;
 REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON identity.user_directory FROM oliginvest_app;
 GRANT EXECUTE ON FUNCTION identity.find_invitation(text), identity.consume_invitation(text, uuid) TO oliginvest_app;
 GRANT EXECUTE ON FUNCTION platform.current_user_id(), platform.current_app_role() TO oliginvest_app;
+GRANT EXECUTE ON FUNCTION analytics.run_owner(uuid) TO oliginvest_app;
 
 -- oliginvest_analytics_ro: tylko dane rynkowe (bez watchlist i presetów użytkowników)
 GRANT SELECT ON market.instruments, market.bars_daily, market.fx_rates, market.corporate_actions, market.trading_calendar,
@@ -1164,6 +1177,7 @@ GRANT SELECT ON market.data_quality_issues TO oliginvest_analytics_ro;
 
 -- Funkcje: domyślnie wykonywalne przez PUBLIC — zawężamy funkcje SECURITY DEFINER
 REVOKE EXECUTE ON FUNCTION identity.find_invitation(text), identity.consume_invitation(text, uuid) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION analytics.run_owner(uuid) FROM PUBLIC;
 
 -- Przyszłe tabele w schematach domenowych dostają uprawnienia domyślne (nowa tabela z user_id MUSI dostać politykę RLS w tej samej migracji).
 ALTER DEFAULT PRIVILEGES FOR ROLE oliginvest_owner IN SCHEMA identity, notifications, market, portfolio, analytics, alerts, education

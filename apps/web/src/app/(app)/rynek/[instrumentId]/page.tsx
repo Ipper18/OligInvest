@@ -24,6 +24,7 @@ export default async function Page({
     return (
       <section>
         <InstrumentScreen
+          key={`${instrumentId}-${args.interval}`}
           userId={me.id}
           initial={initial}
           initialChart={initialChart}

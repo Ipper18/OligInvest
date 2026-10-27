@@ -27,6 +27,9 @@ def environment():
         "VALKEY_QUEUE_ANALYTICS_PASSWORD": "synthetic",
         "DB_ANALYTICS_RO_PASSWORD": "synthetic",
         "ANALYTICS_INSTANCE_ID": "test",
+        "DB_HOST": "postgres",
+        "DB_PORT": "5432",
+        "DB_NAME": "oliginvest",
     }
 
 
@@ -60,6 +63,19 @@ def test_mode_and_secrets(tmp_path):
     assert read_config({**env, "NODE_ENV": "production"}).mode == "production"
     with pytest.raises(ValueError):
         read_config({**env, "DB_ANALYTICS_RO_PASSWORD": "conflict"})
+    # Monte Carlo reads market data, so production needs a valid database endpoint.
+    production = {**env, "NODE_ENV": "production"}
+    for broken in (
+        {"DB_HOST": ""},
+        {"DB_NAME": "x;drop"},
+        {"DB_PORT": "0"},
+        {"DB_SSL": "yes"},
+    ):
+        with pytest.raises(ValueError):
+            read_config({**production, **broken})
+    database = read_config(production).database
+    assert database is not None
+    assert (database.host, database.port) == ("postgres", 5432)
 
 
 def test_strict_ping():

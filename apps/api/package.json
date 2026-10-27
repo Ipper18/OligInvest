@@ -7,7 +7,7 @@
     "lint": "biome check .",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p spike/tsconfig.json --noEmit",
     "test": "vitest run",
-    "build": "tsc -p tsconfig.json",
+    "build": "node ../../scripts/generate-api-registry.mjs && tsc -p tsconfig.json",
     "dev": "node --watch dist/server.js",
     "start": "node dist/server.js"
   },
@@ -16,13 +16,13 @@
     "@hono/zod-openapi": "1.6.3",
     "@oliginvest/config": "workspace:*",
     "@oliginvest/platform": "workspace:*",
-    "hono": "4.13.8",
+    "hono": "4.13.13",
     "pg": "8.23.0",
-    "zod": "4.6.5",
-    "better-auth": "1.7.5",
-    "@better-auth/api-key": "1.7.5",
+    "zod": "4.6.7",
+    "better-auth": "1.7.12",
+    "@better-auth/api-key": "1.7.12",
     "@node-rs/argon2": "2.2.1",
-    "@better-auth/drizzle-adapter": "1.7.5",
+    "@better-auth/drizzle-adapter": "1.7.12",
     "@oliginvest/db": "workspace:*",
     "@oliginvest/mod-identity": "workspace:*",
     "drizzle-orm": "0.45.2",
@@ -31,6 +31,10 @@
     "@oliginvest/contracts": "workspace:*",
     "@oliginvest/mod-market": "workspace:*",
     "@oliginvest/mod-portfolio": "workspace:*"
+  },
+  "optionalDependencies": {
+    "@oliginvest/mod-analytics": "workspace:*",
+    "@oliginvest/mod-education": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "24.13.5",
