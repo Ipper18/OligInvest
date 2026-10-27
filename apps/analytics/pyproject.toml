@@ -41,6 +41,8 @@ testpaths = ["test"]
 
 [tool.ruff]
 target-version = "py313"
+# `uv build` (setuptools sdist) stages a transient copy of the package here while turbo runs lint in parallel.
+extend-exclude = ["oliginvest_analytics-*"]
 
 [tool.mypy]
 python_version = "3.13"
