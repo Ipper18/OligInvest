@@ -26,15 +26,14 @@
     "@oliginvest/db": "workspace:*",
     "drizzle-orm": "0.45.2",
     "@oliginvest/mod-portfolio": "workspace:*",
-    "@oliginvest/mod-notifications": "workspace:*",
-    "@oliginvest/mod-alerts": "workspace:*",
-    "@oliginvest/mod-quick-actions": "workspace:*"
+    "@oliginvest/mod-notifications": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "24.13.5",
     "@types/nodemailer": "8.0.2"
   },
   "optionalDependencies": {
-    "@oliginvest/mod-analytics": "workspace:*"
+    "@oliginvest/mod-analytics": "workspace:*",
+    "@oliginvest/mod-alerts": "workspace:*"
   }
 }

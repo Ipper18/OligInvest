@@ -32,13 +32,13 @@
     "@oliginvest/mod-market": "workspace:*",
     "@oliginvest/mod-portfolio": "workspace:*",
     "@oliginvest/mod-notifications": "workspace:*",
-    "@oliginvest/mod-alerts": "workspace:*",
-    "@oliginvest/mod-quick-actions": "workspace:*",
     "@oliginvest/i18n": "workspace:*"
   },
   "optionalDependencies": {
     "@oliginvest/mod-analytics": "workspace:*",
-    "@oliginvest/mod-education": "workspace:*"
+    "@oliginvest/mod-education": "workspace:*",
+    "@oliginvest/mod-alerts": "workspace:*",
+    "@oliginvest/mod-quick-actions": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "24.13.5",

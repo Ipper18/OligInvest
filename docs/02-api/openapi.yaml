@@ -2662,7 +2662,7 @@ paths:
           required: true
           schema:
             type: string
-            pattern: ^[A-Za-z0-9.\-]{1,20}$
+            pattern: ^[A-Za-z0-9.-]{1,20}$
         - name: mic
           in: query
           required: false
@@ -7056,7 +7056,7 @@ components:
       properties:
         accountId: {$ref: '#/components/schemas/Uuid'}
         accountName: {type: string, maxLength: 60, description: 'Alternatywa dla accountId (dokładna nazwa, bez rozróżniania wielkości liter). Brak obu: jedyny aktywny rachunek użytkownika (poza demo), a przy kilku — 422 z listą nazw w detail.'}
-        ticker: {type: string, pattern: '^[A-Za-z0-9.\-]{1,20}$'}
+        ticker: {type: string, pattern: '^[A-Za-z0-9.-]{1,20}$'}
         mic: {type: string, pattern: '^[A-Z0-9]{4}$'}
         side: {type: string, enum: [BUY, SELL]}
         quantity: {$ref: '#/components/schemas/QuickDecimal'}

@@ -3,15 +3,6 @@ export { mountEducation } from "@oliginvest/mod-education/server";
 // END OPTIONAL EDUCATION
 
 export {
-  NotificationRepository,
-  notificationJobSchema,
-} from "@oliginvest/mod-notifications/server";
-export { deliveryPageSchema, preferencesSchema as notificationPreferencesSchema, statusSchema as notificationStatusSchema } from "@oliginvest/mod-notifications/contracts";
-export {AlertRepository} from "@oliginvest/mod-alerts/server";
-export {QuickRepository,quickText} from '@oliginvest/mod-quick-actions/server';
-export {quickPortfolioResponse,quickTodayResponse,quickQuoteResponse,quickCreated,quickAlerts,quickTransactionInput,ticker as quickTicker,mic as quickMic} from '@oliginvest/mod-quick-actions/contracts';
-export {priceRuleInput,rulePatch as priceRulePatch,ruleSchema as priceRuleSchema,rulePage as priceRulePage,eventPage as priceEventPage} from "@oliginvest/mod-alerts/contracts";
-export {
   authAccounts,
   authApiKeys,
   authRateLimits,
@@ -26,6 +17,15 @@ export {
   marketError,
   mountMarket,
 } from "@oliginvest/mod-market/server";
+export {
+  deliveryPageSchema,
+  preferencesSchema as notificationPreferencesSchema,
+  statusSchema as notificationStatusSchema,
+} from "@oliginvest/mod-notifications/contracts";
+export {
+  NotificationRepository,
+  notificationJobSchema,
+} from "@oliginvest/mod-notifications/server";
 export {
   enqueuePortfolioRecompute,
   ImportRepository,
@@ -67,3 +67,21 @@ export type AnalyticsRepository =
   Absent<AnalyticsModule> extends true
     ? unknown
     : InstanceType<AnalyticsModule["AnalyticsRepository"]>;
+
+export const alertsModule = await optionalModule(async () => ({
+  // biome-ignore lint/suspicious/noTsIgnore: Package may be omitted from the build.
+  // @ts-ignore
+  ...(await import("@oliginvest/mod-alerts/contracts")),
+  // biome-ignore lint/suspicious/noTsIgnore: Package may be omitted from the build.
+  // @ts-ignore
+  ...(await import("@oliginvest/mod-alerts/server")),
+}));
+
+export const quickModule = await optionalModule(async () => ({
+  // biome-ignore lint/suspicious/noTsIgnore: Package may be omitted from the build.
+  // @ts-ignore
+  ...(await import("@oliginvest/mod-quick-actions/contracts")),
+  // biome-ignore lint/suspicious/noTsIgnore: Package may be omitted from the build.
+  // @ts-ignore
+  ...(await import("@oliginvest/mod-quick-actions/server")),
+}));

@@ -8,7 +8,9 @@ import {
   withRequestContext,
 } from "@oliginvest/platform";
 import { bodyLimit } from "hono/body-limit";
+import { mountAlerts } from "./alert-routes.js";
 import { type IdentityDependencies, mountIdentity } from "./auth/identity-routes.js";
+import { mountPats } from "./auth/pat-routes.js";
 import { mountPreferences } from "./auth/preferences-routes.js";
 import { type AuthRouteDependencies, createAuthRouter, mountStepUp } from "./auth/routes.js";
 import { SESSION_COOKIE } from "./auth/session.js";
@@ -21,11 +23,9 @@ import {
   mountPortfolio,
   type PortfolioDependencies,
 } from "./modules.js";
-import { mountStream, type StreamDependencies } from "./stream-routes.js";
 import { mountNotifications } from "./notification-routes.js";
-import {mountAlerts} from "./alert-routes.js";
-import {mountPats} from "./auth/pat-routes.js";
-import {mountQuick} from './quick-routes.js';
+import { mountQuick } from "./quick-routes.js";
+import { mountStream, type StreamDependencies } from "./stream-routes.js";
 
 export type HealthChecks = Readonly<
   Record<"postgres" | "valkeyQueue" | "valkeyCache", () => Promise<void>>
@@ -201,7 +201,16 @@ export function createApp(
     }),
   );
   const auth = createAuthRouter(authDependencies);
-  for(const prefix of ['/api/v1/alerts/*','/api/v1/notifications/*','/api/v1/quick/*'])app.use(prefix,bodyLimit({maxSize:16_384,onError:()=>{throw new ProblemError('BAD_REQUEST');}}));
+  for (const prefix of ["/api/v1/alerts/*", "/api/v1/notifications/*", "/api/v1/quick/*"])
+    app.use(
+      prefix,
+      bodyLimit({
+        maxSize: 16_384,
+        onError: () => {
+          throw new ProblemError("BAD_REQUEST");
+        },
+      }),
+    );
   app.route("/api/auth", auth);
   app.all("/api/auth/*", () => {
     throw new ProblemError("FORBIDDEN");
@@ -218,9 +227,7 @@ export function createApp(
   });
   mountStepUp(api, authDependencies);
   api.use("*", async (context, next) => {
-    const module = /^\/api\/v1\/(analytics|alerts|education)(?:\/|$)/u.exec(
-      context.req.path,
-    )?.[1];
+    const module = /^\/api\/v1\/(analytics|alerts|education)(?:\/|$)/u.exec(context.req.path)?.[1];
     if (module) {
       const service = await authDependencies.service();
       const principal = await service.requireData(context.req.raw);
@@ -244,9 +251,9 @@ export function createApp(
   });
   mountPreferences(api, authDependencies);
   mountNotifications(api, authDependencies);
-  mountAlerts(api,authDependencies);
-  mountPats(api,authDependencies);
-  mountQuick(api,authDependencies,options.portfolio);
+  mountAlerts(api, authDependencies);
+  mountPats(api, authDependencies);
+  mountQuick(api, authDependencies, options.portfolio);
   mountEducation(
     api,
     options.education ?? {

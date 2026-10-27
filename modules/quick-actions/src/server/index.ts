@@ -1,1 +1,1 @@
-export {QuickRepository,quickText} from './service.js';
+export { QuickRepository, quickText } from "./service.js";

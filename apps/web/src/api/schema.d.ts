@@ -1821,7 +1821,7 @@ export interface paths {
         /** Reguły alertów */
         get: operations["listAlertRules"];
         put?: never;
-        /** Utwórz regułę alertu (cenowy, zmiana, wskaźnik, portfel, obsunięcie, alokacja, wyniki, newsy) */
+        /** Utwórz alert cenowy (próg lub zmiana dzienna) */
         post: operations["createAlertRule"];
         delete?: never;
         options?: never;
@@ -1943,7 +1943,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Podsumowanie portfela dla Skrótów i widżetów */
+        /**
+         * Podsumowanie portfela dla Skrótów i widżetów
+         * @description Braki danych zwracają 200 z incomplete=true, reasons i null dla niekompletnych kwot. Tekst podaje powód; 503 tylko przy niedostępności usługi.
+         */
         get: operations["quickGetPortfolio"];
         put?: never;
         post?: never;
@@ -1960,7 +1963,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Wynik dnia (najlepsza i najsłabsza pozycja) */
+        /**
+         * Wynik dnia (najlepsza i najsłabsza pozycja)
+         * @description Braki danych zwracają 200 z incomplete=true, reasons i null dla niekompletnych kwot. Nie podstawiamy zer ani częściowej wyceny.
+         */
         get: operations["quickGetToday"];
         put?: never;
         post?: never;
@@ -3023,8 +3029,10 @@ export interface components {
             expiresInDays: number;
         };
         PersonalAccessTokenCreated: components["schemas"]["PersonalAccessToken"] & {
-            /** @description Pełna wartość — pokazywana wyłącznie w tej odpowiedzi. */
-            token: string;
+            /** @description true wyłącznie przy pierwszym utworzeniu; ponowienie idempotentne zwraca false bez tokenu. */
+            tokenShown: boolean;
+            /** @description Pełna wartość wyłącznie przy tokenShown=true; nigdy nieodtwarzana. */
+            token?: string;
         };
         DataExport: {
             id: components["schemas"]["Uuid"];
@@ -4840,6 +4848,189 @@ export interface components {
             createdAt: components["schemas"]["Timestamp"];
             updatedAt: components["schemas"]["Timestamp"];
         };
+        PriceAlertRuleInput: ({
+            /**
+             * @default [
+             *       "push",
+             *       "email"
+             *     ]
+             */
+            channels: ("push" | "email")[];
+            /** @default 1440 */
+            cooldownMinutes: number;
+            /** @default 0.005 */
+            hysteresis: number;
+            /** @default true */
+            enabled: boolean;
+            /** @enum {string} */
+            type: "price_above";
+            /** Format: uuid */
+            instrumentId: string;
+            params: {
+                threshold: string;
+                /**
+                 * @default last
+                 * @enum {string}
+                 */
+                basis: "last" | "close";
+            } & {
+                [key: string]: unknown;
+            };
+        } & {
+            [key: string]: unknown;
+        }) | ({
+            /**
+             * @default [
+             *       "push",
+             *       "email"
+             *     ]
+             */
+            channels: ("push" | "email")[];
+            /** @default 1440 */
+            cooldownMinutes: number;
+            /** @default 0.005 */
+            hysteresis: number;
+            /** @default true */
+            enabled: boolean;
+            /** @enum {string} */
+            type: "price_below";
+            /** Format: uuid */
+            instrumentId: string;
+            params: {
+                threshold: string;
+                /**
+                 * @default last
+                 * @enum {string}
+                 */
+                basis: "last" | "close";
+            } & {
+                [key: string]: unknown;
+            };
+        } & {
+            [key: string]: unknown;
+        }) | ({
+            /**
+             * @default [
+             *       "push",
+             *       "email"
+             *     ]
+             */
+            channels: ("push" | "email")[];
+            /** @default 1440 */
+            cooldownMinutes: number;
+            /** @default 0.005 */
+            hysteresis: number;
+            /** @default true */
+            enabled: boolean;
+            /** @enum {string} */
+            type: "change_pct";
+            /** Format: uuid */
+            instrumentId: string;
+            params: {
+                threshold: number;
+                /**
+                 * @default both
+                 * @enum {string}
+                 */
+                direction: "up" | "down" | "both";
+            } & {
+                [key: string]: unknown;
+            };
+        } & {
+            [key: string]: unknown;
+        });
+        PriceAlertRulePatch: {
+            channels?: ("push" | "email")[];
+            cooldownMinutes?: number;
+            hysteresis?: number;
+            enabled?: boolean;
+            params?: {
+                [key: string]: unknown;
+            };
+        } & {
+            [key: string]: unknown;
+        };
+        PriceAlertRule: {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            type: "price_above" | "price_below" | "change_pct";
+            /** Format: uuid */
+            instrumentId: string;
+            params: ({
+                threshold: string;
+                /**
+                 * @default last
+                 * @enum {string}
+                 */
+                basis: "last" | "close";
+            } & {
+                [key: string]: unknown;
+            }) | ({
+                threshold: number;
+                /**
+                 * @default both
+                 * @enum {string}
+                 */
+                direction: "up" | "down" | "both";
+            } & {
+                [key: string]: unknown;
+            });
+            channels: ("push" | "email")[];
+            cooldownMinutes: number;
+            hysteresis: number;
+            enabled: boolean;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+            /** Format: date-time */
+            lastTriggeredAt?: string;
+        } & {
+            [key: string]: unknown;
+        };
+        PriceAlertRulePage: {
+            data: components["schemas"]["PriceAlertRule"][];
+            page: components["schemas"]["PageInfo"];
+        } & {
+            [key: string]: unknown;
+        };
+        PriceAlertEvent: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            ruleId: string;
+            /** @enum {string} */
+            ruleType: "price_above" | "price_below" | "change_pct";
+            /** Format: date-time */
+            triggeredAt: string;
+            value: string;
+            threshold: string;
+            message: string;
+            /** Format: date-time */
+            dataAsOf: string;
+            /** @enum {string} */
+            dataSource: "gpw" | "gpw_manual" | "yahoo" | "stooq_manual" | "nbp" | "ecb" | "finnhub" | "twelvedata" | "alphavantage" | "fred" | "gdelt" | "marketaux" | "broker_import" | "computed" | "demo" | "mixed";
+            instrument?: components["schemas"]["InstrumentSummary"];
+            deliveries: ({
+                /** @enum {string} */
+                channel: "push" | "email";
+                /** @enum {string} */
+                status: "queued" | "sent" | "failed" | "skipped";
+                /** Format: date-time */
+                sentAt?: string;
+            } & {
+                [key: string]: unknown;
+            })[];
+        } & {
+            [key: string]: unknown;
+        };
+        PriceAlertEventPage: {
+            data: components["schemas"]["PriceAlertEvent"][];
+            page: components["schemas"]["PageInfo"];
+        } & {
+            [key: string]: unknown;
+        };
         /** @enum {string} */
         AlertRuleType: "price_above" | "price_below" | "change_pct" | "indicator" | "portfolio_change" | "drawdown" | "allocation_drift" | "earnings" | "news";
         PriceThresholdParams: {
@@ -4992,11 +5183,20 @@ export interface components {
             delayMinutes: number;
             source: components["schemas"]["DataSource"];
         };
+        /** @description Brak danych, nigdy pozorne zero ani częściowa wycena jako pełna (R-39). */
+        QuickIncompleteReason: {
+            /** @enum {string} */
+            code: "missing_fx_rate" | "missing_price" | "missing_cost_basis" | "missing_day_baseline";
+            pair?: string;
+            instrumentId?: components["schemas"]["Uuid"];
+        };
         QuickPortfolio: components["schemas"]["QuickFreshness"] & {
-            totalValue: components["schemas"]["Money"];
-            dayChange: components["schemas"]["Money"];
+            incomplete: boolean;
+            reasons: components["schemas"]["QuickIncompleteReason"][];
+            totalValue: components["schemas"]["Money"] | null;
+            dayChange: components["schemas"]["Money"] | null;
             dayChangeRatio: number | null;
-            unrealizedPl: components["schemas"]["Money"];
+            unrealizedPl: components["schemas"]["Money"] | null;
             topPositions?: {
                 ticker: string;
                 weight: number;
@@ -5008,7 +5208,9 @@ export interface components {
             changeRatio: number;
         };
         QuickToday: components["schemas"]["QuickFreshness"] & {
-            dayChange: components["schemas"]["Money"];
+            incomplete: boolean;
+            reasons: components["schemas"]["QuickIncompleteReason"][];
+            dayChange: components["schemas"]["Money"] | null;
             dayChangeRatio: number | null;
             best?: components["schemas"]["QuickMover"];
             worst?: components["schemas"]["QuickMover"];
@@ -5041,8 +5243,11 @@ export interface components {
              */
             confirmDuplicate: boolean;
         };
-        /** @description Liczba dodatnia jako ciąg z kropką lub przecinkiem (pole tekstowe Skrótu w pl-PL) albo liczba JSON (typ „Liczba” w akcji Słownik); serwer normalizuje do DecimalString. */
-        QuickDecimal: string | number;
+        /**
+         * @description Wartość dziesiętna wyłącznie jako tekst z kropką lub przecinkiem; normalizowana do DecimalString. W Skrótach i HTTP Shortcuts typ Tekst, nie Liczba (ADR-014).
+         * @example 58,34
+         */
+        QuickDecimal: string;
         QuickTransactionCreated: {
             transactionId: components["schemas"]["Uuid"];
             accountId: components["schemas"]["Uuid"];
@@ -6559,6 +6764,7 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             409: components["responses"]["Conflict"];
             422: components["responses"]["ValidationFailed"];
+            429: components["responses"]["RateLimited"];
         };
     };
     revokePersonalAccessToken: {
@@ -9304,7 +9510,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AlertRulePage"];
+                    "application/json": components["schemas"]["PriceAlertRulePage"];
                 };
             };
             401: components["responses"]["Unauthenticated"];
@@ -9314,13 +9520,16 @@ export interface operations {
     createAlertRule: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                /** @description Klucz generowany przez klienta: UUID (zalecany) lub 16–64 znaków [A-Za-z0-9_-] (Skróty iOS nie mają generatora UUID); przechowywany 24 h per użytkownik. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+            };
             path?: never;
             cookie?: never;
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["AlertRuleInput"];
+                "application/json": components["schemas"]["PriceAlertRuleInput"];
             };
         };
         responses: {
@@ -9330,11 +9539,12 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AlertRule"];
+                    "application/json": components["schemas"]["PriceAlertRule"];
                 };
             };
             401: components["responses"]["Unauthenticated"];
             404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
             422: components["responses"]["ValidationFailed"];
             429: components["responses"]["RateLimited"];
         };
@@ -9356,7 +9566,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AlertRule"];
+                    "application/json": components["schemas"]["PriceAlertRule"];
                 };
             };
             401: components["responses"]["Unauthenticated"];
@@ -9396,7 +9606,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["AlertRulePatch"];
+                "application/json": components["schemas"]["PriceAlertRulePatch"];
             };
         };
         responses: {
@@ -9406,7 +9616,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AlertRule"];
+                    "application/json": components["schemas"]["PriceAlertRule"];
                 };
             };
             401: components["responses"]["Unauthenticated"];
@@ -9438,7 +9648,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AlertEventPage"];
+                    "application/json": components["schemas"]["PriceAlertEventPage"];
                 };
             };
             401: components["responses"]["Unauthenticated"];
@@ -9640,6 +9850,9 @@ export interface operations {
             };
             401: components["responses"]["Unauthenticated"];
             403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["ValidationFailed"];
             429: components["responses"]["RateLimited"];
         };
     };
@@ -9671,6 +9884,9 @@ export interface operations {
             };
             401: components["responses"]["Unauthenticated"];
             403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["ValidationFailed"];
             429: components["responses"]["RateLimited"];
         };
     };
@@ -9705,6 +9921,8 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+            422: components["responses"]["ValidationFailed"];
+            429: components["responses"]["RateLimited"];
         };
     };
     quickCreateTransaction: {
@@ -9738,6 +9956,7 @@ export interface operations {
             };
             401: components["responses"]["Unauthenticated"];
             403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
             422: components["responses"]["ValidationFailed"];
             429: components["responses"]["RateLimited"];
@@ -9772,6 +9991,9 @@ export interface operations {
             401: components["responses"]["Unauthenticated"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["ValidationFailed"];
+            429: components["responses"]["RateLimited"];
         };
     };
     adminListUsers: {

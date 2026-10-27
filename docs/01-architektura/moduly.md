@@ -228,6 +228,18 @@ W M0 (BL-013) korzeń `apps/jobs` rejestruje definicje kolejek domenowych przez 
 
 `portfolio.valuation.updated`, `portfolio.import.parsed`, `market.quotes.updated` (tylko instrumenty z pozycji/watchlist/otwartych ekranów użytkownika), `alerts.alert.triggered`, `analytics.run.progress`, `analytics.run.completed`, `analytics.run.failed`, `identity.export.ready`, `flags.changed`, `auth.session.revoked` oraz techniczne `ready`, `ping`, `resync`. Kontrakty strumienia: [`../02-api/realtime.md`](../02-api/realtime.md).
 
+### 5.4 Backend powiadomień M4 (decyzja właściciela 2026-10-23)
+
+BL-403 w pierwszej paczce obejmuje e-mail i interfejs kanałów; transport Web Push
+(BL-402), PWA i ekrany są w kolejnej paczce. Brak transportu/subskrypcji push
+uruchamia skonfigurowany fallback e-mail. Alerty podczas cichych godzin czekają
+na koniec ciszy w strefie użytkownika; kilka wyzwoleń tej samej reguły łączymy
+w jedno doręczenie z najnowszym zdarzeniem. Historia wyzwoleń pozostaje pełna.
+Wiadomość zawiera czas wyzwolenia oraz źródło i czas danych. Bezpieczeństwo
+i reset hasła omijają ciszę. Globalny limit SMTP to 300 prób wysłania na dobę UTC,
+w tym maksymalnie 250 dla poczty innej niż konta i bezpieczeństwo (rezerwa 50).
+Nieudane próby także zużywają kwotę; po wyczerpaniu kwoty wysyłka czeka na kolejną dobę.
+
 ## 6. Uprawnienia (RBAC) i zakresy PAT
 
 | Uprawnienie | user | pro | admin | Zakres PAT |
@@ -299,15 +311,3 @@ pod `.git/` i usuwa ją po zakończeniu. Nie modyfikuje lockfile ani modułów g
 - API: prefiks `/api/v1`; zmiany niekompatybilne tylko w nowej wersji ścieżki lub po okresie przejściowym ≥ 90 dni z nagłówkami `Deprecation`/`Sunset` (NFR-02.05, szczegóły w `02-api/konwencje-api.md`).
 - Zdarzenia i zadania: pole `v` w payloadzie; konsument obsługuje wersję bieżącą i poprzednią; nowa wersja = nowy schemat w `contracts`.
 - Moduł: pole `version` (semver) w definicji; zmiana major kontraktu modułu wymaga wpisu w changelogu.
-
-### 5.4 Backend powiadomień M4 (decyzja właściciela 2026-10-23)
-
-BL-403 w pierwszej paczce obejmuje e-mail i interfejs kanałów; transport Web Push
-(BL-402), PWA i ekrany są w kolejnej paczce. Brak transportu/subskrypcji push
-uruchamia skonfigurowany fallback e-mail. Alerty podczas cichych godzin czekają
-na koniec ciszy w strefie użytkownika; kilka wyzwoleń tej samej reguły łączymy
-w jedno doręczenie z najnowszym zdarzeniem. Historia wyzwoleń pozostaje pełna.
-Wiadomość zawiera czas wyzwolenia oraz źródło i czas danych. Bezpieczeństwo
-i reset hasła omijają ciszę. Globalny limit SMTP to 300 prób wysłania na dobę UTC,
-w tym maksymalnie 250 dla poczty innej niż konta i bezpieczeństwo (rezerwa 50).
-Nieudane próby także zużywają kwotę; po wyczerpaniu kwoty wysyłka czeka na kolejną dobę.

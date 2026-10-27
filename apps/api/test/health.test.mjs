@@ -154,6 +154,9 @@ test("public OpenAPI 3.1 is generated from registered Zod routes", async () => {
   expect(document.openapi).toBe("3.1.0");
   expect(Object.keys(document.paths).sort()).toEqual([
     "/admin/invitations",
+    "/alerts/events",
+    "/alerts/rules",
+    "/alerts/rules/{ruleId}",
     "/analytics/limits",
     "/analytics/runs",
     "/analytics/runs/{runId}",
@@ -182,6 +185,10 @@ test("public OpenAPI 3.1 is generated from registered Zod routes", async () => {
     "/me/legal/acceptances",
     "/me/preferences",
     "/me/step-up",
+    "/me/tokens",
+    "/me/tokens/{tokenId}",
+    "/notifications/deliveries",
+    "/notifications/preferences",
     "/openapi.json",
     "/portfolio/accounts",
     "/portfolio/accounts/{accountId}",
@@ -199,6 +206,11 @@ test("public OpenAPI 3.1 is generated from registered Zod routes", async () => {
     "/portfolio/summary",
     "/portfolio/transactions",
     "/portfolio/transactions/{transactionId}",
+    "/quick/alerts",
+    "/quick/portfolio",
+    "/quick/quote",
+    "/quick/today",
+    "/quick/transactions",
     "/request-password-reset",
     "/reset-password",
     "/revoke-other-sessions",
@@ -211,8 +223,8 @@ test("public OpenAPI 3.1 is generated from registered Zod routes", async () => {
     "/two-factor/enable",
     "/two-factor/generate-backup-codes",
     "/two-factor/verify-backup-code",
-    "/two-factor/verify-totp",
-  ]);
+    "/two-factor/verify-totp"
+]);
   expect(
     document.paths["/health/ready"].get.responses["503"].content["application/json"].schema,
   ).toEqual({ $ref: "#/components/schemas/HealthStatus" });

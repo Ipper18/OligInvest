@@ -221,9 +221,6 @@ importers:
       '@oliginvest/i18n':
         specifier: workspace:*
         version: link:../../packages/i18n
-      '@oliginvest/mod-alerts':
-        specifier: workspace:*
-        version: link:../../modules/alerts
       '@oliginvest/mod-identity':
         specifier: workspace:*
         version: link:../../modules/identity
@@ -236,9 +233,6 @@ importers:
       '@oliginvest/mod-portfolio':
         specifier: workspace:*
         version: link:../../modules/portfolio
-      '@oliginvest/mod-quick-actions':
-        specifier: workspace:*
-        version: link:../../modules/quick-actions
       '@oliginvest/platform':
         specifier: workspace:*
         version: link:../../packages/platform
@@ -271,6 +265,9 @@ importers:
         specifier: 8.23.1
         version: 8.23.1
     optionalDependencies:
+      '@oliginvest/mod-alerts':
+        specifier: workspace:*
+        version: link:../../modules/alerts
       '@oliginvest/mod-analytics':
         specifier: workspace:*
         version: link:../../modules/analytics
@@ -295,9 +292,6 @@ importers:
       '@oliginvest/i18n':
         specifier: workspace:*
         version: link:../../packages/i18n
-      '@oliginvest/mod-alerts':
-        specifier: workspace:*
-        version: link:../../modules/alerts
       '@oliginvest/mod-market':
         specifier: workspace:*
         version: link:../../modules/market
@@ -307,9 +301,6 @@ importers:
       '@oliginvest/mod-portfolio':
         specifier: workspace:*
         version: link:../../modules/portfolio
-      '@oliginvest/mod-quick-actions':
-        specifier: workspace:*
-        version: link:../../modules/quick-actions
       '@oliginvest/platform':
         specifier: workspace:*
         version: link:../../packages/platform
@@ -336,6 +327,9 @@ importers:
         specifier: 8.0.2
         version: 8.0.2
     optionalDependencies:
+      '@oliginvest/mod-alerts':
+        specifier: workspace:*
+        version: link:../../modules/alerts
       '@oliginvest/mod-analytics':
         specifier: workspace:*
         version: link:../../modules/analytics
@@ -667,40 +661,6 @@ importers:
       xlsx:
         specifier: https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz
         version: https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz
-      zod:
-        specifier: 4.6.7
-        version: 4.6.7
-    devDependencies:
-      '@types/node':
-        specifier: 24.13.5
-        version: 24.13.5
-
-  modules/quick-actions:
-    dependencies:
-      '@hono/zod-openapi':
-        specifier: 1.6.3
-        version: 1.6.3(hono@4.13.8)(zod@4.6.7)
-      '@oliginvest/core':
-        specifier: workspace:*
-        version: link:../../packages/core
-      '@oliginvest/db':
-        specifier: workspace:*
-        version: link:../../packages/db
-      '@oliginvest/i18n':
-        specifier: workspace:*
-        version: link:../../packages/i18n
-      '@oliginvest/mod-market':
-        specifier: workspace:*
-        version: link:../market
-      '@oliginvest/mod-portfolio':
-        specifier: workspace:*
-        version: link:../portfolio
-      '@oliginvest/platform':
-        specifier: workspace:*
-        version: link:../../packages/platform
-      drizzle-orm:
-        specifier: 0.45.2
-        version: 0.45.2(@opentelemetry/api@1.9.1)(@types/pg@8.23.1)(kysely@0.29.6)(pg@8.23.0)
       zod:
         specifier: 4.6.7
         version: 4.6.7

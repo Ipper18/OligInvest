@@ -65,7 +65,9 @@ export function createAuthMailer(
   config: ServiceConfig<"jobs">,
   mode: "development" | "test" | "production",
   port: number,
-  reserve: (security: boolean) => Promise<void> = async () => { throw new Error("MAIL_QUOTA_NOT_CONFIGURED"); },
+  reserve: (security: boolean) => Promise<void> = async () => {
+    throw new Error("MAIL_QUOTA_NOT_CONFIGURED");
+  },
 ) {
   const transport = nodemailer.createTransport(mailOptions(config, mode, port));
   return {
@@ -108,8 +110,17 @@ export function createAuthMailer(
       const recipient = z.email().parse(email);
       await reserve(security);
       try {
-        await transport.sendMail({from:config.SMTP_FROM,to:recipient,subject,text,disableFileAccess:true,disableUrlAccess:true});
-      } catch { throw new Error("NOTIFICATION_DELIVERY_FAILED"); }
+        await transport.sendMail({
+          from: config.SMTP_FROM,
+          to: recipient,
+          subject,
+          text,
+          disableFileAccess: true,
+          disableUrlAccess: true,
+        });
+      } catch {
+        throw new Error("NOTIFICATION_DELIVERY_FAILED");
+      }
     },
     close: () => transport.close(),
   };
