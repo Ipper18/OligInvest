@@ -11,7 +11,9 @@ import sys
 from collections.abc import Callable, Mapping
 from typing import Any
 
+from .goal import run_goal
 from .montecarlo import InsufficientData, MarketInputs, run_monte_carlo
+from .stress import CoverageTooLow, NoScenarioData, run_stress_test
 
 type Progress = Callable[[int, str], None]
 type Handler = Callable[
@@ -24,21 +26,35 @@ def report(progress: int, stage: str) -> None:
     sys.stderr.flush()
 
 
-def monte_carlo(
-    job: Mapping[str, Any], data: Mapping[str, Any], progress: Progress
-) -> Mapping[str, Any]:
-    inputs = MarketInputs(
+def market_inputs(data: Mapping[str, Any]) -> MarketInputs:
+    return MarketInputs(
         months=data["months"],
         returns=data["returns"],
         cash_rate=data["cash_rate"],
         cash_rate_date=data["cash_rate_date"],
         data_version=data["data_version"],
+        tickers=data.get("tickers") or {},
     )
-    return run_monte_carlo(job, inputs, progress)
+
+
+def monte_carlo(
+    job: Mapping[str, Any], data: Mapping[str, Any], progress: Progress
+) -> Mapping[str, Any]:
+    return run_monte_carlo(job, market_inputs(data), progress)
+
+
+def goal(
+    job: Mapping[str, Any], data: Mapping[str, Any], progress: Progress
+) -> Mapping[str, Any]:
+    return run_goal(job, market_inputs(data), progress)
 
 
 # FR-04 analyses registered so far; other job types end as INTERNAL until implemented.
-HANDLERS: dict[str, Handler] = {"monte_carlo": monte_carlo}
+HANDLERS: dict[str, Handler] = {
+    "monte_carlo": monte_carlo,
+    "stress_test": run_stress_test,
+    "goal": goal,
+}
 
 
 def run(
@@ -55,8 +71,10 @@ def run(
                 handler(request["job"], request.get("data") or {}, progress)
             ),
         }
-    except InsufficientData:
+    except (InsufficientData, NoScenarioData):
         return {"status": "failed", "code": "INSUFFICIENT_DATA"}
+    except CoverageTooLow:
+        return {"status": "failed", "code": "COVERAGE_TOO_LOW"}
     except MemoryError:
         return {"status": "failed", "code": "MEMORY_LIMIT"}
     except Exception:  # noqa: BLE001 - details may contain user parameters

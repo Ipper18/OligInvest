@@ -162,7 +162,7 @@ def test_sensitivity_table_is_mandatory_and_monotonic_in_the_mean() -> None:
     ]
     assert [w["code"] for w in short["warnings"]] == [
         "COSTS_NOT_MODELLED",
-        "CRISIS_TESTS_UNAVAILABLE",
+        "CRISIS_TESTS_SEPARATE",
         "CONCENTRATION_NOT_MODELLED",
         "SHORT_HISTORY",
     ]
@@ -186,7 +186,7 @@ def test_assumptions_name_model_window_costs_tax_and_cash_rate() -> None:
     assert a["model"] == "parametric_t" and a["degreesOfFreedom"] == 5
     # Block length is shown for both models; with t it feeds the block-length rows.
     assert a["meanBlockMonths"] == 6 and a["sensitivityBlockMonths"] == [3, 12]
-    assert a["crisisTests"] == "unavailable (BL-556)"
+    assert a["crisisTests"] == "separate analysis (stress_test, BL-556)"
     assert (a["historyFrom"], a["historyTo"], a["historyMonths"]) == (
         "2000-01",
         "2024-12",
@@ -388,10 +388,8 @@ def test_sensitivity_has_two_other_block_lengths_and_a_crisis_notice() -> None:
     assert [r["meanBlockMonths"] for r in blocks] == [3, 12]
     assert all(r["endValueP5"] <= r["endValueP50"] for r in blocks)
     assert output["assumptions"]["meanBlockMonths"] == 6
-    notice = next(
-        w for w in output["warnings"] if w["code"] == "CRISIS_TESTS_UNAVAILABLE"
-    )
-    assert notice["severity"] == "info" and "BL-556" in notice["message"]
+    notice = next(w for w in output["warnings"] if w["code"] == "CRISIS_TESTS_SEPARATE")
+    assert notice["severity"] == "info" and "warunków skrajnych" in notice["message"]
     assert check_result(envelope(output))
     # Same seed, same block length as the main run → identical end distribution.
     same = run_monte_carlo(job(meanBlockMonths=3), inputs())

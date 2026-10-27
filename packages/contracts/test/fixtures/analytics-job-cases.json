@@ -94,7 +94,8 @@
           {
             "key": "covid_2020",
             "from": "2020-02-19",
-            "to": "2020-03-23"
+            "to": "2020-03-23",
+            "name": "Krach pandemiczny 2020"
           }
         ],
         "hypothetical": [
@@ -290,7 +291,10 @@
         "horizonYears": 15,
         "probabilities": [0.5, 0.75, 0.9],
         "paths": 10000,
-        "inflationRate": 0.03
+        "inflationRate": 0.03,
+        "indexToInflation": true,
+        "taxMode": "belka_simplified",
+        "annualCostRate": 0.005
       },
       "portfolio": {
         "asOf": "2026-10-16",
@@ -1619,6 +1623,46 @@
         }
       ],
       "delete": []
+    },
+    {
+      "name": "stress_test: historical scenario without name",
+      "base": "stress_test",
+      "valid": false,
+      "set": [],
+      "delete": [["params", "historical", 0, "name"]]
+    },
+    {
+      "name": "stress_test: correlation shock needs its level",
+      "base": "stress_test",
+      "valid": false,
+      "set": [],
+      "delete": [["params", "hypothetical", 1, "correlation"]]
+    },
+    {
+      "name": "goal: tax mode is required",
+      "base": "goal",
+      "valid": false,
+      "set": [],
+      "delete": [["params", "taxMode"]]
+    },
+    {
+      "name": "goal: annual cost above 5 %",
+      "base": "goal",
+      "valid": false,
+      "set": [
+        {
+          "path": ["params", "annualCostRate"],
+          "value": 0.06
+        }
+      ],
+      "delete": []
+    },
+    {
+      "name": "goal: contribution indexation is required",
+      "base": "goal",
+      "valid": false,
+      "set": [],
+      "delete": [["params", "indexToInflation"]]
     }
   ]
 }

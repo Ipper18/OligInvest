@@ -711,6 +711,11 @@
                       "type": "string",
                       "pattern": "^[a-z0-9_]{3,40}$"
                     },
+                    "name": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 80
+                    },
                     "from": {
                       "type": "string",
                       "format": "date",
@@ -724,6 +729,7 @@
                   },
                   "required": [
                     "key",
+                    "name",
                     "from",
                     "to"
                   ],
@@ -2150,6 +2156,21 @@
                 "type": "number",
                 "minimum": 0,
                 "maximum": 0.2
+              },
+              "indexToInflation": {
+                "type": "boolean"
+              },
+              "taxMode": {
+                "type": "string",
+                "enum": [
+                  "belka_simplified",
+                  "none"
+                ]
+              },
+              "annualCostRate": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 0.05
               }
             },
             "required": [
@@ -2157,7 +2178,10 @@
               "horizonYears",
               "probabilities",
               "paths",
-              "inflationRate"
+              "inflationRate",
+              "indexToInflation",
+              "taxMode",
+              "annualCostRate"
             ],
             "additionalProperties": false
           },
@@ -2288,271 +2312,870 @@
             "const": "done"
           },
           "result": {
-            "type": "object",
-            "properties": {
-              "kind": {
-                "type": "string",
-                "const": "monte_carlo"
-              },
-              "currency": {
-                "type": "string",
-                "const": "PLN"
-              },
-              "months": {
-                "maxItems": 481,
-                "type": "array",
-                "items": {
-                  "type": "integer",
-                  "minimum": 0,
-                  "maximum": 481
-                }
-              },
-              "nominal": {
+            "oneOf": [
+              {
                 "type": "object",
                 "properties": {
-                  "p5": {
+                  "kind": {
+                    "type": "string",
+                    "const": "monte_carlo"
+                  },
+                  "currency": {
+                    "type": "string",
+                    "const": "PLN"
+                  },
+                  "months": {
                     "maxItems": 481,
                     "type": "array",
                     "items": {
-                      "type": "number"
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 481
                     }
                   },
-                  "p25": {
-                    "maxItems": 481,
-                    "type": "array",
-                    "items": {
-                      "type": "number"
-                    }
+                  "nominal": {
+                    "type": "object",
+                    "properties": {
+                      "p5": {
+                        "maxItems": 481,
+                        "type": "array",
+                        "items": {
+                          "type": "number"
+                        }
+                      },
+                      "p25": {
+                        "maxItems": 481,
+                        "type": "array",
+                        "items": {
+                          "type": "number"
+                        }
+                      },
+                      "p50": {
+                        "maxItems": 481,
+                        "type": "array",
+                        "items": {
+                          "type": "number"
+                        }
+                      },
+                      "p75": {
+                        "maxItems": 481,
+                        "type": "array",
+                        "items": {
+                          "type": "number"
+                        }
+                      },
+                      "p95": {
+                        "maxItems": 481,
+                        "type": "array",
+                        "items": {
+                          "type": "number"
+                        }
+                      }
+                    },
+                    "required": [
+                      "p5",
+                      "p25",
+                      "p50",
+                      "p75",
+                      "p95"
+                    ],
+                    "additionalProperties": false
                   },
-                  "p50": {
-                    "maxItems": 481,
-                    "type": "array",
-                    "items": {
-                      "type": "number"
-                    }
+                  "real": {
+                    "type": "object",
+                    "properties": {
+                      "p5": {
+                        "maxItems": 481,
+                        "type": "array",
+                        "items": {
+                          "type": "number"
+                        }
+                      },
+                      "p25": {
+                        "maxItems": 481,
+                        "type": "array",
+                        "items": {
+                          "type": "number"
+                        }
+                      },
+                      "p50": {
+                        "maxItems": 481,
+                        "type": "array",
+                        "items": {
+                          "type": "number"
+                        }
+                      },
+                      "p75": {
+                        "maxItems": 481,
+                        "type": "array",
+                        "items": {
+                          "type": "number"
+                        }
+                      },
+                      "p95": {
+                        "maxItems": 481,
+                        "type": "array",
+                        "items": {
+                          "type": "number"
+                        }
+                      }
+                    },
+                    "required": [
+                      "p5",
+                      "p25",
+                      "p50",
+                      "p75",
+                      "p95"
+                    ],
+                    "additionalProperties": false
                   },
-                  "p75": {
-                    "maxItems": 481,
-                    "type": "array",
-                    "items": {
-                      "type": "number"
-                    }
+                  "goalProbability": {
+                    "anyOf": [
+                      {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
                   },
-                  "p95": {
-                    "maxItems": 481,
+                  "maxDrawdownPercentiles": {
+                    "type": "object",
+                    "properties": {
+                      "p5": {
+                        "type": "number",
+                        "minimum": -1,
+                        "maximum": 0
+                      },
+                      "p50": {
+                        "type": "number",
+                        "minimum": -1,
+                        "maximum": 0
+                      },
+                      "p95": {
+                        "type": "number",
+                        "minimum": -1,
+                        "maximum": 0
+                      }
+                    },
+                    "required": [
+                      "p5",
+                      "p50",
+                      "p95"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "sensitivity": {
+                    "minItems": 4,
+                    "maxItems": 6,
                     "type": "array",
                     "items": {
-                      "type": "number"
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "scenario": {
+                              "type": "string",
+                              "enum": [
+                                "mean_minus_2pp",
+                                "mean_plus_2pp",
+                                "last_10y",
+                                "full_history"
+                              ]
+                            },
+                            "annualCostRate": {
+                              "type": "number",
+                              "minimum": 0,
+                              "maximum": 0.05
+                            },
+                            "endValueP5": {
+                              "type": "number"
+                            },
+                            "endValueP50": {
+                              "type": "number"
+                            },
+                            "goalProbability": {
+                              "anyOf": [
+                                {
+                                  "type": "number",
+                                  "minimum": 0,
+                                  "maximum": 1
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          },
+                          "required": [
+                            "scenario",
+                            "annualCostRate",
+                            "endValueP5",
+                            "endValueP50",
+                            "goalProbability"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "scenario": {
+                              "type": "string",
+                              "const": "block_length"
+                            },
+                            "meanBlockMonths": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 24
+                            },
+                            "annualCostRate": {
+                              "type": "number",
+                              "minimum": 0,
+                              "maximum": 0.05
+                            },
+                            "endValueP5": {
+                              "type": "number"
+                            },
+                            "endValueP50": {
+                              "type": "number"
+                            },
+                            "goalProbability": {
+                              "anyOf": [
+                                {
+                                  "type": "number",
+                                  "minimum": 0,
+                                  "maximum": 1
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          },
+                          "required": [
+                            "scenario",
+                            "meanBlockMonths",
+                            "annualCostRate",
+                            "endValueP5",
+                            "endValueP50",
+                            "goalProbability"
+                          ],
+                          "additionalProperties": false
+                        }
+                      ]
                     }
                   }
                 },
                 "required": [
-                  "p5",
-                  "p25",
-                  "p50",
-                  "p75",
-                  "p95"
+                  "kind",
+                  "currency",
+                  "months",
+                  "nominal",
+                  "real",
+                  "goalProbability",
+                  "maxDrawdownPercentiles",
+                  "sensitivity"
                 ],
                 "additionalProperties": false
               },
-              "real": {
+              {
                 "type": "object",
                 "properties": {
-                  "p5": {
-                    "maxItems": 481,
+                  "kind": {
+                    "type": "string",
+                    "const": "stress_test"
+                  },
+                  "currency": {
+                    "type": "string",
+                    "const": "PLN"
+                  },
+                  "scenarios": {
+                    "minItems": 1,
+                    "maxItems": 20,
                     "type": "array",
                     "items": {
-                      "type": "number"
-                    }
-                  },
-                  "p25": {
-                    "maxItems": 481,
-                    "type": "array",
-                    "items": {
-                      "type": "number"
-                    }
-                  },
-                  "p50": {
-                    "maxItems": 481,
-                    "type": "array",
-                    "items": {
-                      "type": "number"
-                    }
-                  },
-                  "p75": {
-                    "maxItems": 481,
-                    "type": "array",
-                    "items": {
-                      "type": "number"
-                    }
-                  },
-                  "p95": {
-                    "maxItems": 481,
-                    "type": "array",
-                    "items": {
-                      "type": "number"
-                    }
-                  }
-                },
-                "required": [
-                  "p5",
-                  "p25",
-                  "p50",
-                  "p75",
-                  "p95"
-                ],
-                "additionalProperties": false
-              },
-              "goalProbability": {
-                "anyOf": [
-                  {
-                    "type": "number",
-                    "minimum": 0,
-                    "maximum": 1
-                  },
-                  {
-                    "type": "null"
-                  }
-                ]
-              },
-              "maxDrawdownPercentiles": {
-                "type": "object",
-                "properties": {
-                  "p5": {
-                    "type": "number",
-                    "minimum": -1,
-                    "maximum": 0
-                  },
-                  "p50": {
-                    "type": "number",
-                    "minimum": -1,
-                    "maximum": 0
-                  },
-                  "p95": {
-                    "type": "number",
-                    "minimum": -1,
-                    "maximum": 0
-                  }
-                },
-                "required": [
-                  "p5",
-                  "p50",
-                  "p95"
-                ],
-                "additionalProperties": false
-              },
-              "sensitivity": {
-                "minItems": 4,
-                "maxItems": 6,
-                "type": "array",
-                "items": {
-                  "oneOf": [
-                    {
                       "type": "object",
                       "properties": {
-                        "scenario": {
+                        "key": {
+                          "type": "string",
+                          "pattern": "^[a-z0-9_]{3,40}$"
+                        },
+                        "name": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 120
+                        },
+                        "kind": {
                           "type": "string",
                           "enum": [
-                            "mean_minus_2pp",
-                            "mean_plus_2pp",
-                            "last_10y",
-                            "full_history"
+                            "historical",
+                            "hypothetical"
                           ]
                         },
-                        "annualCostRate": {
-                          "type": "number",
-                          "minimum": 0,
-                          "maximum": 0.05
-                        },
-                        "endValueP5": {
-                          "type": "number"
-                        },
-                        "endValueP50": {
-                          "type": "number"
-                        },
-                        "goalProbability": {
-                          "anyOf": [
-                            {
-                              "type": "number",
-                              "minimum": 0,
-                              "maximum": 1
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        }
-                      },
-                      "required": [
-                        "scenario",
-                        "annualCostRate",
-                        "endValueP5",
-                        "endValueP50",
-                        "goalProbability"
-                      ],
-                      "additionalProperties": false
-                    },
-                    {
-                      "type": "object",
-                      "properties": {
-                        "scenario": {
+                        "shockKind": {
                           "type": "string",
-                          "const": "block_length"
+                          "enum": [
+                            "index_shock",
+                            "fx_shock",
+                            "correlation_shock"
+                          ]
                         },
-                        "meanBlockMonths": {
-                          "type": "integer",
-                          "minimum": 1,
-                          "maximum": 24
+                        "shock": {
+                          "type": "number",
+                          "minimum": -0.9,
+                          "maximum": 0.9
                         },
-                        "annualCostRate": {
+                        "shockInstrumentId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "shockCurrency": {
+                          "type": "string",
+                          "enum": [
+                            "USD",
+                            "EUR"
+                          ]
+                        },
+                        "correlation": {
                           "type": "number",
                           "minimum": 0,
-                          "maximum": 0.05
+                          "maximum": 1
                         },
-                        "endValueP5": {
-                          "type": "number"
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "ok",
+                            "coverage_too_low",
+                            "insufficient_data"
+                          ]
                         },
-                        "endValueP50": {
-                          "type": "number"
+                        "periodFrom": {
+                          "type": "string",
+                          "format": "date",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
                         },
-                        "goalProbability": {
+                        "periodTo": {
+                          "type": "string",
+                          "format": "date",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                        },
+                        "troughDate": {
                           "anyOf": [
                             {
-                              "type": "number",
-                              "minimum": 0,
-                              "maximum": 1
+                              "type": "string",
+                              "format": "date",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
                             },
                             {
                               "type": "null"
                             }
                           ]
+                        },
+                        "portfolioReturn": {
+                          "type": [
+                            "number",
+                            "null"
+                          ]
+                        },
+                        "portfolioLoss": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "amount": {
+                                  "type": "string",
+                                  "pattern": "^-?[0-9]{1,14}(\\.[0-9]{1,2})?$"
+                                },
+                                "currency": {
+                                  "type": "string",
+                                  "const": "PLN"
+                                }
+                              },
+                              "required": [
+                                "amount",
+                                "currency"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "returnRange": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "low": {
+                                  "type": "number"
+                                },
+                                "high": {
+                                  "type": "number"
+                                },
+                                "basis": {
+                                  "type": "string",
+                                  "enum": [
+                                    "window_path",
+                                    "beta_ci90",
+                                    "one_month_p5_p95"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "low",
+                                "high",
+                                "basis"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "baselineRange": {
+                          "type": "object",
+                          "properties": {
+                            "low": {
+                              "type": "number"
+                            },
+                            "high": {
+                              "type": "number"
+                            }
+                          },
+                          "required": [
+                            "low",
+                            "high"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "translationReturn": {
+                          "type": [
+                            "number",
+                            "null"
+                          ]
+                        },
+                        "coverageRatio": {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 1
+                        },
+                        "ownHistoryRatio": {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 1
+                        },
+                        "positions": {
+                          "maxItems": 500,
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "instrumentId": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "proxyInstrumentId": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "series": {
+                                "type": "string",
+                                "enum": [
+                                  "instrument",
+                                  "proxy",
+                                  "none"
+                                ]
+                              },
+                              "returnRatio": {
+                                "type": [
+                                  "number",
+                                  "null"
+                                ]
+                              },
+                              "localReturnRatio": {
+                                "type": [
+                                  "number",
+                                  "null"
+                                ]
+                              },
+                              "proxyReturnRatio": {
+                                "type": [
+                                  "number",
+                                  "null"
+                                ]
+                              },
+                              "loss": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "amount": {
+                                        "type": "string",
+                                        "pattern": "^-?[0-9]{1,14}(\\.[0-9]{1,2})?$"
+                                      },
+                                      "currency": {
+                                        "type": "string",
+                                        "const": "PLN"
+                                      }
+                                    },
+                                    "required": [
+                                      "amount",
+                                      "currency"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "beta": {
+                                "type": [
+                                  "number",
+                                  "null"
+                                ]
+                              },
+                              "betaLow": {
+                                "type": [
+                                  "number",
+                                  "null"
+                                ]
+                              },
+                              "betaHigh": {
+                                "type": [
+                                  "number",
+                                  "null"
+                                ]
+                              },
+                              "volatility": {
+                                "type": [
+                                  "number",
+                                  "null"
+                                ]
+                              },
+                              "illiquid": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "instrumentId",
+                              "series",
+                              "returnRatio"
+                            ],
+                            "additionalProperties": false
+                          }
                         }
                       },
                       "required": [
-                        "scenario",
-                        "meanBlockMonths",
-                        "annualCostRate",
-                        "endValueP5",
-                        "endValueP50",
-                        "goalProbability"
+                        "key",
+                        "name",
+                        "kind",
+                        "status",
+                        "portfolioReturn",
+                        "portfolioLoss",
+                        "returnRange",
+                        "coverageRatio",
+                        "ownHistoryRatio",
+                        "positions"
                       ],
                       "additionalProperties": false
                     }
-                  ]
-                }
+                  }
+                },
+                "required": [
+                  "kind",
+                  "currency",
+                  "scenarios"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "const": "goal"
+                  },
+                  "target": {
+                    "type": "object",
+                    "properties": {
+                      "amount": {
+                        "type": "string",
+                        "pattern": "^(?=.*[1-9])[0-9]{1,14}(\\.[0-9]{1,8})?$"
+                      },
+                      "currency": {
+                        "type": "string",
+                        "const": "PLN"
+                      }
+                    },
+                    "required": [
+                      "amount",
+                      "currency"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "targetReal": {
+                    "type": "object",
+                    "properties": {
+                      "amount": {
+                        "type": "string",
+                        "pattern": "^(?=.*[1-9])[0-9]{1,14}(\\.[0-9]{1,8})?$"
+                      },
+                      "currency": {
+                        "type": "string",
+                        "const": "PLN"
+                      }
+                    },
+                    "required": [
+                      "amount",
+                      "currency"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "horizonYears": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 40
+                  },
+                  "requirements": {
+                    "minItems": 1,
+                    "maxItems": 3,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "probability": {
+                          "anyOf": [
+                            {
+                              "type": "number",
+                              "const": 0.5
+                            },
+                            {
+                              "type": "number",
+                              "const": 0.75
+                            },
+                            {
+                              "type": "number",
+                              "const": 0.9
+                            }
+                          ]
+                        },
+                        "monthlyContribution": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "amount": {
+                                  "type": "string",
+                                  "pattern": "^[0-9]{1,14}(\\.[0-9]{1,2})?$"
+                                },
+                                "currency": {
+                                  "type": "string",
+                                  "const": "PLN"
+                                }
+                              },
+                              "required": [
+                                "amount",
+                                "currency"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "alreadyMet": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "probability",
+                        "monthlyContribution",
+                        "alreadyMet"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "sensitivity": {
+                    "minItems": 4,
+                    "maxItems": 6,
+                    "type": "array",
+                    "items": {
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "scenario": {
+                              "type": "string",
+                              "enum": [
+                                "mean_minus_2pp",
+                                "mean_plus_2pp",
+                                "last_10y",
+                                "full_history"
+                              ]
+                            },
+                            "requirements": {
+                              "minItems": 1,
+                              "maxItems": 3,
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "probability": {
+                                    "anyOf": [
+                                      {
+                                        "type": "number",
+                                        "const": 0.5
+                                      },
+                                      {
+                                        "type": "number",
+                                        "const": 0.75
+                                      },
+                                      {
+                                        "type": "number",
+                                        "const": 0.9
+                                      }
+                                    ]
+                                  },
+                                  "monthlyContribution": {
+                                    "anyOf": [
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "amount": {
+                                            "type": "string",
+                                            "pattern": "^[0-9]{1,14}(\\.[0-9]{1,2})?$"
+                                          },
+                                          "currency": {
+                                            "type": "string",
+                                            "const": "PLN"
+                                          }
+                                        },
+                                        "required": [
+                                          "amount",
+                                          "currency"
+                                        ],
+                                        "additionalProperties": false
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "probability",
+                                  "monthlyContribution"
+                                ],
+                                "additionalProperties": false
+                              }
+                            }
+                          },
+                          "required": [
+                            "scenario",
+                            "requirements"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "scenario": {
+                              "type": "string",
+                              "const": "block_length"
+                            },
+                            "meanBlockMonths": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 24
+                            },
+                            "requirements": {
+                              "minItems": 1,
+                              "maxItems": 3,
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "probability": {
+                                    "anyOf": [
+                                      {
+                                        "type": "number",
+                                        "const": 0.5
+                                      },
+                                      {
+                                        "type": "number",
+                                        "const": 0.75
+                                      },
+                                      {
+                                        "type": "number",
+                                        "const": 0.9
+                                      }
+                                    ]
+                                  },
+                                  "monthlyContribution": {
+                                    "anyOf": [
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "amount": {
+                                            "type": "string",
+                                            "pattern": "^[0-9]{1,14}(\\.[0-9]{1,2})?$"
+                                          },
+                                          "currency": {
+                                            "type": "string",
+                                            "const": "PLN"
+                                          }
+                                        },
+                                        "required": [
+                                          "amount",
+                                          "currency"
+                                        ],
+                                        "additionalProperties": false
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "probability",
+                                  "monthlyContribution"
+                                ],
+                                "additionalProperties": false
+                              }
+                            }
+                          },
+                          "required": [
+                            "scenario",
+                            "meanBlockMonths",
+                            "requirements"
+                          ],
+                          "additionalProperties": false
+                        }
+                      ]
+                    }
+                  }
+                },
+                "required": [
+                  "kind",
+                  "target",
+                  "targetReal",
+                  "horizonYears",
+                  "requirements",
+                  "sensitivity"
+                ],
+                "additionalProperties": false
               }
-            },
-            "required": [
-              "kind",
-              "currency",
-              "months",
-              "nominal",
-              "real",
-              "goalProbability",
-              "maxDrawdownPercentiles",
-              "sensitivity"
-            ],
-            "additionalProperties": false
+            ]
           },
           "assumptions": {
             "type": "object",
@@ -2694,7 +3317,6 @@
               }
             },
             "required": [
-              "seed",
               "algorithmVersion",
               "dataVersion",
               "libraries"
