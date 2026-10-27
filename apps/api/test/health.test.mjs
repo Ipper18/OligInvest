@@ -223,8 +223,8 @@ test("public OpenAPI 3.1 is generated from registered Zod routes", async () => {
     "/two-factor/enable",
     "/two-factor/generate-backup-codes",
     "/two-factor/verify-backup-code",
-    "/two-factor/verify-totp"
-]);
+    "/two-factor/verify-totp",
+  ]);
   expect(
     document.paths["/health/ready"].get.responses["503"].content["application/json"].schema,
   ).toEqual({ $ref: "#/components/schemas/HealthStatus" });

@@ -114,3 +114,5 @@ Nie używaj separatorów tysięcy. Ponowienie utworzenia PAT może zwrócić
 „Token był już wyświetlony — unieważnij go i utwórz nowy”.
 
 Szybkie odczyty portfela i wyniku dnia zwracają HTTP 200 także przy brakach danych: `incomplete: true`, `reasons` (np. `missing_fx_rate` z `pair: USD/PLN`, `missing_cost_basis`) i kwoty `null`. Skrót nie zamienia null na zero; pokazuje powód, np. „Wycena niepełna: brak kursu USD/PLN”. Format tekstowy już zawiera ten komunikat. HTTP 503 oznacza niedostępność usługi, a nie niepełne dane (decyzja właściciela 2026-10-26; R-39).
+
+Cena i prowizja muszą mieścić się bez zaokrąglenia w `NUMERIC(20,8)`; wartość brutto z prowizją po zaokrągleniu walutowym musi być mniejsza niż 10^12 (w przeciwnym razie 422). Waluta rachunku musi odpowiadać instrumentowi; przewalutowanie wymaga pełnego formularza.

@@ -240,6 +240,10 @@ i reset hasła omijają ciszę. Globalny limit SMTP to 300 prób wysłania na do
 w tym maksymalnie 250 dla poczty innej niż konta i bezpieczeństwo (rezerwa 50).
 Nieudane próby także zużywają kwotę; po wyczerpaniu kwoty wysyłka czeka na kolejną dobę.
 
+Backend M4 udostępnia wyłącznie schematy `PriceAlert*` dla trzech typów cenowych; ogólne szkice kontraktów pozostałych alertów zastąpiono kontraktami rzeczywiście obsługiwanymi. Alerty wskaźnikowe, portfelowe, wynikowe i newsowe pozostają w BL-562/563/703/704. `alerts` i `quick-actions` są opcjonalnymi zależnościami aplikacji, ładowanymi tylko w ich rejestrach modułów. Po fizycznym usunięciu modułu jego trasy i worker nie są montowane. Bramka flagi obejmuje także oczekujące doręczenia alertów.
+
+Zdarzenie alertu i stan reguły są zapisywane w jednej transakcji; publikacja do kolejki i SSE następuje po zatwierdzeniu. Niepotwierdzone zdarzenia i ewaluację odzyskuje cykliczne zadanie co minutę. SMTP i baza nie tworzą jednej transakcji rozproszonej: awaria po przyjęciu wiadomości przez SMTP może spowodować ponowienie (R-45).
+
 ## 6. Uprawnienia (RBAC) i zakresy PAT
 
 | Uprawnienie | user | pro | admin | Zakres PAT |

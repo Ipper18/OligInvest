@@ -269,17 +269,19 @@ M4 zależy od M1 i M2, nie od M3.
 |---|---|---|---|---|---|---|
 | BL-401 | Manifest PWA (ikony, skróty z ikony), service worker (cache powłoki, `/offline`, push, `notificationclick`), komunikat o nowej wersji | FR-09.01, FR-09.06, NFR-04.03 | UI, MOB, AND | BL-121 | 3 | todo |
 | BL-402 | Web Push: VAPID, subskrypcje, test, usuwanie wygasłych, `Urgency` i `TTL` | FR-09.03 | [ADR-010](../09-decyzje/ADR-010-kanaly-powiadomien.md), AND | BL-401 | 2 | todo |
-| BL-403 | Moduł `notifications`: kanały, ciche godziny, deduplikacja, limit e-mail 300/dobę, dziennik doręczeń | FR-05.06 | [ADR-010](../09-decyzje/ADR-010-kanaly-powiadomien.md), MOD | BL-402, BL-107 | 2,5 | todo |
-| BL-404 | Moduł `alerts`: alerty cenowe (próg, zmiana %), ewaluacja po notowaniach i EOD, histereza, cooldown | FR-05.01 | MOD, OBL | BL-137, BL-403 | 3 | todo |
-| BL-405 | Treści alertów bez kwot portfela i bez języka rekomendacji; szablony z testem języka | FR-05.07 | LAW, [ADR-010](../09-decyzje/ADR-010-kanaly-powiadomien.md) | BL-404 | 1 | todo |
+| BL-403 | Moduł `notifications`: kanały, ciche godziny, deduplikacja, limit e-mail 300/dobę, dziennik doręczeń | FR-05.06 | [ADR-010](../09-decyzje/ADR-010-kanaly-powiadomien.md), MOD | BL-402, BL-107 | 2,5 | w toku |
+| BL-404 | Moduł `alerts`: alerty cenowe (próg, zmiana %), ewaluacja po notowaniach i EOD, histereza, cooldown | FR-05.01 | MOD, OBL | BL-137, BL-403 | 3 | w toku |
+| BL-405 | Treści alertów bez kwot portfela i bez języka rekomendacji; szablony z testem języka | FR-05.07 | LAW, [ADR-010](../09-decyzje/ADR-010-kanaly-powiadomien.md) | BL-404 | 1 | w toku |
 | BL-406 | Ekrany alertów: lista, kreator z podglądem treści, historia wyzwoleń i doręczeń | FR-05.01, FR-05.06 | EKR | BL-404 | 2 | todo |
-| BL-407 | Tokeny PAT: zakresy, ważność 90/365 dni, limity 30/min i 2 000/dobę, step-up, e-mail o nowej sieci, ekran tokenów | FR-07.07 | AUTH | BL-106 | 2,5 | todo |
-| BL-408 | API szybkich akcji `/api/v1/quick/*` (tekst i JSON, pl-PL, < 300 ms) z `quick/alerts` | FR-09.04 | API, IOS | BL-407, BL-146, BL-404 | 2,5 | todo |
+| BL-407 | Tokeny PAT: zakresy, ważność 90/365 dni, limity 30/min i 2 000/dobę, step-up, e-mail o nowej sieci, ekran tokenów | FR-07.07 | AUTH | BL-106 | 2,5 | w toku |
+| BL-408 | API szybkich akcji `/api/v1/quick/*` (tekst i JSON, pl-PL, < 300 ms) z `quick/alerts` | FR-09.04 | API, IOS | BL-407, BL-146, BL-404 | 2,5 | w toku |
 | BL-409 | Gotowe Skróty iOS (linki iCloud, pytania przy imporcie) i ekran `/ustawienia/integracje` | FR-09.05 | IOS, USR | BL-408 | 1,5 | todo |
 | BL-410 | Konfiguracje HTTP Shortcuts (eksport bez tokenu) i instrukcja dla Androida | FR-09.06 | AND, USR | BL-408 | 1 | todo |
 | BL-411 | Linki głębokie w powiadomieniach i e-mailach; powrót do celu po logowaniu | FR-09.07 | MOB, EKR | BL-402 | 1 | todo |
 | BL-412 | Testy na urządzeniach (iOS 17 i 18, Android ≥ 12, Windows, macOS) z protokołem | FR-09.01, FR-09.03, FR-09.05, FR-09.06, FR-09.07, NFR-04.01 | MOB | BL-409, BL-410, BL-411 | 1,5 | todo |
 | | **Suma etapu** | | | | **23,5** | |
+
+**Paczka backend M4, 2026-10-27:** BL-403/404/405 i backend BL-407/408 zaimplementowane, status `w toku` do CI i wspólnego DoD. Zależność BL-403 od transportu BL-402 odłożona przez właściciela: obecnie e-mail/fallback; Web Push, PWA, ekrany (w tym tokenów) i integracje urządzeń w kolejnej paczce. BL-401/402/406/409–412 pozostają `todo`. Odchylenie zakresu: jedna spójna paczka pięciu zadań na życzenie właściciela; estymata 11,5 dnia obejmuje też odłożony ekran PAT, brak wiarygodnego pomiaru rzeczywistego nakładu — nie szacujemy go z czasu kalendarzowego. Dowody i ograniczenia: [raport M4](m4-backend-session-report.md).
 
 ## 6. M5a — Administracja, edukacja i rynek rozszerzony
 

@@ -163,6 +163,8 @@ wyłącznie metadane; pełny sekret nie trafia do bazy ani cache. Klient pokazuj
 „Token był już wyświetlony — unieważnij go i utwórz nowy”. Ponowienie nadal
 wymaga sesji, bramek i świeżego step-upu. Zaproszenia zachowują dotychczasowe zasady.
 
+Implementacja BL-407 przechowuje skróty klucza idempotencji i żądania, termin 24 h oraz publiczne metadane odpowiedzi w `auth.api_keys.metadata.creation`, atomowo z utworzeniem PAT i pod blokadą użytkownika. Nie zapisuje sekretu w `platform.idempotency_keys`. Znacznik `expiryScheduled` jest potwierdzany dopiero po trwałym dodaniu przypomnienia do kolejki; proces API ponawia niepotwierdzone zapisy po starcie i co minutę. Lista rozpoznanych prefiksów sieci jest aktualizowana dopiero po dodaniu powiadomienia bezpieczeństwa.
+
 | Element | Rozwiązanie |
 |---|---|
 | Format | `oli_pat_` + ≥ 256 bitów losowych (base62); pokazywany raz, potem tylko początek (`start`) |

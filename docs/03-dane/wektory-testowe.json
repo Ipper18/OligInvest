@@ -113,13 +113,13 @@
    125
   ],
   "drawdown_series": [
-   0,
-   0,
+   0.0,
+   0.0,
    -0.045455,
-   0,
+   0.0,
    -0.25,
    -0.208333,
-   0,
+   0.0,
    -0.038462
   ],
   "max_drawdown": -0.25,
@@ -169,7 +169,7 @@
    0.006,
    -0.005,
    0.004,
-   0,
+   0.0,
    -0.009,
    0.008
   ],
@@ -315,7 +315,7 @@
    45.61,
    46.28,
    46.28,
-   46,
+   46.0,
    46.03,
    46.41,
    46.22,
@@ -596,209 +596,6 @@
   "net_flows_today": "500.00",
   "day_change_pln": "280.45",
   "day_change_pct": "0.53%",
-  "reconciliation": [
-   {
-    "name": "buy_commission",
-    "previous": "1000",
-    "current": "1018",
-    "flows": "0",
-    "change": "18",
-    "residual": "0",
-    "positions": [
-     {
-      "previous": "0",
-      "current": "120",
-      "cash": "-102",
-      "transfer": "0"
-     }
-    ]
-   },
-   {
-    "name": "sold_to_zero",
-    "previous": "1000",
-    "current": "1009",
-    "flows": "0",
-    "change": "9",
-    "residual": "0",
-    "positions": [
-     {
-      "previous": "100",
-      "current": "0",
-      "cash": "109",
-      "transfer": "0"
-     }
-    ]
-   },
-   {
-    "name": "dividend_net_and_separate_fee",
-    "previous": "1000",
-    "current": "996",
-    "flows": "0",
-    "change": "-4",
-    "residual": "0",
-    "positions": [
-     {
-      "previous": "100",
-      "current": "95",
-      "cash": "1",
-      "transfer": "0"
-     }
-    ]
-   },
-   {
-    "name": "cash_fx_and_unassigned_fee",
-    "previous": "400",
-    "current": "409.875",
-    "flows": "0",
-    "change": "9.875",
-    "residual": "9.875",
-    "positions": []
-   },
-   {
-    "name": "external_security_and_cash_transfer",
-    "previous": "1000",
-    "current": "1250",
-    "flows": "250",
-    "change": "0",
-    "residual": "0",
-    "positions": [
-     {
-      "previous": "0",
-      "current": "100",
-      "cash": "0",
-      "transfer": "100"
-     }
-    ]
-   },
-   {
-    "name": "external_security_out",
-    "previous": "1000",
-    "current": "900",
-    "flows": "-100",
-    "change": "0",
-    "residual": "0",
-    "positions": [
-     {
-      "previous": "100",
-      "current": "0",
-      "cash": "0",
-      "transfer": "-100"
-     }
-    ]
-   },
-   {
-    "name": "split_and_internal_transfer",
-    "previous": "1000",
-    "current": "1000",
-    "flows": "0",
-    "change": "0",
-    "residual": "0",
-    "positions": [
-     {
-      "previous": "100",
-      "current": "100",
-      "cash": "0",
-      "transfer": "0"
-     }
-    ]
-   },
-   {
-    "name": "multiple_unrounded_contributions",
-    "previous": "1000",
-    "current": "1000.016",
-    "flows": "0",
-    "change": "0.016",
-    "residual": "0.004",
-    "positions": [
-     {
-      "previous": "100",
-      "current": "100.006",
-      "cash": "0",
-      "transfer": "0"
-     },
-     {
-      "previous": "100",
-      "current": "100.006",
-      "cash": "0",
-      "transfer": "0"
-     }
-    ]
-   }
-  ],
-  "positions": [
-   {
-    "name": "buy_with_commission",
-    "previous": "0",
-    "current": "120",
-    "cash": "-102",
-    "transfer": "0",
-    "base": "1000",
-    "change": "18"
-   },
-   {
-    "name": "sold_to_zero",
-    "previous": "100",
-    "current": "0",
-    "cash": "109",
-    "transfer": "0",
-    "base": "1000",
-    "change": "9"
-   },
-   {
-    "name": "dividend_net",
-    "previous": "100",
-    "current": "95",
-    "cash": "4",
-    "transfer": "0",
-    "base": "1000",
-    "change": "-1"
-   },
-   {
-    "name": "split_unchanged_value",
-    "previous": "100",
-    "current": "100",
-    "cash": "0",
-    "transfer": "0",
-    "base": "1000",
-    "change": "0"
-   },
-   {
-    "name": "external_transfer",
-    "previous": "0",
-    "current": "100",
-    "cash": "0",
-    "transfer": "100",
-    "base": "1100",
-    "change": "0"
-   },
-   {
-    "name": "missing_quote",
-    "previous": "100",
-    "current": null,
-    "cash": "0",
-    "transfer": "0",
-    "base": "1000",
-    "change": null
-   },
-   {
-    "name": "missing_fx",
-    "previous": "100",
-    "current": "110",
-    "cash": null,
-    "transfer": "0",
-    "base": "1000",
-    "change": null
-   },
-   {
-    "name": "missing_transfer",
-    "previous": "0",
-    "current": "100",
-    "cash": "0",
-    "transfer": null,
-    "base": "1000",
-    "change": null
-   }
-  ],
   "price_alert": {
    "threshold": "100",
    "hysteresis": "0.005",
@@ -827,7 +624,91 @@
     "false",
     "true"
    ]
-  }
+  },
+   "reconciliation": [
+    { "name": "buy_commission", "previous": "1000", "current": "1018", "flows": "0", "change": "18", "residual": "0", "positions": [{ "previous": "0", "current": "120", "cash": "-102", "transfer": "0" }] },
+    { "name": "sold_to_zero", "previous": "1000", "current": "1009", "flows": "0", "change": "9", "residual": "0", "positions": [{ "previous": "100", "current": "0", "cash": "109", "transfer": "0" }] },
+    { "name": "dividend_net_and_separate_fee", "previous": "1000", "current": "996", "flows": "0", "change": "-4", "residual": "0", "positions": [{ "previous": "100", "current": "95", "cash": "1", "transfer": "0" }] },
+    { "name": "cash_fx_and_unassigned_fee", "previous": "400", "current": "409.875", "flows": "0", "change": "9.875", "residual": "9.875", "positions": [] },
+    { "name": "external_security_and_cash_transfer", "previous": "1000", "current": "1250", "flows": "250", "change": "0", "residual": "0", "positions": [{ "previous": "0", "current": "100", "cash": "0", "transfer": "100" }] },
+    { "name": "external_security_out", "previous": "1000", "current": "900", "flows": "-100", "change": "0", "residual": "0", "positions": [{ "previous": "100", "current": "0", "cash": "0", "transfer": "-100" }] },
+    { "name": "split_and_internal_transfer", "previous": "1000", "current": "1000", "flows": "0", "change": "0", "residual": "0", "positions": [{ "previous": "100", "current": "100", "cash": "0", "transfer": "0" }] },
+    { "name": "multiple_unrounded_contributions", "previous": "1000", "current": "1000.016", "flows": "0", "change": "0.016", "residual": "0.004", "positions": [{ "previous": "100", "current": "100.006", "cash": "0", "transfer": "0" }, { "previous": "100", "current": "100.006", "cash": "0", "transfer": "0" }] }
+   ],
+   "positions": [
+    {
+     "name": "buy_with_commission",
+     "previous": "0",
+     "current": "120",
+     "cash": "-102",
+     "transfer": "0",
+     "base": "1000",
+     "change": "18"
+    },
+    {
+     "name": "sold_to_zero",
+     "previous": "100",
+     "current": "0",
+     "cash": "109",
+     "transfer": "0",
+     "base": "1000",
+     "change": "9"
+    },
+    {
+     "name": "dividend_net",
+     "previous": "100",
+     "current": "95",
+     "cash": "4",
+     "transfer": "0",
+     "base": "1000",
+     "change": "-1"
+    },
+    {
+     "name": "split_unchanged_value",
+     "previous": "100",
+     "current": "100",
+     "cash": "0",
+     "transfer": "0",
+     "base": "1000",
+     "change": "0"
+    },
+    {
+     "name": "external_transfer",
+     "previous": "0",
+     "current": "100",
+     "cash": "0",
+     "transfer": "100",
+     "base": "1100",
+     "change": "0"
+    },
+    {
+     "name": "missing_quote",
+     "previous": "100",
+     "current": null,
+     "cash": "0",
+     "transfer": "0",
+     "base": "1000",
+     "change": null
+    },
+    {
+     "name": "missing_fx",
+     "previous": "100",
+     "current": "110",
+     "cash": null,
+     "transfer": "0",
+     "base": "1000",
+     "change": null
+    },
+    {
+     "name": "missing_transfer",
+     "previous": "0",
+     "current": "100",
+     "cash": "0",
+     "transfer": null,
+     "base": "1000",
+     "change": null
+    }
+   ]
  },
  "G_dividend": {
   "gross_usd": "25.00",

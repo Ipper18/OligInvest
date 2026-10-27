@@ -1,4 +1,12 @@
-import { toDecimal } from "@oliginvest/core";
+import {
+  addMoney,
+  price as corePrice,
+  quantity as coreQuantity,
+  grossValue,
+  money,
+  roundMoney,
+  toDecimal,
+} from "@oliginvest/core";
 import type { DatabaseContext, DatabaseTransaction } from "@oliginvest/db";
 import {
   formatMessage,
@@ -183,6 +191,19 @@ export class QuickRepository {
             quantity = normalizeQuickDecimal(input.quantity),
             fee = normalizeQuickDecimal(input.fee ?? "0");
           if (!toDecimal(price).gt(0) || !toDecimal(quantity).gt(0))
+            throw new ProblemError("VALIDATION_FAILED");
+          if (
+            [price, fee].some(
+              (value) =>
+                toDecimal(value).decimalPlaces() > 8 || toDecimal(value).gte("1000000000000"),
+            ) ||
+            roundMoney(
+              addMoney(
+                grossValue(corePrice(price, String(instrument.currency)), coreQuantity(quantity)),
+                money(fee, String(instrument.currency)),
+              ),
+            ).amount.gte("1000000000000")
+          )
             throw new ProblemError("VALIDATION_FAILED");
           if (input.currency && input.currency !== instrument.currency)
             throw new ProblemError("VALIDATION_FAILED");

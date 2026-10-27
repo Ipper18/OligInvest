@@ -5031,124 +5031,6 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
-        /** @enum {string} */
-        AlertRuleType: "price_above" | "price_below" | "change_pct" | "indicator" | "portfolio_change" | "drawdown" | "allocation_drift" | "earnings" | "news";
-        PriceThresholdParams: {
-            threshold: components["schemas"]["DecimalString"];
-            /**
-             * @default last
-             * @enum {string}
-             */
-            basis: "last" | "close";
-        };
-        ChangeParams: {
-            /** @description Wartość bezwzględna zmiany (ułamek). */
-            threshold: number;
-            /**
-             * @default both
-             * @enum {string}
-             */
-            direction: "up" | "down" | "both";
-            /** @description Tylko portfolio_change. */
-            accountIds?: components["schemas"]["Uuid"][];
-        };
-        IndicatorAlertParams: {
-            /** @enum {string} */
-            indicator: "rsi" | "price_vs_sma" | "price_vs_ema" | "macd_cross" | "bb_break";
-            period?: number;
-            fast?: number;
-            slow?: number;
-            signal?: number;
-            stdDev?: number;
-            level?: number;
-            /** @enum {string} */
-            condition: "above" | "below" | "crosses_above" | "crosses_below";
-            /**
-             * @default daily_close
-             * @enum {string}
-             */
-            basis: "daily_close" | "delayed";
-        };
-        DrawdownAlertParams: {
-            threshold: number;
-            accountIds?: components["schemas"]["Uuid"][];
-        };
-        AllocationDriftParams: {
-            targetId: components["schemas"]["Uuid"];
-            /** @description Odchylenie wagi w ułamku (0.05 = 5 p.p.). */
-            threshold: number;
-        };
-        EarningsAlertParams: {
-            daysBefore: number;
-        };
-        NewsAlertParams: {
-            minArticles: number;
-            windowHours: number;
-        };
-        AlertRuleSettings: {
-            /**
-             * @default [
-             *       "push",
-             *       "email"
-             *     ]
-             */
-            channels: components["schemas"]["NotificationChannel"][];
-            /** @default 1440 */
-            cooldownMinutes: number;
-            /**
-             * @description Ułamek (w bazie jako procent `hysteresis_pct`).
-             * @default 0.005
-             */
-            hysteresis: number;
-            /** @default true */
-            enabled: boolean;
-        };
-        AlertRuleInput: components["schemas"]["AlertRuleSettings"] & {
-            type: components["schemas"]["AlertRuleType"];
-            instrumentId?: components["schemas"]["Uuid"];
-            params: Record<string, never>;
-        } & unknown & unknown & unknown & unknown & unknown & unknown & unknown & unknown;
-        AlertRulePatch: components["schemas"]["AlertRuleSettings"] & {
-            /** @description Walidowane schematem właściwym dla typu reguły. */
-            params?: Record<string, never>;
-        };
-        AlertRule: components["schemas"]["AlertRuleInput"] & {
-            id: components["schemas"]["Uuid"];
-            instrument?: components["schemas"]["InstrumentSummary"];
-            lastTriggeredAt?: components["schemas"]["Timestamp"];
-            createdAt: components["schemas"]["Timestamp"];
-            updatedAt: components["schemas"]["Timestamp"];
-        };
-        AlertRulePage: {
-            data: components["schemas"]["AlertRule"][];
-            page: components["schemas"]["PageInfo"];
-        };
-        AlertEvent: {
-            id: components["schemas"]["Uuid"];
-            ruleId: components["schemas"]["Uuid"];
-            ruleType: components["schemas"]["AlertRuleType"];
-            instrument?: components["schemas"]["InstrumentSummary"];
-            triggeredAt: components["schemas"]["Timestamp"];
-            value?: components["schemas"]["DecimalString"];
-            threshold?: components["schemas"]["DecimalString"];
-            /**
-             * @description Treść bez języka rekomendacji (FR-05.07).
-             * @example PKO: kurs 58,34 zł spadł poniżej progu 58,50 zł (dane 15:42, opóźnione 15 min).
-             */
-            message: string;
-            dataAsOf: components["schemas"]["Timestamp"];
-            dataSource: components["schemas"]["DataSource"];
-            deliveries?: {
-                channel: components["schemas"]["NotificationChannel"];
-                /** @enum {string} */
-                status: "queued" | "sent" | "failed" | "skipped";
-                sentAt?: components["schemas"]["Timestamp"];
-            }[];
-        };
-        AlertEventPage: {
-            data: components["schemas"]["AlertEvent"][];
-            page: components["schemas"]["PageInfo"];
-        };
         OnboardingState: {
             /** @example import */
             step: string;
@@ -5223,6 +5105,7 @@ export interface components {
             currency: components["schemas"]["CurrencyCode"];
             changeRatio?: number | null;
         };
+        /** @description Waluta rachunku musi odpowiadać walucie instrumentu; przewalutowanie wymaga pełnego formularza. Cena i prowizja muszą mieścić się bez zaokrąglenia w NUMERIC(20,8), a wartość brutto wraz z prowizją musi być mniejsza niż 10^12; naruszenie daje 422. */
         QuickTransactionInput: {
             accountId?: components["schemas"]["Uuid"];
             /** @description Alternatywa dla accountId (dokładna nazwa, bez rozróżniania wielkości liter). Brak obu: jedyny aktywny rachunek użytkownika (poza demo), a przy kilku — 422 z listą nazw w detail. */

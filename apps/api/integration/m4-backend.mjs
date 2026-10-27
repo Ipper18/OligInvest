@@ -106,6 +106,19 @@ export async function testM4Backend(settings) {
     assert.ok(!JSON.stringify(audit).includes(first.token));
     assert.equal((await pats.list(request())).data.length, 1);
     assert.equal((await pats.list(request(1))).data.length, 0);
+    assert.ok(mail.get(`pat-expiry-${first.id}`).delay > 82 * 86400_000);
+    mail.delete(`pat-expiry-${first.id}`);
+    await database.transaction((tx) =>
+      tx.execute(
+        sql`UPDATE auth.api_keys SET metadata=(metadata::jsonb || '{"expiryScheduled":false}'::jsonb)::text WHERE id=${first.id}::uuid`,
+      ),
+    );
+    queueUnavailable = true;
+    await assert.rejects(() => pats.recoverExpiryNotifications(), /QUEUE_UNAVAILABLE/);
+    queueUnavailable = false;
+    await pats.recoverExpiryNotifications();
+    await pats.recoverExpiryNotifications();
+    assert.equal([...mail.keys()].filter((id) => id === `pat-expiry-${first.id}`).length, 1);
     await denied(
       () => pats.create(request(), { ...input, name: "Changed" }, key),
       "IDEMPOTENCY_CONFLICT",
@@ -397,6 +410,30 @@ export async function testM4Backend(settings) {
         },
         ...(body ? { body: JSON.stringify(body) } : {}),
       });
+    const httpPatKey = randomUUID();
+    const createHttpPat = () =>
+      app.request("/api/v1/me/tokens", {
+        method: "POST",
+        headers: {
+          ...Object.fromEntries(request().headers),
+          "content-type": "application/json",
+          "idempotency-key": httpPatKey,
+        },
+        body: JSON.stringify({ name: "HTTP token", scopes: ["portfolio:read"] }),
+      });
+    const httpCreated = await createHttpPat();
+    assert.equal(httpCreated.status, 201, await httpCreated.clone().text());
+    assert.equal(httpCreated.headers.get("cache-control"), "no-store");
+    const httpToken = await httpCreated.json();
+    assert.equal(httpToken.tokenShown, true);
+    const httpReplay = await createHttpPat();
+    const httpMetadata = await httpReplay.json();
+    assert.equal(httpReplay.status, 201);
+    assert.equal(httpReplay.headers.get("idempotent-replayed"), "true");
+    assert.equal(httpMetadata.id, httpToken.id);
+    assert.equal(httpMetadata.tokenShown, false);
+    assert.equal(httpMetadata.token, undefined);
+    await pats.revoke(request(), httpToken.id);
     const ambiguous = await quick("quote?ticker=M4SYN");
     assert.equal(ambiguous.status, 409);
     assert.equal((await ambiguous.json()).candidates.length, 2);
@@ -426,6 +463,17 @@ export async function testM4Backend(settings) {
       201,
     );
     assert.equal((await quick("transactions", { ...quickInput, price: 101 })).status, 422);
+    for (const values of [
+      { price: "1.000000001" },
+      { fee: "0,000000001" },
+      { price: "1000000000000" },
+      { quantity: "10000000000000" },
+    ]) {
+      assert.equal(
+        (await quick("transactions", { ...quickInput, ...values, confirmDuplicate: true })).status,
+        422,
+      );
+    }
     assert.equal(
       (await quick("transactions", { ...quickInput, accountId: randomUUID() })).status,
       422,
@@ -467,7 +515,6 @@ export async function testM4Backend(settings) {
       },
       randomUUID(),
     );
-    // The isolated test database may contain FX fixtures from other suites: delete only this test's current date window.
     const withForeign = await quick("portfolio");
     assert.equal(withForeign.status, 200);
     assert.equal((await withForeign.json()).incomplete, true);
