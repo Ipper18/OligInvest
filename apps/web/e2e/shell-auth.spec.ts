@@ -13,9 +13,16 @@ async function session(context: BrowserContext, value: string) {
     },
   ]);
 }
+// R-41: on CI runners, leaving a shell document while its SSE request still awaits response headers
+// fails every pending WebKit load ("WebKit encountered an internal error"), including the next
+// page.goto. toHaveURL passes when a client redirect commits, so wait for the live stream first.
+async function liveShell(page: Page) {
+  await expect(page.getByText("Aktualizacje na żywo", { exact: true })).toBeVisible();
+}
 // A live shell answers a revoked session (SSE 401) by navigating to /logowanie, which would race the
 // next page.goto; leave the application before swapping the session cookie.
 async function switchSession(page: Page, context: BrowserContext, value: string) {
+  await liveShell(page);
   await page.goto("about:blank");
   await context.clearCookies();
   await session(context, value);
@@ -236,6 +243,7 @@ test("auth pages retain only a validated returnTo when the session is already ve
     ] as const) {
       await page.goto(`${path}?${new URLSearchParams({ returnTo })}`);
       await expect(page).toHaveURL(destination);
+      await liveShell(page);
     }
   }
 });
