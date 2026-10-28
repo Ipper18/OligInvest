@@ -42,13 +42,17 @@ def assess(document, ignored):
                 # classification, not an unknown score or a local exception.
                 if groups[0]["max_severity"] == "" and affected_here and all(a.get("ecosystem_specific", {}).get("urgency") == "unimportant" for a in affected_here):
                     continue
+                # Owner-approved exceptions (osv-scanner.toml) also cover findings
+                # without a score, which would otherwise fail closed below.
+                aliases = {vulnerability["id"], *vulnerability.get("aliases", [])}
+                if aliases.intersection(ignored):
+                    continue
                 score = float(groups[0]["max_severity"])
                 if not math.isfinite(score) or not 0 <= score <= 10:
                     raise ValueError("Invalid image severity")
-                aliases = {vulnerability["id"], *vulnerability.get("aliases", [])}
                 # CI/CD §5: image release gate = critical with an available fix.
                 # The independent lockfile gate remains high/critical regardless of fix.
-                if score >= 9 and fixed and not aliases.intersection(ignored):
+                if score >= 9 and fixed:
                     blocked.append(vulnerability["id"])
     if count == 0:
         raise ValueError("No image packages")
