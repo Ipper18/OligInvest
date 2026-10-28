@@ -1,4 +1,8 @@
+import { execFile } from "node:child_process";
+import { fileURLToPath } from "node:url";
+import { promisify } from "node:util";
 import { expect, test, vi } from "vitest";
+import { profileServerImport } from "../scripts/profile-server-import.mjs";
 
 // A server barrel also loads HTTP routes, broker imports and valuation jobs.
 // Quick actions must use the implementations supplied by the API composition root.
@@ -9,8 +13,14 @@ vi.mock("@oliginvest/mod-market/server", () => {
   throw new Error("Quick server loaded the market server barrel");
 });
 
-test("server loads without foundation server barrels and uses the injected readers", async () => {
-  const { QuickRepository } = await import("@oliginvest/mod-quick-actions/server");
+// This intentionally cold import includes validation/SQL/i18n, unlike smoke which
+// loads contracts first. CI 6f30097 took 5354ms under parallel Turbo load. Keep the
+// default 5s for every other test; allow this startup regression + native baseline
+// to finish and print diagnostics. Do not preload modules or disable isolation.
+test("server loads without foundation server barrels and uses the injected readers", {
+  timeout: 15_000,
+}, async () => {
+  const { QuickRepository } = await profileServerImport("vitest");
   const zero = { amount: "0", currency: "PLN" };
   const snapshot = {
     summary: {
@@ -64,4 +74,13 @@ test("server loads without foundation server barrels and uses the injected reade
   });
   expect(portfolio.read).toHaveBeenCalledExactlyOnceWith(context, expect.any(Function));
   expect(market.quotes).toHaveBeenCalledExactlyOnceWith(context, [instrument.id]);
+
+  // A separate Node process has an empty module cache, but shares the OS file
+  // cache and runner load. It excludes Vite transforms, mock hooks and RPCs.
+  const { stdout } = await promisify(execFile)(
+    process.execPath,
+    [fileURLToPath(new URL("../scripts/profile-server-import.mjs", import.meta.url))],
+    { timeout: 10_000 },
+  );
+  console.info(stdout.trim());
 });

@@ -2,29 +2,32 @@
 
 **Cel:** przekazać stan BL-403/404/405 i backendu BL-407/408 oraz poprawki CI [PR #38](https://github.com/Ipper18/OligInvest/pull/38).
 
-**2026-10-27**, `feat/m4-backend`, osobny worktree. Scalony `origin/main` do `52ca91a` (#23), po wcześniejszych #37/#36/#39. #40 przy końcowym fetchu nadal poza main. Statusy `w toku` do zielonego CI i wspólnego DoD.
+**2026-10-28**, `feat/m4-backend`, osobny worktree. Scalony `origin/main` do `4115e8a` (#41), po #37/#36/#39/#23. Caddy, zależności i wyjątki audytu wyłącznie ze scalonych PR. Statusy `w toku` do CI i wspólnego DoD.
 
-## Zakres i wcześniejsze poprawki
+## Zakres
 
-Powiadomienia e-mail/fallback, cisza i deduplikacja; rezerwa 50 z 300 prób SMTP/dobę. Alerty cenowe, histereza/cooldown, blokada stale/BLOCK, fakty bez kwot portfela i zaleceń. PAT z hash-only/CSPRNG, step-up, zakresami i przypomnieniami; replay bez sekretu. Pięć `/quick/*`, tekstowe pieniądze, niepełne dane jako 200/null/incomplete/powody.
+Powiadomienia e-mail/fallback, cisza i deduplikacja; rezerwa 50 z 300 prób SMTP/dobę. Alerty cenowe, histereza/cooldown, blokada stale/BLOCK, fakty bez kwot portfela i zaleceń. PAT hash-only/CSPRNG, step-up, zakresy, przypomnienia, replay bez sekretu. Pięć `/quick/*`, tekstowe pieniądze, niepełne dane jako 200/null/incomplete/powody.
 
-TS2883 usunięto jawnymi typami, bez zmiany tsconfig. Test monitoringu konfiguruje limiter Valkey i sprawdza wyczerpanie puli. **Test ujawnił błąd produkcyjny:** adapter BullMQ/ioredis wymaga nazw metod `incr`/`expire`, a `INCR`/`EXPIRE` powodowały TypeError. Poprawiono wywołania, zachowując limity i odmowę przy braku konfiguracji. Zależności zaktualizowano wyłącznie przez merge #37.
+TS2883 poprawiono jawnymi typami bez zmiany tsconfig. **Test integracyjny limitera poczty ujawnił błąd produkcyjny:** adapter BullMQ/ioredis wymaga `incr`/`expire`, a wywołania `INCR`/`EXPIRE` powodowały TypeError. Poprawiono nazwy; limity, rezerwa i odmowa przy braku konfiguracji pozostają.
 
-## Przyczyna timeoutu importu quick-actions i naprawa
+## Zimny import quick-actions
 
-`quick-actions/server` importował wartości z całych eksportów `portfolio/server` i `market/server`: oprócz potrzebnego odczytu uruchamiał ładowanie tras HTTP, importów brokerskich, przeliczania portfela i schematów DB. W grafie był także cykl `market/routes → watchlist-routes → routes`; nie stwierdzono zakleszczenia, lecz nadmiarowe ładowanie i transformację przy równoległych testach.
+Wcześniej usunięto importy całych `portfolio/server` i `market/server` (trasy, importy brokerskie, przeliczanie i cykl routes/watchlist-routes). API przekazuje istniejące odczyty do QuickRepository; graf Node zmalał z 362 do 298 modułów. Kontrakty, Decimal, SQL i walidacja pozostają wymagane. Bez kopiowania logiki lub odraczania importu na żądanie.
 
-API przekazuje teraz istniejące `readPortfolio` i instancję `MarketRepository` do `QuickRepository`. W quick-actions pozostały wyłącznie importy typów tych implementacji. RLS, wycena i walidacja są współdzielone; nie skopiowano logiki ani nie przeniesiono ciężkiego importu na pierwsze żądanie. Publiczne eksporty fundamentów i granice modułów pozostają zgodne z MOD.
+CI `6f30097`: test zależności 5354 ms, smoke server 2308 ms. Smoke wcześniej ładuje kontrakty; test zależności zaczyna od zimnego grafu. Importy statyczne w testach projekcji są mierzone podczas kolekcji. Izolacja plików pozostaje włączona, kolejności nie zmieniono.
 
-Pojedynczy lokalny pomiar zimnego importu Node: **362 → 298 modułów, 428 → 277 ms** (diagnostyka, nie p95). Serwerowe pliki obu fundamentów i wskazany cykl nie są już osiągalne podczas importu quick-actions. Pozostają wymagane kontrakty, Zod/OpenAPI, Decimal, SQL i platforma. Test regresji blokuje dołączenie eksportów serwerowych i sprawdza wstrzyknięte odczyty portfela/notowań: przed poprawką FAIL, po poprawce PASS. **Nie podniesiono żadnego timeoutu**, także dla pojedynczego smoke.
+Dodano log `[quick-import:vitest/node]`: zimny import (wall/CPU), odczyty modułów, wskazane zależności i ponowny import z cache. Node działa w osobnym procesie po Vitest: pusty cache modułów, ale wspólny cache plików OS i zmienne obciążenie. Log Vitest pokazuje też koszt importów obsługiwanych przez Vite. Czas `native-load` nie obejmuje kompilacji/ewaluacji ani transformacji/RPC; zero oznacza brak odczytu przez ten hook, nie brak zależności.
 
-## Dowody bieżącej poprawki
+Lokalnie przy równoległym Turbo: **Vitest 1216 ms / CPU 625 ms, Node 409 ms / CPU 422 ms**, odczyt plików 59/46 ms, ponowny import 0 ms. Narzut runnera i oczekiwanie są istotne; dokładny udział transformacji w CI wymaga nowego logu. Nie ma dowodu, że winne są same tłumaczenia lub kolejny cykl.
 
-- Polecenia z kroku definicji joba db: lint/typecheck/test/build dla db, API i wszystkich modułów, dodatkowo `--force`, domyślna równoległość: **51/51 PASS, zero cache**. Smoke `public entry point: server`: **468 ms** przy limicie 5000 ms; quick-actions 9/9 testów.
-- `pnpm db:test`: PASS, PostgreSQL 18.6, izolacja/RLS, rzeczywiste trasy PAT/quick i wycena, zero różnic schematu.
-- Build API, OpenAPI (93 implemented / 92 pending), klient, granice modułów i dokumentacja: PASS. Wcześniejsze pełne buildy bez alerts/quick-actions po 21/21 PASS.
-- Jedno końcowe sprawdzenie CI po pushu; bez pollingu. Anulowane matrix.check/matrix.name ignorowane zgodnie z decyzją właściciela. Zgłoszone błędy „WebKit encountered an internal error” to znane **R-41**; bez zmian WebKit/E2E w tej poprawce. `uv` dostępne, testów Pythona/obrazów/E2E nie powtarzano dla tej zmiany importów.
+**Wyjątek zaakceptowany przez właściciela:** tylko test zimnego importu i odczytów ma 15 s (z komentarzem), by objąć startup i porównanie Node. Globalnie i dla smoke nadal 5 s. Wszystkie asercje zachowane; celowe dodanie importu `market/server` nadal daje FAIL. Pomiar CI trafia do logu jobów unit/db, bez osobnych raportów JSON.
+
+## Weryfikacja i ograniczenia
+
+- Quick-actions: 9/9 PASS; lint/typecheck PASS. Zmienione pakiety i zależne: 83/84 zadań PASS, API readiness przekroczył lokalny próg 3500 ms o 7 ms; pełne API z `maxWorkers=2`: 93/93 PASS. W pierwszej próbie pod obciążeniem także timeout smoke API; bez zmian jego limitu.
+- Natywny mypy Windows: znany `os.killpg` z M3; `--platform linux`: PASS (12 plików). `uv` dostępne, brak pominięć z powodu jego braku. Obrazów/E2E/DB nie powtarzano dla zmiany diagnostyki testu; wcześniejsze dowody integracji i buildów w PR.
+- CI sprawdzane raz po pushu, bez czekania/pollingu. Anulowane matrix.check/matrix.name ignorowane; WebKit internal error pozostaje **R-41**, bez naprawy w tej paczce.
 
 ## Pozostało
 
-PWA/Web Push, ekrany (także PAT), Skróty i testy urządzeń w kolejnej paczce; M4 niezamknięte. Estymata paczki 11,5 dnia obejmuje odłożony ekran PAT, rzeczywisty nakład niezmierzony. Bez nowego ADR i nowych ryzyk; pozostaje **R-45** (duplikat SMTP po awarii między wysłaniem a potwierdzeniem).
+PWA/Web Push, ekrany (także PAT), Skróty i testy urządzeń w kolejnej paczce; M4 niezamknięte. Estymata 11,5 dnia obejmuje odłożony ekran PAT; rzeczywisty nakład niezmierzony. Bez nowego ADR i ryzyk w tej sesji; ryzyko paczki **R-45**: duplikat SMTP po wysłaniu przed zapisem potwierdzenia.
