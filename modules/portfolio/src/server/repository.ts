@@ -344,25 +344,39 @@ export class PortfolioRepository {
       };
     });
   }
+  async insertTransaction(
+    tx: DatabaseTransaction,
+    context: DatabaseContext,
+    raw: unknown,
+    apiKey?: string,
+  ) {
+    const input = transactionInput.parse(raw),
+      account = await this.requireAccount(tx, input.accountId);
+    if (account.closedOn) throw new ProblemError("CONFLICT");
+    const normalized = normalizeTransaction(input, {
+      ...account,
+      currency: currencyCode(account.currency),
+      accountType: accountSchema.parse(accountDto(account)).accountType,
+    });
+    const [row] = await tx
+      .insert(transactions)
+      .values({
+        ...transactionValues(normalized),
+        userId: context.userId!,
+        source: apiKey ? "quick" : "manual",
+        ...(apiKey ? { createdByApiKey: apiKey } : {}),
+      })
+      .returning();
+    await loadLedger(tx);
+    return transactionDto(row!);
+  }
   async createTransaction(context: DatabaseContext, raw: unknown, key: string) {
     const input = transactionInput.parse(raw);
     const result = await this.mutate(
       context,
       (tx) =>
         this.replay(tx, context, key, "/portfolio/transactions", input, 201, async () => {
-          const account = await this.requireAccount(tx, input.accountId);
-          if (account.closedOn) throw new ProblemError("CONFLICT");
-          const normalized = normalizeTransaction(input, {
-            ...account,
-            currency: currencyCode(account.currency),
-            accountType: accountSchema.parse(accountDto(account)).accountType,
-          });
-          const [row] = await tx
-            .insert(transactions)
-            .values({ ...transactionValues(normalized), userId: context.userId!, source: "manual" })
-            .returning();
-          await loadLedger(tx);
-          return transactionDto(row!);
+          return this.insertTransaction(tx, context, input);
         }),
       key,
     );

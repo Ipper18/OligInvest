@@ -228,6 +228,24 @@ W M0 (BL-013) korzeń `apps/jobs` rejestruje definicje kolejek domenowych przez 
 
 `portfolio.valuation.updated`, `portfolio.import.parsed`, `market.quotes.updated` (tylko instrumenty z pozycji/watchlist/otwartych ekranów użytkownika), `alerts.alert.triggered`, `analytics.run.progress`, `analytics.run.completed`, `analytics.run.failed`, `identity.export.ready`, `flags.changed`, `auth.session.revoked` oraz techniczne `ready`, `ping`, `resync`. Kontrakty strumienia: [`../02-api/realtime.md`](../02-api/realtime.md).
 
+### 5.4 Backend powiadomień M4 (decyzja właściciela 2026-10-23)
+
+BL-403 w pierwszej paczce obejmuje e-mail i interfejs kanałów; transport Web Push
+(BL-402), PWA i ekrany są w kolejnej paczce. Brak transportu/subskrypcji push
+uruchamia skonfigurowany fallback e-mail. Alerty podczas cichych godzin czekają
+na koniec ciszy w strefie użytkownika; kilka wyzwoleń tej samej reguły łączymy
+w jedno doręczenie z najnowszym zdarzeniem. Historia wyzwoleń pozostaje pełna.
+Wiadomość zawiera czas wyzwolenia oraz źródło i czas danych. Bezpieczeństwo
+i reset hasła omijają ciszę. Globalny limit SMTP to 300 prób wysłania na dobę UTC,
+w tym maksymalnie 250 dla poczty innej niż konta i bezpieczeństwo (rezerwa 50).
+Nieudane próby także zużywają kwotę; po wyczerpaniu kwoty wysyłka czeka na kolejną dobę.
+
+Backend M4 udostępnia wyłącznie schematy `PriceAlert*` dla trzech typów cenowych; ogólne szkice kontraktów pozostałych alertów zastąpiono kontraktami rzeczywiście obsługiwanymi. Alerty wskaźnikowe, portfelowe, wynikowe i newsowe pozostają w BL-562/563/703/704. `alerts` i `quick-actions` są opcjonalnymi zależnościami aplikacji, ładowanymi tylko w ich rejestrach modułów. Po fizycznym usunięciu modułu jego trasy i worker nie są montowane. Bramka flagi obejmuje także oczekujące doręczenia alertów.
+
+Zdarzenie alertu i stan reguły są zapisywane w jednej transakcji; publikacja do kolejki i SSE następuje po zatwierdzeniu. Niepotwierdzone zdarzenia i ewaluację odzyskuje cykliczne zadanie co minutę. SMTP i baza nie tworzą jednej transakcji rozproszonej: awaria po przyjęciu wiadomości przez SMTP może spowodować ponowienie (R-45).
+
+`QuickRepository` otrzymuje od warstwy składania API repozytorium portfela, funkcję `readPortfolio` oraz odczyt notowań `MarketRepository.quotes`. Importy ich implementacji w `quick-actions` są wyłącznie typami. Dzięki temu publiczny eksport `quick-actions/server` nie ładuje tras HTTP, importów brokerskich ani całych eksportów serwerowych fundamentów. API przekazuje te same istniejące implementacje; RLS, wycena i walidacja nie są kopiowane, a pierwsze żądanie nie uruchamia odroczonego importu.
+
 ## 6. Uprawnienia (RBAC) i zakresy PAT
 
 | Uprawnienie | user | pro | admin | Zakres PAT |

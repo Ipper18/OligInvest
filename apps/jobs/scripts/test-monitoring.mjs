@@ -9,6 +9,7 @@ import {
 } from "../../../scripts/dev-services.mjs";
 import { createAuthMailer } from "../dist/auth-mail.js";
 import { jobFeatureFlags } from "../dist/feature-flags.js";
+import { reserveMail } from "../dist/mail-quota.js";
 import { reportDay, startMonitoring } from "../dist/monitoring.js";
 import { readRuntime } from "../dist/runtime.js";
 
@@ -22,7 +23,21 @@ try {
   const runtime = readRuntime(env);
   flags = jobFeatureFlags(env, runtime.config, logger);
   queue = new Queue("notify", { connection: runtime.connection });
-  mailer = createAuthMailer(runtime.config, "test", Number(env.SMTP_PORT));
+  const quotaClient = await queue.getBackend().client;
+  const quotaNow = Date.now();
+  const quotaDay = Math.floor(quotaNow / 86400_000);
+  mailer = createAuthMailer(runtime.config, "test", Number(env.SMTP_PORT), (security) =>
+    reserveMail(
+      async (key) => {
+        const count = Number(await quotaClient.runCommand("incr", [key]));
+        await quotaClient.runCommand("expire", [key, "172800"]);
+        assert.ok(Number.isSafeInteger(count) && count > 0);
+        return count;
+      },
+      security,
+      quotaNow,
+    ),
+  );
   const delivered = [];
   let unavailable = true;
   const options = {
@@ -62,6 +77,17 @@ try {
   unavailable = false;
   await monitor.handle(job);
   assert.equal(delivered.length, 1);
+  for (const bucket of ["ordinary", "total"])
+    assert.equal(
+      Number(await quotaClient.runCommand("get", [`quota:mail:${bucket}:${quotaDay}`])),
+      1,
+    );
+  await quotaClient.runCommand("set", [`quota:mail:ordinary:${quotaDay}`, "250"]);
+  await assert.rejects(
+    mailer.sendReport("quota@example.invalid", "Limit", "Limit"),
+    /MAIL_QUOTA_EXCEEDED/,
+  );
+  assert.equal(Number(await quotaClient.runCommand("get", [`quota:mail:total:${quotaDay}`])), 1);
   assert.match(delivered[0], /INTERNAL: 10/);
   assert.equal(delivered[0].split(event.requestId).length - 1, 3);
   await monitor.handle(job);

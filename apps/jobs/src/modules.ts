@@ -1,4 +1,5 @@
 export { createMarketJobs, marketSchedules } from "@oliginvest/mod-market/jobs";
+export { dispatchNotification, notificationJobSchema } from "@oliginvest/mod-notifications/jobs";
 export { parseImport, portfolioDate, recomputePortfolio } from "@oliginvest/mod-portfolio/jobs";
 export {
   enqueuePortfolioRecompute,
@@ -22,4 +23,10 @@ export const analyticsJobs = await optionalModule(
   // biome-ignore lint/suspicious/noTsIgnore: TS2307 is expected only in a build without analytics.
   // @ts-ignore
   () => import("@oliginvest/mod-analytics/jobs"),
+);
+
+export const alertsJobs = await optionalModule(
+  // biome-ignore lint/suspicious/noTsIgnore: Package may be omitted from the build.
+  // @ts-ignore
+  () => import("@oliginvest/mod-alerts/jobs"),
 );

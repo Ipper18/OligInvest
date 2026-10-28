@@ -114,6 +114,7 @@ test("nodemailer delivers a synthetic message over SMTP without external traffic
     { ...config, SMTP_HOST: "127.0.0.1" },
     "test",
     server.address().port,
+    async () => {},
   );
   try {
     await mailer.send("auth.password-reset", message);

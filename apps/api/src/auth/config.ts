@@ -27,6 +27,18 @@ export type AuthConfiguration = Readonly<{
 export interface Auth {
   handler(request: Request): Promise<Response>;
   $context: Promise<{ secret: string; secretConfig: string | SecretConfig }>;
+  api: {
+    createApiKey(input: {
+      body: {
+        userId: string;
+        name: string;
+        expiresIn: number;
+        permissions: Record<string, string[]>;
+        rateLimitEnabled: boolean;
+      };
+    }): Promise<unknown>;
+    verifyApiKey(input: { body: { key: string } }): Promise<unknown>;
+  };
 }
 export function createAuth(
   transaction: DatabaseTransaction,
@@ -101,7 +113,7 @@ export function createAuth(
         accountLockout: { enabled: true, maxFailedAttempts: 5, durationSeconds: 900 },
       }),
       admin({ defaultRole: "user", adminRoles: ["admin"] }),
-      apiKey({ defaultPrefix: "oli_pat_", disableKeyHashing: false }),
+      apiKey({ defaultPrefix: "oli_pat_", defaultKeyLength: 64, disableKeyHashing: false }),
       // The facade invokes the plugin's isPasswordCompromised helper before opening
       // the SQL transaction, implementing AUTH's offline fallback on provider outage.
       haveIBeenPwned({ paths: [] }),
