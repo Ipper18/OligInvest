@@ -82,8 +82,19 @@ Backtesting i analiza (rynek USA jako wzorzec; adaptować do GPW):
   `trade-performance-coach` (postmortem transakcji), `weekly-performance-digest`.
 
 Pluginy Anthropic: `feature-dev` (projektowanie funkcji), `frontend-design` (UI), `code-review`, `security-guidance`
-(hooki bezpieczeństwa aktywne w sesji). Serwery MCP: `context7` (dokumentacja bibliotek — używaj zamiast pamięci),
-`playwright` (podgląd/testy UI), `github`, `alphavantage`, `twelvedata` (eksploracja danych; limity free tier!).
+(hooki bezpieczeństwa aktywne w sesji). Serwery MCP w `.mcp.json`: `context7` (dokumentacja bibliotek — używaj
+zamiast pamięci), `playwright` (podgląd/testy UI). GitHub — przez CLI `gh`. `alphavantage` i `twelvedata` (eksploracja
+danych; limity free tier!) dodaje się lokalnie tylko na czas eksploracji — `docs/09-decyzje/audyt-pluginow.md` § 3.
+
+## Compact instructions
+
+Przy kompaktowaniu kontekstu (`/compact` lub automatycznym) zachowaj:
+- gałąź/worktree, numer PR i ID, nad którymi trwa praca (`BL-xxx`, `FR-xx`/`NFR-xx`, `ADR-NNN`);
+- decyzje z tej sesji z uzasadnieniem oraz to, co właściciel zaakceptował lub odrzucił;
+- listę zmienionych plików i stan weryfikacji: które testy/lint/typecheck przeszły, które nie (z dokładnym błędem);
+- otwarte pytania, zastrzeżenia i następne kroki.
+
+Pomiń pełne wyniki komend i treść przeczytanych plików (wystarczy ścieżka i wniosek) oraz ślepe uliczki bez wniosków.
 
 ## Struktura repozytorium
 
