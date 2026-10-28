@@ -26,5 +26,19 @@
       "types": "./dist/ui/index.d.ts",
       "import": "./dist/ui/index.js"
     }
+  },
+  "dependencies": {
+    "@oliginvest/db": "workspace:*",
+    "@oliginvest/platform": "workspace:*",
+    "@oliginvest/core": "workspace:*",
+    "@oliginvest/i18n": "workspace:*",
+    "@oliginvest/mod-portfolio": "workspace:*",
+    "@oliginvest/mod-market": "workspace:*",
+    "@hono/zod-openapi": "1.6.3",
+    "drizzle-orm": "0.45.2",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "24.13.5"
   }
 }

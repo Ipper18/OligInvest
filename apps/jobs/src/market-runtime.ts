@@ -17,6 +17,8 @@ export async function startMarketWorker(options: {
   observe?: (worker: Worker) => void;
   observeProvider?: (provider: string, result: "ok" | "fail") => void;
   updated?(reason: "eod" | "fx", fromDate: string): Promise<void>;
+  alertsUpdated?(mode: "quote" | "eod"): Promise<void>;
+  alertInstruments?(): Promise<string[]>;
   fredApiKey?: string | undefined;
 }) {
   const redis = new Redis(options.connection);
@@ -29,6 +31,7 @@ export async function startMarketWorker(options: {
         (await tx.execute(sql`SELECT id::text FROM identity.user_directory WHERE NOT banned`)).rows,
     );
     const ids = new Set<string>();
+    for (const id of (await options.alertInstruments?.()) ?? []) ids.add(id);
     for (const user of users) {
       const userId = z.uuid().parse(user.id);
       const rows = await options.database.transaction(
@@ -127,6 +130,9 @@ export async function startMarketWorker(options: {
           await job.updateData({ ...job.data, date, scheduledAt: scheduled.toISOString() });
         }
         await market.dispatch(job.name, job.data, job.attemptsMade);
+        if (job.name === "market.quotes") await options.alertsUpdated?.("quote");
+        if (["market.gpw", "market.gpw-backfill", "market.us-eod"].includes(job.name))
+          await options.alertsUpdated?.("eod");
         if (
           ["market.fx", "market.gpw", "market.gpw-backfill", "market.us-eod"].includes(job.name)
         ) {

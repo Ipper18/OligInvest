@@ -12,10 +12,11 @@ import { type PlatformLogger, subscribeFeatureFlags } from "@oliginvest/platform
 import { Queue } from "bullmq";
 import { sql } from "drizzle-orm";
 import { Redis } from "ioredis";
-import { enqueuePortfolioRecompute } from "../modules.js";
+import { enqueuePortfolioRecompute, notificationJobSchema } from "../modules.js";
 import { Administration } from "./administration.js";
 import { AuditWriter } from "./audit.js";
 import { defaultPasswordChecks } from "./password.js";
+import { PatService } from "./pat-service.js";
 import { AuthService } from "./service.js";
 import { RedisAuthState } from "./state.js";
 
@@ -109,6 +110,20 @@ export function createAuthRuntime(
       },
     },
     state: new RedisAuthState(state),
+    patMail: async (id, payload, delay) => {
+      await queue("notify").add("notifications.deliver", notificationJobSchema.parse(payload), {
+        jobId: id,
+        delay,
+        attempts: 3,
+        backoff: { type: "exponential", delay: 1000 },
+        removeOnComplete: { age: 86400 },
+        removeOnFail: { age: 604800 },
+      });
+    },
+    cancelPatMail: async (id) => {
+      const job = await queue("notify").getJob(id);
+      if (job && (await job.getState()) !== "active") await job.remove();
+    },
     passwordChecks: defaultPasswordChecks(() => logger.warn({ event: "auth.hibp_unavailable" })),
     audit: new AuditWriter(appDatabase, config.AUDIT_PSEUDONYM_KEY),
     securityEvent: async (event) => {
@@ -138,6 +153,17 @@ export function createAuthRuntime(
   void subscribeFeatureFlags(service.features, subscriber).catch(() =>
     logger.warn({ event: "auth.flags_subscription_unavailable" }),
   );
+  let recovering: Promise<void> | undefined;
+  const recoverPatMail = () =>
+    (recovering ??= new PatService(service)
+      .recoverExpiryNotifications()
+      .catch(() => logger.warn({ event: "auth.pat_mail_recovery_failed" }))
+      .finally(() => {
+        recovering = undefined;
+      }));
+  void recoverPatMail();
+  const patRecoveryTimer = setInterval(() => void recoverPatMail(), 60_000);
+  patRecoveryTimer.unref();
   return {
     service,
     appDatabase,
@@ -233,6 +259,8 @@ export function createAuthRuntime(
       },
     }),
     close: async () => {
+      clearInterval(patRecoveryTimer);
+      await recovering;
       await Promise.allSettled([...queues.values()].map((value) => value.close()));
       state.disconnect();
       subscriber.disconnect();

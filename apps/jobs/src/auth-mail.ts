@@ -65,10 +65,14 @@ export function createAuthMailer(
   config: ServiceConfig<"jobs">,
   mode: "development" | "test" | "production",
   port: number,
+  reserve: (security: boolean) => Promise<void> = async () => {
+    throw new Error("MAIL_QUOTA_NOT_CONFIGURED");
+  },
 ) {
   const transport = nodemailer.createTransport(mailOptions(config, mode, port));
   return {
     sendReport: async (email: string, subject: string, text: string) => {
+      await reserve(false);
       try {
         await transport.sendMail({
           from: config.SMTP_FROM,
@@ -94,11 +98,28 @@ export function createAuthMailer(
           : name === "auth.invitation"
             ? invitationMail(input, config)
             : twoFactorResetMail(input, config);
+      await reserve(true);
       try {
         await transport.sendMail(message);
       } catch {
         // BullMQ persists errors; never put SMTP replies, addresses or tokens in them.
         throw new Error("AUTH_MAIL_DELIVERY_FAILED");
+      }
+    },
+    sendNotification: async (email: string, subject: string, text: string, security = false) => {
+      const recipient = z.email().parse(email);
+      await reserve(security);
+      try {
+        await transport.sendMail({
+          from: config.SMTP_FROM,
+          to: recipient,
+          subject,
+          text,
+          disableFileAccess: true,
+          disableUrlAccess: true,
+        });
+      } catch {
+        throw new Error("NOTIFICATION_DELIVERY_FAILED");
       }
     },
     close: () => transport.close(),

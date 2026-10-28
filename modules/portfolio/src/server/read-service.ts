@@ -235,7 +235,7 @@ export async function readPortfolio(
         : { ...readMeta(quotes), stale: true, staleReason: "market_closed" },
     });
     if (operation === "getDayChange") return result;
-    return portfolioSummary.parse({
+    const summary = portfolioSummary.parse({
       totalValue: jsonMoney(valuation.total),
       marketValue: model.totals.marketValueBase,
       cash: jsonMoney(
@@ -261,6 +261,25 @@ export async function readPortfolio(
         totalValueBase: jsonMoney(a.totalReporting),
       })),
     });
+    if (operation === "getQuickSnapshot") {
+      const movers = (
+        await tx.execute(
+          sql`SELECT i.ticker,q.change_pct AS "changeRatio" FROM market.quotes_latest q JOIN market.instruments i ON i.id=q.instrument_id WHERE q.instrument_id=ANY(${sql.param(selected.positions.map((p) => p.instrumentId))}::uuid[]) AND q.change_pct IS NOT NULL ORDER BY q.change_pct,i.ticker`,
+        )
+      ).rows.map((r) =>
+        z.object({ ticker: z.string(), changeRatio: z.number() }).strict().parse(r),
+      );
+      return {
+        movers,
+        summary,
+        day: result,
+        positions: model.data,
+        gaps: valuation.gaps,
+        previousGaps: previous.gaps,
+        missingCosts: selected.positions.filter((p) => p.cost === null).map((p) => p.instrumentId),
+      };
+    }
+    return summary;
   });
 }
 

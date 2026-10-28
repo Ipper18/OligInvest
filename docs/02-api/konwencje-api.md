@@ -111,6 +111,15 @@ Wyjątki Redocly są zapisane jako trzy dokładne wskaźniki w `.redocly.lint-ig
 
 ## 6. Idempotencja
 
+Wyjątek PAT (decyzja właściciela 2026-10-23, BL-407): pierwsza odpowiedź
+`POST /me/tokens` zawiera `tokenShown: true` i losowy sekret `token`. Powtórzenie
+przez 24 h zwraca te same metadane z `tokenShown: false`, bez `token`, oraz
+`Idempotent-Replayed: true`. Nie tworzy drugiego PAT. Sekretu nie przechowujemy
+w odpowiedzi idempotencji i nie odtwarzamy; autoryzacja i step-up obowiązują
+także przy ponowieniu. Inne ciało daje `409 IDEMPOTENCY_CONFLICT`.
+
+Implementacja BL-407 przechowuje skróty klucza idempotencji i żądania, termin 24 h oraz publiczne metadane odpowiedzi w `auth.api_keys.metadata.creation`, atomowo z utworzeniem PAT i pod blokadą użytkownika. Nie zapisuje sekretu w `platform.idempotency_keys`. Znacznik `expiryScheduled` jest potwierdzany dopiero po trwałym dodaniu przypomnienia do kolejki; proces API ponawia niepotwierdzone zapisy po starcie i co minutę. Lista rozpoznanych prefiksów sieci jest aktualizowana dopiero po dodaniu powiadomienia bezpieczeństwa.
+
 Wyjątek dla zaproszeń M1-1 (decyzja właściciela 2026-10-05): równoległe `adminCreateInvitation` czekają na blokadę transakcyjną, a następnie odczytują wynik per administrator i klucz. Ta sama treść odtwarza odpowiedź; inna treść daje `409 IDEMPOTENCY_CONFLICT`. Zajęcie globalnej blokady auth `730101` przez inne żądanie nie daje `409`. Wspólna blokada pozostaje ograniczeniem przepustowości (R-31); blokada `pg_advisory_xact_lock(hashtext(klucz))` obejmuje przestrzeń nazw administratora i operacji przed odczytem/zapisem idempotencji.
 
 Nagłówek `Idempotency-Key` z kluczem klienta — UUID (zalecany) lub ciąg 16–64 znaków `[A-Za-z0-9_-]`, bo Skróty iOS nie mają generatora UUID (wzorowany na [draft-ietf-httpapi-idempotency-key-header](https://datatracker.ietf.org/doc/draft-ietf-httpapi-idempotency-key-header/)) jest **wymagany** dla: `POST /portfolio/transactions`, `POST /portfolio/imports/{id}/commit`, `POST /analytics/runs`, `POST /quick/transactions`, `POST /me/tokens`, `POST /me/exports`; opcjonalny dla pozostałych `POST`. Klucz przechowujemy 24 h per użytkownik (`platform.idempotency_keys`): ten sam klucz i to samo ciało → ta sama odpowiedź z nagłówkiem `Idempotent-Replayed: true`; ten sam klucz i inne ciało → `409 IDEMPOTENCY_CONFLICT`; żądanie w trakcie → `409 CONFLICT` z `Retry-After: 1`.

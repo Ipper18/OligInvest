@@ -14,6 +14,7 @@ export * from "./indicators.js";
 export * from "./ledger.js";
 export * from "./market.js";
 export * from "./money.js";
+export * from "./price-alert.js";
 export * from "./rebalance.js";
 export * from "./returns.js";
 export * from "./risk.js";

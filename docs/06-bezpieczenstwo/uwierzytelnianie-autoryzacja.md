@@ -154,6 +154,17 @@ Mechanizm: `POST /api/v1/me/step-up` z kodem TOTP → `auth.sessions.mfa_verifie
 
 ## 7. Tokeny PAT (FR-07.07, Z-17)
 
+Decyzja właściciela 2026-10-23 (BL-407): PAT powstaje losowo z CSPRNG, bez
+wyprowadzania HMAC i bez możliwości odtworzenia. Pierwsza odpowiedź utworzenia
+zawiera `tokenShown: true` i `token`. Identyczne ponowienie z tym samym
+`Idempotency-Key` przez 24 h zwraca te same metadane oraz `tokenShown: false`,
+bez pola `token` i bez tworzenia kolejnego PAT. Baza idempotencji przechowuje
+wyłącznie metadane; pełny sekret nie trafia do bazy ani cache. Klient pokazuje:
+„Token był już wyświetlony — unieważnij go i utwórz nowy”. Ponowienie nadal
+wymaga sesji, bramek i świeżego step-upu. Zaproszenia zachowują dotychczasowe zasady.
+
+Implementacja BL-407 przechowuje skróty klucza idempotencji i żądania, termin 24 h oraz publiczne metadane odpowiedzi w `auth.api_keys.metadata.creation`, atomowo z utworzeniem PAT i pod blokadą użytkownika. Nie zapisuje sekretu w `platform.idempotency_keys`. Znacznik `expiryScheduled` jest potwierdzany dopiero po trwałym dodaniu przypomnienia do kolejki; proces API ponawia niepotwierdzone zapisy po starcie i co minutę. Lista rozpoznanych prefiksów sieci jest aktualizowana dopiero po dodaniu powiadomienia bezpieczeństwa.
+
 | Element | Rozwiązanie |
 |---|---|
 | Format | `oli_pat_` + ≥ 256 bitów losowych (base62); pokazywany raz, potem tylko początek (`start`) |

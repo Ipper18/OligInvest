@@ -596,6 +596,35 @@
   "net_flows_today": "500.00",
   "day_change_pln": "280.45",
   "day_change_pct": "0.53%",
+  "price_alert": {
+   "threshold": "100",
+   "hysteresis": "0.005",
+   "cooldown_minutes": "5",
+   "prices": [
+    "100",
+    "100.00000001",
+    "101",
+    "99.6",
+    "99.5",
+    "101"
+   ],
+   "minutes": [
+    "0",
+    "1",
+    "7",
+    "8",
+    "9",
+    "10"
+   ],
+   "triggered": [
+    "false",
+    "true",
+    "false",
+    "false",
+    "false",
+    "true"
+   ]
+  },
    "reconciliation": [
     { "name": "buy_commission", "previous": "1000", "current": "1018", "flows": "0", "change": "18", "residual": "0", "positions": [{ "previous": "0", "current": "120", "cash": "-102", "transfer": "0" }] },
     { "name": "sold_to_zero", "previous": "1000", "current": "1009", "flows": "0", "change": "9", "residual": "0", "positions": [{ "previous": "100", "current": "0", "cash": "109", "transfer": "0" }] },

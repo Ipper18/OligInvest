@@ -1,0 +1,12 @@
+{
+  "subject": "OligInvest — alert cenowy",
+  "priceAbove": "{ticker}: kurs {value} przekroczył próg {threshold}.",
+  "priceBelow": "{ticker}: kurs {value} spadł poniżej progu {threshold}.",
+  "change": "{ticker}: zmiana dzienna {value}; próg {threshold}.",
+  "metadata": "Wyzwolenie: {triggeredAt}. Dane: {dataAsOf}, opóźnienie {delayMinutes} min. Źródło: {source}. {url}",
+  "patAlreadyShown": "Token był już wyświetlony — unieważnij go i utwórz nowy",
+  "patNetworkSubject": "OligInvest — użycie tokenu z nowej sieci",
+  "patNetworkBody": "Token {name} został użyty {time} z sieci {network}. Ustawienia tokenów: {url}",
+  "patExpirySubject": "OligInvest — token wkrótce wygaśnie",
+  "patExpiryBody": "Token {name} wygaśnie {time}. Ustawienia tokenów: {url}"
+}

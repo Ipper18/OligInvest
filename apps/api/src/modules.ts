@@ -18,12 +18,22 @@ export {
   mountMarket,
 } from "@oliginvest/mod-market/server";
 export {
+  deliveryPageSchema,
+  preferencesSchema as notificationPreferencesSchema,
+  statusSchema as notificationStatusSchema,
+} from "@oliginvest/mod-notifications/contracts";
+export {
+  NotificationRepository,
+  notificationJobSchema,
+} from "@oliginvest/mod-notifications/server";
+export {
   enqueuePortfolioRecompute,
   ImportRepository,
   livePortfolioValuation,
   mountPortfolio,
   type PortfolioDependencies,
   PortfolioRepository,
+  readPortfolio,
 } from "@oliginvest/mod-portfolio/server";
 
 /**
@@ -58,3 +68,32 @@ export type AnalyticsRepository =
   Absent<AnalyticsModule> extends true
     ? unknown
     : InstanceType<AnalyticsModule["AnalyticsRepository"]>;
+
+// Keep public namespace types instead of expanding Zod internals during declaration emit.
+// biome-ignore lint/suspicious/noTsIgnore: Package may be omitted from the build.
+// @ts-ignore
+const loadAlertsContracts = () => import("@oliginvest/mod-alerts/contracts");
+// biome-ignore lint/suspicious/noTsIgnore: Package may be omitted from the build.
+// @ts-ignore
+const loadAlertsServer = () => import("@oliginvest/mod-alerts/server");
+// biome-ignore lint/suspicious/noTsIgnore: Package may be omitted from the build.
+// @ts-ignore
+const loadQuickContracts = () => import("@oliginvest/mod-quick-actions/contracts");
+// biome-ignore lint/suspicious/noTsIgnore: Package may be omitted from the build.
+// @ts-ignore
+const loadQuickServer = () => import("@oliginvest/mod-quick-actions/server");
+
+type AlertsModule = Awaited<ReturnType<typeof loadAlertsContracts>> &
+  Awaited<ReturnType<typeof loadAlertsServer>>;
+type QuickModule = Awaited<ReturnType<typeof loadQuickContracts>> &
+  Awaited<ReturnType<typeof loadQuickServer>>;
+
+export const alertsModule: AlertsModule | undefined = await optionalModule(async () => ({
+  ...(await loadAlertsContracts()),
+  ...(await loadAlertsServer()),
+}));
+
+export const quickModule: QuickModule | undefined = await optionalModule(async () => ({
+  ...(await loadQuickContracts()),
+  ...(await loadQuickServer()),
+}));
