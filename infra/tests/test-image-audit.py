@@ -37,6 +37,15 @@ class ImagePolicyTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             audit.assess(report("", urgency="unimportant", ecosystem="Debian:14"), set())
 
+    def test_owner_exception_covers_fixable_findings_with_any_score(self):
+        for value in ["9.8", ""]:
+            self.assertEqual(audit.assess(report(value), {"TEST-1"}), [])
+        document = report("")
+        document["results"][0]["packages"][0]["vulnerabilities"][0]["aliases"] = ["CVE-TEST"]
+        self.assertEqual(audit.assess(document, {"CVE-TEST"}), [])
+        with self.assertRaises(ValueError):
+            audit.assess(report(""), {"OTHER-1"})
+
     def test_empty_scan_is_rejected(self):
         with self.assertRaises(ValueError):
             audit.assess({"results": []}, set())

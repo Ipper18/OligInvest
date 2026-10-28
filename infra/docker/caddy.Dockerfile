@@ -4,7 +4,8 @@
 # pushed 2026-10-20T04:26:03Z and x/net v0.60.0 published 2026-10-08T17:22:58Z, both outside the 72-hour
 # window when adopted. x/net v0.60.0 requires the same x/crypto, x/sys, x/term and x/text versions as Caddy 2.11.7.
 # chi v5.4.0 (published 2026-10-12T11:22:20Z) fixes GHSA-j6qf-3m9c-vwj3 (moderate) and only raises its go
-# directive to 1.24.
+# directive to 1.24. go-jose v4.1.6 (published 2026-10-14T22:46:21Z) fixes GHSA-mgcc-cww5-fp2q (high, JWK parsing DoS)
+# and has no module requirements; v3 (via a Caddy dependency) has no fixed release and stays in the report.
 FROM golang:1.26.10-alpine@sha256:9ce231b28998b32e116927c61aa5c406183061d4f3f2d61b292c88e7f6bdf7ca AS builder
 ENV CGO_ENABLED=0 GOTOOLCHAIN=local GOFLAGS=-mod=mod
 WORKDIR /src
@@ -14,9 +15,9 @@ RUN printf '%s\n' 'package main' '' 'import (' \
       '	_ "github.com/caddyserver/caddy/v2/modules/standard"' ')' '' \
       'func main() { caddycmd.Main() }' > main.go \
     && go mod init oliginvest.invalid/caddy \
-    && go get github.com/caddyserver/caddy/v2@v2.11.7 golang.org/x/net@v0.60.0 github.com/go-chi/chi/v5@v5.4.0 \
+    && go get github.com/caddyserver/caddy/v2@v2.11.7 golang.org/x/net@v0.60.0 github.com/go-chi/chi/v5@v5.4.0 github.com/go-jose/go-jose/v4@v4.1.6 \
     && go mod tidy \
-    && go list -m golang.org/x/net golang.org/x/crypto golang.org/x/sys golang.org/x/text github.com/go-chi/chi/v5 \
+    && go list -m golang.org/x/net golang.org/x/crypto golang.org/x/sys golang.org/x/text github.com/go-chi/chi/v5 github.com/go-jose/go-jose/v4 \
     && go build -trimpath -ldflags="-s -w" -o /go/bin/caddy . \
     && go version -m /go/bin/caddy
 
