@@ -1,4 +1,5 @@
 "use client";
+
 import { appMessages } from "@oliginvest/i18n";
 import { AppShell, Button } from "@oliginvest/ui";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -8,6 +9,7 @@ import type { Me } from "../api/validation";
 import { submitAction } from "../auth/actions";
 import { clearPrivateState, onLogout, onRemoteLogout } from "../auth/logout";
 import { updateImportCache, updatePortfolioCache } from "../portfolio/stream-cache";
+import { PwaLoader } from "../pwa/loader";
 import { connectStream, type StreamState } from "../sse/transport";
 import { connectionStatus } from "./connection-status";
 import { Navigation } from "./navigation";
@@ -209,6 +211,7 @@ export function Providers({
           </div>
         }
       >
+        <PwaLoader />
         {children}
       </AppShell>
     </QueryClientProvider>

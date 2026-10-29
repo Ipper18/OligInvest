@@ -130,7 +130,7 @@ Jeden origin, bez CORS; `SameSite=Lax`; `api` i Better Auth sprawdzają `Origin`
 
 - Brak funkcji pobierających adres podany przez użytkownika. Linki z newsów są tylko wyświetlane, serwer ich nie otwiera.
 - Klient HTTP w `packages/data-providers`: allowlista hostów per adapter (np. archiwum GPW, API NBP, Yahoo, dostawcy USA), wyłącznie HTTPS na porcie 443, rozwiązanie DNS i odrzucenie adresów prywatnych, pętli zwrotnej, link-local i ULA (IPv4 i IPv6), bez podążania za przekierowaniami, limity czasu i rozmiaru odpowiedzi.
-- Subskrypcja Web Push: endpoint musi należeć do znanych usług push przeglądarek (lista hostów w konfiguracji); wysyłka bez przekierowań.
+- Subskrypcja Web Push: endpoint musi należeć do znanych usług push przeglądarek; allowlista w `modules/notifications/src/push-endpoint.ts`: `fcm.googleapis.com`, `updates.push.services.mozilla.com`, `web.push.apple.com` i pojedyncza etykieta subdomeny `notify.windows.com` (WNS). Tylko HTTPS/443, bez danych logowania i fragmentu; wysyłka `web-push` bez przekierowań. Kontrola zarówno przy zapisie, jak i wysyłce; testy odrzucają podszywanie się pod suffix i adres lokalny. [Edge Web Push](https://learn.microsoft.com/en-us/microsoft-edge/progressive-web-apps/how-to/push), [endpoint WNS](https://learn.microsoft.com/en-us/windows/apps/develop/notifications/push-notifications/quickstart-send-push-notification), weryfikacja 2026-10-29.
 - Sieci kontenerów: `web` i `analytics` bez wyjścia do internetu; wychodzą tylko `api` (Pwned Passwords, OAuth), `jobs` (dostawcy, SMTP, push) i `caddy` (ACME) — [`../07-wdrozenie/infrastruktura.md`](../07-wdrozenie/infrastruktura.md) § 5.
 
 ### 3.8 Dane z zewnętrznych API

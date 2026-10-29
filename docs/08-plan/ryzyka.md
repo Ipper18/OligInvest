@@ -77,11 +77,13 @@ Powiązane: [`roadmapa.md`](roadmapa.md), [`backlog.md`](backlog.md), [`../06-be
 | **R-49** | Scenariusze admina zmieniane tylko bezpośrednio w `analytics.stress_scenarios` (trasa `adminUpsertStressScenario` z audytem przeniesiona do BL-567) — zmiana bez wpisu audytu FR-08.10 | BL-556, BL-567 | 2 | 3 | 6 | api ukrywa wiersze niepoprawne (okno > 1096 dni, zła lista szoków), okno musi kończyć się przed migawką, w wyniku `scenarioSource` (`builtin`/`admin`) i okno w założeniach | potrzeba zmiany scenariusza przed BL-567 | właściciel | do BL-567 |
 | **R-50** | Obraz Caddy zawiera `golang.org/x/net` v0.60.0 z [GO-2026-6860](https://pkg.go.dev/vuln/GO-2026-6860) i [GO-2026-6866](https://pkg.go.dev/vuln/GO-2026-6866) (pakiet `x/net/html`, bez oceny CVSS, opublikowane 2026-10-27); jedyna poprawka v0.62.0 wyszła 2026-10-27T19:00Z i jest w 72-godzinnej karencji, a bramka `images` blokowała wszystkie PR i `main` | kontrola `images` w PR #38, 2026-10-27 | 1 | 2 | 2 | Caddyfile to reverse proxy i serwer plików bez `templates`/`markdown` — Caddy nie parsuje ani nie renderuje niezaufanego HTML; wyjątek tylko dla tych dwóch ID w [osv-scanner.toml](../../osv-scanner.toml); przy okazji go-jose v4.1.6 (GHSA-mgcc-cww5-fp2q, poza karencją); bez overrides | właściciel zaakceptował 2026-10-27 wyjątek do 2026-11-03 (7 dni); po 2026-10-30T19:00Z build Caddy przypina x/net v0.62.0 i wyjątek jest usuwany; wygaśnięcie wyjątku zatrzyma CI | agent, CI | 2026-10-30 – 2026-11-03 |
 
+| **R-51** | Przyjęcie push przez usługę przeglądarki nie dowodzi wyświetlenia na urządzeniu; częściowa dostawa lub przerwanie procesu przed zapisem może dać brak powiadomienia na części urządzeń albo duplikat | BL-402, granica Web Push–PostgreSQL, dziennik per kanał | 2 | 3 | 6 | TTL i Urgency, `tag` równy `sourceRef`, deduplikacja kanału, 404/410 usuwa subskrypcję, trzy błędy wyłączają ją z wysyłki; fallback tylko według preferencji; test urządzeń BL-412. `sent` oznacza akceptację przez co najmniej jedną usługę, nie potwierdzenie odczytu; brak automatycznego e-maila po udanym push | brak powiadomienia mimo `sent`, restart jobs po przyjęciu przez usługę | agent, właściciel | M4-PWA; otwarte do odbioru urządzeń i operacyjnego, 2026-10-29 |
+
 ## 3. Podsumowanie
 
 Doprecyzowanie R-19 (BL-034, 2026-10-23): lokalna baza owner wymaga zachowania `.env` z `DEV_AUTH_SECRET` i `DEV_AUDIT_KEY`; ich utrata może uniemożliwić odczyt TOTP/kodów oraz spójne powiązanie audytu. Launcher zapisuje klucze raz, odrzuca konflikt wartości, a regresja sprawdza restart. Instrukcja lokalna wymaga zachowania `.env` razem z bazą; ocena R-19 bez zmian, brak nowego odrębnego ryzyka.
 
-50 ryzyk: **5 wysokich** (R-01, R-07, R-11, R-16, R-28), 33 średnie, 12 niskich; brak krytycznych.
+51 ryzyk: **5 wysokich** (R-01, R-07, R-11, R-16, R-28), 34 średnie, 12 niskich; brak krytycznych.
 
 | Ryzyko wysokie | Działanie przed końcem etapu |
 |---|---|

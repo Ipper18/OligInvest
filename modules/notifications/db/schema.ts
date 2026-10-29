@@ -87,6 +87,8 @@ export const notificationsPushSubscriptions = notificationsSchema.table(
     id: uuid("id").primaryKey().default(sql`uuidv7()`),
     userId: uuid("user_id").notNull(),
     endpoint: text("endpoint").notNull(),
+    deviceLabel: text("device_label"),
+    expiresAt: timestamp("expires_at", { withTimezone: true, mode: "string" }),
     p256dh: text("p256dh").notNull(),
     auth: text("auth").notNull(),
     userAgent: text("user_agent"),

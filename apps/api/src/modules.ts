@@ -20,11 +20,16 @@ export {
 export {
   deliveryPageSchema,
   preferencesSchema as notificationPreferencesSchema,
+  pushConfigurationSchema,
+  pushCreateSchema,
+  pushListSchema,
+  pushSubscriptionSchema,
   statusSchema as notificationStatusSchema,
 } from "@oliginvest/mod-notifications/contracts";
 export {
   NotificationRepository,
   notificationJobSchema,
+  PushRepository,
 } from "@oliginvest/mod-notifications/server";
 export {
   enqueuePortfolioRecompute,

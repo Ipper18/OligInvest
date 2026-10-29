@@ -1,3 +1,6 @@
+import pwa from "./pl/pwa.json" with { type: "json" };
+export const pwaMessages = pwa;
+
 import alerts from "./pl/alerts.json" with { type: "json" };
 import app from "./pl/app.json" with { type: "json" };
 export const alertMessages = alerts;

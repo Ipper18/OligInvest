@@ -21,7 +21,23 @@ export async function clearPrivateState(broadcast = true) {
     channel.postMessage({ type: "logout", source });
     channel.close();
   }
-  if ("caches" in window) await Promise.all((await caches.keys()).map((key) => caches.delete(key)));
+  if ("caches" in window)
+    await Promise.all(
+      (await caches.keys())
+        .filter((key) => !key.startsWith("oliginvest-static-"))
+        .map((key) => caches.delete(key)),
+    );
   if ("indexedDB" in window && indexedDB.databases)
     for (const db of await indexedDB.databases()) if (db.name) indexedDB.deleteDatabase(db.name);
+  if ("serviceWorker" in navigator) {
+    await navigator.serviceWorker
+      .getRegistration()
+      .then(async (registration) => {
+        registration?.active?.postMessage({ type: "CLEAR_PRIVATE" });
+        await registration?.pushManager
+          ?.getSubscription()
+          .then((subscription) => subscription?.unsubscribe());
+      })
+      .catch(() => {});
+  }
 }

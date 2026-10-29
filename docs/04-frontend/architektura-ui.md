@@ -131,6 +131,8 @@ Podgląd importu w stanach `uploaded`/`parsing` dodatkowo odczytuje status co 5 
 - **Wylogowanie:** czyści cache TanStack Query, IndexedDB, cache service workera z danymi i powiadamia inne karty przez `BroadcastChannel`.
 - Jawne wylogowanie kończy się na `/logowanie` bez `returnTo`; parametr zachowuje cel przy wejściu bez sesji (§ 4). Powłoka znika od razu, a nawigacja i powiadomienie innych kart następują dopiero po odpowiedzi wylogowania usuwającej ciasteczka. Karta wysyłająca ignoruje własny komunikat.
 
+BL-401/402/411 (2026-10-28): powłoka offline obejmuje wyłącznie statyczne zasoby i publiczną stronę `/offline`, bez migawki BL-565. Minimalne sterowanie push znajduje się w istniejących ustawieniach. Worker jest bundlowany z lokalnych źródeł, wspólnej walidacji ścieżek i tekstów i18n. Nie zapisuje dokumentów aplikacji, odpowiedzi API ani odpowiedzi RSC. Zmiana wersji oczekuje na gest; powrót po logowaniu zachowuje zwalidowaną ścieżkę i parametry.
+
 ## 9. Nawigacja i moduły UI
 
 - Pozycje menu pochodzą z `UiModuleDefinition.nav` modułów (`moduly.md` § 3) i są filtrowane przez `GET /me` (`features`, `permissions`). Wyłączony moduł znika z menu w ≤ 60 s (zdarzenie `flags.changed`).

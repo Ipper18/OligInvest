@@ -3,7 +3,10 @@ import { disclaimers, messages } from "@oliginvest/i18n";
 import { expect, test } from "@playwright/test";
 
 for (const theme of ["dark", "light"]) {
-  test(`native UI and compliance components pass axe in ${theme}`, async ({ page, context }) => {
+  test(`native UI and compliance components pass axe in ${theme}`, async ({
+    page,
+    context,
+  }, testInfo) => {
     await context.addCookies([
       {
         name: "oi-test-theme",
@@ -40,7 +43,7 @@ for (const theme of ["dark", "light"]) {
       ).violations,
     ).toEqual([]);
     await page.keyboard.press("Escape");
-    await page.screenshot({ path: `../../.git/bl012-ui-${theme}.png`, fullPage: true });
+    await page.screenshot({ path: testInfo.outputPath(`bl012-ui-${theme}.png`), fullPage: true });
   });
 }
 

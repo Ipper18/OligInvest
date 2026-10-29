@@ -27,6 +27,10 @@
     "./analytics-jobs": {
       "types": "./dist/analytics-jobs.d.ts",
       "import": "./dist/analytics-jobs.js"
+    },
+    "./navigation": {
+      "types": "./dist/navigation.d.ts",
+      "import": "./dist/navigation.js"
     }
   },
   "dependencies": {

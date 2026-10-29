@@ -829,6 +829,17 @@ paths:
         '404': {$ref: '#/components/responses/NotFound'}
 
   # ───────────────────────────── notifications ─────────────────────────────
+  /notifications/push-config:
+    get:
+      operationId: getPushConfiguration
+      summary: Publiczny klucz VAPID do subskrypcji urządzenia
+      tags: [notifications]
+      x-permission: self:notifications
+      x-requirements: [FR-09.03]
+      responses:
+        '200': {description: 'Konfiguracja; null oznacza brak klucza. Bez cache.', content: {application/json: {schema: {type: object, required: [publicKey], properties: {publicKey: {type: [string, 'null']}}}}}}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
   /notifications/push-subscriptions:
     get:
       operationId: listPushSubscriptions
@@ -843,6 +854,8 @@ paths:
     post:
       operationId: createPushSubscription
       summary: Zarejestruj subskrypcję Web Push (po geście użytkownika)
+      parameters:
+        - {$ref: '#/components/parameters/IdempotencyKey'}
       description: Ten sam `endpoint` zarejestrowany ponownie aktualizuje klucze (upsert). Dozwolone wyłącznie hosty usług push przeglądarek (allowlista SSRF).
       tags: [notifications]
       x-permission: self:notifications
@@ -854,6 +867,8 @@ paths:
             schema: {$ref: '#/components/schemas/PushSubscriptionCreate'}
       responses:
         '201': {description: 'Zarejestrowano.', content: {application/json: {schema: {$ref: '#/components/schemas/PushSubscription'}}}}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
         '401': {$ref: '#/components/responses/Unauthenticated'}
         '403': {$ref: '#/components/responses/Forbidden'}
         '422': {$ref: '#/components/responses/ValidationFailed'}
@@ -4298,7 +4313,7 @@ components:
       required: [endpoint, keys]
       properties:
         endpoint: {type: string, format: uri, pattern: '^https://', maxLength: 1024}
-        expirationTime: {type: [number, 'null']}
+        expirationTime: {type: [number, 'null'], description: 'Milisekundy Unix; null lub brak oznacza nieznany termin.'}
         keys:
           type: object
           required: [p256dh, auth]
