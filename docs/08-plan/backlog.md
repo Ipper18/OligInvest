@@ -273,14 +273,15 @@ M4 zależy od M1 i M2, nie od M3.
 | BL-403 | Moduł `notifications`: kanały, ciche godziny, deduplikacja, limit e-mail 300/dobę, dziennik doręczeń | FR-05.06 | [ADR-010](../09-decyzje/ADR-010-kanaly-powiadomien.md), MOD | BL-402, BL-107 | 2,5 | w toku |
 | BL-404 | Moduł `alerts`: alerty cenowe (próg, zmiana %), ewaluacja po notowaniach i EOD, histereza, cooldown | FR-05.01 | MOD, OBL | BL-137, BL-403 | 3 | w toku |
 | BL-405 | Treści alertów bez kwot portfela i bez języka rekomendacji; szablony z testem języka | FR-05.07 | LAW, [ADR-010](../09-decyzje/ADR-010-kanaly-powiadomien.md) | BL-404 | 1 | w toku |
-| BL-406 | Ekrany alertów: lista, kreator z podglądem treści, historia wyzwoleń i doręczeń | FR-05.01, FR-05.06 | EKR | BL-404 | 2 | todo |
+| BL-406 | Ekrany alertów: lista, kreator z podglądem treści, historia wyzwoleń i doręczeń | FR-05.01, FR-05.06 | EKR | BL-404, BL-413 | 2 | todo |
 | BL-407 | Tokeny PAT: zakresy, ważność 90/365 dni, limity 30/min i 2 000/dobę, step-up, e-mail o nowej sieci, ekran tokenów | FR-07.07 | AUTH | BL-106 | 2,5 | w toku |
 | BL-408 | API szybkich akcji `/api/v1/quick/*` (tekst i JSON, pl-PL, < 300 ms) z `quick/alerts` | FR-09.04 | API, IOS | BL-407, BL-146, BL-404 | 2,5 | w toku |
-| BL-409 | Gotowe Skróty iOS (linki iCloud, pytania przy imporcie) i ekran `/ustawienia/integracje` | FR-09.05 | IOS, USR | BL-408 | 1,5 | todo |
+| BL-409 | Gotowe Skróty iOS (linki iCloud, pytania przy imporcie) i ekran `/ustawienia/integracje` | FR-09.05 | IOS, USR | BL-408, BL-413 | 1,5 | todo |
 | BL-410 | Konfiguracje HTTP Shortcuts (eksport bez tokenu) i instrukcja dla Androida | FR-09.06 | AND, USR | BL-408 | 1 | todo |
 | BL-411 | Linki głębokie w powiadomieniach i e-mailach; powrót do celu po logowaniu | FR-09.07 | MOB, EKR | BL-402 | 1 | todo |
 | BL-412 | Testy na urządzeniach (iOS 17 i 18, Android ≥ 12, Windows, macOS) z protokołem | FR-09.01, FR-09.03, FR-09.05, FR-09.06, FR-09.07, NFR-04.01 | MOB | BL-409, BL-410, BL-411 | 1,5 | todo |
-| | **Suma etapu** | | | | **23,5** | |
+| BL-413 | Redesign UI w języku „panele monochromatyczne”: tokeny i komponenty `packages/ui`, powłoka (dolny pasek, panel boczny, `LiveStatus`), Start, Pozycje i karta instrumentu wg [`projekt-b/`](../04-frontend/projekt-b/b-tokens.css); test kontrastu na trzech tłach, zrzuty wizualne, axe | NFR-06.01, NFR-06.02, FR-07.08 | UI, [ADR-017](../09-decyzje/ADR-017-jezyk-wizualny-panele.md) | BL-121, BL-401 | 4 | todo |
+| | **Suma etapu** | | | | **27,5** | |
 
 **Paczka backend M4, 2026-10-27:** BL-403/404/405 i backend BL-407/408 zaimplementowane, status `w toku` do CI i wspólnego DoD. Zależność BL-403 od transportu BL-402 odłożona przez właściciela: obecnie e-mail/fallback; Web Push, PWA, ekrany (w tym tokenów) i integracje urządzeń w kolejnej paczce. BL-401/402/406/409–412 pozostają `todo`. Odchylenie zakresu: jedna spójna paczka pięciu zadań na życzenie właściciela; estymata 11,5 dnia obejmuje też odłożony ekran PAT, brak wiarygodnego pomiaru rzeczywistego nakładu — nie szacujemy go z czasu kalendarzowego. Dowody i ograniczenia: [raport M4](m4-backend-session-report.md).
 
@@ -372,11 +373,11 @@ Poza planem etapów; estymacja orientacyjna. Przed startem każde zadanie przech
 | M1 MVP | 48 | 103 | brama A 86,5 d, brama B 16,5 d |
 | M2 Dane rynkowe, wskaźniki, onboarding | 16 | 29,5 |  |
 | M3 Wyniki historyczne i scenariusze | 19 | 38,5 |  |
-| M4 Alerty, PWA i Skróty | 12 | 23,5 |  |
+| M4 Alerty, PWA i Skróty | 13 | 27,5 | z BL-413 (redesign, 2026-10-29) |
 | M5a Admin, edukacja, rynek | 15 | 27 |  |
 | M5b Analizy zaawansowane, OAuth, offline | 17 | 39,5 |  |
 | M6 Hardening i dostępność | 12 | 17 |  |
-| **Razem M0–M6** | **174** | **329** | bez narzutu przeglądu (ok. +30 %) |
+| **Razem M0–M6** | **175** | **333** | bez narzutu przeglądu (ok. +30 %) |
 | Później | 8 | 18,5 | poza planem |
 
 **Pokrycie wymagań:** każde z 151 wymagań FR/NFR z [`../00-przeglad/wymagania.md`](../00-przeglad/wymagania.md) ma co najmniej jedno zadanie (sprawdzone skryptem 2026-09-19: brak wymagań bez zadania, brak zależności wstecz między etapami, M3 i M4 niezależne). Pełna macierz wymaganie → dokument → zadanie: [`../00-przeglad/macierz-pokrycia.md`](../00-przeglad/macierz-pokrycia.md).
