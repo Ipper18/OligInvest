@@ -24,7 +24,7 @@ Projekt powstał w Claude Design na podstawie briefu z twardymi zasadami: MiFID 
 
 Wybieramy **B**. Rozstrzyga kryterium czytelności dla codziennego użycia na telefonie i dla początkujących. Wszystkie twarde zasady pozostają spełnione: zakazy MiFID, disclaimery, świeżość danych, formaty, budżet JS i dostępność.
 
-Zmiany w [`../04-frontend/system-projektowy.md`](../04-frontend/system-projektowy.md) (§ 1 zasady 4, 5 i 7, § 2.1, § 2.4, § 3, § 4, § 6):
+Zmiany w [`../04-frontend/system-projektowy.md`](../04-frontend/system-projektowy.md) (§ 1 zasady 5–7, § 2.4, nowa § 2.5 z tokenami docelowymi, § 3, § 4, § 6; tabele § 2.1–2.2 zostają opisem kodu do BL-413, bo test `packages/ui/test/tokens.test.mjs` porównuje je z `tokens.css`):
 
 - treść leży na kartach `panel` z ramką 1 px `line` i promieniem 12 px; jeden cień tylko dla przycisku „+” i arkuszy;
 - akcent jest monochromatyczny: przycisk główny i linia wartości portfela w kolorze tekstu; kolory (zysk/strata, kategorie, ostrzeżenie) wyłącznie w danych;

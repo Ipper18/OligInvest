@@ -4,7 +4,7 @@
 
 Powiązane: [`architektura-ui.md`](architektura-ui.md), [`dostepnosc.md`](dostepnosc.md), [`mapa-ekranow.md`](mapa-ekranow.md), [ADR-009](../09-decyzje/ADR-009-wykresy.md), [ADR-017](../09-decyzje/ADR-017-jezyk-wizualny-panele.md), NFR-06.01–NFR-06.03, FR-07.08.
 
-**Od 2026-10-29 obowiązuje język wizualny „panele monochromatyczne” (kierunek B, [ADR-017](../09-decyzje/ADR-017-jezyk-wizualny-panele.md)).** Projekt referencyjny: [`projekt-b/`](projekt-b/b-tokens.css). Zawiera tokeny `b-tokens.css`, CSS komponentów `b.css` i statyczne artboardy: Start, Pozycje i karta instrumentu na telefon i komputer, stany Startu, motyw jasny, paletę dla daltonistów oraz arkusz kontrastów. Prefiks `--b-` w plikach referencyjnych odpowiada tokenom `--color-*` w `packages/ui`. Implementacja: BL-413.
+**Od 2026-10-29 obowiązuje język wizualny „panele monochromatyczne” (kierunek B, [ADR-017](../09-decyzje/ADR-017-jezyk-wizualny-panele.md)).** Projekt referencyjny: [`projekt-b/`](projekt-b/b-tokens.css). Zawiera tokeny `b-tokens.css`, CSS komponentów `b.css` i statyczne artboardy: Start, Pozycje i karta instrumentu na telefon i komputer, stany Startu, motyw jasny, paletę dla daltonistów oraz arkusz kontrastów. Prefiks `--b-` w plikach referencyjnych odpowiada tokenom `--color-*` w `packages/ui`. Zasady § 1, 3, 4 i 6 opisują stan docelowy; tabele § 2.1–2.2 opisują jeszcze kod, a tokeny docelowe są w § 2.5. Implementacja: BL-413.
 
 ## 1. Zasady
 
@@ -24,42 +24,34 @@ Kontrasty policzone wzorem WCAG 2.x (luminancja względna) 2026-09-22 względem 
 
 ### 2.1 Tokeny podstawowe
 
-Kontrast liczony względem `bg` i (po ukośniku) względem `panel` danego motywu (2026-10-29, [ADR-017](../09-decyzje/ADR-017-jezyk-wizualny-panele.md) § Weryfikacja). Tokeny tła nie mają progu.
+Tabele § 2.1–2.2 opisują tokeny zaimplementowane w `packages/ui/src/tokens.css` (test `packages/ui/test/tokens.test.mjs` porównuje je z kodem). Docelowe tokeny kierunku B są w § 2.5; BL-413 przenosi je do tych tabel razem ze zmianą kodu.
 
 | Token | Ciemny (domyślny) | Kontrast | Jasny | Kontrast | Użycie |
 |---|---|---|---|---|---|
-| `--color-bg` | `#0B0D0F` | — | `#F1F0EB` | — | tło strony |
-| `--color-panel` | `#161A1F` | — | `#FFFFFF` | — | karty z treścią, dolny pasek, panel boczny, arkusze |
-| `--color-panel-2` | `#1F252B` | — | `#F5F4EF` | — | tło wewnątrz karty: nagłówek tabeli, przełączniki, pole wyszukiwania, szkielet |
-| `--color-line` | `#262D34` | — | `#E2E1DA` | — | ramka kart i linie wierszy (dekoracyjne, bez progu) |
-| `--color-ink` | `#E8EAED` | 16,15 / 14,50 | `#14171A` | 15,77 / 17,99 | tekst podstawowy i liczby |
-| `--color-muted` | `#98A1AA` | 7,43 / 6,67 | `#5A6169` | 5,50 / 6,27 | etykiety, opisy, osie, wartości zerowe, „—” |
-| `--color-border` | `#7C848D` | 5,14 / 4,61 | `#6F7883` | 3,92 / 4,48 | granice pól formularzy i kontrolek (próg 3:1) |
-| `--color-primary` | `#E8EAED` | 16,15 / 14,50 | `#14171A` | 15,77 / 17,99 | przycisk główny, aktywny przełącznik, przycisk „+” |
-| `--color-on-primary` | `#0B0D0F` | 16,15 na `primary` | `#FFFFFF` | 17,99 na `primary` | tekst i ikona na `primary` |
-| `--color-series` | = `ink` | 16,15 / 14,50 | = `ink` | 15,77 / 17,99 | linia wartości portfela i krzywej kapitału |
-| `--color-focus` | `#5AA9FF` | 7,93 / 7,12 | `#0A5FB4` | 5,56 / 6,35 | obrys fokusu (2 px + odsunięcie 2 px) |
-| `--color-warning` | `#E3B341` | 10,00 / 8,98 | `#8A5A00` | 5,19 / 5,93 | dane nieaktualne, ostrzeżenia metodologiczne |
-| `--color-warning-bg` | `#2B2413` | `warning` 7,91 | `#FBF1DC` | `warning` 5,28 | tło plakietki „nieaktualne” i banera danych |
-| `--color-danger` | `#FF6B61` | 6,98 / 6,26 | `#C4302B` | 4,84 / 5,52 | błędy formularzy, akcje nieodwracalne |
+| `--color-bg` | `#0B0D0F` | — | `#FAFAF7` | — | tło strony i całej treści |
+| `--color-panel` | `#0F1215` | — | `#FFFFFF` | — | wyłącznie warstwy nad treścią: arkusze, okna, menu |
+| `--color-ink` | `#E8EAED` | 16,15 | `#14171A` | 17,21 | tekst podstawowy i liczby |
+| `--color-muted` | `#98A1AA` | 7,43 | `#5A6169` | 6,00 | etykiety, opisy, osie, wartości zerowe |
+| `--color-hairline` | `#22272C` | — | `#E3E2DB` | — | linie sekcji i wierszy (dekoracyjne, bez progu) |
+| `--color-border` | `#7C848D` | 5,14 | `#6F7883` | 4,28 | granice pól formularzy i kontrolek |
+| `--color-accent` | `#2AA198` | 6,16 | `#0E6E6E` | 5,78 | elementy interaktywne, linia wartości portfela |
+| `--color-focus` | `#5AA9FF` | 7,93 | `#0A5FB4` | 6,07 | obrys fokusu (2 px + odsunięcie 2 px) |
+| `--color-warning` | `#E3B341` | 10,00 | `#8A5A00` | 5,67 | dane nieaktualne, ostrzeżenia metodologiczne |
+| `--color-danger` | `#FF6B61` | 6,98 | `#C4302B` | 5,28 | błędy formularzy, akcje nieodwracalne |
 
-Na `panel-2` najniższy kontrast tekstu wynosi 5,54:1 (`danger`, ciemny). Token `--color-accent` (`#2AA198`/`#0E6E6E`) nie jest już używany w interfejsie; wartość zostaje jako kategoria 3 (§ 2.3).
+Na `panel` kontrasty nie są niższe niż na `bg` (motyw ciemny: tekst 15,59, etykiety 7,17).
 
 ### 2.2 Zysk i strata
 
-| Token | Ciemny | Kontrast `bg` / `panel` / tło plakietki | Jasny | Kontrast `bg` / `panel` / tło plakietki |
+| Token | Ciemny | Kontrast | Jasny | Kontrast |
 |---|---|---|---|---|
-| `--color-gain` | `#3FB950` | 7,66 / 6,88 / 6,27 | `#18783A` | 4,86 / 5,55 / 4,89 |
-| `--color-loss` | `#FF6B61` | 6,98 / 6,26 / 6,07 | `#C4302B` | 4,84 / 5,52 / 4,78 |
-| `--color-gain-bg` | `#12261A` | — | `#E7F4EA` | — |
-| `--color-loss-bg` | `#2C1715` | — | `#FCEBE9` | — |
-| `--color-gain` (daltoniści) | `#5AA9FF` | 7,93 / 7,12 / 6,55 | `#0A5FB4` | 5,56 / 6,35 / 5,43 |
-| `--color-loss` (daltoniści) | `#F0913F` | 8,18 / 7,35 / 6,77 | `#A84B00` | 5,01 / 5,72 / 5,03 |
-| `--color-gain-bg` (daltoniści) | `#13213A` | — | `#E6EEF9` | — |
-| `--color-loss-bg` (daltoniści) | `#2D1E10` | — | `#FBEEE4` | — |
-| `--color-flat` | = `--color-muted` | 7,43 | = `--color-muted` | 5,50 |
+| `--color-gain` | `#3FB950` | 7,66 | `#1A7F37` | 4,86 |
+| `--color-loss` | `#FF6B61` | 6,98 | `#C4302B` | 5,28 |
+| `--color-gain` (daltoniści) | `#5AA9FF` | 7,93 | `#0A5FB4` | 6,07 |
+| `--color-loss` (daltoniści) | `#F0913F` | 8,18 | `#A84B00` | 5,47 |
+| `--color-flat` | = `--color-muted` | 7,43 | = `--color-muted` | 6,00 |
 
-Paleta dla daltonistów przełącza się atrybutem `data-palette="colorblind"` na `<html>`; komponenty używają wyłącznie tokenów `gain`/`loss`/`flat` i ich teł `*-bg`. Zielony motywu jasnego zmieniono z `#1A7F37` na `#18783A` (ADR-017): na jaśniejszym tle `#F1F0EB` stary dawał 4,45:1.
+Paleta dla daltonistów przełącza się atrybutem `data-palette="colorblind"` na `<html>`; komponenty używają wyłącznie tokenów `gain`/`loss`/`flat`.
 
 ### 2.3 Kategorie (alokacja, porównania serii)
 
@@ -91,6 +83,49 @@ Maks. 7 kategorii + „pozostałe”; segmenty wykresów rozdzielone 1 px tła; 
 | Benchmark | linia przerywana kategorii 2 |
 
 Zasady ogólne: wykres słupkowy zawsze od zera; wykresy wartości bez zera na osi Y rysowane jako linia, nie obszar; podpisy osi i jednostki zawsze widoczne; źródło i czas danych pod wykresem (`<DataFreshness/>`); brak legendy, gdy wystarczają etykiety bezpośrednie; siatka to najwyżej 2–4 linie poziome w kolorze `line`.
+
+### 2.5 Tokeny docelowe kierunku B (BL-413)
+
+Nazwy bez prefiksu odpowiadają zmiennym `--color-*` w `packages/ui` i `--b-*` w [`projekt-b/b-tokens.css`](projekt-b/b-tokens.css). Do czasu BL-413 obowiązują w nowych projektach ekranów, nie w kodzie.
+
+#### Tokeny podstawowe
+
+Kontrast liczony względem `bg` i (po ukośniku) względem `panel` danego motywu (2026-10-29, [ADR-017](../09-decyzje/ADR-017-jezyk-wizualny-panele.md) § Weryfikacja). Tokeny tła nie mają progu.
+
+| Token | Ciemny (domyślny) | Kontrast | Jasny | Kontrast | Użycie |
+|---|---|---|---|---|---|
+| `bg` | `#0B0D0F` | — | `#F1F0EB` | — | tło strony |
+| `panel` | `#161A1F` | — | `#FFFFFF` | — | karty z treścią, dolny pasek, panel boczny, arkusze |
+| `panel-2` | `#1F252B` | — | `#F5F4EF` | — | tło wewnątrz karty: nagłówek tabeli, przełączniki, pole wyszukiwania, szkielet |
+| `line` | `#262D34` | — | `#E2E1DA` | — | ramka kart i linie wierszy (dekoracyjne, bez progu) |
+| `ink` | `#E8EAED` | 16,15 / 14,50 | `#14171A` | 15,77 / 17,99 | tekst podstawowy i liczby |
+| `muted` | `#98A1AA` | 7,43 / 6,67 | `#5A6169` | 5,50 / 6,27 | etykiety, opisy, osie, wartości zerowe, „—” |
+| `border` | `#7C848D` | 5,14 / 4,61 | `#6F7883` | 3,92 / 4,48 | granice pól formularzy i kontrolek (próg 3:1) |
+| `primary` | `#E8EAED` | 16,15 / 14,50 | `#14171A` | 15,77 / 17,99 | przycisk główny, aktywny przełącznik, przycisk „+” |
+| `on-primary` | `#0B0D0F` | 16,15 na `primary` | `#FFFFFF` | 17,99 na `primary` | tekst i ikona na `primary` |
+| `series` | = `ink` | 16,15 / 14,50 | = `ink` | 15,77 / 17,99 | linia wartości portfela i krzywej kapitału |
+| `focus` | `#5AA9FF` | 7,93 / 7,12 | `#0A5FB4` | 5,56 / 6,35 | obrys fokusu (2 px + odsunięcie 2 px) |
+| `warning` | `#E3B341` | 10,00 / 8,98 | `#8A5A00` | 5,19 / 5,93 | dane nieaktualne, ostrzeżenia metodologiczne |
+| `warning-bg` | `#2B2413` | `warning` 7,91 | `#FBF1DC` | `warning` 5,28 | tło plakietki „nieaktualne” i banera danych |
+| `danger` | `#FF6B61` | 6,98 / 6,26 | `#C4302B` | 4,84 / 5,52 | błędy formularzy, akcje nieodwracalne |
+
+Na `panel-2` najniższy kontrast tekstu wynosi 5,54:1 (`danger`, ciemny). Token `accent` (`#2AA198`/`#0E6E6E`) nie jest już używany w interfejsie; wartość zostaje jako kategoria 3 (§ 2.3).
+
+#### Zysk i strata
+
+| Token | Ciemny | Kontrast `bg` / `panel` / tło plakietki | Jasny | Kontrast `bg` / `panel` / tło plakietki |
+|---|---|---|---|---|
+| `gain` | `#3FB950` | 7,66 / 6,88 / 6,27 | `#18783A` | 4,86 / 5,55 / 4,89 |
+| `loss` | `#FF6B61` | 6,98 / 6,26 / 6,07 | `#C4302B` | 4,84 / 5,52 / 4,78 |
+| `gain-bg` | `#12261A` | — | `#E7F4EA` | — |
+| `loss-bg` | `#2C1715` | — | `#FCEBE9` | — |
+| `gain` (daltoniści) | `#5AA9FF` | 7,93 / 7,12 / 6,55 | `#0A5FB4` | 5,56 / 6,35 / 5,43 |
+| `loss` (daltoniści) | `#F0913F` | 8,18 / 7,35 / 6,77 | `#A84B00` | 5,01 / 5,72 / 5,03 |
+| `gain-bg` (daltoniści) | `#13213A` | — | `#E6EEF9` | — |
+| `loss-bg` (daltoniści) | `#2D1E10` | — | `#FBEEE4` | — |
+| `flat` | = `muted` | 7,43 | = `muted` | 5,50 |
+
+Paleta dla daltonistów przełącza się atrybutem `data-palette="colorblind"` na `<html>`; komponenty używają wyłącznie tokenów `gain`/`loss`/`flat` i ich teł `*-bg`. Zielony motywu jasnego zmieniono z `#1A7F37` na `#18783A` (ADR-017): na jaśniejszym tle `#F1F0EB` stary dawał 4,45:1.
 
 ## 3. Typografia
 
