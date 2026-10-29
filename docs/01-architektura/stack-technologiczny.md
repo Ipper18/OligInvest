@@ -69,7 +69,7 @@ Przygotowane manifesty (BL-001, 2026-09-20) używają dokładnych wersji z [inwe
 | `@types/pg` | 8.23.1 | MIT | Deklaracje sterownika `pg` dla typowanych pul i transakcji RLS |
 | `ioredis` | 6.0.0 | MIT | Sterownik Valkey dla BullMQ 6.3 (opcjonalny peer, wymagany przez wybrany backend Redis), sesji/flag w API oraz limitów i cache w `packages/data-providers` (BL-131); tylko backend, bez zależności web/Pythona. Kwoty i breaker w trwałym `valkey-queue`, cache w `valkey-cache`; stałe skrypty Lua z argumentami i kontrolą właściciela blokady. Publikacja 2026-07-31, sprawdzone 2026-09-28 w [rejestrze npm](https://registry.npmjs.org/ioredis/6.0.0) |
 | `@vitest/coverage-v8` | 5.0.1 | MIT | Provider pokrycia Vitest tej samej wersji, potrzebny do bramki pokrycia `core` |
-| `setuptools` | 84.0.0 | MIT | Backend budowania minimalnego pakietu Python (BL-002); przypięty w build-system i grupie dev, już uwzględniony w audycie; build bez izolowanego pobierania zależności |
+| `setuptools` | 84.2.1 | MIT | Backend budowania minimalnego pakietu Python (BL-002); 84.2.1 od 2026-10-29 (GHSA-xmj3-9gf7-h52w, poprawka od 84.1.0; [PyPI](https://pypi.org/project/setuptools/84.2.1/), publikacja 2026-10-20, zweryfikowano 2026-10-29); przypięty w build-system i grupie dev, już uwzględniony w audycie; build bez izolowanego pobierania zależności |
 | `@tailwindcss/postcss` | 4.3.3 | MIT | Oficjalny adapter Tailwind 4 dla potoku CSS Next.js |
 | `size-limit`, `@size-limit/esbuild`, `@size-limit/file` | 14.0.0 | MIT | BL-016: bundlowanie współdzielonych wejść i kontrola gzip; tylko narzędzia deweloperskie web |
 | `esbuild` | 0.28.2 | MIT | BL-033: powtarzalne pomiary Zod i natywnych prymitywów UI; ta sama zatwierdzona wersja co w potoku testowym |
