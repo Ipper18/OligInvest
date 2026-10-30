@@ -18,16 +18,16 @@ export function PushSettings({ publicKey }: { publicKey: string | null }) {
       matchMedia("(display-mode: standalone)").matches ||
       (navigator as Navigator & { standalone?: boolean }).standalone;
     setInstall(Boolean(ios && !standalone));
-    setAvailable(
-      Boolean(
-        publicKey &&
-          "serviceWorker" in navigator &&
-          "PushManager" in window &&
-          "Notification" in window &&
-          (!ios || standalone),
-      ),
+    const supported = Boolean(
+      publicKey &&
+        "serviceWorker" in navigator &&
+        "PushManager" in window &&
+        "Notification" in window &&
+        (!ios || standalone),
     );
-    if ("serviceWorker" in navigator)
+    setAvailable(supported);
+    // Do not invoke native push APIs when push is unconfigured or unsupported.
+    if (supported)
       void navigator.serviceWorker
         .getRegistration()
         .then((r) => r?.pushManager?.getSubscription())

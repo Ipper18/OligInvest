@@ -168,6 +168,7 @@ test("public legal and auth pages have no axe violations; fragments are removed"
 test("logout waits for cookie removal before navigation and notifies other tabs afterwards", async ({
   page,
   context,
+  request,
 }) => {
   await session(context, "logout-race");
   await page.goto("/ustawienia");
@@ -175,28 +176,21 @@ test("logout waits for cookie removal before navigation and notifies other tabs 
   const other = await context.newPage();
   await other.goto("/");
   await expect(other.getByText("Aktualizacje na żywo", { exact: true })).toBeVisible();
-  let release!: () => void;
-  const responseGate = new Promise<void>((resolve) => {
-    release = resolve;
-  });
-  let received!: () => void;
-  const requestArrived = new Promise<void>((resolve) => {
-    received = resolve;
-  });
-  await page.route("**/auth/action", async (route) => {
-    if (route.request().method() !== "POST") return route.continue();
-    received();
-    await responseGate;
-    await route.continue();
-  });
+  const sessionCookie = (await context.cookies()).find(
+    (cookie) => cookie.name === "__Host-oliginvest.session_token",
+  )!;
+  const gate = `http://127.0.0.1:3198/logout-gates/${sessionCookie.value}`;
+  // Gate the fixture API rather than browser routing, keeping service workers enabled.
+  expect((await request.post(gate)).ok()).toBe(true);
   try {
     await page.getByRole("button", { name: "Wyloguj się" }).click();
-    await requestArrived;
+    await expect.poll(async () => (await (await request.get(gate)).json()).arrived).toBe(true);
     await expect(page.locator(".oi-shell")).toHaveCount(0);
     await expect(page).toHaveURL("/ustawienia");
+    expect(await context.cookies()).toContainEqual(sessionCookie);
     await expect(other.getByRole("button", { name: "Wyloguj się" })).toBeVisible();
   } finally {
-    release();
+    await request.delete(gate);
   }
   await expect(page).toHaveURL("/logowanie");
   await expect(other).toHaveURL("/logowanie");

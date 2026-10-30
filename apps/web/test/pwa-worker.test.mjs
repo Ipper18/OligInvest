@@ -40,7 +40,11 @@ function harness() {
     },
     skipWaiting: vi.fn(),
     clients: { claim: vi.fn(), matchAll: async () => [window], openWindow: vi.fn() },
-    registration: { showNotification: vi.fn(), getNotifications: async () => [] },
+    registration: {
+      showNotification: vi.fn(),
+      getNotifications: async () => [],
+      pushManager: { getSubscription: vi.fn(async () => ({ unsubscribe: vi.fn() })) },
+    },
   };
   const fetch = vi.fn(async () => new Response("public", { status: 200 }));
   class LocalRequest extends Request {
@@ -91,16 +95,36 @@ describe("PWA cache and notifications", () => {
     expect(keys.some((key) => key.includes("portfel") || key.includes("/api/"))).toBe(false);
     h.fetch.mockRejectedValue(new Error("OFFLINE"));
     expect(await (await fetch("/portfel", "navigate")).text()).toBe("public");
-    await expect(fetch("/api/v1/me")).rejects.toThrow("OFFLINE");
+    expect(await fetch("/api/v1/me")).toBeUndefined();
   });
-  it("clears private cache on 401 and informs every window", async () => {
+  it.each([
+    "/api/v1/me",
+    "/api/v1/stream",
+    "/api/v1/stream/connections/synthetic/instruments",
+    "/auth/action",
+  ])("does not intercept API/auth, including mutations: %s", async (path) => {
+    const h = harness();
+    for (const method of ["GET", "POST", "PUT", "DELETE"])
+      expect(
+        await h.event("fetch", { request: { url: h.origin + path, method, mode: "navigate" } }),
+      ).toBeUndefined();
+    expect(h.fetch).not.toHaveBeenCalled();
+  });
+  it("clears private state on message and unsubscribes only on explicit logout", async () => {
     const h = harness();
     await h.event("install");
     await h.caches.open("private-test");
-    h.fetch.mockResolvedValue(new Response(null, { status: 401 }));
-    await h.event("fetch", { request: { url: h.origin + "/api/v1/me", method: "GET" } });
+    await h.event("message", { source: h.window, data: { type: "CLEAR_PRIVATE" } });
     expect(await h.caches.keys()).not.toContain("private-test");
-    expect(h.window.postMessage).toHaveBeenCalledWith({ type: "UNAUTHORIZED" });
+    expect(h.self.registration.pushManager.getSubscription).not.toHaveBeenCalled();
+    await h.event("message", {
+      source: h.window,
+      data: { type: "CLEAR_PRIVATE", unsubscribePush: true },
+    });
+    expect(h.self.registration.pushManager.getSubscription).toHaveBeenCalledOnce();
+    const subscription =
+      await h.self.registration.pushManager.getSubscription.mock.results[0].value;
+    expect(subscription.unsubscribe).toHaveBeenCalledOnce();
   });
   it("waits for an explicit update message", async () => {
     const h = harness();

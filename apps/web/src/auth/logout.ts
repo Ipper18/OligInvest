@@ -14,7 +14,7 @@ export function onLogout(listener: () => void) {
     listeners.delete(listener);
   };
 }
-export async function clearPrivateState(broadcast = true) {
+export async function clearPrivateState({ broadcast = false, unsubscribePush = false } = {}) {
   for (const listener of listeners) listener();
   if (broadcast && typeof BroadcastChannel !== "undefined") {
     const channel = new BroadcastChannel("oliginvest-session");
@@ -30,14 +30,13 @@ export async function clearPrivateState(broadcast = true) {
   if ("indexedDB" in window && indexedDB.databases)
     for (const db of await indexedDB.databases()) if (db.name) indexedDB.deleteDatabase(db.name);
   if ("serviceWorker" in navigator) {
-    await navigator.serviceWorker
-      .getRegistration()
-      .then(async (registration) => {
-        registration?.active?.postMessage({ type: "CLEAR_PRIVATE" });
-        await registration?.pushManager
-          ?.getSubscription()
-          .then((subscription) => subscription?.unsubscribe());
-      })
-      .catch(() => {});
+    // Cleanup may outlive the page. Never make navigation wait for the worker or push service.
+    const message = { type: "CLEAR_PRIVATE", unsubscribePush };
+    if (navigator.serviceWorker.controller) navigator.serviceWorker.controller.postMessage(message);
+    else
+      void navigator.serviceWorker
+        .getRegistration()
+        .then((registration) => registration?.active?.postMessage(message))
+        .catch(() => {});
   }
 }

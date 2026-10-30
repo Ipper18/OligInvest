@@ -90,12 +90,12 @@ export function Providers({
       });
       router.refresh();
     };
-    const logout = () => {
+    const logout = (unsubscribePush = false) => {
       setLeaving(true);
       disposed = true;
       stream.current?.stop();
       client.clear();
-      void clearPrivateState(false).finally(() => {
+      void clearPrivateState({ unsubscribePush }).finally(() => {
         location.replace("/logowanie");
       });
     };
@@ -105,7 +105,7 @@ export function Providers({
       stream.current?.stop();
       client.clear();
     });
-    const unsubscribeRemote = onRemoteLogout(logout);
+    const unsubscribeRemote = onRemoteLogout(() => logout(true));
     // Validation is loaded outside the initial shell bundle; no Zod runtime in initial JS.
     void import("@oliginvest/contracts/realtime/browser")
       .then(({ realtimeSchemas }) => {
@@ -200,9 +200,9 @@ export function Providers({
             </Button>
             <Button
               onClick={async () => {
-                await clearPrivateState(false);
-                await submitAction("signOut", {});
                 await clearPrivateState();
+                await submitAction("signOut", {});
+                await clearPrivateState({ broadcast: true, unsubscribePush: true });
                 location.replace("/logowanie");
               }}
             >

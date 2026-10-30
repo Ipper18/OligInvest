@@ -73,6 +73,8 @@ Powiązane: [`model-zagrozen.md`](model-zagrozen.md), [`uwierzytelnianie-autoryz
 | `Clear-Site-Data` | `"cache", "cookies", "storage"` przy wylogowaniu | `api` |
 | `Server`, `X-Powered-By` | usunięte (`-Server` w Caddy, `poweredByHeader: false` w Next.js) | Caddy / `web` |
 
+Decyzja właściciela dla BL-401/402 (2026-10-29): 401/wygaśnięcie sesji czyści lokalny stan prywatny, ale **nie rezygnuje z subskrypcji push**. Unsubscribe następuje wyłącznie po jawnym wylogowaniu (po usunięciu cookies) i przy powiadomieniu o wylogowaniu z innej karty. Operacje SW/PushManager są best effort poza ścieżką oczekiwania na nawigację; worker utrzymuje rozpoczęte czyszczenie przez `waitUntil`. SW nie obsługuje fetchów `/api` ani `/auth` (również nie przez pass-through), a obsługa 401 należy do klientów SSE/push-settings. Brak prywatnego cache i poluzowania nagłówków. Regresja WebKit w PR #45 wynikała z `respondWith(fetch(request))` dla API oraz oczekiwania na SW/push podczas wylogowania; nie jest R-41.
+
 ### 2.3 Content Security Policy
 
 ```text

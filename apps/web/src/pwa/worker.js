@@ -13,7 +13,7 @@ const payloadSchema = z
   .strict();
 const messageSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("ACTIVATE_UPDATE") }).strict(),
-  z.object({ type: z.literal("CLEAR_PRIVATE") }).strict(),
+  z.object({ type: z.literal("CLEAR_PRIVATE"), unsubscribePush: z.boolean().optional() }).strict(),
   z
     .object({ type: z.literal("CACHE_STATIC"), urls: z.array(z.string().max(2048)).max(100) })
     .strict(),
@@ -85,6 +85,11 @@ self.addEventListener("message", (event) => {
             .map((key) => caches.delete(key)),
         );
         for (const notification of await self.registration.getNotifications()) notification.close();
+        if (data.unsubscribePush)
+          await self.registration.pushManager
+            .getSubscription()
+            .then((subscription) => subscription?.unsubscribe())
+            .catch(() => {});
       })(),
     );
 });
@@ -92,26 +97,8 @@ self.addEventListener("fetch", (event) => {
   const request = event.request,
     url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
-  // Auth actions and the SSE transport already perform their own session cleanup.
-  if (url.pathname.startsWith("/auth/") || url.pathname === "/api/v1/stream") return;
-  if (url.pathname.startsWith("/api/")) {
-    event.respondWith(
-      (async () => {
-        const response = await fetch(request);
-        if (response.status === 401) {
-          await Promise.all(
-            (await caches.keys())
-              .filter((key) => !key.startsWith("oliginvest-static-"))
-              .map((key) => caches.delete(key)),
-          );
-          for (const client of await self.clients.matchAll({ type: "window" }))
-            client.postMessage({ type: "UNAUTHORIZED" });
-        }
-        return response;
-      })(),
-    );
-    return;
-  }
+  // Leave API/auth to the browser; even a fetch pass-through can stall WebKit requests.
+  if (/^\/(api|auth)(\/|$)/.test(url.pathname)) return;
   if (request.method !== "GET") return;
   if (request.mode === "navigate") {
     event.respondWith(

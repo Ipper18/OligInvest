@@ -1,9 +1,6 @@
 "use client";
-import { safeReturnTo } from "@oliginvest/contracts/navigation";
-
 import { pwaMessages } from "@oliginvest/i18n";
 import { useEffect, useState } from "react";
-import { clearPrivateState } from "../auth/logout";
 export function PwaRegistration() {
   const [waiting, setWaiting] = useState<ServiceWorker | null>(null);
   useEffect(() => {
@@ -23,19 +20,10 @@ export function PwaRegistration() {
           .map((entry) => entry.name)
           .slice(0, 100),
       });
-    const unauthorized = (event: MessageEvent) => {
-      if (event.data?.type === "UNAUTHORIZED")
-        void clearPrivateState().finally(() =>
-          location.replace(
-            `/logowanie?${new URLSearchParams({ returnTo: safeReturnTo(location.pathname + location.search) })}`,
-          ),
-        );
-    };
     const refresh = () => {
       if (document.visibilityState === "visible") void registration?.update().catch(() => {});
     };
     navigator.serviceWorker.addEventListener("controllerchange", precache);
-    navigator.serviceWorker.addEventListener("message", unauthorized);
     document.addEventListener("visibilitychange", refresh);
     void navigator.serviceWorker
       .register("/sw.js", { scope: "/", updateViaCache: "none" })
@@ -51,7 +39,6 @@ export function PwaRegistration() {
       disposed = true;
       registration?.removeEventListener("updatefound", found);
       navigator.serviceWorker.removeEventListener("controllerchange", precache);
-      navigator.serviceWorker.removeEventListener("message", unauthorized);
       document.removeEventListener("visibilitychange", refresh);
     };
   }, []);
