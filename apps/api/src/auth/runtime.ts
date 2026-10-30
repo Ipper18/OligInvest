@@ -110,6 +110,16 @@ export function createAuthRuntime(
       },
     },
     state: new RedisAuthState(state),
+    pushPublicKey: config.VAPID_PUBLIC_KEY,
+    pushTest: async (id, payload) => {
+      await queue("notify").add("notifications.deliver", notificationJobSchema.parse(payload), {
+        jobId: id,
+        attempts: 3,
+        backoff: { type: "exponential", delay: 1000 },
+        removeOnComplete: { age: 86400 },
+        removeOnFail: { age: 86400 },
+      });
+    },
     patMail: async (id, payload, delay) => {
       await queue("notify").add("notifications.deliver", notificationJobSchema.parse(payload), {
         jobId: id,

@@ -3,7 +3,7 @@ import { fetchLocalFixture, startPerformanceProxy } from "./performance-tls.mjs"
 
 export { fixtureCookie };
 
-import { spawn } from "node:child_process";
+import { execFileSync, spawn } from "node:child_process";
 import { appendFileSync, closeSync, openSync, readFileSync } from "node:fs";
 import { createServer } from "node:http";
 import { resolve } from "node:path";
@@ -43,7 +43,10 @@ export async function withPerformanceServer(run) {
   const port = reservation.address().port;
   await new Promise((accept) => reservation.close(accept));
   const origin = `http://127.0.0.1:${port}`;
-  const log = openSync(resolve(webDirectory, "../../.git/bl016-next.log"), "a");
+  const log = openSync(
+    execFileSync("git", ["rev-parse", "--git-path", "bl016-next.log"], { encoding: "utf8" }).trim(),
+    "a",
+  );
   const child = spawn(
     process.execPath,
     ["node_modules/next/dist/bin/next", "start", "--hostname", "127.0.0.1", "--port", String(port)],

@@ -1,4 +1,4 @@
-import { spawnSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import { randomBytes } from "node:crypto";
 import { appendFileSync, mkdirSync } from "node:fs";
 import { createServer } from "node:net";
@@ -13,7 +13,13 @@ export function run(
   args,
   { env = process.env, input, log = "development.log", cwd = repository, timeout = 180000 } = {},
 ) {
-  const output = resolve(repository, ".git", "m0-workers");
+  const output = resolve(
+    repository,
+    execFileSync("git", ["rev-parse", "--git-path", "m0-workers"], {
+      cwd: repository,
+      encoding: "utf8",
+    }).trim(),
+  );
   mkdirSync(output, { recursive: true });
   const result = spawnSync(command, args, {
     cwd,

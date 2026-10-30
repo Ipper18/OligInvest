@@ -182,6 +182,7 @@ export class PatService {
             time: token.expiresAt,
             url: new URL("/ustawienia/tokeny", this.service.options.configuration.origin).href,
           }),
+          url: "/ustawienia/tokeny",
           occurredAt: new Date().toISOString(),
         },
         Math.max(0, Date.parse(token.expiresAt) - Date.now() - 7 * 86400_000),

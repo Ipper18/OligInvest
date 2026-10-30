@@ -314,8 +314,8 @@ Poniższa **jedyna tabela wykonawcza** jest źródłem macierzy sekret → odbio
 | Usługa | UID | GID | Sekrety wymagane | Sekrety opcjonalne |
 |---|---|---|---|---|
 | web | 1000 | 1000 | — | — |
-| api | 10002 | 10002 | BETTER_AUTH_SECRETS, AUDIT_PSEUDONYM_KEY, DB_AUTH_PASSWORD, DB_APP_PASSWORD, VALKEY_QUEUE_API_PASSWORD, VALKEY_CACHE_API_PASSWORD | GOOGLE_CLIENT_SECRET, GITHUB_CLIENT_SECRET |
-| jobs | 10003 | 10003 | AUDIT_PSEUDONYM_KEY, DB_APP_PASSWORD, VALKEY_QUEUE_JOBS_PASSWORD, VALKEY_CACHE_JOBS_PASSWORD | SMTP_USER, SMTP_PASSWORD, VAPID_PRIVATE_KEY, FINNHUB_API_KEY, TWELVEDATA_API_KEY, ALPHAVANTAGE_API_KEY, FRED_API_KEY, MARKETAUX_API_KEY |
+| api | 10002 | 10002 | BETTER_AUTH_SECRETS, AUDIT_PSEUDONYM_KEY, DB_AUTH_PASSWORD, DB_APP_PASSWORD, VALKEY_QUEUE_API_PASSWORD, VALKEY_CACHE_API_PASSWORD | GOOGLE_CLIENT_SECRET, GITHUB_CLIENT_SECRET, VAPID_PUBLIC_KEY |
+| jobs | 10003 | 10003 | AUDIT_PSEUDONYM_KEY, DB_APP_PASSWORD, VALKEY_QUEUE_JOBS_PASSWORD, VALKEY_CACHE_JOBS_PASSWORD | SMTP_USER, SMTP_PASSWORD, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, FINNHUB_API_KEY, TWELVEDATA_API_KEY, ALPHAVANTAGE_API_KEY, FRED_API_KEY, MARKETAUX_API_KEY |
 | analytics | 10001 | 10001 | DB_ANALYTICS_RO_PASSWORD, VALKEY_QUEUE_ANALYTICS_PASSWORD | — |
 | postgres | 999 | 999 | DB_POSTGRES_PASSWORD, DB_OWNER_PASSWORD, DB_AUTH_PASSWORD, DB_APP_PASSWORD, DB_ANALYTICS_RO_PASSWORD, DB_BACKUP_PASSWORD, PGBACKREST_REPO1_CIPHER_PASS | — |
 | migrate | 10004 | 10004 | DB_OWNER_PASSWORD | — |
@@ -404,3 +404,7 @@ M1-3, 2026-10-11: obraz bazowy `caddy:2.11.7` (przypięty digestem), a binarium 
 M0-3: [sieć i hardening BL-024/025](m0-3-network-runbook.md), [DNS i migracja BL-026/027](m0-3-dns-immich-runbook.md). Szablony zawierają wyłącznie znaczniki; właściciel dostarcza dowody wykonania.
 
 BL-028/029: [kopie, timery, Kuma i próby alarmów](m0-3-backup-monitoring-runbook.md). Produkcyjny override storage przenosi repozytorium pgBackRest na HDD; bez niego domyślny wolumen Dockera nie dowodzi rozdzielenia nośników. Operacje hosta odrzucają wolumeny niepowiązane z oczekiwanymi źródłami.
+
+### Web Push — BL-402
+
+Oba klucze VAPID dostarczane przez pliki: `VAPID_PUBLIC_KEY_FILE` dla api i jobs, `VAPID_PRIVATE_KEY_FILE` tylko dla jobs. W `.env.example` wyłącznie puste wpisy. Właściciel generuje parę poleceniem zatwierdzonej biblioteki `web-push generate-vapid-keys` w bezpiecznej sesji poza repozytorium i zapisuje wyniki bezpośrednio w magazynie sekretów; kluczy nie wkleja do logów ani PR. Subject VAPID korzysta z istniejącego `PUBLIC_BASE_URL`. Konfigurację wdraża się parami na api/jobs; zmiana kluczy wymaga ponownej subskrypcji. Brak konfiguracji zachowuje fallback e-mail.

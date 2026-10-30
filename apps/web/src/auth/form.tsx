@@ -375,6 +375,7 @@ export function AuthForm({
             setEnabled(null);
             await clearPrivateState();
             await submitAction("signOut", {});
+            await clearPrivateState({ broadcast: true, unsubscribePush: true });
             location.replace("/logowanie");
           }}
         >

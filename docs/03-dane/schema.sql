@@ -362,7 +362,9 @@ CREATE TABLE notifications.push_subscriptions (
   user_agent       text,
   created_at       timestamptz NOT NULL DEFAULT now(),
   last_success_at  timestamptz,
-  failure_count    integer     NOT NULL DEFAULT 0
+  failure_count    integer     NOT NULL DEFAULT 0,
+  device_label     text,
+  expires_at       timestamptz
 );
 CREATE INDEX push_subscriptions_user_idx ON notifications.push_subscriptions (user_id);
 

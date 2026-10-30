@@ -67,7 +67,7 @@ test("invalid preferences fall back to the default in the initial HTML", async (
 
 test("system fonts, readable controls and keyboard focus work at mobile and desktop widths", async ({
   page,
-}) => {
+}, testInfo) => {
   for (const width of [360, 768, 1280]) {
     await page.setViewportSize({ width, height: 800 });
     await page.goto("/ui-preview/bootstrap");
@@ -86,7 +86,7 @@ test("system fonts, readable controls and keyboard focus work at mobile and desk
   }
   await page.emulateMedia({ reducedMotion: "reduce" });
   await expect(page.locator("select").first()).toHaveCSS("transition-duration", "0s");
-  await page.screenshot({ path: "../../.git/bl011-dark.png", fullPage: true });
+  await page.screenshot({ path: testInfo.outputPath("bl011-dark.png"), fullPage: true });
   await page.getByLabel("Motyw", { exact: true }).selectOption("light");
-  await page.screenshot({ path: "../../.git/bl011-light.png", fullPage: true });
+  await page.screenshot({ path: testInfo.outputPath("bl011-light.png"), fullPage: true });
 });

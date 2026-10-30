@@ -23,7 +23,9 @@ export function proxyDestination(path, nextOrigin, apiOrigin) {
   };
 }
 export async function startPerformanceProxy(nextOrigin, apiOrigin) {
-  const directory = mkdtempSync(fileURLToPath(new URL("../../../.git/perf-tls-", import.meta.url)));
+  const directory = mkdtempSync(
+    execFileSync("git", ["rev-parse", "--git-path", "perf-tls-"], { encoding: "utf8" }).trim(),
+  );
   const key = join(directory, "key.pem"),
     cert = join(directory, "cert.pem");
   let credentials;

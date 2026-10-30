@@ -94,7 +94,13 @@
         "$TURBO_ROOT$/modules/*/src/ui-module.ts",
         "$TURBO_ROOT$/scripts/generate-ui-registry.mjs"
       ],
-      "outputs": [".next/**", "!.next/cache/**", "src/appearance/inline-css.json"]
+      "outputs": [
+        ".next/**",
+        "!.next/cache/**",
+        "src/appearance/inline-css.json",
+        "public/**",
+        "src/pwa/offline-page.json"
+      ]
     }
   }
 }

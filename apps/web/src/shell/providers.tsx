@@ -1,4 +1,5 @@
 "use client";
+
 import { appMessages } from "@oliginvest/i18n";
 import { AppShell, Button } from "@oliginvest/ui";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -8,6 +9,7 @@ import type { Me } from "../api/validation";
 import { submitAction } from "../auth/actions";
 import { clearPrivateState, onLogout, onRemoteLogout } from "../auth/logout";
 import { updateImportCache, updatePortfolioCache } from "../portfolio/stream-cache";
+import { PwaLoader } from "../pwa/loader";
 import { connectStream, type StreamState } from "../sse/transport";
 import { connectionStatus } from "./connection-status";
 import { Navigation } from "./navigation";
@@ -88,12 +90,12 @@ export function Providers({
       });
       router.refresh();
     };
-    const logout = () => {
+    const logout = (unsubscribePush = false) => {
       setLeaving(true);
       disposed = true;
       stream.current?.stop();
       client.clear();
-      void clearPrivateState(false).finally(() => {
+      void clearPrivateState({ unsubscribePush }).finally(() => {
         location.replace("/logowanie");
       });
     };
@@ -103,7 +105,7 @@ export function Providers({
       stream.current?.stop();
       client.clear();
     });
-    const unsubscribeRemote = onRemoteLogout(logout);
+    const unsubscribeRemote = onRemoteLogout(() => logout(true));
     // Validation is loaded outside the initial shell bundle; no Zod runtime in initial JS.
     void import("@oliginvest/contracts/realtime/browser")
       .then(({ realtimeSchemas }) => {
@@ -198,9 +200,9 @@ export function Providers({
             </Button>
             <Button
               onClick={async () => {
-                await clearPrivateState(false);
-                await submitAction("signOut", {});
                 await clearPrivateState();
+                await submitAction("signOut", {});
+                await clearPrivateState({ broadcast: true, unsubscribePush: true });
                 location.replace("/logowanie");
               }}
             >
@@ -209,6 +211,7 @@ export function Providers({
           </div>
         }
       >
+        <PwaLoader />
         {children}
       </AppShell>
     </QueryClientProvider>
