@@ -35,3 +35,24 @@ export const deliveryPageSchema = object({ data: z.array(deliverySchema), page: 
   "NotificationDeliveryPage",
 );
 export type NotificationPreferences = z.infer<typeof preferencesSchema>;
+
+export const pushCreateSchema = object({
+  endpoint: z
+    .url()
+    .regex(/^https:\/\//)
+    .max(1024)
+    .openapi({ format: "uri", pattern: "^https://" }),
+  expirationTime: z.number().nullable().optional(),
+  keys: object({ p256dh: z.string().max(200), auth: z.string().max(100) }),
+  deviceLabel: z.string().max(60).optional(),
+}).openapi("PushSubscriptionCreate");
+export const pushSubscriptionSchema = object({
+  id: z.uuid(),
+  deviceLabel: z.string().optional(),
+  userAgent: z.string().optional(),
+  createdAt: z.iso.datetime(),
+  lastSuccessAt: z.iso.datetime().optional(),
+  failureCount: z.number().int().min(0),
+}).openapi("PushSubscription");
+export const pushConfigurationSchema = object({ publicKey: z.string().nullable() });
+export const pushListSchema = object({ data: z.array(pushSubscriptionSchema) });

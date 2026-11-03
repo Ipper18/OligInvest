@@ -1,4 +1,4 @@
-import { spawn } from "node:child_process";
+import { execFileSync, spawn } from "node:child_process";
 import { once } from "node:events";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { isAbsolute, join, relative } from "node:path";
@@ -8,7 +8,13 @@ import { applicationEnvironment, compose, isolatedEnvironment, repository, run }
 
 const dev = await isolatedEnvironment();
 const app = applicationEnvironment(dev);
-const secretDirectory = mkdtempSync(join(repository, ".git", "e2e-secrets-"));
+const gitDirectory = execFileSync("git", ["rev-parse", "--absolute-git-dir"], { cwd: repository, encoding: "utf8" }).trim();
+const secretDirectory = mkdtempSync(join(gitDirectory, "e2e-secrets-"));
+function cleanupSecrets() {
+  const inside = relative(gitDirectory, secretDirectory);
+  if (!inside || inside.startsWith("..") || isAbsolute(inside)) throw new Error("Unsafe secret cleanup");
+  rmSync(secretDirectory, { recursive: true, force: true });
+}
 let api;
 let worker;
 try {
@@ -73,8 +79,6 @@ try {
   try {
     compose(dev, ["down", "--volumes", "--remove-orphans"]);
   } finally {
-    const inside = relative(join(repository, ".git"), secretDirectory);
-    if (!inside || inside.startsWith("..") || isAbsolute(inside)) throw new Error("Unsafe secret cleanup");
-    rmSync(secretDirectory, { recursive: true, force: true });
+    cleanupSecrets();
   }
 }

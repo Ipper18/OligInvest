@@ -9,7 +9,9 @@ import { proxyTarget } from "./proxy-target.mjs";
 import { uiFixture } from "./ui-fixture.mjs";
 
 // Ephemeral self-signed TLS keeps the production upgrade-insecure-requests CSP intact.
-const directory = mkdtempSync(fileURLToPath(new URL("../../../.git/e2e-tls-", import.meta.url)));
+const directory = mkdtempSync(
+  execFileSync("git", ["rev-parse", "--git-path", "e2e-tls-"], { encoding: "utf8" }).trim(),
+);
 const key = join(directory, "key.pem");
 const cert = join(directory, "cert.pem");
 const port = Number(process.env.E2E_WEB_PORT ?? 3197);

@@ -54,3 +54,10 @@ Thumbs.db
 
 # Build-time CSS embedded with a per-request CSP nonce
 /apps/web/src/appearance/inline-css.json
+
+# Generated PWA assets
+/apps/web/public/sw.js
+/apps/web/public/icons/
+
+/apps/web/public/offline.css
+/apps/web/src/pwa/offline-page.json

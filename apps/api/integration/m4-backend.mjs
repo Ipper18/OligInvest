@@ -11,6 +11,7 @@ import { createApp } from "../dist/app.js";
 import { PatService } from "../dist/auth/pat-service.js";
 import { AuthService } from "../dist/auth/service.js";
 import { sessionCookie } from "../dist/auth/session.js";
+import { testPushStorage } from "./pwa-push.mjs";
 
 export async function testM4Backend(settings) {
   const connection = { host: settings.host, port: settings.port, database: settings.database };
@@ -240,6 +241,7 @@ export async function testM4Backend(settings) {
     assert.equal(history.filter((d) => d.status === "sent").length, 2);
     assert.equal(history.filter((d) => d.status === "skipped").length, 1);
 
+    await testPushStorage(appDatabase, context, other);
     const enqueued = [],
       repo = new PortfolioRepository(appDatabase, async (payload) => enqueued.push(payload));
     const alerts = new AlertRepository(appDatabase);

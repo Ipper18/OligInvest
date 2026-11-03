@@ -1,5 +1,9 @@
 export { createMarketJobs, marketSchedules } from "@oliginvest/mod-market/jobs";
-export { dispatchNotification, notificationJobSchema } from "@oliginvest/mod-notifications/jobs";
+export {
+  createPushSender,
+  dispatchNotification,
+  notificationJobSchema,
+} from "@oliginvest/mod-notifications/jobs";
 export { parseImport, portfolioDate, recomputePortfolio } from "@oliginvest/mod-portfolio/jobs";
 export {
   enqueuePortfolioRecompute,

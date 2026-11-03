@@ -72,6 +72,8 @@ export interface AuthServiceOptions {
   securityEvent: (event: AuthSecurityEvent) => Promise<void>;
   preferencesChanged?: (userId: string) => Promise<void>;
   sessionsChanged?: () => Promise<void>;
+  pushPublicKey?: string | undefined;
+  pushTest?: (id: string, payload: unknown) => Promise<void>;
   patMail?: (id: string, payload: unknown, delay: number) => Promise<void>;
   cancelPatMail?: (id: string) => Promise<void>;
   wait?: (milliseconds: number) => Promise<void>;

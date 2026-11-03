@@ -27,13 +27,24 @@ export default defineConfig({
   projects: (["chromium", "webkit", "firefox"] as const).flatMap((browserName) => [
     {
       name: browserName,
-      testIgnore: ["**/shell-auth.spec.ts", "**/portfolio-shell.spec.ts", "**/mvp-real.spec.ts"],
+      testIgnore: [
+        "**/shell-auth.spec.ts",
+        "**/portfolio-shell.spec.ts",
+        "**/mvp-real.spec.ts",
+        "**/pwa.spec.ts",
+      ],
       use: { browserName },
     },
     {
       name: `${browserName}-shell`,
-      testMatch: ["**/shell-auth.spec.ts", "**/portfolio-shell.spec.ts"],
-      use: { browserName, baseURL: "https://127.0.0.1:3197" },
+      testMatch: ["**/shell-auth.spec.ts", "**/portfolio-shell.spec.ts", "**/pwa.spec.ts"],
+      use: {
+        browserName,
+        baseURL: "https://127.0.0.1:3197",
+        ...(browserName === "chromium"
+          ? { launchOptions: { args: ["--ignore-certificate-errors"] } }
+          : {}),
+      },
     },
     ...(realImport
       ? [

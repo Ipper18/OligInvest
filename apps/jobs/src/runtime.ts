@@ -74,7 +74,9 @@ export async function startJobs(
   // application skeleton stays cheap (test/smoke.test.mjs).
   const bullmq = await import("bullmq");
   const { sql } = await import("drizzle-orm");
-  const { dispatchNotification, notificationJobSchema } = await import("./modules.js");
+  const { createPushSender, dispatchNotification, notificationJobSchema } = await import(
+    "./modules.js"
+  );
   const { observeWorker, startMonitoring } = await import("./monitoring.js");
   const { jobFeatureFlags } = await import("./feature-flags.js");
   const flagRuntime = jobFeatureFlags(env, runtime.config, logger);
@@ -230,7 +232,6 @@ export async function startJobs(
         async (job, token) => {
           try {
             if (job.name === "notifications.deliver") {
-              if (!mailer) throw new Error("SMTP_NOT_CONFIGURED");
               const payload = notificationJobSchema.parse(job.data);
               let alertEnabled = true;
               if (payload.kind === "alert") {
@@ -253,9 +254,19 @@ export async function startJobs(
               const result = await dispatchNotification(
                 flagRuntime.database,
                 payload,
-                mailer.sendNotification,
+                mailer?.sendNotification ??
+                  (async () => {
+                    throw new Error("SMTP_NOT_CONFIGURED");
+                  }),
                 new Date(),
                 alertEnabled,
+                runtime.config.VAPID_PUBLIC_KEY && runtime.config.VAPID_PRIVATE_KEY
+                  ? createPushSender({
+                      subject: runtime.config.PUBLIC_BASE_URL,
+                      publicKey: runtime.config.VAPID_PUBLIC_KEY,
+                      privateKey: runtime.config.VAPID_PRIVATE_KEY,
+                    })
+                  : undefined,
               );
               if (result.delayUntil) {
                 await job.moveToDelayed(result.delayUntil, token);

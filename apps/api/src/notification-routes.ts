@@ -8,8 +8,10 @@ import {
   notificationPreferencesSchema as preferencesSchema,
   notificationStatusSchema as statusSchema,
 } from "./modules.js";
+import { mountPush } from "./push-routes.js";
 
 export function mountNotifications(api: OpenAPIHono<AppEnv>, dependencies: AuthRouteDependencies) {
+  mountPush(api, dependencies);
   for (const [method, path, operationId, response] of [
     ["get", "/notifications/preferences", "getNotificationPreferences", preferencesSchema],
     ["put", "/notifications/preferences", "replaceNotificationPreferences", preferencesSchema],

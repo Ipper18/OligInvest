@@ -120,7 +120,7 @@ BL-007: pakiet db deklaruje także istniejące `zod@4.6.5` do walidacji konfigur
 | Pliki XLS/XLSX/CSV | **SheetJS Community Edition** (`xlsx`) z oficjalnego CDN | 0.20.3 | Apache-2.0 | Archiwum GPW zwraca binarny XLS (BIFF), XTB — XLSX; jedna biblioteka dla obu i dla CSV. Rejestr npm ma przestarzałe 0.18.5 z podatnościami — instalujemy z `https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz` (hash w lockfile, Renovate z regułą niestandardową). Tylko po stronie serwera (`jobs`). | read-excel-file (bez XLS), exceljs (brak wydań od 2023), parsowanie w Pythonie (wymagałoby internetu i zapisu w `analytics`). |
 | Klient Yahoo Finance | **własny adapter** `YahooProvider` (chart v8 + search v1) na `createProviderFetch` | — | — | BL-159, [ADR-016](../09-decyzje/ADR-016-cienki-adapter-yahoo.md): bez cookie/crumb, ten sam transport co NBP/GPW (identyfikujący UA, allowlista, bez przekierowań, limit rozmiaru, JSON → Decimal), 0 pakietów runtime. | `yahoo-finance2` 4.0 (109 pakietów runtime z serwerem MCP i express; zastąpione 2026-10-12), `yahoo-finance2` 3.14 (cofnięcie linii, nadal shim Deno i magazyn ciasteczek). |
 | E-mail | **nodemailer** przez SMTP (Brevo) | 10.0.13 (BL-107; `@types/nodemailer` 8.0.2) | MIT-0 | Worker `jobs` wysyła reset hasła; transport SMTP z wymaganym STARTTLS, bez SDK dostawcy ([ADR-010](../09-decyzje/ADR-010-kanaly-powiadomien.md)). Wersja 10.0.13 po karencji 72 h; nowsza 10.0.14 jeszcze przed karencją 2026-10-04. | SDK dostawców (uzależnienie). |
-| Web Push | **web-push** | 3.6 | MPL-2.0 | Standardowa implementacja VAPID i szyfrowania treści powiadomień. | Własna implementacja (kryptografia — nie piszemy sami). |
+| Web Push | **web-push** | 3.6.7 (dokładnie) | MPL-2.0 | Standardowa implementacja VAPID i szyfrowania treści powiadomień, tylko jobs. Zweryfikowano 2026-10-28: [npm](https://registry.npmjs.org/web-push), wydanie 2024-01-16T13:48:01.065Z (≥ 72 h), [licencja](https://github.com/web-push-libs/web-push/blob/master/LICENSE); [commit utrzymaniowy 2026-09-11](https://github.com/web-push-libs/web-push/commit/b34d7d4ba1b982afe8e18e44225bf6286c6c0405), utrzymanie ≤ 6 miesięcy. | Własna implementacja (kryptografia — nie piszemy sami). |
 | Magazyn sesji/limitów (opcjonalnie) | `@better-auth/redis-storage` | 1.7.12 | MIT | Jeśli limity Better Auth mają trafić do Valkey zamiast Postgresa — decyzja w `06-bezpieczenstwo/`. | — |
 
 ## 6. Analityka (`apps/analytics`, Python)
@@ -175,7 +175,7 @@ M1-4b (2026-10-19): uzupełnienia Syft dla `trim-lines@3.0.1`, `tsx@4.23.13` i `
 |---|---|---|---|
 | Dostawcy danych rynkowych | Notowania, FX, makro, newsy | wg tabeli | [`../03-dane/zrodla-danych.md`](../03-dane/zrodla-danych.md) |
 | Brevo (SMTP) | E-mail transakcyjny (alerty, zaproszenia, reset hasła) | 300 e-maili/dzień, logo Brevo w stopce, bez karty | [ADR-010](../09-decyzje/ADR-010-kanaly-powiadomien.md) |
-| Web Push (APNs, FCM, Mozilla) | Doręczanie powiadomień PWA | bez opłat | — |
+| Web Push (APNs, FCM, Mozilla, WNS) | Doręczanie powiadomień PWA | bez opłat | — |
 | Pwned Passwords (HIBP) | Sprawdzanie wycieków haseł (k-anonimowość) | bez klucza | [ADR-004](../09-decyzje/ADR-004-postgres-better-auth-rls.md) |
 | Google / GitHub OAuth | Logowanie (P2) | bez opłat | Z-04 |
 | Context7, Playwright MCP, Alpha Vantage MCP, Twelve Data MCP | Wyłącznie środowisko deweloperskie Claude Code | — | [`../09-decyzje/audyt-pluginow.md`](../09-decyzje/audyt-pluginow.md) |
@@ -220,3 +220,5 @@ Oba moduły ładowane dynamicznie; atrybucja TradingView widoczna na wykresie i 
 BL-116: narzędzia budowania i kontroli stron prawnych: `@mdx-js/mdx` 3.1.1 i `remark-gfm` 4.0.1 (MIT). Parser działa wyłącznie podczas generowania/testu; do przeglądarki trafia HTML, bez kompilatora Markdown.
 
 BL-121: `postcss` 8.5.28 (MIT), już używany przez Tailwind, jest jawną zależnością narzędziową web do kompilacji wspólnego CSS przed osadzeniem z nonce CSP. Brak kodu PostCSS w przeglądarce.
+
+BL-402: `@types/web-push` 3.6.4 (MIT, wydanie 2024-10-22T08:10:28.809Z, [npm](https://registry.npmjs.org/@types%2fweb-push), weryfikacja 2026-10-28) — typy transportu tylko podczas kompilacji.

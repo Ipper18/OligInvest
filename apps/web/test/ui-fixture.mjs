@@ -68,6 +68,7 @@ export async function uiFixture(request, response) {
   };
   const fail = (code = "UNAUTHENTICATED", status = 401) =>
     send({ type: "https://example.test/problems/auth", title: code, status, code }, status);
+  if (path === "/api/v1/notifications/push-config") return send({ publicKey: null });
   const key = token(request),
     profile = key
       ? (saved.get(key) ?? {

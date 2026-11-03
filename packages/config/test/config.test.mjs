@@ -180,3 +180,26 @@ test("optional auth/notification credentials form complete groups", () => {
     "FINNHUB_API_KEY",
   );
 });
+
+test("VAPID public and private values support secret files", () => {
+  const value = secret();
+  expect(
+    loadConfig("api", { ...api(), VAPID_PUBLIC_KEY_FILE: file(value) }, local).VAPID_PUBLIC_KEY,
+  ).toBe(value);
+  const jobs = {
+    PUBLIC_BASE_URL: web.PUBLIC_BASE_URL,
+    AUDIT_PSEUDONYM_KEY: secret(),
+    DB_APP_PASSWORD: secret(),
+    VALKEY_QUEUE_JOBS_PASSWORD: secret(),
+    VALKEY_CACHE_JOBS_PASSWORD: secret(),
+    VAPID_PUBLIC_KEY_FILE: file(value),
+    VAPID_PRIVATE_KEY_FILE: file(secret()),
+  };
+  expect(loadConfig("jobs", jobs, local).VAPID_PUBLIC_KEY).toBe(value);
+  expect(() => loadConfig("jobs", { ...jobs, VAPID_PRIVATE_KEY_FILE: undefined }, local)).toThrow(
+    /incomplete_group/,
+  );
+  expect(() =>
+    loadConfig("api", { ...api(), VAPID_PUBLIC_KEY: value }, { mode: "production" }),
+  ).toThrow(/VAPID_PUBLIC_KEY \(file_required\)/);
+});

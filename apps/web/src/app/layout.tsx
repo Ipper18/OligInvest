@@ -9,6 +9,9 @@ import { getMe } from "../auth/session";
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: messages.app.brand,
+  manifest: "/manifest.webmanifest",
+  icons: { apple: "/icons/icon-180.png" },
+  appleWebApp: { capable: true, title: messages.app.brand },
   description: messages.bootstrap.description,
 };
 

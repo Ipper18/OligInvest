@@ -54,6 +54,7 @@ test("real invitation → TOTP → XTB worker → reconciled portfolio", async (
   await expect(page).toHaveURL("/");
   expect((await request.get("/api/v1/portfolio/accounts")).status()).toBe(401);
 
+  await expect(page.getByText("Aktualizacje na żywo", { exact: true })).toBeVisible();
   await page.goto("/portfel/rachunki/nowy");
   await page.getByLabel("Nazwa rachunku", { exact: true }).fill("XTB E2E");
   await page.getByLabel("Broker", { exact: true }).selectOption("xtb");
@@ -63,6 +64,7 @@ test("real invitation → TOTP → XTB worker → reconciled portfolio", async (
   const account = accounts.data.find((a: { name: string }) => a.name === "XTB E2E");
   expect(account).toBeTruthy();
 
+  await expect(page.getByText("Aktualizacje na żywo", { exact: true })).toBeVisible();
   await page.goto("/portfel/import");
   const started = Date.now();
   await page
@@ -106,6 +108,7 @@ test("real invitation → TOTP → XTB worker → reconciled portfolio", async (
     (await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze())
       .violations,
   ).toEqual([]);
+  await expect(page.getByText("Aktualizacje na żywo", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Wyloguj się", exact: true }).click();
   await expect(page).toHaveURL(/\/logowanie$/);
   expect((await page.request.get("/api/v1/portfolio/accounts")).status()).toBe(401);

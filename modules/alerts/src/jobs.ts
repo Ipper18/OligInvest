@@ -143,7 +143,7 @@ export async function flushAlertEvents(
     async (tx) =>
       (
         await tx.execute(
-          sql`SELECT id::text,rule_id::text,triggered_at,payload FROM alerts.alert_events WHERE coalesce((payload->>'enqueued')::boolean,false)=false ORDER BY triggered_at,id LIMIT 200`,
+          sql`SELECT id::text,rule_id::text,triggered_at,payload,(SELECT instrument_id::text FROM alerts.alert_rules WHERE id=rule_id) AS instrument_id FROM alerts.alert_events WHERE coalesce((payload->>'enqueued')::boolean,false)=false ORDER BY triggered_at,id LIMIT 200`,
         )
       ).rows,
   );
@@ -166,6 +166,7 @@ export async function flushAlertEvents(
       subject: alertMessages.subject,
       text: payload.message,
       occurredAt: at,
+      url: row.instrument_id ? `/rynek/${z.uuid().parse(row.instrument_id)}` : "/",
     });
     await publish({
       event: "alerts.alert.triggered",

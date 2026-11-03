@@ -1,26 +1,6 @@
-export function safeReturnTo(value: unknown): string {
-  if (
-    typeof value !== "string" ||
-    !value.startsWith("/") ||
-    value.startsWith("//") ||
-    value.includes("\\") ||
-    [...value].some((character) => character.charCodeAt(0) < 32)
-  )
-    return "/";
-  try {
-    const url = new URL(value, "https://local.invalid");
-    if (
-      url.origin !== "https://local.invalid" ||
-      /^\/(api|logowanie|rejestracja|reset-hasla|konfiguracja-2fa|akceptacja-regulaminu)(\/|$)/u.test(
-        url.pathname,
-      )
-    )
-      return "/";
-    return url.pathname + url.search;
-  } catch {
-    return "/";
-  }
-}
+import { safeReturnTo } from "@oliginvest/contracts/navigation";
+
+export { safeReturnTo };
 export function gatePath(
   me: {
     mfa: { enrolled: boolean; sessionVerifiedAt?: string | undefined };

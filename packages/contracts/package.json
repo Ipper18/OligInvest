@@ -12,6 +12,10 @@
     "check:analytics-schema": "node scripts/analytics-schema.mjs check"
   },
   "exports": {
+    "./browser": {
+      "types": "./dist/realtime-schemas.d.ts",
+      "import": "./dist/realtime-schemas.js"
+    },
     "./realtime/browser": {
       "types": "./dist/realtime-schemas.d.ts",
       "import": "./dist/realtime-schemas.js"
@@ -27,6 +31,10 @@
     "./analytics-jobs": {
       "types": "./dist/analytics-jobs.d.ts",
       "import": "./dist/analytics-jobs.js"
+    },
+    "./navigation": {
+      "types": "./dist/navigation.d.ts",
+      "import": "./dist/navigation.js"
     }
   },
   "dependencies": {

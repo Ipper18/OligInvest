@@ -230,8 +230,8 @@ W M0 (BL-013) korzeń `apps/jobs` rejestruje definicje kolejek domenowych przez 
 
 ### 5.4 Backend powiadomień M4 (decyzja właściciela 2026-10-23)
 
-BL-403 w pierwszej paczce obejmuje e-mail i interfejs kanałów; transport Web Push
-(BL-402), PWA i ekrany są w kolejnej paczce. Brak transportu/subskrypcji push
+BL-403 udostępnia e-mail i interfejs kanałów; BL-402 dołącza transport Web Push
+przez `web-push` w jobs (M4-PWA, 2026-10-29). Brak transportu/aktywnej subskrypcji push
 uruchamia skonfigurowany fallback e-mail. Alerty podczas cichych godzin czekają
 na koniec ciszy w strefie użytkownika; kilka wyzwoleń tej samej reguły łączymy
 w jedno doręczenie z najnowszym zdarzeniem. Historia wyzwoleń pozostaje pełna.
@@ -239,6 +239,17 @@ Wiadomość zawiera czas wyzwolenia oraz źródło i czas danych. Bezpieczeństw
 i reset hasła omijają ciszę. Globalny limit SMTP to 300 prób wysłania na dobę UTC,
 w tym maksymalnie 250 dla poczty innej niż konta i bezpieczeństwo (rezerwa 50).
 Nieudane próby także zużywają kwotę; po wyczerpaniu kwoty wysyłka czeka na kolejną dobę.
+
+Subskrypcje z upływającym `expires_at` albo trzema błędami nie kwalifikują się do wysyłki;
+404/410 usuwa endpoint. Pozostałe błędy zwiększają licznik, a po trzecim uruchamiają
+fallback według preferencji. Sukces zeruje licznik. TTL alertu to 3600 s, pozostałych
+powiadomień 86400 s; Urgency `high` dla alertów/bezpieczeństwa, `normal` dla systemowych.
+Przyjęcie przez co najmniej jedną usługę urządzenia oznacza `sent` kanału push; nie dowodzi
+wyświetlenia na wszystkich urządzeniach (R-51). Test push jest adresowany do własnej
+aktywnej subskrypcji, limitowany do 3/min/użytkownika i respektuje ciszę nocną.
+Minimalne sterowanie zgodą/testem znajduje się w istniejących ustawieniach; ekrany BL-406/407/409
+pozostają odłożone do redesignu. Ścieżka `url` zadania jest względna i walidowana wspólnym
+`safeReturnTo`; alert prowadzi do instrumentu, a e-mail używa skonfigurowanego originu aplikacji.
 
 Backend M4 udostępnia wyłącznie schematy `PriceAlert*` dla trzech typów cenowych; ogólne szkice kontraktów pozostałych alertów zastąpiono kontraktami rzeczywiście obsługiwanymi. Alerty wskaźnikowe, portfelowe, wynikowe i newsowe pozostają w BL-562/563/703/704. `alerts` i `quick-actions` są opcjonalnymi zależnościami aplikacji, ładowanymi tylko w ich rejestrach modułów. Po fizycznym usunięciu modułu jego trasy i worker nie są montowane. Bramka flagi obejmuje także oczekujące doręczenia alertów.
 
