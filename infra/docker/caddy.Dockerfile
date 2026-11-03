@@ -7,6 +7,9 @@
 # chi v5.4.0 (published 2026-10-12T11:22:20Z) fixes GHSA-j6qf-3m9c-vwj3 (moderate) and only raises its go
 # directive to 1.24. go-jose v4.1.6 (published 2026-10-14T22:46:21Z) fixes GHSA-mgcc-cww5-fp2q (high, JWK parsing DoS)
 # and has no module requirements; v3 (via a Caddy dependency) has no fixed release and stays in the report.
+# x/crypto is pinned to commit 2f1f834330b2 (v0.58.0 plus only "openpgp: carve out openpgp as a module",
+# published 2026-10-09T18:17:18Z): OSV marks it as the fix for GO-2026-5932 (deprecated x/crypto/openpgp, no
+# CVSS score). No tagged release contains it yet; Caddy does not import openpgp, which the build asserts.
 FROM golang:1.26.10-alpine@sha256:9ce231b28998b32e116927c61aa5c406183061d4f3f2d61b292c88e7f6bdf7ca AS builder
 ENV CGO_ENABLED=0 GOTOOLCHAIN=local GOFLAGS=-mod=mod
 WORKDIR /src
@@ -16,10 +19,10 @@ RUN printf '%s\n' 'package main' '' 'import (' \
       '	_ "github.com/caddyserver/caddy/v2/modules/standard"' ')' '' \
       'func main() { caddycmd.Main() }' > main.go \
     && go mod init oliginvest.invalid/caddy \
-    && go get github.com/caddyserver/caddy/v2@v2.11.7 golang.org/x/net@v0.62.0 github.com/go-chi/chi/v5@v5.4.0 github.com/go-jose/go-jose/v4@v4.1.6 \
+    && go get github.com/caddyserver/caddy/v2@v2.11.7 golang.org/x/net@v0.62.0 golang.org/x/crypto@v0.58.1-0.20261009181718-2f1f834330b2 github.com/go-chi/chi/v5@v5.4.0 github.com/go-jose/go-jose/v4@v4.1.6 \
     && go mod tidy \
     && go list -m golang.org/x/net golang.org/x/crypto golang.org/x/sys golang.org/x/term golang.org/x/text github.com/go-chi/chi/v5 github.com/go-jose/go-jose/v4 \
-    && go build -trimpath -ldflags="-s -w" -o /go/bin/caddy . \
+    && ! go list -deps . | grep -F golang.org/x/crypto/openpgp \n    && go build -trimpath -ldflags="-s -w" -o /go/bin/caddy . \
     && go version -m /go/bin/caddy
 
 FROM caddy:2.11.7@sha256:f2a1290d0463aad60660d4ec134943f183ee2a5f6c3eb7bf32dd984f2f020772

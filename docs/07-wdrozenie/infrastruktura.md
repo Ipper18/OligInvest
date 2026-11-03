@@ -403,6 +403,8 @@ M1-3, 2026-10-11: obraz bazowy `caddy:2.11.7` (przypięty digestem), a binarium 
 
 2026-11-03: binarium Caddy budujemy z `golang.org/x/net` v0.62.0 (2026-10-27T19:00Z, poprawka GO-2026-6860 i GO-2026-6866). Wersja podnosi zależności `golang.org/x/crypto` v0.58.0, `x/sys` v0.49.0, `x/term` v0.47.0 i `x/text` v0.43.0 (opublikowane 2026-10-06–09, [proxy.golang.org](https://proxy.golang.org/golang.org/x/net/@v/v0.62.0.mod), odczyt 2026-11-03). Wszystkie są po 72 h karencji. Wyjątek R-50 usunięty z `osv-scanner.toml`.
 
+2026-11-03: OSV dopisał 2026-11-02 do [GO-2026-5932](https://pkg.go.dev/vuln/GO-2026-5932) (przestarzały pakiet `golang.org/x/crypto/openpgp`, bez oceny CVSS, którą bramka obrazów traktuje jako blokującą) wersję z poprawką: commit [2f1f834330b2](https://go.googlesource.com/crypto/+/2f1f834330b2d36ab3db8bfb33aaa1ac16794588) z 2026-10-09T18:17Z, który wydziela `openpgp` do osobnego modułu. Otagowanego wydania z tą zmianą jeszcze nie ma, więc build Caddy przypina pseudowersję `v0.58.1-0.20261009181718-2f1f834330b2` (v0.58.0 plus tylko ten commit, po 72 h karencji, odczyt 2026-11-03). Caddy nie importuje `openpgp`; build to sprawdza (`go list -deps`). Przy następnym wydaniu x/crypto zastąpić pseudowersję tagiem.
+
 M0-3: [sieć i hardening BL-024/025](m0-3-network-runbook.md), [DNS i migracja BL-026/027](m0-3-dns-immich-runbook.md). Szablony zawierają wyłącznie znaczniki; właściciel dostarcza dowody wykonania.
 
 BL-028/029: [kopie, timery, Kuma i próby alarmów](m0-3-backup-monitoring-runbook.md). Produkcyjny override storage przenosi repozytorium pgBackRest na HDD; bez niego domyślny wolumen Dockera nie dowodzi rozdzielenia nośników. Operacje hosta odrzucają wolumeny niepowiązane z oczekiwanymi źródłami.
