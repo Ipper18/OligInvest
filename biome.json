@@ -9,6 +9,7 @@
     "includes": [
       "**",
       "!docs/08-plan/audits",
+      "!docs/04-frontend/projekt-b",
       "!apps/web/src/api/schema.d.ts",
       "!apps/analytics/src/oliginvest_analytics/schemas/analytics-jobs.schema.json",
       "!**/dist",
