@@ -74,7 +74,9 @@ export async function startJobs(
   // application skeleton stays cheap (test/smoke.test.mjs).
   const bullmq = await import("bullmq");
   const { sql } = await import("drizzle-orm");
-  const { createPushSender, dispatchNotification, notificationJobSchema } = await import("./modules.js");
+  const { createPushSender, dispatchNotification, notificationJobSchema } = await import(
+    "./modules.js"
+  );
   const { observeWorker, startMonitoring } = await import("./monitoring.js");
   const { jobFeatureFlags } = await import("./feature-flags.js");
   const flagRuntime = jobFeatureFlags(env, runtime.config, logger);

@@ -107,7 +107,7 @@ export function Providers({
     });
     const unsubscribeRemote = onRemoteLogout(() => logout(true));
     // Validation is loaded outside the initial shell bundle; no Zod runtime in initial JS.
-    void import("@oliginvest/contracts/realtime/browser")
+    void import("@oliginvest/contracts/browser")
       .then(({ realtimeSchemas }) => {
         if (disposed) return;
         stream.current = connectStream({
@@ -186,6 +186,7 @@ export function Providers({
         navigation={<Navigation me={me} />}
         toolbar={
           <div className="oi-toolbar">
+            <PwaLoader />
             <span role="status" className="oi-connection">
               {appMessages[connectionStatus(state, paused)]}
             </span>
@@ -211,7 +212,6 @@ export function Providers({
           </div>
         }
       >
-        <PwaLoader />
         {children}
       </AppShell>
     </QueryClientProvider>

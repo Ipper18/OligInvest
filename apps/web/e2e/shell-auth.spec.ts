@@ -66,8 +66,13 @@ test("preferences persist without document reload and system follows OS", async 
   expect(await page.evaluate(() => (window as { documentMarker?: boolean }).documentMarker)).toBe(
     true,
   );
-  const response = await page.reload();
-  expect(await response?.text()).toContain('data-theme="light"');
+  await page.reload();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+  // Firefox renders SW responses correctly, but Playwright's body decoder double-decodes gzip.
+  // Check server-rendered HTML directly, sharing the browser's session cookies.
+  const response = await page.request.get(page.url());
+  expect(response.ok()).toBe(true);
+  expect(await response.text()).toContain('data-theme="light"');
   await page.getByLabel("Motyw", { exact: true }).selectOption("system");
   await page.getByRole("button", { name: "Zapisz", exact: true }).click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "system");

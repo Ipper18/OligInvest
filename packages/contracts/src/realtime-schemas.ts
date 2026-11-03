@@ -1,6 +1,7 @@
 import * as z from "zod/mini";
 
 const uuid = z.uuid();
+export const pwaWorkerVersionSchema = z.strictObject({ version: uuid });
 const decimal = z.string().check(z.regex(/^-?\d{1,14}(\.\d{1,10})?$/));
 const time = z.iso.datetime();
 const version = { v: z.literal(1) };

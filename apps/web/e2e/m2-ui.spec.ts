@@ -1,8 +1,28 @@
 import { gzipSync } from "node:zlib";
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test } from "@playwright/test";
+import { expect, type Page, test } from "@playwright/test";
 
 test.use({ baseURL: "https://127.0.0.1:3197" });
+
+function collectScripts(page: Page) {
+  const urls = new Set<string>();
+  page.on("request", (request) => {
+    if (request.resourceType() === "script" && request.url().includes("/_next/static/"))
+      urls.add(request.url());
+  });
+  return async () => {
+    // Measure every requested chunk once from the server, never a warm SW/HTTP cache.
+    // APIRequestContext shares cookies but bypasses SW and Firefox's protocol body decoder.
+    const scripts = new Map<string, Buffer>();
+    for (const url of urls) {
+      const response = await page.request.get(url);
+      expect(response.ok()).toBe(true);
+      scripts.set(url, await response.body());
+    }
+    expect(scripts.size).toBeGreaterThan(0);
+    return scripts;
+  };
+}
 
 test("onboarding supports keyboard skip, persists it, replays and completes with reduced motion", async ({
   page,
@@ -99,20 +119,11 @@ test("allocation presents the contract fields and the pending service accessibly
 });
 
 test("onboarding lazy and total JS stay within route budgets", async ({ page }) => {
-  const scripts = new Map<string, Buffer>(),
-    pending: Promise<void>[] = [];
-  page.on("response", (response) => {
-    if (response.request().resourceType() === "script" && response.url().includes("/_next/static/"))
-      pending.push(
-        response.body().then((body) => {
-          scripts.set(response.url(), body);
-        }),
-      );
-  });
+  const readScripts = collectScripts(page);
   await page.goto("/nauka");
   await page.getByRole("button", { name: "Uruchom przewodnik ponownie" }).click();
   await expect(page.getByRole("dialog")).toBeVisible();
-  await Promise.all(pending);
+  const scripts = await readScripts();
   const total =
     [...scripts.values()].reduce((sum, body) => sum + gzipSync(body, { level: 9 }).length, 0) /
     1024;
@@ -124,22 +135,14 @@ test("onboarding lazy and total JS stay within route budgets", async ({ page }) 
     `Onboarding JS: total ${total.toFixed(2)}/190 KiB; driver ${driver.toFixed(2)}/8 KiB`,
   );
   expect(driver).toBeLessThanOrEqual(8);
+  expect(driver).toBeGreaterThan(0);
   expect(total).toBeLessThanOrEqual(190);
 });
 
 test("indicators are requested on demand and have a keyboard-accessible table", async ({
   page,
 }) => {
-  const scripts = new Map<string, Buffer>(),
-    pending: Promise<void>[] = [];
-  page.on("response", (response) => {
-    if (response.request().resourceType() === "script" && response.url().includes("/_next/static/"))
-      pending.push(
-        response.body().then((body) => {
-          scripts.set(response.url(), body);
-        }),
-      );
-  });
+  const readScripts = collectScripts(page);
   await page.goto("/rynek/01900000-0000-7000-8000-000000000101");
   await expect(page.getByRole("heading", { name: "Parametry wskaźników" })).toHaveCount(0);
   await page.getByRole("button", { name: "Pokaż wskaźniki" }).focus();
@@ -152,7 +155,7 @@ test("indicators are requested on demand and have a keyboard-accessible table", 
   await page.getByRole("button", { name: "Pokaż jako tabelę", exact: true }).click();
   await expect(page.getByRole("table", { name: "Wskaźniki", exact: true })).toBeVisible();
   await expect(page.getByRole("columnheader", { name: "sma:20 value", exact: true })).toBeVisible();
-  await Promise.all(pending);
+  const scripts = await readScripts();
   const total =
     [...scripts.values()].reduce((sum, body) => sum + gzipSync(body, { level: 9 }).length, 0) /
     1024;

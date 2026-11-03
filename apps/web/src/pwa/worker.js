@@ -2,7 +2,8 @@ import { safeReturnTo } from "@oliginvest/contracts/navigation";
 import { pwaMessages } from "@oliginvest/i18n";
 import { z } from "zod";
 
-const cacheName = "oliginvest-static-__PWA_VERSION__";
+const version = "__PWA_VERSION__";
+const cacheName = `oliginvest-static-${version}`;
 const payloadSchema = z
   .object({
     title: z.string().min(1).max(200),
@@ -12,6 +13,7 @@ const payloadSchema = z
   })
   .strict();
 const messageSchema = z.discriminatedUnion("type", [
+  z.object({ type: z.literal("GET_VERSION") }).strict(),
   z.object({ type: z.literal("ACTIVATE_UPDATE") }).strict(),
   z.object({ type: z.literal("CLEAR_PRIVATE"), unsubscribePush: z.boolean().optional() }).strict(),
   z
@@ -62,6 +64,7 @@ self.addEventListener("message", (event) => {
   const parsed = messageSchema.safeParse(event.data);
   if (!parsed.success) return;
   const data = parsed.data;
+  if (data.type === "GET_VERSION") event.ports[0]?.postMessage({ version });
   if (data.type === "ACTIVATE_UPDATE") event.waitUntil(self.skipWaiting());
   if (data.type === "CACHE_STATIC" && Array.isArray(data.urls))
     event.waitUntil(

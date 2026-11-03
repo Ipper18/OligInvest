@@ -12,6 +12,10 @@
     "check:analytics-schema": "node scripts/analytics-schema.mjs check"
   },
   "exports": {
+    "./browser": {
+      "types": "./dist/realtime-schemas.d.ts",
+      "import": "./dist/realtime-schemas.js"
+    },
     "./realtime/browser": {
       "types": "./dist/realtime-schemas.d.ts",
       "import": "./dist/realtime-schemas.js"
