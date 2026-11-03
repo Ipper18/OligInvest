@@ -1,12 +1,9 @@
 import { loadConfig } from "@oliginvest/config";
 import { createLogger, type PlatformLogger } from "@oliginvest/platform";
-import { DelayedError, Queue, Worker } from "bullmq";
-import { sql } from "drizzle-orm";
+import type { Queue, Worker } from "bullmq";
 import { z } from "zod";
 import type { createAuthMailer } from "./auth-mail.js";
 import { MailQuotaExceeded, reserveMail } from "./mail-quota.js";
-import { dispatchNotification, notificationJobSchema } from "./modules.js";
-import { observeWorker, startMonitoring } from "./monitoring.js";
 import { createQueueRegistry } from "./registry.js";
 
 const settingsSchema = z
@@ -57,8 +54,13 @@ export function readRuntime(env: Readonly<Record<string, string | undefined>>) {
 }
 
 type Runtime = ReturnType<typeof readRuntime>;
-function openQueue(name: string, runtime: Runtime, logger: PlatformLogger) {
-  const queue = new Queue(name, { connection: runtime.connection });
+function openQueue(
+  bullmq: typeof import("bullmq"),
+  name: string,
+  runtime: Runtime,
+  logger: PlatformLogger,
+): Queue {
+  const queue = new bullmq.Queue(name, { connection: runtime.connection });
   queue.on("error", () => logger.error({ event: "jobs.connection_failed" }));
   return queue;
 }
@@ -68,12 +70,18 @@ export async function startJobs(
   logger: PlatformLogger = createLogger(),
 ) {
   const runtime = readRuntime(env);
+  // Queue, database and module code loads only when the workers start, so importing the
+  // application skeleton stays cheap (test/smoke.test.mjs).
+  const bullmq = await import("bullmq");
+  const { sql } = await import("drizzle-orm");
+  const { dispatchNotification, notificationJobSchema } = await import("./modules.js");
+  const { observeWorker, startMonitoring } = await import("./monitoring.js");
   const { jobFeatureFlags } = await import("./feature-flags.js");
   const flagRuntime = jobFeatureFlags(env, runtime.config, logger);
   const { registry, queues: definitions } = createQueueRegistry((key, subject) =>
     flagRuntime.flags.enabled(key, subject),
   );
-  const queues = definitions.map(({ name }) => openQueue(name, runtime, logger));
+  const queues = definitions.map(({ name }) => openQueue(bullmq, name, runtime, logger));
   let monitoring: Awaited<ReturnType<typeof startMonitoring>> | undefined;
   let mailer: ReturnType<typeof createAuthMailer> | undefined;
   let mailWorker: Worker | undefined;
@@ -217,7 +225,7 @@ export async function startJobs(
       // The worker uses blocking reads; the producer's 1.5 s command deadline
       // would time them out while the queue is idle.
       const { commandTimeout: _producerTimeout, ...workerConnection } = runtime.connection;
-      mailWorker = new Worker(
+      mailWorker = new bullmq.Worker(
         "notify",
         async (job, token) => {
           try {
@@ -251,7 +259,7 @@ export async function startJobs(
               );
               if (result.delayUntil) {
                 await job.moveToDelayed(result.delayUntil, token);
-                throw new DelayedError();
+                throw new bullmq.DelayedError();
               }
             } else if (["monitoring.error", "monitoring.daily-report"].includes(job.name))
               await activeMonitoring.handle(job);
@@ -260,10 +268,10 @@ export async function startJobs(
               await mailer.send(job.name, job.data);
             }
           } catch (error) {
-            if (error instanceof DelayedError) throw error;
+            if (error instanceof bullmq.DelayedError) throw error;
             if (error instanceof MailQuotaExceeded) {
               await job.moveToDelayed(error.retryAt, token);
-              throw new DelayedError();
+              throw new bullmq.DelayedError();
             }
             logger.warn({ event: "auth.mail_delivery_failed" });
             throw new Error("AUTH_MAIL_DELIVERY_FAILED");
@@ -295,7 +303,7 @@ export async function startJobs(
 
 export async function checkHealth(env: Readonly<Record<string, string | undefined>>) {
   const runtime = readRuntime(env);
-  const queue = openQueue("ingest", runtime, createLogger());
+  const queue = openQueue(await import("bullmq"), "ingest", runtime, createLogger());
   try {
     const client = await queue.getBackend().client;
     if ((await client.runCommand("ping", [])) !== "PONG") return false;
