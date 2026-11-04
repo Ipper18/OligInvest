@@ -5,7 +5,6 @@ import { ProblemError } from "@oliginvest/platform";
 import { sql } from "drizzle-orm";
 import { z } from "zod";
 import { approximateIp } from "./client-ip.js";
-import { createAuth } from "./config.js";
 import { CURRENT_LEGAL_VERSION } from "./inputs.js";
 import {
   type PatPrincipal,
@@ -23,6 +22,10 @@ import {
   SESSION_COOKIE,
 } from "./session.js";
 
+// better-auth loads with the auth runtime (auth/runtime.js), which has already imported it by the
+// time a request reaches PatService; a static import would put it into the application skeleton.
+const createAuth = async (...args: Parameters<typeof import("./config.js").createAuth>) =>
+  (await import("./config.js")).createAuth(...args);
 const digest = (s: string) => createHash("sha256").update(s).digest("base64url");
 const at = (s: unknown) => z.coerce.date().parse(s).toISOString();
 const permissions = (scopes: string[]) =>
@@ -108,7 +111,8 @@ export class PatService {
       );
       if (!Number.isSafeInteger(limit) || limit < 1 || count >= limit)
         throw new ProblemError("QUOTA_EXCEEDED");
-      const raw = await createAuth(tx, this.service.options.configuration).api.createApiKey({
+      const auth = await createAuth(tx, this.service.options.configuration);
+      const raw = await auth.api.createApiKey({
         body: {
           userId: initial.user_id,
           name: data.name,
@@ -269,7 +273,8 @@ export class PatService {
       await this.service.options.state.limit(`pat:${userId}:${publicToken.id}`, 30, 60);
       await this.service.options.state.limit(`pat:${userId}:${publicToken.id}`, 2000, 86400);
       if (!publicToken.scopes.includes(scope)) throw new ProblemError("PAT_SCOPE_MISSING");
-      const verified = await createAuth(tx, this.service.options.configuration).api.verifyApiKey({
+      const auth = await createAuth(tx, this.service.options.configuration);
+      const verified = await auth.api.verifyApiKey({
         body: { key: token },
       });
       if ((verified as { valid?: unknown }).valid !== true)
