@@ -29,7 +29,7 @@ for (const theme of ["dark", "light"])
           ["instrument", instrument],
         ]) {
           await page.goto(path);
-          await expect(page.locator(".oi-connection")).toHaveText("Aktualizacje na żywo");
+          await expect(page.locator(".oi-connection-current")).toHaveText("Aktualizacje na żywo");
           await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
           await expect(page.locator("html")).toHaveAttribute(
             "data-palette",
@@ -210,7 +210,7 @@ for (const state of ["stale", "empty", "error"])
       await expect(page.locator(".oi-error-state")).toBeVisible();
       await expect(page.locator(".oi-error-state").getByRole("button")).toBeVisible();
     } else {
-      await expect(page.locator(".oi-connection")).toHaveText("Aktualizacje na żywo");
+      await expect(page.locator(".oi-connection-current")).toHaveText("Aktualizacje na żywo");
       await expect(page.locator('[data-onboarding="totalValue"] dd')).toHaveText("—");
       await expect(page.locator(".oi-kpis")).not.toContainText("0,00");
       if (state === "empty")
@@ -289,9 +289,9 @@ test("BL-413 offline Start hides the current valuation and preserves provenance"
   ]);
   await page.goto("/");
   await expect(page.locator('[data-onboarding="totalValue"] dd')).toContainText("1000,00");
-  await expect(page.locator(".oi-connection")).toHaveText("Aktualizacje na żywo");
+  await expect(page.locator(".oi-connection-current")).toHaveText("Aktualizacje na żywo");
   await context.setOffline(true);
-  await expect(page.locator(".oi-connection")).toHaveText("Brak połączenia z siecią.");
+  await expect(page.locator(".oi-connection-current")).toHaveText("Brak połączenia z siecią.");
   await expect(page.locator('[data-onboarding="totalValue"] dd')).toHaveText("—");
   await expect(page.locator(".oi-freshness").first()).toContainText("gpw");
   await page.screenshot({ path: info.outputPath("bl413-start-offline.png"), fullPage: true });

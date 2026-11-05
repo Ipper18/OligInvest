@@ -82,7 +82,7 @@ test("Start exposes daily contributions and residual without substituting zero f
 });
 test("connection status and the pause/resume button agree", async ({ page }) => {
   await page.goto("/");
-  const status = page.locator(".oi-connection");
+  const status = page.locator(".oi-connection-current");
   await expect(page.getByRole("button", { name: "Wstrzymaj aktualizacje" })).toBeVisible();
   await expect(status).not.toHaveText("Aktualizacje wstrzymane");
   await page.getByRole("button", { name: "Wstrzymaj aktualizacje" }).click();

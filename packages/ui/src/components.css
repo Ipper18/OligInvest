@@ -852,6 +852,16 @@
   gap: var(--spacing-2);
   width: auto;
 }
+/* Every possible label shares one cell; hidden ones only reserve their width. */
+.oi-connection-label {
+  display: inline-grid;
+}
+.oi-connection-label > span {
+  grid-area: 1 / 1;
+}
+.oi-connection-reserve {
+  visibility: hidden;
+}
 .oi-status-dot {
   width: 6px;
   height: 6px;

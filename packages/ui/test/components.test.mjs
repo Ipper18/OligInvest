@@ -157,3 +157,21 @@ test("change badges distinguish signed gains, losses, neutral zero and missing/s
     "<meter",
   );
 });
+
+test("live status reserves every label so hydration cannot change the toolbar width", async () => {
+  const { LiveStatus } = await import("../dist/index.js");
+  const html = render(
+    h(LiveStatus, {
+      label: "Łączenie",
+      reserve: ["Na żywo", "Łączenie", "Wstrzymane"],
+      actionLabel: "Wstrzymaj",
+      actionName: "Wstrzymaj aktualizacje",
+      onAction: () => {},
+    }),
+  );
+  // The other labels occupy the same grid cell, hidden from assistive technology and from view.
+  expect(html.match(/class="oi-connection-reserve"/g)).toHaveLength(2);
+  expect(html).toContain('<span aria-hidden="true" class="oi-connection-reserve">Na żywo</span>');
+  expect(html).toContain('<span class="oi-connection-current">Łączenie</span>');
+  expect(html.split("Łączenie")).toHaveLength(2);
+});

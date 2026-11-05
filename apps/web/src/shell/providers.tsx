@@ -10,7 +10,19 @@ import { clearPrivateState, onLogout, onRemoteLogout } from "../auth/logout";
 import { updateImportCache, updatePortfolioCache } from "../portfolio/stream-cache";
 import { PwaLoader } from "../pwa/loader";
 import { connectStream, type StreamState } from "../sse/transport";
-import { connectionStatus } from "./connection-status";
+import { type ConnectionStatus, connectionStatus } from "./connection-status";
+
+// Every status, so the toolbar reserves the widest label (no layout shift after hydration).
+const statusKeys: Record<ConnectionStatus, true> = {
+  live: true,
+  polling: true,
+  connecting: true,
+  paused: true,
+  offline: true,
+};
+const connectionLabels = (Object.keys(statusKeys) as ConnectionStatus[]).map(
+  (status) => appMessages[status],
+);
 export const queryKey = (userId: string, ...parts: unknown[]) => [userId, ...parts];
 export function Providers({
   initialMe,
@@ -189,6 +201,7 @@ export function Providers({
             <PwaLoader />
             <LiveStatus
               label={appMessages[connectionStatus(state, paused)]}
+              reserve={connectionLabels}
               actionLabel={paused ? appMessages.resumeShort : appMessages.pauseShort}
               actionName={paused ? appMessages.resume : appMessages.pause}
               onAction={() => {
