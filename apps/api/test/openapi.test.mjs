@@ -27,6 +27,7 @@ test("Zod document matches all implemented operations and pending is the exact r
     "acceptLegalDocuments",
     "addWatchlistItem",
     "adminCreateInvitation",
+    "adminUpsertStressScenario",
     "authChangePassword",
     "authGetSession",
     "authListSessions",

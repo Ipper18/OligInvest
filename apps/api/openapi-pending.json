@@ -32,7 +32,6 @@
   "adminUpdateProvider",
   "adminUpdateUser",
   "adminUploadMarketData",
-  "adminUpsertStressScenario",
   "authSignInSocial",
   "cancelAccountDeletion",
   "createDataExport",
