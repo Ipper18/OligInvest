@@ -17,6 +17,15 @@ const hypothetical = (items) => ({
   shocks: { items },
 });
 
+test("scenario names are trimmed and cannot be blank", () => {
+  for (const scenario of [historical, hypothetical([{ kind: "correlation_shock" }])]) {
+    for (const name of ["", "   "]) {
+      expect(stressScenarioInputSchema.safeParse({ ...scenario, name }).success).toBe(false);
+    }
+    expect(stressScenarioInputSchema.parse({ ...scenario, name: "  Test  " }).name).toBe("Test");
+  }
+});
+
 test("historical window accepts exactly 1096 days and rejects invalid dates and fields", () => {
   expect(stressScenarioInputSchema.parse(historical)).toEqual(historical);
   for (const change of [

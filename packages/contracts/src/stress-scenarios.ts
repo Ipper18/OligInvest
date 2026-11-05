@@ -27,7 +27,7 @@ const shocksSchema = z.object({ items: z.array(shockSchema).min(1).max(10) }).st
 
 // The flat wire shape mirrors StressScenarioInput. Kind-specific checks are runtime invariants.
 const scenarioShape = {
-  name: z.string().max(80),
+  name: z.string().trim().min(1).max(80),
   kind: z.enum(["historical", "hypothetical"]),
   startDate: z.iso.date().optional(),
   endDate: z.iso.date().optional(),

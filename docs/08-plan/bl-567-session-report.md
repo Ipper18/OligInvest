@@ -14,11 +14,13 @@
 
 ## Dowody i granice
 
+Korekta po przeglądzie PR #55 (2026-11-05): `name` używa `trim().min(1).max(80)`; test odrzuca pusty ciąg i same spacje dla obu rodzajów scenariusza oraz sprawdza przycinanie nazwy. OpenAPI uzupełnione o `minLength: 1`, wygenerowany klient pozostaje aktualny bez zmian web/UI. Contracts: **126/126 PASS**. API: **92/93 PASS** — `test/server.test.mjs:82` zmierzył 3869 ms przy istniejącym limicie 3500 ms. Bez retry i zmiany progu; pozostałe testy, w tym zgodność OpenAPI, przeszły. Build API i kontrola formatowania zmienionych plików: PASS. PR pozostaje draftem, CI odczytuje właściciel. Poniższe pełne dowody dotyczą pierwotnej implementacji.
+
 - `pnpm exec turbo run lint typecheck test --filter='...[origin/main]' --output-logs=new-only`: PASS (60 zadań; API 93 testy).
 - PostgreSQL 18.6: testy integracyjne, RLS i audyt katalogu uprawnień; porównanie migracji z `schema.sql`: ZERO DIFFERENCES. BL-567 sprawdza odmowy, zmianę rodzaju, wyłączenie scenariusza, idempotentny PUT, równoległe utworzenie i rollback po błędzie audytu.
 - Kontrakt OpenAPI: 99 operacji zaimplementowanych, 87 pending. `check:api-client`, `check:deps`, kontrola dokumentacji i repozytorium: PASS.
 - Kontrola sekretów `git grep` według CONTRIBUTING § 6: cztery istniejące wartości syntetyczne w testach, brak nowych trafień ani sekretów w zmianie.
-- CI i przegląd właściciela pozostają otwarte; status zadania **w toku**. Zgodnie z poleceniem sesja kończy się na otwarciu draft PR, bez oczekiwania na CI.
+- Właściciel przejrzał kod i zgłosił powyższą korektę; CI i wspólne DoD pozostają otwarte, status zadania **w toku**. Bez odczytu CI przez agenta.
 
 ## Pominięte, odchylenia i ryzyka
 
