@@ -145,10 +145,13 @@ test("indicators are requested on demand and have a keyboard-accessible table", 
   const readScripts = collectScripts(page);
   await page.goto("/rynek/01900000-0000-7000-8000-000000000101");
   await expect(page.getByRole("heading", { name: "Parametry wskaźników" })).toHaveCount(0);
+  await page.locator(".oi-candlestick").scrollIntoViewIfNeeded();
+  await expect(page.locator(".oi-candlestick canvas").first()).toBeVisible();
   await page.getByRole("button", { name: "Pokaż wskaźniki" }).focus();
   await page.keyboard.press("Enter");
   await page.getByRole("checkbox", { name: "SMA", exact: true }).check();
   await page.getByRole("button", { name: "Oblicz", exact: true }).click();
+  await page.keyboard.press("Escape");
   await expect(
     page.getByText("Brak wartości: rozgrzewka lub niepełne dane", { exact: true }),
   ).toBeVisible();

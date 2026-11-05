@@ -2,7 +2,7 @@ import { portfolioMessages as m } from "@oliginvest/i18n";
 import { notFound } from "next/navigation";
 import { requireMe } from "../auth/session";
 import type { SearchParams } from "./page";
-import { PortfolioFilters, PortfolioNav } from "./presentation";
+import { PortfolioHeader } from "./page-header";
 import { fetchResource, readArgs } from "./resources";
 import { SummaryLive } from "./summary-live";
 import { SummaryTable } from "./summary-table";
@@ -22,9 +22,7 @@ export async function summaryPage(search: SearchParams) {
   ]);
   return (
     <section>
-      <h1>{m.start}</h1>
-      <PortfolioNav />
-      <PortfolioFilters accounts={accounts.data} args={args} view />
+      <PortfolioHeader title={m.start} filters={{ accounts: accounts.data, args, view: true }} />
       <SummaryLive
         userId={me.id}
         args={args}
@@ -32,6 +30,9 @@ export async function summaryPage(search: SearchParams) {
         initial={initial}
         initialDay={initialDay}
         fallback={<SummaryView data={initial} day={initialDay} Table={SummaryTable} />}
+        offlineFallback={
+          <SummaryView data={initial} day={initialDay} Table={SummaryTable} unavailable />
+        }
       />
     </section>
   );

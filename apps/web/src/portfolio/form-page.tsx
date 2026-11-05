@@ -2,7 +2,7 @@ import { portfolioMessages as m } from "@oliginvest/i18n";
 import { notFound } from "next/navigation";
 import { requireMe } from "../auth/session";
 import { AccountForm, TransactionForm } from "./forms";
-import { PortfolioNav } from "./presentation";
+import { PortfolioHeader } from "./page-header";
 import { DomainError, fetchResource } from "./resources";
 export async function formPage(kind: "account" | "transaction", id?: string) {
   await requireMe();
@@ -18,8 +18,7 @@ export async function formPage(kind: "account" | "transaction", id?: string) {
           : m.newTransaction;
     return (
       <section>
-        <h1>{title}</h1>
-        <PortfolioNav />
+        <PortfolioHeader title={title} current={kind === "account" ? "accounts" : "transactions"} />
         {kind === "account" ? (
           <AccountForm
             {...(initial

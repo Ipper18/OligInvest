@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { requireMe } from "../../../../../auth/session";
 import { ImportPreview } from "../../../../../portfolio/import-screens";
 import type { SearchParams } from "../../../../../portfolio/page";
-import { PortfolioNav } from "../../../../../portfolio/presentation";
+import { PortfolioHeader } from "../../../../../portfolio/page-header";
 import { DomainError, fetchResource, readArgs } from "../../../../../portfolio/resources";
 export const metadata = { title: "Podgląd importu — OligInvest" };
 export default async function Page({
@@ -24,8 +24,7 @@ export default async function Page({
       notFound();
     return (
       <section>
-        <h1>{m.preview}</h1>
-        <PortfolioNav />
+        <PortfolioHeader title={m.preview} current="imports" />
         <ImportPreview
           userId={me.id}
           args={args}

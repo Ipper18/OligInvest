@@ -1,5 +1,5 @@
 import { allocationMessages as m } from "@oliginvest/i18n/allocation";
-import { AssumptionsBlock, Disclaimer } from "@oliginvest/ui";
+import { AllocationBar, AssumptionsBlock, Disclaimer } from "@oliginvest/ui";
 import { DataTable } from "@oliginvest/ui/table";
 import type { components, operations } from "../api/schema";
 import { Explainer } from "../education/explainer";
@@ -27,6 +27,16 @@ export function AllocationView({ data }: { data: Allocation | null }) {
             </dd>
           </dl>
           <Freshness meta={data.meta} />
+          {!data.meta.stale &&
+            data.slices.length <= 8 &&
+            data.slices.every((slice) => slice.weight != null) && (
+              <AllocationBar
+                items={data.slices.map((slice) => ({
+                  label: slice.label,
+                  weight: slice.weight ?? 0,
+                }))}
+              />
+            )}
           <DataTable
             caption={m.title}
             headings={[m.group, m.value, m.weight, m.classification]}

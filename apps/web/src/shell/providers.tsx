@@ -1,27 +1,27 @@
 "use client";
 
 import { appMessages } from "@oliginvest/i18n";
-import { AppShell, Button } from "@oliginvest/ui";
+import { AppShell, LiveStatus } from "@oliginvest/ui";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { usePathname, useRouter } from "next/navigation";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import type { Me } from "../api/validation";
-import { submitAction } from "../auth/actions";
 import { clearPrivateState, onLogout, onRemoteLogout } from "../auth/logout";
 import { updateImportCache, updatePortfolioCache } from "../portfolio/stream-cache";
 import { PwaLoader } from "../pwa/loader";
 import { connectStream, type StreamState } from "../sse/transport";
 import { connectionStatus } from "./connection-status";
-import { Navigation } from "./navigation";
 export const queryKey = (userId: string, ...parts: unknown[]) => [userId, ...parts];
 export function Providers({
   initialMe,
   children,
   footer,
+  navigation,
 }: {
   initialMe: Me;
   children: ReactNode;
   footer: ReactNode;
+  navigation: ReactNode;
 }) {
   const [client] = useState(
     () =>
@@ -183,32 +183,20 @@ export function Providers({
     <QueryClientProvider client={client}>
       <AppShell
         footer={footer}
-        navigation={<Navigation me={me} />}
+        navigation={navigation}
         toolbar={
           <div className="oi-toolbar">
             <PwaLoader />
-            <span role="status" className="oi-connection">
-              {appMessages[connectionStatus(state, paused)]}
-            </span>
-            <Button
-              onClick={() => {
+            <LiveStatus
+              label={appMessages[connectionStatus(state, paused)]}
+              actionLabel={paused ? appMessages.resumeShort : appMessages.pauseShort}
+              actionName={paused ? appMessages.resume : appMessages.pause}
+              onAction={() => {
                 setPaused(!paused);
                 pausedRef.current = !paused;
                 stream.current?.pause(!paused);
               }}
-            >
-              {paused ? appMessages.resume : appMessages.pause}
-            </Button>
-            <Button
-              onClick={async () => {
-                await clearPrivateState();
-                await submitAction("signOut", {});
-                await clearPrivateState({ broadcast: true, unsubscribePush: true });
-                location.replace("/logowanie");
-              }}
-            >
-              {appMessages.signOut}
-            </Button>
+            />
           </div>
         }
       >
