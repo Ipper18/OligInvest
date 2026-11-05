@@ -197,6 +197,12 @@ Notowania wywołują osobną wycenę tylko do odczytu i ulotne SSE właściciela
 nie nadpisują dziennych wycen. Brak ceny/kursu oznacza niekompletność wyceny,
 a nieznany koszt pozostaje `null`. Zdarzenie trwałe wychodzi dopiero po commit.
 
+Dzienne limity ciężkich analiz (BL-215): polityka ról i odmowa są w
+`packages/platform`, kontrakt migawki w `packages/contracts`, a adapter PostgreSQL
+w module analytics. Zużycie pozostaje w `analytics_runs` pod RLS, konfiguracja
+w `platform.role_limits`; bez nowych tabel i zależności. Szczegóły atomowości,
+odnowienia w Europe/Warsaw i `Retry-After`: [konwencje API § 7.1](../02-api/konwencje-api.md#71-dzienne-limity-ról-bl-215).
+
 ### 5.2 Katalog kolejek
 
 | Kolejka | Instancja | Konsument | Współbieżność | Priorytety / uwagi |

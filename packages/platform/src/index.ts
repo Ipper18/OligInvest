@@ -4,3 +4,4 @@ export * from "./metrics.js";
 export * from "./modules.js";
 export * from "./problem.js";
 export * from "./request-context.js";
+export * from "./role-limits.js";

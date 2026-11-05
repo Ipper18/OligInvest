@@ -4,6 +4,7 @@ import { createAppDatabase, createAuthDatabase } from "@oliginvest/db";
 import { createAnalyticsResults } from "@oliginvest/mod-analytics/jobs";
 import { ProblemError } from "@oliginvest/platform";
 import { sql } from "drizzle-orm";
+import { readHeavyRoleQuota } from "../../../modules/analytics/dist/src/server/role-limits.js";
 import { createApp } from "../dist/app.js";
 import { analyticsModule } from "../dist/modules.js";
 
@@ -311,7 +312,17 @@ export async function testAnalyticsStorage(settings) {
     const second = await (await create(monteCarlo)).json();
     const quota = await create(monteCarlo);
     assert.equal(quota.status, 429);
+    assert.equal(quota.headers.get("content-type"), "application/problem+json");
+    assert.equal(quota.headers.get("cache-control"), "no-store");
+    const resetDelay = Number(quota.headers.get("retry-after"));
+    const quotaSnapshot = await database.transaction(owner, (tx) => readHeavyRoleQuota(tx, "pro"));
+    const expectedDelay = Math.ceil(
+      (Date.parse(quotaSnapshot.resetAt) - Date.parse(quotaSnapshot.observedAt)) / 1000,
+    );
+    assert.ok(resetDelay >= expectedDelay && resetDelay <= expectedDelay + 1);
     assert.equal((await quota.json()).code, "QUOTA_EXCEEDED");
+    assert.equal((await create(monteCarlo, key)).status, 202, "replay bypasses exhausted quota");
+    assert.equal(queued.length, 2, "replay and rejection do not enqueue");
 
     // jobs: progress and result under the owner's RLS context, idempotent, announced on SSE.
     removable.delete(second.id);
@@ -560,6 +571,70 @@ export async function testAnalyticsStorage(settings) {
       [published.at(-1).event, published.at(-1).data.errorCode],
       ["analytics.run.failed", "INTERNAL"],
     );
+
+    // BL-215: configuration changes are visible immediately; no restart/cache reset.
+    const setBudget = (value) =>
+      database.transaction({ userId: null, role: "system" }, (tx) =>
+        tx.execute(
+          sql`UPDATE platform.role_limits SET limits=${JSON.stringify(value)}::jsonb WHERE role='pro'`,
+        ),
+      );
+    await setBudget({ analytics_heavy_per_day: 0 });
+    assert.equal((await create(monteCarlo)).status, 429);
+    assert.equal((await create(monteCarlo, randomUUID(), "basic")).status, 403);
+    await setBudget({ analytics_heavy_per_day: "invalid" });
+    assert.equal(
+      (await create(monteCarlo)).status,
+      500,
+      "invalid policy never grants default budget",
+    );
+    await setBudget({ imports_per_day: 4 });
+    assert.equal((await (await request("limits")).json()).heavyRunsPerDay, 20);
+    const beforeRace = await (await request("limits")).json();
+    await setBudget({ analytics_heavy_per_day: beforeRace.heavyRunsUsedToday + 1 });
+    const queuedBeforeRace = queued.length;
+    const race = await Promise.all(Array.from({ length: 3 }, () => create(monteCarlo)));
+    assert.deepEqual(race.map((response) => response.status).sort(), [202, 429, 429]);
+    assert.equal(queued.length, queuedBeforeRace + 1);
+    const otherLimits = await (
+      await request("limits", "GET", undefined, { "x-owner": "other" })
+    ).json();
+    assert.equal(otherLimits.heavyRunsUsedToday, 0, "quota usage is isolated by RLS");
+    assert.equal(otherLimits.heavyRunsPerDay, beforeRace.heavyRunsUsedToday + 1);
+
+    // Calendar and rollback checks use the same SQL adapter, with a fixed observation instant.
+    for (const [start, end, seconds] of [
+      ["2026-03-28T23:00:00Z", "2026-03-29T22:00:00Z", 23 * 3600],
+      ["2026-10-24T22:00:00Z", "2026-10-25T23:00:00Z", 25 * 3600],
+    ]) {
+      const isolatedOwner = { userId: users.other, role: "pro" };
+      const abort = new Error("Synthetic rollback");
+      await assert.rejects(
+        database.transaction(isolatedOwner, async (tx) => {
+          // One before the day, two on its boundaries and a light analysis inside it.
+          for (const [at, type] of [
+            [new Date(Date.parse(start) - 1).toISOString(), "monte_carlo"],
+            [start, "goal"],
+            [end, "stress_test"],
+            [start, "what_if"],
+          ])
+            await tx.execute(sql`INSERT INTO analytics.analytics_runs(user_id,type,params,input_snapshot,algorithm_version,created_at)
+          VALUES(${users.other}::uuid,${type},'{}','{}','synthetic',${at}::timestamptz)`);
+          const first = await readHeavyRoleQuota(tx, "pro", new Date(start));
+          assert.equal(first.used, 1, "start inclusive, end exclusive, heavy only");
+          assert.equal(first.resetAt, new Date(end).toISOString());
+          assert.equal((Date.parse(first.resetAt) - Date.parse(first.observedAt)) / 1000, seconds);
+          const next = await readHeavyRoleQuota(tx, "pro", new Date(end));
+          assert.equal(next.used, 1, "quota renews at local midnight");
+          throw abort;
+        }),
+        (error) => error === abort,
+      );
+      const rolledBack = await database.transaction(isolatedOwner, (tx) =>
+        readHeavyRoleQuota(tx, "pro", new Date(start)),
+      );
+      assert.equal(rolledBack.used, 0, "rolled back operations do not consume quota");
+    }
   } finally {
     await database.transaction({ userId: null, role: "system" }, (tx) =>
       tx.execute(

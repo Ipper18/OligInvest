@@ -220,7 +220,7 @@ Brama A (**[A]**) — MVP właściciela; brama B (**[B]**) — funkcje wymagane 
 | BL-212 | Test opóźnienia SSE < 2 s p95 i wznowienia z `Last-Event-ID` | NFR-01.06 | RT, [ADR-007](../09-decyzje/ADR-007-sse-zamiast-websocket.md) | BL-125 | 1 | todo |
 | BL-213 | Raport kompletności EOD GPW (weryfikacja ADR-005 przez 20 sesji) | NFR-09.02 | [ADR-005](../09-decyzje/ADR-005-strategia-danych-rynkowych.md) | BL-133 | 0,5 | w toku (Claude Code, `feat/m2-market-backend`, [PR #15](https://github.com/Ipper18/OligInvest/pull/15); backend — ekran `/rynek` i oznaczenia UI u Codex; nakład/odchylenie niezmierzone) |
 | BL-214 | Ekran kursów walut `/rynek/waluty` z historią NBP | FR-01.14 | EKR | BL-132 | 1 | w toku — PR #17; implementacja i lokalne testy PASS; nakład niezmierzony |
-| BL-215 | Limity per rola w `platform` (np. liczba analiz dziennie), `429` z czasem odnowienia | FR-08.03 | MOD, KONW | BL-131 | 1,5 | todo |
+| BL-215 | Limity per rola w `platform` (np. liczba analiz dziennie), `429` z czasem odnowienia | FR-08.03 | MOD, KONW | BL-131 | 1,5 | w toku — backend i testy wykonane; CI/DoD i zasady usuwania R-52 otwarte; estymata bez zmian, nakład/odchylenie niezmierzone ([raport](bl-215-session-report.md)) |
 | BL-216 | Onboarding przy pierwszym logowaniu (driver.js ładowany leniwie, pomijalny i powtarzalny, dostępny z klawiatury; treść z samouczków § 2) | FR-06.01 | A11Y, PERF, USR | BL-203 | 2 | w toku — PR #17; zapis per użytkownik, klawiatura i budżety PASS; nakład niezmierzony |
 | | **Suma etapu** | | | | **29,5** | |
 
