@@ -68,7 +68,7 @@ export interface AuthServiceOptions {
   configuration: AuthConfiguration;
   state: AuthState;
   passwordChecks: PasswordChecks;
-  audit: Pick<AuditWriter, "record">;
+  audit: Pick<AuditWriter, "record" | "recordInTransaction">;
   securityEvent: (event: AuthSecurityEvent) => Promise<void>;
   preferencesChanged?: (userId: string) => Promise<void>;
   sessionsChanged?: () => Promise<void>;

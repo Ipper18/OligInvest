@@ -6423,7 +6423,7 @@ components:
       description: 'Historyczny: `startDate` < `endDate`, okno ≤ 1096 dni. Hipotetyczny: `shocks.items` — lista szoków w formacie `StressTestParams.hypothetical`.'
       required: [name, kind, description, enabled]
       properties:
-        name: {type: string, maxLength: 80}
+        name: {type: string, minLength: 1, maxLength: 80}
         kind: {type: string, enum: [historical, hypothetical]}
         startDate: {$ref: '#/components/schemas/LocalDate'}
         endDate: {$ref: '#/components/schemas/LocalDate'}
@@ -6436,7 +6436,7 @@ components:
       required: [key, name, kind, description, enabled]
       properties:
         key: {type: string, pattern: '^[a-z0-9_]{3,40}$', example: covid_2020}
-        name: {type: string, maxLength: 80}
+        name: {type: string, minLength: 1, maxLength: 80}
         kind: {type: string, enum: [historical, hypothetical]}
         startDate: {$ref: '#/components/schemas/LocalDate'}
         endDate: {$ref: '#/components/schemas/LocalDate'}

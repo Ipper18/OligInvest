@@ -8,6 +8,7 @@ import {
   withRequestContext,
 } from "@oliginvest/platform";
 import { bodyLimit } from "hono/body-limit";
+import { mountAdminStress } from "./admin-stress-routes.js";
 import { mountAlerts } from "./alert-routes.js";
 import { type IdentityDependencies, mountIdentity } from "./auth/identity-routes.js";
 import { mountPats } from "./auth/pat-routes.js";
@@ -241,14 +242,16 @@ export function createApp(
     }
     await next();
   });
-  mountIdentity(api, {
+  const identityDependencies = {
     ...authDependencies,
     administration:
       options.auth?.administration ??
       (() => {
         throw new ProblemError("SERVICE_UNAVAILABLE");
       }),
-  });
+  };
+  mountIdentity(api, identityDependencies);
+  mountAdminStress(api, identityDependencies);
   mountPreferences(api, authDependencies);
   mountNotifications(api, authDependencies);
   mountAlerts(api, authDependencies);

@@ -14,6 +14,7 @@ import { authOperations } from "../dist/auth/routes.js";
 import { AuthService } from "../dist/auth/service.js";
 import { SESSION_COOKIE, sessionCookie } from "../dist/auth/session.js";
 import { totpCode } from "../dist/auth/totp.js";
+import { testAdminStress } from "./admin-stress.mjs";
 
 export async function testAuthFacade(settings) {
   const connection = { host: settings.host, port: settings.port, database: settings.database };
@@ -307,6 +308,10 @@ export async function testAuthFacade(settings) {
       tx.execute(sql`UPDATE auth.users SET role='admin' WHERE id=${userId}::uuid`),
     );
     const invitationKey = randomUUID();
+    await testAdminStress({ app, administration, database, appDatabase, cookies, userId });
+    console.log(
+      "BL-567: stress admin gates, app-role RLS, atomic audit and concurrent upserts PASS",
+    );
     const invitationInput = {
       email: "new@example.test",
       role: "user",
