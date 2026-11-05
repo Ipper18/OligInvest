@@ -9,6 +9,11 @@
     "test": "vitest run",
     "build": "tsc -p tsconfig.json"
   },
+  "dependencies": {
+    "@oliginvest/contracts": "workspace:*",
+    "@oliginvest/db": "workspace:*",
+    "drizzle-orm": "0.45.2"
+  },
   "exports": {
     "./contracts": {
       "types": "./dist/contracts.d.ts",

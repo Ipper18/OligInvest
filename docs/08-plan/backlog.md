@@ -330,7 +330,7 @@ Każde zadanie z analizą przyszłości kończy się przeglądem metodologicznym
 | BL-564 | Spike i wdrożenie OAuth z wymuszonym TOTP za flagą `auth.oauth` (ADR) | FR-07.03 | AUTH, [ADR-004](../09-decyzje/ADR-004-postgres-better-auth-rls.md) | BL-103 | 3 | todo |
 | BL-565 | Migawka offline: tylko w zainstalowanej PWA, po zgodzie, ≤ 30 dni, kasowana przy wylogowaniu i 401 | FR-09.02 | UI, RODO | BL-401 | 2 | todo |
 | BL-566 | Przegląd metodologiczny i zgodności funkcji M5b (checklisty, test języka) | NFR-07.02 | LAW | BL-559, BL-555 | 0,5 | todo |
-| BL-567 | Admin: edycja scenariuszy testów skrajnych (`adminUpsertStressScenario`) z audytem przed/po, step-upem i walidacją okna ≤ 1096 dni oraz listy szoków; zapis w kontekście roli aplikacyjnej (rola `oliginvest_auth` nie ma praw do `analytics.*`) | FR-04.04, FR-08.10 | API, OBL | BL-556 | 1 | todo (wydzielone z BL-556 2026-10-27) |
+| BL-567 | Admin: edycja scenariuszy testów skrajnych (`adminUpsertStressScenario`) z audytem przed/po, step-upem i walidacją okna ≤ 1096 dni oraz listy szoków; zapis w kontekście roli aplikacyjnej (rola `oliginvest_auth` nie ma praw do `analytics.*`) | FR-04.04, FR-08.10 | API, OBL | BL-556 | 1 | w toku (Codex, `feat/bl-567-stress-admin`, backend zaimplementowany; do zielonego CI i wspólnego DoD; ekran osobno po PR #53; nakład niezmierzony, odchylenie nieoszacowane; [stan](bl-567-session-report.md)) |
 | | **Suma etapu** | | | | **39,5** | |
 
 ## 8. M6 — Hardening i dostępność

@@ -54,6 +54,7 @@ export class Administration {
       before: AuditState | null;
       after: AuditState;
     },
+    scope?: { database: "app"; permission: "admin:system" },
   ): Promise<T> {
     const options = this.service.options;
     const source = {
@@ -77,7 +78,7 @@ export class Administration {
         if (!principal) throw new ProblemError("UNAUTHENTICATED");
         requireMfa(principal);
         requireStepUp(principal);
-        requirePermission(principal.role, "admin:users");
+        requirePermission(principal.role, scope?.permission ?? "admin:users");
         if ((await this.service.legal(principal)).termsAcceptanceRequired)
           throw new ProblemError("TERMS_ACCEPTANCE_REQUIRED");
         actor = { userId: principal.user_id, role: principal.role };
@@ -86,6 +87,18 @@ export class Administration {
           outcome: "success",
           ...source,
         });
+        if (scope?.database === "app") {
+          return options.appDatabase.transaction(actor, async (appTx) => {
+            const result = await work(actor, appTx);
+            await options.audit.recordInTransaction(appTx, actor, {
+              action,
+              outcome: "success",
+              ...source,
+              ...describe?.(result),
+            });
+            return result;
+          });
+        }
         const result = await work(actor, tx);
         await options.audit.record(actor, {
           action,

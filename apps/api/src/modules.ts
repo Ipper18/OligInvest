@@ -58,6 +58,11 @@ export const analyticsModule = await optionalModule(
   // @ts-ignore
   () => import("@oliginvest/mod-analytics/server"),
 );
+export const adminModule = await optionalModule(
+  // biome-ignore lint/suspicious/noTsIgnore: Package may be omitted from the build.
+  // @ts-ignore
+  () => import("@oliginvest/mod-admin/server"),
+);
 type AnalyticsModule = NonNullable<typeof analyticsModule>;
 // Without the package the import is `any`; the host then still type-checks its own callbacks.
 type Absent<T> = 0 extends 1 & T ? true : false;

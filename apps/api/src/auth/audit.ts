@@ -1,5 +1,6 @@
 import { createHmac } from "node:crypto";
-import type { AppDatabase, DatabaseContext } from "@oliginvest/db";
+import { stressScenarioSchema } from "@oliginvest/contracts";
+import type { AppDatabase, DatabaseContext, DatabaseTransaction } from "@oliginvest/db";
 import { sql } from "drizzle-orm";
 import { z } from "zod";
 
@@ -20,6 +21,7 @@ const stateSchema = z
       .regex(/^\d{1,3}(\.\d{1,8})?$/u)
       .optional(),
     effectiveDate: z.iso.date().optional(),
+    stressScenario: stressScenarioSchema.optional(),
   })
   .strict();
 export type AuditState = z.infer<typeof stateSchema>;
@@ -47,17 +49,23 @@ export class AuditWriter {
     private readonly key: string,
   ) {}
   async record(actor: DatabaseContext, input: z.infer<typeof eventSchema>): Promise<void> {
+    await this.database.transaction(actor, (tx) => this.recordInTransaction(tx, actor, input));
+  }
+
+  async recordInTransaction(
+    tx: DatabaseTransaction,
+    actor: DatabaseContext,
+    input: z.infer<typeof eventSchema>,
+  ): Promise<void> {
     const event = eventSchema.parse(input);
     const ref = createHmac("sha256", this.key)
       .update(actor.userId ?? "system")
       .digest("hex");
-    await this.database.transaction(actor, (tx) =>
-      tx.execute(sql`INSERT INTO platform.audit_log
+    await tx.execute(sql`INSERT INTO platform.audit_log
       (actor_user_id,actor_ref,actor_type,action,resource_id,outcome,request_id,resource_type,ip,user_agent,before,after)
       VALUES (${actor.userId}::uuid,${ref},${actor.role === "admin" ? "admin" : actor.role === "system" || actor.role === "anonymous" ? "system" : "user"},
       ${event.action},${event.resourceId ?? null},${event.outcome},${event.requestId ?? null},
       ${event.resourceType ?? null},${event.ip ?? null}::inet,${event.userAgent ?? null},${JSON.stringify(event.before ?? null)}::jsonb,
-      ${JSON.stringify({ ...event.after, ...(event.reason ? { reason: event.reason } : {}) })}::jsonb)`),
-    );
+      ${JSON.stringify({ ...event.after, ...(event.reason ? { reason: event.reason } : {}) })}::jsonb)`);
   }
 }
