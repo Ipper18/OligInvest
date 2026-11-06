@@ -109,6 +109,8 @@ test("real invitation → TOTP → XTB worker → reconciled portfolio", async (
       .violations,
   ).toEqual([]);
   await expect(page.getByText("Aktualizacje na żywo", { exact: true })).toBeVisible();
+  // BL-413: sign-out moved from the shell header to Settings.
+  await page.goto("/ustawienia");
   await page.getByRole("button", { name: "Wyloguj się", exact: true }).click();
   await expect(page).toHaveURL(/\/logowanie$/);
   expect((await page.request.get("/api/v1/portfolio/accounts")).status()).toBe(401);

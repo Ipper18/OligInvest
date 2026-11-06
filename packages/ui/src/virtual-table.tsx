@@ -18,6 +18,19 @@ export function VirtualTable({ caption, headings, rows, headingContent }: TableP
       // biome-ignore lint/a11y/noNoninteractiveTabindex: Keyboard users must be able to scroll the virtualized region.
       tabIndex={0}
       aria-label={caption}
+      onKeyDown={(event) => {
+        if (
+          event.target === event.currentTarget &&
+          event.ctrlKey &&
+          (event.key === "Home" || event.key === "End")
+        ) {
+          event.preventDefault();
+          // Native scrolling targets the old estimated height before rows are measured.
+          virtual.scrollToIndex(event.key === "Home" ? 0 : rows.length - 1, {
+            align: event.key === "Home" ? "start" : "end",
+          });
+        }
+      }}
     >
       <table className="oi-data-table" aria-rowcount={rows.length + 1}>
         <caption>{caption}</caption>

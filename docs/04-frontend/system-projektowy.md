@@ -4,7 +4,7 @@
 
 Powiązane: [`architektura-ui.md`](architektura-ui.md), [`dostepnosc.md`](dostepnosc.md), [`mapa-ekranow.md`](mapa-ekranow.md), [ADR-009](../09-decyzje/ADR-009-wykresy.md), [ADR-017](../09-decyzje/ADR-017-jezyk-wizualny-panele.md), NFR-06.01–NFR-06.03, FR-07.08.
 
-**Od 2026-10-29 obowiązuje język wizualny „panele monochromatyczne” (kierunek B, [ADR-017](../09-decyzje/ADR-017-jezyk-wizualny-panele.md)).** Projekt referencyjny: [`projekt-b/`](projekt-b/b-tokens.css). Zawiera tokeny `b-tokens.css`, CSS komponentów `b.css` i statyczne artboardy: Start, Pozycje i karta instrumentu na telefon i komputer, stany Startu, motyw jasny, paletę dla daltonistów oraz arkusz kontrastów. Prefiks `--b-` w plikach referencyjnych odpowiada tokenom `--color-*` w `packages/ui`. Zasady § 1, 3, 4 i 6 opisują stan docelowy; tabele § 2.1–2.2 opisują jeszcze kod, a tokeny docelowe są w § 2.5. Implementacja: BL-413.
+**Od 2026-10-29 obowiązuje język wizualny „panele monochromatyczne” (kierunek B, [ADR-017](../09-decyzje/ADR-017-jezyk-wizualny-panele.md)).** Projekt referencyjny: [`projekt-b/`](projekt-b/b-tokens.css). Zawiera tokeny `b-tokens.css`, CSS komponentów `b.css` i statyczne artboardy: Start, Pozycje i karta instrumentu na telefon i komputer, stany Startu, motyw jasny, paletę dla daltonistów oraz arkusz kontrastów. Prefiks `--b-` w plikach referencyjnych odpowiada tokenom `--color-*` w `packages/ui`. Tokeny § 2.1–2.2 i komponenty opisują implementację BL-413; tabele przeniesiono z dawnej § 2.5 razem ze zmianą kodu.
 
 ## 1. Zasady
 
@@ -20,38 +20,46 @@ Powiązane: [`architektura-ui.md`](architektura-ui.md), [`dostepnosc.md`](dostep
 
 ## 2. Kolory
 
-Kontrasty policzone wzorem WCAG 2.x (luminancja względna) 2026-09-22 względem tła strony `bg` danego motywu. Wymagania: tekst ≥ 4,5:1 (1.4.3), elementy graficzne i granice kontrolek ≥ 3:1 (1.4.11).
+Kontrasty policzone wzorem WCAG 2.x (luminancja względna); test BL-413 sprawdza `bg`, `panel` i `panel-2` w obu motywach i paletach. Wymagania: tekst ≥ 4,5:1 (1.4.3), elementy graficzne i granice kontrolek ≥ 3:1 (1.4.11).
 
 ### 2.1 Tokeny podstawowe
 
-Tabele § 2.1–2.2 opisują tokeny zaimplementowane w `packages/ui/src/tokens.css` (test `packages/ui/test/tokens.test.mjs` porównuje je z kodem). Docelowe tokeny kierunku B są w § 2.5; BL-413 przenosi je do tych tabel razem ze zmianą kodu.
+Kontrast liczony względem `bg` i (po ukośniku) względem `panel` danego motywu (2026-10-29, [ADR-017](../09-decyzje/ADR-017-jezyk-wizualny-panele.md) § Weryfikacja). Tokeny tła nie mają progu.
 
 | Token | Ciemny (domyślny) | Kontrast | Jasny | Kontrast | Użycie |
 |---|---|---|---|---|---|
-| `--color-bg` | `#0B0D0F` | — | `#FAFAF7` | — | tło strony i całej treści |
-| `--color-panel` | `#0F1215` | — | `#FFFFFF` | — | wyłącznie warstwy nad treścią: arkusze, okna, menu |
-| `--color-ink` | `#E8EAED` | 16,15 | `#14171A` | 17,21 | tekst podstawowy i liczby |
-| `--color-muted` | `#98A1AA` | 7,43 | `#5A6169` | 6,00 | etykiety, opisy, osie, wartości zerowe |
-| `--color-hairline` | `#22272C` | — | `#E3E2DB` | — | linie sekcji i wierszy (dekoracyjne, bez progu) |
-| `--color-border` | `#7C848D` | 5,14 | `#6F7883` | 4,28 | granice pól formularzy i kontrolek |
-| `--color-accent` | `#2AA198` | 6,16 | `#0E6E6E` | 5,78 | elementy interaktywne, linia wartości portfela |
-| `--color-focus` | `#5AA9FF` | 7,93 | `#0A5FB4` | 6,07 | obrys fokusu (2 px + odsunięcie 2 px) |
-| `--color-warning` | `#E3B341` | 10,00 | `#8A5A00` | 5,67 | dane nieaktualne, ostrzeżenia metodologiczne |
-| `--color-danger` | `#FF6B61` | 6,98 | `#C4302B` | 5,28 | błędy formularzy, akcje nieodwracalne |
+| `--color-bg` | `#0B0D0F` | — | `#F1F0EB` | — | tło strony |
+| `--color-panel` | `#161A1F` | — | `#FFFFFF` | — | karty z treścią, dolny pasek, panel boczny, arkusze |
+| `--color-panel-2` | `#1F252B` | — | `#F5F4EF` | — | tło wewnątrz karty: nagłówek tabeli, przełączniki, pole wyszukiwania, szkielet |
+| `--color-line` | `#262D34` | — | `#E2E1DA` | — | ramka kart i linie wierszy (dekoracyjne, bez progu) |
+| `--color-ink` | `#E8EAED` | 16,15 / 14,50 | `#14171A` | 15,77 / 17,99 | tekst podstawowy i liczby |
+| `--color-muted` | `#98A1AA` | 7,43 / 6,67 | `#5A6169` | 5,50 / 6,27 | etykiety, opisy, osie, wartości zerowe, „—” |
+| `--color-border` | `#7C848D` | 5,14 / 4,61 | `#6F7883` | 3,92 / 4,48 | granice pól formularzy i kontrolek (próg 3:1) |
+| `--color-primary` | `#E8EAED` | 16,15 / 14,50 | `#14171A` | 15,77 / 17,99 | przycisk główny, aktywny przełącznik, przycisk „+” |
+| `--color-on-primary` | `#0B0D0F` | 16,15 na `primary` | `#FFFFFF` | 17,99 na `primary` | tekst i ikona na `primary` |
+| `--color-series` | = `ink` | 16,15 / 14,50 | = `ink` | 15,77 / 17,99 | linia wartości portfela i krzywej kapitału |
+| `--color-focus` | `#5AA9FF` | 7,93 / 7,12 | `#0A5FB4` | 5,56 / 6,35 | obrys fokusu (2 px + odsunięcie 2 px) |
+| `--color-warning` | `#E3B341` | 10,00 / 8,98 | `#8A5A00` | 5,19 / 5,93 | dane nieaktualne, ostrzeżenia metodologiczne |
+| `--color-warning-bg` | `#2B2413` | `warning` 7,91 | `#FBF1DC` | `warning` 5,28 | tło plakietki „nieaktualne” i banera danych |
+| `--color-danger` | `#FF6B61` | 6,98 / 6,26 | `#C4302B` | 4,84 / 5,52 | błędy formularzy, akcje nieodwracalne |
 
-Na `panel` kontrasty nie są niższe niż na `bg` (motyw ciemny: tekst 15,59, etykiety 7,17).
+Na `panel-2` najniższy kontrast tekstu wynosi 5,54:1 (`danger`, ciemny). Token `accent` (`#2AA198`/`#0E6E6E`) nie jest już używany w interfejsie; wartość zostaje jako kategoria 3 (§ 2.3).
 
 ### 2.2 Zysk i strata
 
-| Token | Ciemny | Kontrast | Jasny | Kontrast |
+| Token | Ciemny | Kontrast `bg` / `panel` / tło plakietki | Jasny | Kontrast `bg` / `panel` / tło plakietki |
 |---|---|---|---|---|
-| `--color-gain` | `#3FB950` | 7,66 | `#1A7F37` | 4,86 |
-| `--color-loss` | `#FF6B61` | 6,98 | `#C4302B` | 5,28 |
-| `--color-gain` (daltoniści) | `#5AA9FF` | 7,93 | `#0A5FB4` | 6,07 |
-| `--color-loss` (daltoniści) | `#F0913F` | 8,18 | `#A84B00` | 5,47 |
-| `--color-flat` | = `--color-muted` | 7,43 | = `--color-muted` | 6,00 |
+| `--color-gain` | `#3FB950` | 7,66 / 6,88 / 6,27 | `#18783A` | 4,86 / 5,55 / 4,89 |
+| `--color-loss` | `#FF6B61` | 6,98 / 6,26 / 6,07 | `#C4302B` | 4,84 / 5,52 / 4,78 |
+| `--color-gain-bg` | `#12261A` | — | `#E7F4EA` | — |
+| `--color-loss-bg` | `#2C1715` | — | `#FCEBE9` | — |
+| `--color-gain` (daltoniści) | `#5AA9FF` | 7,93 / 7,12 / 6,55 | `#0A5FB4` | 5,56 / 6,35 / 5,43 |
+| `--color-loss` (daltoniści) | `#F0913F` | 8,18 / 7,35 / 6,77 | `#A84B00` | 5,01 / 5,72 / 5,03 |
+| `--color-gain-bg` (daltoniści) | `#13213A` | — | `#E6EEF9` | — |
+| `--color-loss-bg` (daltoniści) | `#2D1E10` | — | `#FBEEE4` | — |
+| `--color-flat` | = `muted` | 7,43 | = `muted` | 5,50 |
 
-Paleta dla daltonistów przełącza się atrybutem `data-palette="colorblind"` na `<html>`; komponenty używają wyłącznie tokenów `gain`/`loss`/`flat`.
+Paleta dla daltonistów przełącza się atrybutem `data-palette="colorblind"` na `<html>`; komponenty używają wyłącznie tokenów `gain`/`loss`/`flat` i ich teł `*-bg`. Zielony motywu jasnego zmieniono z `#1A7F37` na `#18783A` (ADR-017): na jaśniejszym tle `#F1F0EB` stary dawał 4,45:1.
 
 ### 2.3 Kategorie (alokacja, porównania serii)
 
@@ -83,49 +91,6 @@ Maks. 7 kategorii + „pozostałe”; segmenty wykresów rozdzielone 1 px tła; 
 | Benchmark | linia przerywana kategorii 2 |
 
 Zasady ogólne: wykres słupkowy zawsze od zera; wykresy wartości bez zera na osi Y rysowane jako linia, nie obszar; podpisy osi i jednostki zawsze widoczne; źródło i czas danych pod wykresem (`<DataFreshness/>`); brak legendy, gdy wystarczają etykiety bezpośrednie; siatka to najwyżej 2–4 linie poziome w kolorze `line`.
-
-### 2.5 Tokeny docelowe kierunku B (BL-413)
-
-Nazwy bez prefiksu odpowiadają zmiennym `--color-*` w `packages/ui` i `--b-*` w [`projekt-b/b-tokens.css`](projekt-b/b-tokens.css). Do czasu BL-413 obowiązują w nowych projektach ekranów, nie w kodzie.
-
-#### Tokeny podstawowe
-
-Kontrast liczony względem `bg` i (po ukośniku) względem `panel` danego motywu (2026-10-29, [ADR-017](../09-decyzje/ADR-017-jezyk-wizualny-panele.md) § Weryfikacja). Tokeny tła nie mają progu.
-
-| Token | Ciemny (domyślny) | Kontrast | Jasny | Kontrast | Użycie |
-|---|---|---|---|---|---|
-| `bg` | `#0B0D0F` | — | `#F1F0EB` | — | tło strony |
-| `panel` | `#161A1F` | — | `#FFFFFF` | — | karty z treścią, dolny pasek, panel boczny, arkusze |
-| `panel-2` | `#1F252B` | — | `#F5F4EF` | — | tło wewnątrz karty: nagłówek tabeli, przełączniki, pole wyszukiwania, szkielet |
-| `line` | `#262D34` | — | `#E2E1DA` | — | ramka kart i linie wierszy (dekoracyjne, bez progu) |
-| `ink` | `#E8EAED` | 16,15 / 14,50 | `#14171A` | 15,77 / 17,99 | tekst podstawowy i liczby |
-| `muted` | `#98A1AA` | 7,43 / 6,67 | `#5A6169` | 5,50 / 6,27 | etykiety, opisy, osie, wartości zerowe, „—” |
-| `border` | `#7C848D` | 5,14 / 4,61 | `#6F7883` | 3,92 / 4,48 | granice pól formularzy i kontrolek (próg 3:1) |
-| `primary` | `#E8EAED` | 16,15 / 14,50 | `#14171A` | 15,77 / 17,99 | przycisk główny, aktywny przełącznik, przycisk „+” |
-| `on-primary` | `#0B0D0F` | 16,15 na `primary` | `#FFFFFF` | 17,99 na `primary` | tekst i ikona na `primary` |
-| `series` | = `ink` | 16,15 / 14,50 | = `ink` | 15,77 / 17,99 | linia wartości portfela i krzywej kapitału |
-| `focus` | `#5AA9FF` | 7,93 / 7,12 | `#0A5FB4` | 5,56 / 6,35 | obrys fokusu (2 px + odsunięcie 2 px) |
-| `warning` | `#E3B341` | 10,00 / 8,98 | `#8A5A00` | 5,19 / 5,93 | dane nieaktualne, ostrzeżenia metodologiczne |
-| `warning-bg` | `#2B2413` | `warning` 7,91 | `#FBF1DC` | `warning` 5,28 | tło plakietki „nieaktualne” i banera danych |
-| `danger` | `#FF6B61` | 6,98 / 6,26 | `#C4302B` | 4,84 / 5,52 | błędy formularzy, akcje nieodwracalne |
-
-Na `panel-2` najniższy kontrast tekstu wynosi 5,54:1 (`danger`, ciemny). Token `accent` (`#2AA198`/`#0E6E6E`) nie jest już używany w interfejsie; wartość zostaje jako kategoria 3 (§ 2.3).
-
-#### Zysk i strata
-
-| Token | Ciemny | Kontrast `bg` / `panel` / tło plakietki | Jasny | Kontrast `bg` / `panel` / tło plakietki |
-|---|---|---|---|---|
-| `gain` | `#3FB950` | 7,66 / 6,88 / 6,27 | `#18783A` | 4,86 / 5,55 / 4,89 |
-| `loss` | `#FF6B61` | 6,98 / 6,26 / 6,07 | `#C4302B` | 4,84 / 5,52 / 4,78 |
-| `gain-bg` | `#12261A` | — | `#E7F4EA` | — |
-| `loss-bg` | `#2C1715` | — | `#FCEBE9` | — |
-| `gain` (daltoniści) | `#5AA9FF` | 7,93 / 7,12 / 6,55 | `#0A5FB4` | 5,56 / 6,35 / 5,43 |
-| `loss` (daltoniści) | `#F0913F` | 8,18 / 7,35 / 6,77 | `#A84B00` | 5,01 / 5,72 / 5,03 |
-| `gain-bg` (daltoniści) | `#13213A` | — | `#E6EEF9` | — |
-| `loss-bg` (daltoniści) | `#2D1E10` | — | `#FBEEE4` | — |
-| `flat` | = `muted` | 7,43 | = `muted` | 5,50 |
-
-Paleta dla daltonistów przełącza się atrybutem `data-palette="colorblind"` na `<html>`; komponenty używają wyłącznie tokenów `gain`/`loss`/`flat` i ich teł `*-bg`. Zielony motywu jasnego zmieniono z `#1A7F37` na `#18783A` (ADR-017): na jaśniejszym tle `#F1F0EB` stary dawał 4,45:1.
 
 ## 3. Typografia
 
@@ -214,7 +179,7 @@ BL-012: publiczne formatery `packages/i18n` przyjmują wartości dziesiętne jak
 | `<Explainer/>` | ikona „i” (24 px, na dotyku cel 44 px) przy etykiecie metryki: definicja, jak czytać, pułapki, link do glosariusza | przycisk z nazwą dostępną „Co oznacza …”, treść w `popover` | każda metryka i wskaźnik (FR-06.02) |
 | `<ChartFrame/>` | tytuł, opis, przełącznik „tabela”, `<DataFreshness/>`, leniwe ładowanie biblioteki | opis tekstowy trendu, tabela alternatywna | każdy wykres (NFR-06.01) |
 | `<StatTile/>` | karta KPI: etykieta z `<Explainer/>`, wartość, zmiana jako plakietka, stan ładowania | etykieta powiązana z wartością | dashboard, podsumowania |
-| `<DataTable/>` | tabela HTML z serwera; sortowanie i wirtualizacja doładowywane leniwie | `<th scope>`, `aria-sort` | pozycje, operacje, screener |
+| `<DataTable/>` | tabela HTML z serwera; sortowanie i wirtualizacja doładowywane leniwie; Pozycje powyżej 100 wierszy korzystają z przewijanej tabeli na każdym rozmiarze ekranu (zamiast pełnej listy kart) | `<th scope>`, `aria-sort` | pozycje, operacje, screener |
 | `<StepUpDialog/>` | kod TOTP dla działań wrażliwych i ponowienie żądania | fokus w polu kodu, `autocomplete="one-time-code"` | tokeny PAT, eksport, admin |
 | `<StaleBanner/>`, `<OfflineBanner/>` | stan danych i sieci dla całego ekranu | `role="status"` | powłoka aplikacji |
 | `<Sparkline/>` | mikrowykres okna 30 sesji w wierszu pozycji; kolor `gain`/`loss`/`flat` według zmiany w tym oknie | `aria-hidden` — wartość i zmiana są w tekście wiersza | lista pozycji, watchlisty |
@@ -226,7 +191,13 @@ BL-012: publiczne formatery `packages/i18n` przyjmują wartości dziesiętne jak
 | `<Sheet/>` | arkusz od dołu (telefon) albo panel boczny (komputer): wskaźniki, formularz operacji, szczegóły | `<dialog>`, fokus w środku, zamknięcie klawiszem Esc | karta instrumentu, operacje |
 | `<ErrorState/>` | błąd z identyfikatorem żądania i akcją „Spróbuj ponownie” | `role="alert"` przy pierwszym wyświetleniu | wszystkie sekcje z danymi |
 
-Ikony: `lucide-react` (ISC), import pojedynczych ikon; ikony obok tekstu są dekoracyjne (`aria-hidden`), ikony samodzielne mają nazwę dostępną.
+Ikony: ikony nawigacji (BL-413) to inline SVG renderowane na serwerze (`apps/web/src/shell/icons.tsx`) — bez zależności i bez kosztu w JS powłoki; ikony obok tekstu są dekoracyjne (`aria-hidden`, `focusable="false"`), ikony samodzielne mają nazwę dostępną. `lucide-react` (ISC) pozostaje opcją dla ekranów poza powłoką, tylko po uzasadnieniu w PR (zależność nie jest dziś zainstalowana).
+
+### 6.1 Układ powłoki i ekranów portfela (BL-413)
+
+- **Powłoka:** na komputerze marka i panel boczny w kolorze `panel`, nad treścią tylko `<LiveStatus/>`; aktywna pozycja menu ma tło `panel-2` i pogrubienie, aktywna podstrona — pogrubienie i podkreślenie (nie sam kolor). Na telefonie dolny pasek z ikoną nad etykietą (Start, Portfel, Rynek, Alerty, Więcej), cel ≥ 44 px. Pozycje menu i ikony przygotowuje serwer; komponent kliencki zaznacza tylko bieżącą lokalizację (budżet powłoki 30 KiB).
+- **Nagłówek strony:** tytuł po lewej, po prawej przełącznik rachunków i jedna akcja główna (`oi-button-primary`, np. „Dodaj operację”). Opcje widoku, grupowanie i daty w zwijanym „Opcje widoku”.
+- **Pozycje:** kafelki KPI (wartość, wynik niezrealizowany i wynik dnia z „i”, liczba pozycji) nad gęstą tabelą: Instrument (nazwa, ticker · giełda · rachunek), Ilość, Kurs (ostatni znany z plakietką „nieaktualne”; offline „—”), Wartość w PLN, Koszt, Udział, Dziś (zmiana kursu z `day-change`), Wynik (kwota i % jako plakietki ▲/▼), wiersz „Razem”. Poniżej 768 px lista kart z rozwijanymi szczegółami. Średni koszt i rozbicie na efekt ceny i waluty — w zwijanym „Rozbicie wyniku i średni koszt”. Kolumna „30 sesji” (`<Sparkline/>`) czeka na dane w API.
 
 BL-012 udostępnia `DataFreshness`, `AssumptionsBlock` i `Disclaimer`. Świeżość rozróżnia notowanie opóźnione, datę sesji EOD i kurs NBP; opóźnienie pochodzi z `DataMeta`, przyczyny ze słownika TXT. Stały region `status` służy do ogłoszenia nieaktualności. `AssumptionsBlock` wymaga podsumowania i treści szczegółów, domyślnie jest otwarty; ekran analizy odpowiada za komplet założeń z LAW § 4.2. `Disclaimer` wymaga klucza i wersji, odrzuca niezgodną wersję. Pozostałe komponenty domenowe z tabeli powstają wraz z odpowiednimi ekranami, poza zakresem BL-012.
 

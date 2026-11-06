@@ -79,7 +79,7 @@ test("preferences persist without document reload and system follows OS", async 
   await page.emulateMedia({ colorScheme: "dark" });
   await expect(page.locator("body")).toHaveCSS("background-color", "rgb(11, 13, 15)");
   await page.emulateMedia({ colorScheme: "light" });
-  await expect(page.locator("body")).toHaveCSS("background-color", "rgb(250, 250, 247)");
+  await expect(page.locator("body")).toHaveCSS("background-color", "rgb(241, 240, 235)");
 });
 test("password challenge gates data, bad TOTP focuses documented error, logout clears cookies", async ({
   page,
@@ -179,7 +179,8 @@ test("logout waits for cookie removal before navigation and notifies other tabs 
   await page.goto("/ustawienia");
   await expect(page.getByText("Aktualizacje na żywo", { exact: true })).toBeVisible();
   const other = await context.newPage();
-  await other.goto("/");
+  // BL-413: sign-out lives in Settings, not in the shell header.
+  await other.goto("/ustawienia");
   await expect(other.getByText("Aktualizacje na żywo", { exact: true })).toBeVisible();
   const sessionCookie = (await context.cookies()).find(
     (cookie) => cookie.name === "__Host-oliginvest.session_token",

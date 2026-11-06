@@ -28,6 +28,7 @@ export function SummaryScreen({
   );
   return (
     <SummaryView
+      unavailable={query.unavailable || day.unavailable}
       Table={MetricTable}
       explain={(key, term) => <Explainer termKey={metricKeys[key]} term={term} />}
       data={data}

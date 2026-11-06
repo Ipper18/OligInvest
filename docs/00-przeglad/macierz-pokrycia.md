@@ -117,15 +117,15 @@ Kolumna „Dokumenty” pokazuje do trzech dokumentów projektowych, które najc
 | ID | Wymaganie (skrót) | P | Dokumenty | Zadania | Etap | Status |
 |---|---|---|---|---|---|---|
 | FR-02.01 | Wiele rachunków na użytkownika (np. „XTB — zwykły”, „XTB — IKE”, „mBank”) z … | P0 | [openapi.yaml](../02-api/openapi.yaml), [mapa-ekranow](../04-frontend/mapa-ekranow.md) | BL-144, BL-147 | M1 | ✅ |
-| FR-02.02 | Pozycje: instrument, ilość, średni koszt (wg metody rachunku), wartość … | P0 | [openapi.yaml](../02-api/openapi.yaml), [mapa-ekranow](../04-frontend/mapa-ekranow.md), [ADR-014](../09-decyzje/ADR-014-pieniadze-waluty-czas.md) | BL-143, BL-147 | M1 | ✅ |
+| FR-02.02 | Pozycje: instrument, ilość, średni koszt (wg metody rachunku), wartość … | P0 | [openapi.yaml](../02-api/openapi.yaml), [mapa-ekranow](../04-frontend/mapa-ekranow.md), [ADR-014](../09-decyzje/ADR-014-pieniadze-waluty-czas.md) | BL-143, BL-147, BL-415 | M1, M4 | ✅ |
 | FR-02.03 | Wycena portfela aktualizowana automatycznie (dane opóźnione w trakcie sesji … | P0 | [openapi.yaml](../02-api/openapi.yaml), [przeplywy-danych](../01-architektura/przeplywy-danych.md), [mapa-ekranow](../04-frontend/mapa-ekranow.md) (+2) | BL-125, BL-134, BL-146, BL-147 | M1 | ✅ |
 | FR-02.04 | Gotówka na rachunku per waluta (z importu i operacji ręcznych), uwzględniona … | P0 | [openapi.yaml](../02-api/openapi.yaml) | BL-143, BL-147 | M1 | ✅ |
 | FR-02.05 | Alokacja wg klasy aktywów, sektora, geografii (kraj emitenta / rynek notowań) … | P1 | [openapi.yaml](../02-api/openapi.yaml), [schema.sql](../03-dane/schema.sql), [mapa-ekranow](../04-frontend/mapa-ekranow.md) (+1) | BL-207 | M2 | ✅ |
 | FR-02.06 | Ekspozycja walutowa: udział walut i rozbicie wyniku pozycji zagranicznych na … | P1 | [openapi.yaml](../02-api/openapi.yaml), [mapa-ekranow](../04-frontend/mapa-ekranow.md), [obliczenia-finansowe](../03-dane/obliczenia-finansowe.md) (+2) | BL-306 | M3 | ✅ |
 | FR-02.07 | P/L zrealizowany (FIFO domyślnie, średnia ważona opcjonalnie) za dzień / … | P0 | [openapi.yaml](../02-api/openapi.yaml), [mapa-ekranow](../04-frontend/mapa-ekranow.md), [ADR-014](../09-decyzje/ADR-014-pieniadze-waluty-czas.md) | BL-136, BL-142, BL-147 | M1 | ✅ |
 | FR-02.08 | Dywidendy: otrzymane (brutto, podatek u źródła, netto, w walucie i w PLN) … | P1 | [openapi.yaml](../02-api/openapi.yaml), [obliczenia-finansowe](../03-dane/obliczenia-finansowe.md), [mapa-ekranow](../04-frontend/mapa-ekranow.md) | BL-307 | M3 | ✅ |
-| FR-02.09 | „Wynik dnia”: zmiana wartości portfela od poprzedniego zamknięcia z rozbiciem … | P0 | [openapi.yaml](../02-api/openapi.yaml), [przeplywy-danych](../01-architektura/przeplywy-danych.md), [obliczenia-finansowe](../03-dane/obliczenia-finansowe.md) (+1) | BL-143, BL-147 | M1 | ✅ |
-| FR-02.10 | Historia wartości portfela: wartość rynkowa vs skumulowane wpłaty netto … | P1 | [openapi.yaml](../02-api/openapi.yaml), [mapa-ekranow](../04-frontend/mapa-ekranow.md), [ADR-009](../09-decyzje/ADR-009-wykresy.md) | BL-302 | M3 | ✅ |
+| FR-02.09 | „Wynik dnia”: zmiana wartości portfela od poprzedniego zamknięcia z rozbiciem … | P0 | [openapi.yaml](../02-api/openapi.yaml), [przeplywy-danych](../01-architektura/przeplywy-danych.md), [obliczenia-finansowe](../03-dane/obliczenia-finansowe.md) (+1) | BL-143, BL-147, BL-415 | M1, M4 | ✅ |
+| FR-02.10 | Historia wartości portfela: wartość rynkowa vs skumulowane wpłaty netto … | P1 | [openapi.yaml](../02-api/openapi.yaml), [mapa-ekranow](../04-frontend/mapa-ekranow.md), [ADR-009](../09-decyzje/ADR-009-wykresy.md) | BL-302, BL-414 | M3, M4 | ✅ |
 
 ### FR-03 Analiza inwestycji przeszłych (§3.1.3)
 
@@ -292,7 +292,7 @@ Kolumna „Dokumenty” pokazuje do trzech dokumentów projektowych, które najc
 
 | ID | Wymaganie (skrót) | P | Dokumenty | Zadania | Etap | Status |
 |---|---|---|---|---|---|---|
-| NFR-06.01 | WCAG 2.1 AA: kontrast, obsługa klawiatury, widoczny focus, etykiety, role … | P0 | [dostepnosc](../04-frontend/dostepnosc.md), [system-projektowy](../04-frontend/system-projektowy.md), [ADR-009](../09-decyzje/ADR-009-wykresy.md) | BL-018, BL-155, BL-158, BL-413, BL-605 | M0, M1, M4, M6 | ✅ |
+| NFR-06.01 | WCAG 2.1 AA: kontrast, obsługa klawiatury, widoczny focus, etykiety, role … | P0 | [dostepnosc](../04-frontend/dostepnosc.md), [system-projektowy](../04-frontend/system-projektowy.md), [ADR-009](../09-decyzje/ADR-009-wykresy.md) | BL-018, BL-155, BL-158, BL-413, BL-416, BL-605 | M0, M1, M4, M6 | ✅ |
 | NFR-06.02 | Zysk/strata komunikowane nie tylko kolorem (znak, ikona ▲▼, tekst); paleta … | P0 | [dostepnosc](../04-frontend/dostepnosc.md), [system-projektowy](../04-frontend/system-projektowy.md), [architektura-ui](../04-frontend/architektura-ui.md) | BL-113, BL-413, BL-605 | M1, M4, M6 | ✅ |
 | NFR-06.03 | Prosty język w treściach edukacyjnych; liczby i daty formatowane wg locale … | P1 | [dostepnosc](../04-frontend/dostepnosc.md), [system-projektowy](../04-frontend/system-projektowy.md), [instrukcja](../12-dla-uzytkownika/instrukcja.md) (+1) | BL-203, BL-512 | M2, M5a | ✅ |
 
