@@ -158,7 +158,7 @@ Brama A (**[A]**) — MVP właściciela; brama B (**[B]**) — funkcje wymagane 
 | BL-112 | **[B]** Powłoka `/admin` (leniwa): użytkownicy bez danych finansowych, zaproszenia, role | FR-08.01 | [ADR-006](../09-decyzje/ADR-006-panel-administratora.md), EKR | BL-108, BL-121 | 2 | todo |
 | BL-113 | **[A]** Preferencje: motyw jasny/ciemny/systemowy, paleta dla daltonistów bez przeładowania, waluta bazowa | FR-07.08, NFR-06.02 | DS, API | BL-121 | 1,5 | gotowe (nakład niezmierzony) |
 | BL-114 | **[B]** RODO: eksport danych (JSON + CSV w ZIP, 24 h, step-up), usunięcie konta z 14-dniową karencją, `erasure_log` i plik poza bazą, test „wszystkie tabele z `user_id`” | FR-07.09, NFR-11.02 | RODO, DR | BL-106, BL-109 | 3 | todo |
-| BL-115 | **[B]** Zadania retencji: pliki importu, zaproszenia, eksporty, dziennik doręczeń, RUM, partycje audytu | NFR-11.02 | RODO | BL-114 | 1 | todo |
+| BL-115 | **[B]** Zadania retencji: pliki importu, zaproszenia, eksporty, dziennik doręczeń, RUM, partycje audytu; `platform.role_quota_usage` — usuwanie wpisów starszych niż 7 × 24 h w kontekście RLS użytkownika (decyzja R-52, 2026-11-05; bez nowego zadania) | NFR-11.02 | RODO | BL-114 | 1 | todo |
 | BL-116 | **[A]** Strony `/regulamin`, `/prywatnosc`, `/zrodla-danych` (MDX, wersja `2026-09`, pola `LEGAL_*`), stopka z disclaimerem `general` | FR-07.12, NFR-07.03, NFR-07.04 | USR, LAW | BL-121 | 1 | w toku — czeka na odbiór właściciela: produkcyjne LEGAL_* i dokumenty prawne |
 | BL-117 | **[A]** Mechanizm flag: `feature_flags`, ocena z cache 30 s, `404` dla wyłączonych modułów, unieważnianie przez `flags.changed` | FR-08.04, NFR-02.02 | MOD | BL-006, BL-007 | 1,5 | gotowe |
 | BL-118 | **[B]** Umowy powierzenia: akceptacja DPA Brevo, retencja logów Brevo 1 miesiąc, zapis wersji DPA OVHcloud | NFR-11.03 | RODO | BL-107 | 0,5 | todo |
@@ -220,7 +220,7 @@ Brama A (**[A]**) — MVP właściciela; brama B (**[B]**) — funkcje wymagane 
 | BL-212 | Test opóźnienia SSE < 2 s p95 i wznowienia z `Last-Event-ID` | NFR-01.06 | RT, [ADR-007](../09-decyzje/ADR-007-sse-zamiast-websocket.md) | BL-125 | 1 | todo |
 | BL-213 | Raport kompletności EOD GPW (weryfikacja ADR-005 przez 20 sesji) | NFR-09.02 | [ADR-005](../09-decyzje/ADR-005-strategia-danych-rynkowych.md) | BL-133 | 0,5 | w toku (Claude Code, `feat/m2-market-backend`, [PR #15](https://github.com/Ipper18/OligInvest/pull/15); backend — ekran `/rynek` i oznaczenia UI u Codex; nakład/odchylenie niezmierzone) |
 | BL-214 | Ekran kursów walut `/rynek/waluty` z historią NBP | FR-01.14 | EKR | BL-132 | 1 | w toku — PR #17; implementacja i lokalne testy PASS; nakład niezmierzony |
-| BL-215 | Limity per rola w `platform` (np. liczba analiz dziennie), `429` z czasem odnowienia | FR-08.03 | MOD, KONW | BL-131 | 1,5 | w toku — backend i testy wykonane; CI/DoD i zasady usuwania R-52 otwarte; estymata bez zmian, nakład/odchylenie niezmierzone ([raport](bl-215-session-report.md)) |
+| BL-215 | Limity per rola w `platform` (np. liczba analiz dziennie), `429` z czasem odnowienia | FR-08.03 | MOD, KONW | BL-131 | 1,5 | w toku — trwały rejestr i testy wykonane; R-52 zamknięte decyzją 2026-11-05; do CI/DoD; estymata bez zmian, nakład/odchylenie niezmierzone ([raport](bl-215-session-report.md)) |
 | BL-216 | Onboarding przy pierwszym logowaniu (driver.js ładowany leniwie, pomijalny i powtarzalny, dostępny z klawiatury; treść z samouczków § 2) | FR-06.01 | A11Y, PERF, USR | BL-203 | 2 | w toku — PR #17; zapis per użytkownik, klawiatura i budżety PASS; nakład niezmierzony |
 | | **Suma etapu** | | | | **29,5** | |
 

@@ -152,11 +152,14 @@ wiersza oznacza udokumentowane 20 dla pro/admin; zero blokuje nowe uruchomienia.
 Nieprawidłowa wartość konfiguracji kończy się bezpiecznym `500 INTERNAL`, bez
 zastąpienia jej limitem domyślnym. Rola user nadal otrzymuje `403 FORBIDDEN`.
 
-Zużycie to zapisane ciężkie uruchomienia użytkownika (także failed/cancelled),
+Zużycie to każda przyjęta ciężka analiza użytkownika (także failed/cancelled/usunięta),
 w przedziale od północy w Europe/Warsaw włącznie do następnej północy wyłącznie.
 PostgreSQL wyznacza obie granice i chwilę oceny po uzyskaniu blokady użytkownika;
 uwzględnia doby 23/25-godzinne. Ta sama chwila trafia do `created_at` nowego
-uruchomienia. Sprawdzenie i zapis odbywają się w jednej transakcji RLS pod istniejącą
+uruchomienia oraz `platform.role_quota_usage.consumed_at`. Licznik odczytuje tylko
+ten trwały rejestr, niezależnie od `analytics_runs`. Wpis ma unikalne `operation_id`
+równe ID analizy, lecz bez FK do analizy; usunięcie wyniku nie usuwa zużycia.
+Sprawdzenie, INSERT analizy i INSERT zużycia odbywają się w jednej transakcji RLS pod istniejącą
 blokadą `analytics:{userId}`. Odtworzenie klucza idempotencji poprzedza limit;
 rollback nie zużywa kwoty, a równoległe żądania nie przekraczają budżetu.
 
@@ -167,10 +170,13 @@ Nie dodajemy liczników w pamięci procesu ani w ulotnym cache Valkey.
 Panel i pozostałe limity z `RoleLimitValues` należą do dalszych zadań; BL-215
 nie ustala brakujących zasad ich naliczania ani wartości domyślnych.
 
-**Nierozstrzygnięte (R-52):** istniejący endpoint usuwania fizycznie usuwa
-`analytics_runs`, co zmniejsza zużycie dnia. Dokumentacja nie określa trwałości
-zużycia po usunięciu. BL-215 zachowuje ten model; twarda kwota niezależna od
-usuwania wymaga doprecyzowania zasad oraz kontraktu trwałego rejestru zużycia.
+**Decyzja właściciela R-52, 2026-11-05:** usunięcie analizy NIE zwraca kwoty.
+Rejestr ma FORCE RLS per użytkownik (także admin), brak UPDATE; DELETE dopuszcza
+tylko własne wpisy starsze niż 7 × 24 h. Sprzątanie należy do BL-115 (bez nowego
+zadania w tej zmianie). Usunięcie konta usuwa rejestr kaskadowo przez FK do auth.users.
+Migracja 0010 przenosi zachowane ciężkie analizy z ostatnich 7 dni; danych analiz
+usuniętych przed migracją nie da się odtworzyć. Wdrożenie wymaga zatrzymania starego
+API przed migracją i uruchomienia dopiero nowej wersji, która zapisuje rejestr.
 
 ## 8. Cache i żądania warunkowe
 

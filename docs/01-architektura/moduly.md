@@ -199,8 +199,10 @@ a nieznany koszt pozostaje `null`. Zdarzenie trwałe wychodzi dopiero po commit.
 
 Dzienne limity ciężkich analiz (BL-215): polityka ról i odmowa są w
 `packages/platform`, kontrakt migawki w `packages/contracts`, a adapter PostgreSQL
-w module analytics. Zużycie pozostaje w `analytics_runs` pod RLS, konfiguracja
-w `platform.role_limits`; bez nowych tabel i zależności. Szczegóły atomowości,
+w module analytics. Zużycie jest w `platform.role_quota_usage` pod RLS, niezależnie
+od usunięcia analizy; zapis razem z analizą w tej samej transakcji/blokadzie.
+Konfiguracja pozostaje w `platform.role_limits`; bez nowych zależności. Retencja
+wpisów starszych niż 7 dni należy do BL-115 (decyzja R-52, 2026-11-05). Szczegóły atomowości,
 odnowienia w Europe/Warsaw i `Retry-After`: [konwencje API § 7.1](../02-api/konwencje-api.md#71-dzienne-limity-ról-bl-215).
 
 ### 5.2 Katalog kolejek

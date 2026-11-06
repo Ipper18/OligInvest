@@ -10,6 +10,7 @@ GRANT EXECUTE ON FUNCTION identity.find_invitation(text), identity.consume_invit
 -- oliginvest_app: tabele domenowe (RLS egzekwuje własność); BRAK dostępu do schematu auth
 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA identity, notifications, market, portfolio, analytics, alerts, education TO oliginvest_app;
 GRANT SELECT, INSERT, UPDATE, DELETE ON platform.feature_flags, platform.role_limits, platform.idempotency_keys, platform.web_vitals TO oliginvest_app;
+GRANT SELECT, INSERT, DELETE ON platform.role_quota_usage TO oliginvest_app;            -- DELETE ograniczone retencją RLS
 GRANT SELECT, INSERT ON platform.audit_log TO oliginvest_app;                         -- append-only
 REVOKE UPDATE, DELETE, TRUNCATE ON identity.consent_events FROM oliginvest_app;       -- append-only (po GRANT ON ALL TABLES)
 GRANT SELECT, INSERT, DELETE ON platform.erasure_log TO oliginvest_app;                -- DELETE: czyszczenie po purge_after

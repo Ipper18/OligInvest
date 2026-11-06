@@ -43,9 +43,9 @@ export async function readHeavyRoleQuota(
             ((instant AT TIME ZONE 'Europe/Warsaw')::date + 1)::timestamp AT TIME ZONE 'Europe/Warsaw' AS reset_at
           FROM clock
         )
-        SELECT (SELECT count(*)::int FROM analytics.analytics_runs
-          WHERE type=ANY(${sql.param([...HEAVY_TYPES])}::text[])
-            AND created_at>=quota_window.start_at AND created_at<quota_window.reset_at) AS used,
+        SELECT (SELECT count(*)::int FROM platform.role_quota_usage
+          WHERE quota_key='analytics_heavy_per_day'
+            AND consumed_at>=quota_window.start_at AND consumed_at<quota_window.reset_at) AS used,
           instant AS "observedAt", reset_at AS "resetAt" FROM quota_window
       `)
     ).rows[0],

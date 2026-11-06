@@ -94,6 +94,7 @@ Zasady (art. 7 RODO): zgoda nie jest warunkiem korzystania z aplikacji; jest odd
 | Logi SSH i systemu, alerty CrowdSec | 30 dni | journald, konfiguracja CrowdSec |
 | **Audyt (`platform.audit_log`)** | **2 lata** — rozliczalność działań administracyjnych i wyjaśnianie incydentów; po usunięciu konta tylko pseudonim (Z-21) | partycjonowanie i usuwanie najstarszych miesięcy |
 | `platform.erasure_log` | 40 dni (dłużej niż najdłuższa retencja kopii) | zadanie po `purge_after` |
+| `platform.role_quota_usage` | wpisy starsze niż 7 × 24 h mogą być usuwane; usunięcie analizy nie zwraca kwoty (R-52, 2026-11-05) | sprzątanie w BL-115 pod RLS użytkownika; kaskada przy usunięciu konta |
 | Kopie zapasowe | 35 dni (lokalnie i poza domem) | [`../07-wdrozenie/backup-dr.md`](../07-wdrozenie/backup-dr.md) |
 | Dane u Brevo (logi wysyłki i podglądy e-maili) | domyślnie bezterminowo; ustawiamy **1 miesiąc** — minimum dopuszczane przez Brevo ([pomoc Brevo](https://help.brevo.com/hc/en-us/articles/4415743225746-Configure-a-custom-retention-period-for-your-transactional-logs-and-email-previews), sprawdzone 2026-09-19) | ustawienie w panelu Brevo przed M1 |
 

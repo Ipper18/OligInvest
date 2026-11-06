@@ -110,6 +110,21 @@ export const platformRoleLimits = platformSchema.table(
   ],
 );
 
+export const platformRoleQuotaUsage = platformSchema.table(
+  "role_quota_usage",
+  {
+    operationId: uuid("operation_id").primaryKey(),
+    userId: uuid("user_id").notNull(),
+    quotaKey: text("quota_key").notNull(),
+    consumedAt: timestamp("consumed_at", { withTimezone: true, mode: "string" }).notNull(),
+  },
+  (table) => [
+    check("role_quota_usage_quota_key_check", sql`quota_key IN ('analytics_heavy_per_day')`),
+    index("role_quota_usage_user_window_idx").on(table.userId, table.quotaKey, table.consumedAt),
+    index("role_quota_usage_retention_idx").on(table.consumedAt),
+  ],
+);
+
 export const platformWebVitals = platformSchema.table(
   "web_vitals",
   {

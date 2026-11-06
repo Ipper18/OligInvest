@@ -217,6 +217,10 @@ export class AnalyticsRepository {
         )
       ).rows[0];
       const runId = z.uuid().parse(row?.id);
+      if (HEAVY_TYPES.has(input.type)) {
+        await tx.execute(sql`INSERT INTO platform.role_quota_usage(operation_id,user_id,quota_key,consumed_at)
+          VALUES(${runId}::uuid,${context.userId}::uuid,'analytics_heavy_per_day',${quota.observedAt}::timestamptz)`);
+      }
       const job = prepared.job(runId, requestedAt);
       if (Buffer.byteLength(JSON.stringify(job)) > ANALYTICS_LIMITS.jobPayloadBytes)
         throw outOfBounds("portfolio", "too_large", "Migawka portfela jest zbyt duża.");

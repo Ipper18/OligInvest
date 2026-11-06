@@ -232,6 +232,7 @@ export async function testAnalyticsStorage(settings) {
     });
     assert.equal(optimization.status, 404);
     assert.equal(queued.length, 0);
+    assert.equal((await (await request("limits")).json()).heavyRunsUsedToday, 0);
 
     // Created run: filled defaults, snapshot from stored valuations, proxies and compliance block.
     const key = randomUUID();
@@ -596,6 +597,19 @@ export async function testAnalyticsStorage(settings) {
     const race = await Promise.all(Array.from({ length: 3 }, () => create(monteCarlo)));
     assert.deepEqual(race.map((response) => response.status).sort(), [202, 429, 429]);
     assert.equal(queued.length, queuedBeforeRace + 1);
+    const accepted = await race.find((response) => response.status === 202).json();
+    const usedBeforeDelete = (await (await request("limits")).json()).heavyRunsUsedToday;
+    assert.equal(usedBeforeDelete, beforeRace.heavyRunsUsedToday + 1);
+    assert.equal((await request(`runs/${accepted.id}`, "DELETE")).status, 204);
+    assert.equal((await request(`runs/${accepted.id}`)).status, 404);
+    assert.equal((await (await request("limits")).json()).heavyRunsUsedToday, usedBeforeDelete);
+    assert.equal((await create(monteCarlo)).status, 429, "deletion never returns accepted quota");
+    const retained = await database.transaction(owner, (tx) =>
+      tx.execute(
+        sql`SELECT operation_id FROM platform.role_quota_usage WHERE operation_id=${accepted.id}::uuid`,
+      ),
+    );
+    assert.equal(retained.rows.length, 1, "usage survives deletion independently of the run");
     const otherLimits = await (
       await request("limits", "GET", undefined, { "x-owner": "other" })
     ).json();
@@ -618,8 +632,12 @@ export async function testAnalyticsStorage(settings) {
             [end, "stress_test"],
             [start, "what_if"],
           ])
-            await tx.execute(sql`INSERT INTO analytics.analytics_runs(user_id,type,params,input_snapshot,algorithm_version,created_at)
-          VALUES(${users.other}::uuid,${type},'{}','{}','synthetic',${at}::timestamptz)`);
+            if (type !== "what_if")
+              await tx.execute(sql`INSERT INTO platform.role_quota_usage(operation_id,user_id,quota_key,consumed_at)
+                VALUES(${randomUUID()}::uuid,${users.other}::uuid,'analytics_heavy_per_day',${at}::timestamptz)`);
+          // A run without a ledger entry must never affect the counter.
+          await tx.execute(sql`INSERT INTO analytics.analytics_runs(user_id,type,params,input_snapshot,algorithm_version,created_at)
+            VALUES(${users.other}::uuid,'monte_carlo','{}','{}','synthetic',${start}::timestamptz)`);
           const first = await readHeavyRoleQuota(tx, "pro", new Date(start));
           assert.equal(first.used, 1, "start inclusive, end exclusive, heavy only");
           assert.equal(first.resetAt, new Date(end).toISOString());
