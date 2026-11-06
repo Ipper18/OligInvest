@@ -41,7 +41,7 @@ test("semantic color tokens agree with the design source, and system light match
   const rows = [
     ...document.matchAll(/\| `--color-([\w-]+)` \| `(#[\da-f]{6})` \|[^|]+\| `(#[\da-f]{6})`/gi),
   ];
-  expect(rows.length).toBe(12);
+  expect(rows.length).toBe(17);
   for (const [, name, darkValue, lightValue] of rows) {
     expect(dark[name]).toBe(darkValue.toLowerCase());
     expect(light[name]).toBe(lightValue.toLowerCase());
@@ -51,11 +51,12 @@ test("semantic color tokens agree with the design source, and system light match
 
 test("both themes and palettes meet text and graphical contrast thresholds", () => {
   for (const palette of [dark, light]) {
-    for (const surface of [palette.bg, palette.panel]) {
+    for (const surface of [palette.bg, palette.panel, palette["panel-2"]]) {
       for (const name of [
         "ink",
         "muted",
-        "accent",
+        "primary",
+        "focus",
         "warning",
         "danger",
         "gain",
@@ -75,4 +76,29 @@ test("both themes and palettes meet text and graphical contrast thresholds", () 
     }
   }
   expect(css).not.toMatch(/@font-face|https?:\/\/|@import/);
+});
+
+test("badge backgrounds and primary content retain text contrast in both palettes", () => {
+  for (const palette of [dark, light]) {
+    expect(contrast(palette["on-primary"], palette.primary)).toBeGreaterThanOrEqual(4.5);
+    for (const name of ["gain", "loss", "warning"])
+      expect(contrast(palette[name], palette[`${name}-bg`])).toBeGreaterThanOrEqual(4.5);
+    for (const name of ["gain", "loss"])
+      expect(
+        contrast(palette[`${name}-accessible`], palette[`${name}-bg-accessible`]),
+      ).toBeGreaterThanOrEqual(4.5);
+  }
+  const accessible = [
+    ...document.matchAll(
+      /\| `--color-([\w-]+)` \(daltoniści\) \| `(#[\da-f]{6})` \|[^|]+\| `(#[\da-f]{6})`/gi,
+    ),
+  ];
+  expect(accessible).toHaveLength(4);
+  for (const [, name, d, l] of accessible) {
+    expect(dark[`${name}-accessible`]).toBe(d.toLowerCase());
+    expect(light[`${name}-accessible`]).toBe(l.toLowerCase());
+    expect(css).toContain(`--color-${name}: var(--color-${name}-accessible)`);
+  }
+  expect(css).toContain("--color-series: var(--color-ink)");
+  expect(css).toContain("--color-flat: var(--color-muted)");
 });

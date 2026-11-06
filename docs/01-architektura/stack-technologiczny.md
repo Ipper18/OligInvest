@@ -222,3 +222,5 @@ BL-116: narzędzia budowania i kontroli stron prawnych: `@mdx-js/mdx` 3.1.1 i `r
 BL-121: `postcss` 8.5.28 (MIT), już używany przez Tailwind, jest jawną zależnością narzędziową web do kompilacji wspólnego CSS przed osadzeniem z nonce CSP. Brak kodu PostCSS w przeglądarce.
 
 BL-402: `@types/web-push` 3.6.4 (MIT, wydanie 2024-10-22T08:10:28.809Z, [npm](https://registry.npmjs.org/@types%2fweb-push), weryfikacja 2026-10-28) — typy transportu tylko podczas kompilacji.
+
+BL-567: `modules/admin` deklaruje istniejące pakiety workspace contracts/db oraz przypięty już Drizzle 0.45.2 (Apache-2.0) do parametryzowanego zapisu scenariuszy w transakcji roli aplikacyjnej. API ładuje moduł admin przez rejestr modułów opcjonalnych. Bez nowych bibliotek, wersji, usług ani skryptów instalacyjnych.

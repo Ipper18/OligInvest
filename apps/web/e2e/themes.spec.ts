@@ -12,10 +12,10 @@ test("dark is the default regardless of OS, theme changes persist and system fol
     "rgb(63, 185, 80)",
   );
   await page.getByLabel("Motyw", { exact: true }).selectOption("light");
-  await expect(page.locator("body")).toHaveCSS("background-color", "rgb(250, 250, 247)");
+  await expect(page.locator("body")).toHaveCSS("background-color", "rgb(241, 240, 235)");
   await expect(page.getByText("+ wzrost — próbka koloru", { exact: true })).toHaveCSS(
     "color",
-    "rgb(26, 127, 55)",
+    "rgb(24, 120, 58)",
   );
   await page.reload();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
@@ -23,10 +23,10 @@ test("dark is the default regardless of OS, theme changes persist and system fol
   await page.emulateMedia({ colorScheme: "dark" });
   await expect(page.locator("body")).toHaveCSS("background-color", "rgb(11, 13, 15)");
   await page.emulateMedia({ colorScheme: "light" });
-  await expect(page.locator("body")).toHaveCSS("background-color", "rgb(250, 250, 247)");
+  await expect(page.locator("body")).toHaveCSS("background-color", "rgb(241, 240, 235)");
   await expect(page.locator('meta[name="theme-color"]').first()).toHaveAttribute(
     "content",
-    "#fafaf7",
+    "#f1f0eb",
   );
 });
 
@@ -75,7 +75,7 @@ test("system fonts, readable controls and keyboard focus work at mobile and desk
       true,
     );
     await expect(page.locator("body")).toHaveCSS("font-family", /system-ui/);
-    await expect(page.locator("h1")).toHaveCSS("font-family", /Iowan Old Style/);
+    await expect(page.locator("h1")).toHaveCSS("font-family", /system-ui/);
     await expect(page.locator("select").first()).toHaveCSS("font-size", "16px");
     await page.keyboard.press("Tab");
     await expect(page.getByLabel("Motyw", { exact: true })).toBeFocused();

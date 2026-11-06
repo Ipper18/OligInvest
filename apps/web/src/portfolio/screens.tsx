@@ -1,7 +1,15 @@
 "use client";
-import { formatDate, formatQuantity, portfolioMessages as m } from "@oliginvest/i18n";
-import { Disclosure } from "@oliginvest/ui";
+import {
+  type CurrencyCode,
+  formatDate,
+  formatMessage,
+  formatQuantity,
+  portfolioMessages as m,
+} from "@oliginvest/i18n";
+import { ChangeValue, Disclosure, MoneyValue, StatTile } from "@oliginvest/ui";
 import Link from "next/link";
+import { Explainer } from "../education/explainer";
+import { metricKeys } from "../education/metric-keys";
 import { MetricTable as DataTable } from "../education/metric-table";
 import { Amount, Freshness, ratio, TaxDisclaimer } from "./presentation";
 import { QueryNotice, useResource } from "./query";
@@ -21,27 +29,72 @@ const instrumentLink = (id: string, title: string) => (
     {title}
   </Link>
 );
+type Position = Resource<"positions">["data"][number];
+const currencies = ["PLN", "USD", "EUR"];
+// Last known price stays visible with an explicit "nieaktualne" tag; offline it is hidden.
+function LastPrice({ position, unavailable }: { position: Position; unavailable: boolean }) {
+  const { price, priceCurrency } = position;
+  if (unavailable || !price || !priceCurrency)
+    return <span className="num oi-flat">{m.unavailable}</span>;
+  return (
+    <span className="oi-price">
+      {currencies.includes(priceCurrency) ? (
+        <MoneyValue value={price} currency={priceCurrency as CurrencyCode} />
+      ) : (
+        <span className="num">
+          {price} {priceCurrency}
+        </span>
+      )}
+      {position.meta.stale && <span className="oi-tag-stale">{m.staleTag}</span>}
+    </span>
+  );
+}
+const plRatio = (position: Position, stale: boolean) => (
+  <ChangeValue
+    value={position.unrealizedPlRatio == null ? null : String(position.unrealizedPlRatio)}
+    stale={stale}
+  />
+);
 export function PositionsScreen({
   userId,
   args,
   initial,
   accounts,
   initialCash,
-}: Props<"positions"> & { initialCash: Resource<"cash"> }) {
+  initialDay,
+}: Props<"positions"> & { initialCash: Resource<"cash">; initialDay: Resource<"day"> }) {
   const query = useResource(userId, "positions", args, initial),
     data = query.data;
-  const cash = useResource(
-    userId,
-    "cash",
-    args.accountId ? { accountId: args.accountId } : {},
-    initialCash,
+  const accountArgs = args.accountId ? { accountId: args.accountId } : {};
+  const cash = useResource(userId, "cash", accountArgs, initialCash);
+  // "Dziś" per instrument is the price change of the day from GET /portfolio/day-change.
+  const day = useResource(userId, "day", accountArgs, initialDay);
+  const dayStale = day.unavailable || day.data.meta.stale;
+  const dayRatio = new Map(
+    day.data.positions.map((d) => [d.instrument.id, d.priceChangeRatio ?? null]),
   );
+  const today = (p: Position) => {
+    const value = dayRatio.get(p.instrument.id);
+    return <ChangeValue value={value == null ? null : String(value)} stale={dayStale} />;
+  };
+  const stale = (p: Position) => query.unavailable || p.meta.stale;
+  const totalsStale = query.unavailable || data.meta.stale;
+  const listing = (p: Position) =>
+    [
+      p.instrument.ticker,
+      p.instrument.exchangeShortName ?? p.instrument.mic,
+      p.accountId && accountName(accounts, p.accountId),
+    ]
+      .filter(Boolean)
+      .join(" · ");
+  const key = (p: Position) => `${p.accountId ?? "all"}:${p.instrument.id}`;
   return (
     <>
       <QueryNotice
-        failed={query.isError || cash.isError}
+        failed={query.isError || cash.isError || day.isError}
         retry={() => {
           void cash.refetch();
+          void day.refetch();
           return query.refetch();
         }}
       />
@@ -52,54 +105,248 @@ export function PositionsScreen({
           {m.excluded} {data.totals.exclusions.count}
         </p>
       )}
-      <Freshness meta={data.meta} />
-      <DataTable
-        caption={m.positions}
-        headings={[
-          m.instrument,
-          m.account,
-          m.quantity,
-          m.averageCost,
-          m.costBasis,
-          m.marketValue,
-          m.valueBase,
-          m.weight,
-          m.unrealizedPl,
-          m.localPl,
-          m.priceEffect,
-          m.fxEffect,
-        ]}
-        rows={data.data.map((p) => ({
-          id: `${p.accountId ?? "all"}:${p.instrument.id}`,
-          cells: [
-            instrumentLink(p.instrument.id, p.instrument.ticker),
-            accountName(accounts, p.accountId),
-            formatQuantity(p.quantity),
-            <Amount key="average" value={p.averageCost} unknownCost />,
-            <Amount key="cost" value={p.costBasis} unknownCost />,
-            <Amount key="market" value={p.marketValue} />,
-            <Amount key="value" value={p.marketValueBase} />,
-            ratio(p.weight),
-            <span key="pl">
-              <Amount value={p.unrealizedPl} signed /> {ratio(p.unrealizedPlRatio)}
-            </span>,
-            <Amount key="local" value={p.unrealizedPlInstrumentCurrency} signed />,
-            <Amount key="price" value={p.priceEffect} signed />,
-            <Amount key="fx" value={p.fxEffect} signed />,
-          ],
-        }))}
-      />
-      <dl className="oi-kpis">
-        {(["marketValueBase", "costBasis", "unrealizedPl"] as const).map((key) => (
-          <div key={key} className="oi-kpi">
-            <dt>{key === "marketValueBase" ? m.valueBase : m[key]}</dt>
-            <dd>
-              <Amount value={data.totals[key]} unknownCost={key === "costBasis"} />
-            </dd>
-          </div>
-        ))}
+      <dl className="oi-kpis oi-kpis-compact">
+        <StatTile
+          label={m.valueBase}
+          value={<Amount value={data.totals.marketValueBase} stale={totalsStale} />}
+        />
+        <StatTile
+          label={m.unrealizedPl}
+          explainer={<Explainer termKey={metricKeys.unrealizedPl} term={m.unrealizedPl} />}
+          value={<Amount value={data.totals.unrealizedPl} signed stale={totalsStale} />}
+        />
+        <StatTile
+          label={m.dayChange}
+          explainer={<Explainer termKey={metricKeys.dayChange} term={m.dayChange} />}
+          value={<Amount value={day.data.change} signed stale={dayStale} />}
+        />
+        <StatTile label={m.positions} value={formatQuantity(String(data.data.length))} />
       </dl>
-      <p>{m.fifoHelp}</p>
+      {data.data.length === 0 ? (
+        <p className="oi-panel">{m.empty}</p>
+      ) : (
+        <>
+          {data.data.length > 100 ? (
+            <DataTable
+              caption={m.positions}
+              headings={[
+                m.instrument,
+                m.quantity,
+                m.lastPrice,
+                m.valueBase,
+                m.cost,
+                m.weight,
+                m.today,
+                m.result,
+              ]}
+              rows={[
+                ...data.data.map((p) => ({
+                  id: key(p),
+                  cells: [
+                    <span key="instrument" className="oi-instrument-label">
+                      {instrumentLink(p.instrument.id, p.instrument.name)}
+                      <small>{listing(p)}</small>
+                    </span>,
+                    <span key="quantity" className="num">
+                      {formatQuantity(p.quantity)}
+                    </span>,
+                    <LastPrice key="price" position={p} unavailable={query.unavailable} />,
+                    <Amount key="value" value={p.marketValueBase} stale={stale(p)} />,
+                    <Amount key="cost" value={p.costBasis} unknownCost />,
+                    <span key="weight" className="num">
+                      {ratio(stale(p) ? null : p.weight)}
+                    </span>,
+                    today(p),
+                    <span key="result" className="oi-stack">
+                      <Amount value={p.unrealizedPl} signed stale={stale(p)} />
+                      {plRatio(p, stale(p))}
+                    </span>,
+                  ],
+                })),
+                {
+                  id: "total",
+                  cells: [
+                    m.total,
+                    null,
+                    null,
+                    <Amount key="value" value={data.totals.marketValueBase} stale={totalsStale} />,
+                    <Amount
+                      key="cost"
+                      value={data.totals.costBasis}
+                      unknownCost
+                      stale={totalsStale}
+                    />,
+                    null,
+                    null,
+                    <Amount
+                      key="result"
+                      value={data.totals.unrealizedPl}
+                      signed
+                      stale={totalsStale}
+                    />,
+                  ],
+                },
+              ]}
+            />
+          ) : (
+            <>
+              <section
+                className="oi-table-scroll oi-positions-table"
+                aria-label={m.positions}
+                // biome-ignore lint/a11y/noNoninteractiveTabindex: Scrollable table must be reachable from the keyboard.
+                tabIndex={0}
+              >
+                <table className="oi-data-table">
+                  <caption className="oi-sr">{m.positions}</caption>
+                  <thead>
+                    <tr>
+                      {[
+                        m.instrument,
+                        m.quantity,
+                        m.lastPrice,
+                        m.valueBase,
+                        m.cost,
+                        m.weight,
+                        m.today,
+                        m.result,
+                      ].map((heading) => (
+                        <th key={heading} scope="col">
+                          {heading}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.data.map((p) => (
+                      <tr key={key(p)}>
+                        <th scope="row">
+                          <span className="oi-instrument-label">
+                            {instrumentLink(p.instrument.id, p.instrument.name)}
+                            <small>{listing(p)}</small>
+                          </span>
+                        </th>
+                        <td className="num">{formatQuantity(p.quantity)}</td>
+                        <td>
+                          <LastPrice position={p} unavailable={query.unavailable} />
+                        </td>
+                        <td>
+                          <Amount value={p.marketValueBase} stale={stale(p)} />
+                        </td>
+                        <td>
+                          <Amount value={p.costBasis} unknownCost />
+                        </td>
+                        <td className="num">{ratio(stale(p) ? null : p.weight)}</td>
+                        <td>{today(p)}</td>
+                        <td>
+                          <span className="oi-stack">
+                            <Amount value={p.unrealizedPl} signed stale={stale(p)} />
+                            {plRatio(p, stale(p))}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr>
+                      <th scope="row">{m.total}</th>
+                      <td />
+                      <td />
+                      <td>
+                        <Amount value={data.totals.marketValueBase} stale={totalsStale} />
+                      </td>
+                      <td>
+                        <Amount value={data.totals.costBasis} unknownCost stale={totalsStale} />
+                      </td>
+                      <td />
+                      <td />
+                      <td>
+                        <Amount value={data.totals.unrealizedPl} signed stale={totalsStale} />
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </section>
+              <ul className="oi-position-cards" aria-label={m.positions}>
+                {data.data.map((p) => (
+                  <li key={key(p)}>
+                    <details>
+                      <summary>
+                        <span className="oi-instrument-label">
+                          <strong>{p.instrument.name}</strong>
+                          <small>
+                            {p.instrument.ticker} ·{" "}
+                            {formatMessage(m.units, { value: formatQuantity(p.quantity) })}
+                          </small>
+                        </span>
+                        <span className="oi-stack">
+                          <Amount value={p.marketValueBase} stale={stale(p)} />
+                          {plRatio(p, stale(p))}
+                        </span>
+                      </summary>
+                      <dl className="oi-position-facts">
+                        <div>
+                          <dt>{m.lastPrice}</dt>
+                          <dd>
+                            <LastPrice position={p} unavailable={query.unavailable} />
+                          </dd>
+                        </div>
+                        <div>
+                          <dt>{m.weight}</dt>
+                          <dd className="num">{ratio(stale(p) ? null : p.weight)}</dd>
+                        </div>
+                        <div>
+                          <dt>{m.cost}</dt>
+                          <dd>
+                            <Amount value={p.costBasis} unknownCost />
+                          </dd>
+                        </div>
+                        <div>
+                          <dt>{m.today}</dt>
+                          <dd>{today(p)}</dd>
+                        </div>
+                        <div>
+                          <dt>{m.result}</dt>
+                          <dd>
+                            <Amount value={p.unrealizedPl} signed stale={stale(p)} />
+                          </dd>
+                        </div>
+                        <div>
+                          <dt>{m.account}</dt>
+                          <dd>{accountName(accounts, p.accountId)}</dd>
+                        </div>
+                      </dl>
+                      {instrumentLink(p.instrument.id, m.instrumentCard)}
+                    </details>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+          <Disclosure summary={m.resultBreakdown}>
+            <DataTable
+              caption={m.resultBreakdown}
+              headings={[m.instrument, m.averageCost, m.localPl, m.priceEffect, m.fxEffect]}
+              rows={data.data.map((p) => ({
+                id: key(p),
+                cells: [
+                  instrumentLink(p.instrument.id, p.instrument.ticker),
+                  <Amount key="average" value={p.averageCost} unknownCost />,
+                  <Amount
+                    key="local"
+                    value={p.unrealizedPlInstrumentCurrency}
+                    signed
+                    stale={stale(p)}
+                  />,
+                  <Amount key="price" value={p.priceEffect} signed stale={stale(p)} />,
+                  <Amount key="fx" value={p.fxEffect} signed stale={stale(p)} />,
+                ],
+              }))}
+            />
+          </Disclosure>
+        </>
+      )}
+      <Freshness meta={data.meta} />
+      <p className="oi-help">{m.fifoHelp}</p>
       <DataTable
         caption={m.cash}
         headings={[m.account, m.cash, m.valueBase, m.date]}
@@ -141,9 +388,6 @@ export function TransactionsScreen({ userId, args, initial, accounts }: Props<"t
   return (
     <>
       <QueryNotice failed={query.isError} retry={query.refetch} />
-      <Link className="oi-button" href="/portfel/operacje/nowa">
-        {m.newTransaction}
-      </Link>
       <DataTable
         caption={m.transactions}
         headings={[m.date, m.type, m.account, m.quantity, m.amount, m.edit]}
@@ -170,9 +414,6 @@ export function AccountsScreen({ userId, args, initial }: Props<"accounts">) {
   return (
     <>
       <QueryNotice failed={query.isError} retry={query.refetch} />
-      <Link className="oi-button" href="/portfel/rachunki/nowy">
-        {m.newAccount}
-      </Link>
       <DataTable
         caption={m.accounts}
         headings={[m.name, m.broker, m.accountType, m.currency, m.reconciliation, m.edit]}

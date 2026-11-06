@@ -1,7 +1,8 @@
 import { portfolioMessages as m } from "@oliginvest/i18n";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireMe } from "../auth/session";
-import { PortfolioFilters, PortfolioNav } from "./presentation";
+import { PortfolioHeader } from "./page-header";
 import { fetchResource, readArgs } from "./resources";
 export type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 export async function portfolioPage(
@@ -26,6 +27,7 @@ export async function portfolioPage(
         initialCash={
           await fetchResource("cash", args.accountId ? { accountId: args.accountId } : {})
         }
+        initialDay={await fetchResource("day", args.accountId ? { accountId: args.accountId } : {})}
       />
     ) : kind === "transactions" ? (
       <TransactionsScreen {...common} initial={await fetchResource("transactions", args)} />
@@ -36,15 +38,30 @@ export async function portfolioPage(
     ) : (
       <RealizedScreen {...common} initial={await fetchResource("realized", args)} />
     );
+  const action =
+    kind === "accounts" ? (
+      <Link className="oi-button oi-button-primary" href="/portfel/rachunki/nowy">
+        {m.newAccount}
+      </Link>
+    ) : kind === "positions" || kind === "transactions" ? (
+      <Link className="oi-button oi-button-primary" href="/portfel/operacje/nowa">
+        {m.newTransaction}
+      </Link>
+    ) : undefined;
   return (
     <section>
-      <h1>{m[kind]}</h1>
-      <PortfolioNav />
-      {kind !== "accounts" && (
-        <PortfolioFilters
-          accounts={accounts.data}
-          args={args}
-          view={["positions", "realized"].includes(kind)}
+      {kind === "accounts" ? (
+        <PortfolioHeader title={m[kind]} current={kind} action={action} />
+      ) : (
+        <PortfolioHeader
+          title={m[kind]}
+          current={kind}
+          action={action}
+          filters={{
+            accounts: accounts.data,
+            args,
+            view: ["positions", "realized"].includes(kind),
+          }}
         >
           {kind === "positions" && (
             <label>
@@ -104,7 +121,7 @@ export async function portfolioPage(
               </select>
             </label>
           )}
-        </PortfolioFilters>
+        </PortfolioHeader>
       )}
       {screen}
     </section>

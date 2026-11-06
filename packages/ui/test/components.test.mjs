@@ -112,3 +112,66 @@ test("native fields bind visible labels, help and errors; buttons do not submit 
   ).toContain('for="currency"');
   expect(render(h(Button, null, "Zapisz"))).toContain('type="button"');
 });
+
+test("change badges distinguish signed gains, losses, neutral zero and missing/stale values", async () => {
+  const { ChangeValue, MoneyValue, AllocationBar, RangeBar } = await import("../dist/index.js");
+  for (const [amount, sign, icon, label] of [
+    ["1.25", "+", "▲", "wzrost"],
+    ["-1.25", "-", "▼", "spadek"],
+  ]) {
+    const html = render(h(ChangeValue, { value: amount, currency: "PLN" }));
+    expect(html).toContain(`${sign}1,25`);
+    expect(html).toContain(icon);
+    expect(html).toContain(label);
+    expect(html).toContain('aria-hidden="true"');
+  }
+  for (const amount of ["0", "-0.00"]) {
+    const html = render(h(ChangeValue, { value: amount, currency: "PLN" }));
+    expect(html).toContain("oi-flat");
+    expect(html).not.toMatch(/▲|▼|oi-gain|oi-loss/);
+  }
+  for (const Component of [ChangeValue, MoneyValue]) {
+    for (const props of [{ value: null }, { value: "0", stale: true }]) {
+      const html = render(h(Component, { ...props, currency: "PLN" }));
+      expect(html).toContain("—");
+      expect(html).not.toContain("0,00");
+    }
+  }
+  const bar = render(
+    h(AllocationBar, {
+      items: [
+        { label: "PLN", weight: 0.75 },
+        { label: "EUR", weight: 0.25 },
+      ],
+    }),
+  );
+  expect(bar).toContain("75,00%");
+  expect(bar).toContain("EUR");
+  expect(bar).toContain('aria-hidden="true"');
+  // SSR style attributes are blocked by production CSP before hydration.
+  expect(bar).not.toContain("style=");
+  const range = render(h(RangeBar, { low: "8", high: "14", value: "12", currency: "PLN" }));
+  expect(range).not.toContain("style=");
+  expect(range).toContain("66,67%");
+  expect(render(h(RangeBar, { low: "8", high: "14", value: null, currency: "PLN" }))).not.toContain(
+    "<meter",
+  );
+});
+
+test("live status reserves every label so hydration cannot change the toolbar width", async () => {
+  const { LiveStatus } = await import("../dist/index.js");
+  const html = render(
+    h(LiveStatus, {
+      label: "Łączenie",
+      reserve: ["Na żywo", "Łączenie", "Wstrzymane"],
+      actionLabel: "Wstrzymaj",
+      actionName: "Wstrzymaj aktualizacje",
+      onAction: () => {},
+    }),
+  );
+  // The other labels occupy the same grid cell, hidden from assistive technology and from view.
+  expect(html.match(/class="oi-connection-reserve"/g)).toHaveLength(2);
+  expect(html).toContain('<span aria-hidden="true" class="oi-connection-reserve">Na żywo</span>');
+  expect(html).toContain('<span class="oi-connection-current">Łączenie</span>');
+  expect(html.split("Łączenie")).toHaveLength(2);
+});

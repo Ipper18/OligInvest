@@ -117,8 +117,9 @@ flowchart LR
 | Kontekst | Wzorzec |
 |---|---|
 | Telefon (< 1024 px) | dolny pasek: **Start**, **Portfel**, **Rynek**, **Alerty**, **Więcej** (Analizy, Nauka, Ustawienia, Admin); nagłówek z tytułem, przyciskiem „wstecz” i wyszukiwaniem |
-| Desktop (≥ 1024 px) | panel boczny z sekcjami i podsekcjami; wyszukiwarka instrumentów w nagłówku (skrót klawiszowy `/`) |
-| Przełącznik rachunków | w nagłówku portfela: „Wszystkie rachunki” lub wybór (parametr URL `accountId`) |
+| Desktop (≥ 1024 px) | panel boczny z sekcjami i podsekcjami (Portfel: Pozycje, Operacje, Import operacji, Rachunki, Partie FIFO, Wynik zrealizowany, Alokacja — podmenu widoczne w sekcji Portfel); wyszukiwarka instrumentów w nagłówku (skrót klawiszowy `/`). Na telefonie podstrony Portfela są rzędem przewijanych „chipów” pod tytułem |
+| Przełącznik rachunków | w prawym górnym rogu nagłówka strony (Start i ekrany portfela): „Wszystkie rachunki” lub wybór (parametr URL `accountId`); widok wyniku, grupowanie i daty pod „Opcje widoku”. Jeden formularz GET: zmiana listy stosuje się od razu, „Zastosuj” zostaje dla dat i jako rezerwa |
+| Wylogowanie | Ustawienia → Konto (od BL-413 nie ma go w nagłówku powłoki) |
 | Linki głębokie (FR-09.07) | `/rynek/[instrumentId]`, `/portfel/rachunki/[accountId]`, `/alerty/[ruleId]`, `/analizy/[runId]` — w powiadomieniach, e-mailach i Skrótach; otwierają zainstalowaną PWA, gdy system na to pozwala ([`../05-mobile/strategia-mobilna.md`](../05-mobile/strategia-mobilna.md)) |
 
 ## 8. Ścieżki kluczowe

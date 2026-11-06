@@ -90,8 +90,8 @@ export function CandlestickChart({
             instance.applyOptions({
               layout: { textColor: token("--color-ink") },
               grid: {
-                vertLines: { color: token("--color-hairline") },
-                horzLines: { color: token("--color-hairline") },
+                vertLines: { color: token("--color-line") },
+                horzLines: { color: token("--color-line") },
               },
             });
             candles.applyOptions({
@@ -101,9 +101,11 @@ export function CandlestickChart({
               wickDownColor: token("--color-loss"),
               borderVisible: false,
             });
-            volume.applyOptions({ color: token("--color-accent") });
+            volume.applyOptions({ color: token("--color-primary") });
             lines.forEach((line, index) => {
-              line.applyOptions({ color: token(index % 2 ? "--color-warning" : "--color-accent") });
+              line.applyOptions({
+                color: token(index % 2 ? "--color-warning" : "--color-primary"),
+              });
             });
           };
           applyTheme();

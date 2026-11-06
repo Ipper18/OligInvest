@@ -35,6 +35,7 @@
     "@oliginvest/i18n": "workspace:*"
   },
   "optionalDependencies": {
+    "@oliginvest/mod-admin": "workspace:*",
     "@oliginvest/mod-analytics": "workspace:*",
     "@oliginvest/mod-education": "workspace:*",
     "@oliginvest/mod-alerts": "workspace:*",

@@ -74,6 +74,7 @@ export async function uiFixture(request, response) {
       ? (saved.get(key) ?? {
           ...preferences,
           theme: key.includes("light") ? "light" : "dark",
+          plPalette: key.includes("colorblind") ? "colorblind" : "default",
           required: key.startsWith("fixture-legal"),
           enrolled: !key.startsWith("fixture-enroll"),
           verified: !key.startsWith("fixture-unverified"),

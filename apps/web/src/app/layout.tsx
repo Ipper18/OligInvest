@@ -35,7 +35,7 @@ async function appearance() {
 export async function generateViewport(): Promise<Viewport> {
   const { theme } = await appearance();
   const dark = "#0B0D0F";
-  const light = "#FAFAF7";
+  const light = "#F1F0EB";
   return {
     themeColor: [
       { media: "(prefers-color-scheme: dark)", color: theme === "light" ? light : dark },

@@ -1,11 +1,19 @@
 "use client";
 import { portfolioMessages as m } from "@oliginvest/i18n";
 import { type ComponentType, type ReactNode, useEffect, useState } from "react";
+import { useOnline } from "./online";
 import type { Resource } from "./resources";
 import type { Props } from "./summary-screen";
 
 type SummaryProps = Props<"summary"> & { initialDay: Resource<"day"> };
-export function SummaryLive({ fallback, ...props }: SummaryProps & { fallback: ReactNode }) {
+export function SummaryLive({
+  fallback,
+  offlineFallback,
+  ...props
+}: SummaryProps & { fallback: ReactNode; offlineFallback: ReactNode }) {
+  // Until the live screen loads (or when its chunk cannot load offline), the server snapshot
+  // must not present the current valuation without a network.
+  const online = useOnline();
   const [Screen, setScreen] = useState<ComponentType<SummaryProps> | null>(null);
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
@@ -36,7 +44,7 @@ export function SummaryLive({ fallback, ...props }: SummaryProps & { fallback: R
           </button>
         </div>
       )}
-      {fallback}
+      {online ? fallback : offlineFallback}
     </>
   );
 }

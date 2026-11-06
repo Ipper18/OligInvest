@@ -118,3 +118,28 @@ test("Retry-After is respected and stale aborted responses cannot redirect", asy
   await flush();
   expect(o.unauthorized).not.toHaveBeenCalled();
 });
+
+test("offline immediately replaces live status, aborts the stream and resumes only when online", async () => {
+  const o = options();
+  client = connectStream(o);
+  await flush();
+  send("event: ready\ndata: {}\n\n");
+  await flush();
+  expect(o.state).toHaveBeenLastCalledWith("live");
+  navigator.onLine = false;
+  win.dispatchEvent(new Event("offline"));
+  await flush();
+  expect(o.state).toHaveBeenLastCalledWith("offline");
+  expect(requests[0].signal.aborted).toBe(true);
+  await vi.advanceTimersByTimeAsync(600000);
+  expect(requests).toHaveLength(1);
+  navigator.onLine = true;
+  win.dispatchEvent(new Event("online"));
+  await flush();
+  expect(requests).toHaveLength(2);
+  expect(o.resume).toHaveBeenCalledTimes(1);
+  client.stop();
+  o.state.mockClear();
+  win.dispatchEvent(new Event("offline"));
+  expect(o.state).not.toHaveBeenCalled();
+});

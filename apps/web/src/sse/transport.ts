@@ -94,6 +94,10 @@ export function connectStream(options: {
   };
   async function open() {
     if (stopped || paused || background) return;
+    if (!navigator.onLine) {
+      options.state("offline");
+      return;
+    }
     const ticket = ++generation;
     controller = new AbortController();
     const current = controller;
@@ -194,6 +198,10 @@ export function connectStream(options: {
       }
     }
   };
+  const offline = () => {
+    abort();
+    options.state("offline");
+  };
   const online = () => {
     if (!paused && !background) {
       abort();
@@ -207,11 +215,13 @@ export function connectStream(options: {
     clearTimeout(hiddenTimer);
     document.removeEventListener("visibilitychange", visibility);
     window.removeEventListener("online", online);
+    window.removeEventListener("offline", offline);
     if (activeStop === stop) activeStop = undefined;
   }
   activeStop = stop;
   document.addEventListener("visibilitychange", visibility);
   window.addEventListener("online", online);
+  window.addEventListener("offline", offline);
   visibility();
   void open();
   return {

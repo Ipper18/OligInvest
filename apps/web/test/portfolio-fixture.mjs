@@ -13,6 +13,7 @@ const instrument = {
   ticker: "TEST",
   name: "Instrument syntetyczny",
   mic: "XWAR",
+  exchangeShortName: "GPW",
   type: "stock",
   currency: "PLN",
   isActive: true,
@@ -27,7 +28,7 @@ const account = {
   updatedAt: instant,
   reconciliationStatus: "never_imported",
 };
-const meta = {
+const defaultMeta = {
   source: "gpw",
   asOf: instant,
   delayMinutes: 0,
@@ -55,6 +56,19 @@ export async function portfolioFixture(request, response, key) {
       },
       401,
     );
+  const fresh = key.includes("redesign-fresh");
+  const empty = key.includes("redesign-empty");
+  const meta = fresh ? { ...defaultMeta, stale: false, staleReason: undefined } : defaultMeta;
+  if (key.includes("redesign-error") && path === "/portfolio/summary")
+    return send(
+      {
+        type: "https://example.test/problems/internal",
+        title: "Błąd testowy",
+        status: 500,
+        code: "INTERNAL",
+      },
+      500,
+    );
   if (marketFixture(path, url, send, instrumentId, instant)) return true;
   if (await watchlistFixture(request, path, send, key, instrument, instant)) return true;
   if (!users.has(key))
@@ -79,16 +93,25 @@ export async function portfolioFixture(request, response, key) {
   const data =
     body && !request.headers["content-type"]?.includes("multipart") ? JSON.parse(body) : {};
   const view = url.searchParams.get("view") ?? "economic";
-  const exclusions = { count: 1, positions: [{ accountId, instrumentId }] };
+  const exclusions = fresh
+    ? { count: 0, positions: [] }
+    : { count: 1, positions: [{ accountId, instrumentId }] };
   if (path === "/portfolio/day-change")
     return send({
-      change: null,
+      change: fresh ? money("1.25") : null,
       changeRatio: null,
       previousValue: money("1000"),
       currentValue: null,
       flowsToday: money("0"),
       residualChange: null,
-      positions: [{ instrument, change: null, contributionRatio: null }],
+      positions: [
+        {
+          instrument,
+          change: null,
+          priceChangeRatio: fresh ? 0.0133 : null,
+          contributionRatio: null,
+        },
+      ],
       meta,
     });
   if (path === "/portfolio/accounts") {
@@ -97,7 +120,7 @@ export async function portfolioFixture(request, response, key) {
       state.accounts.push(value);
       return send(value, 201);
     }
-    return send({ data: state.accounts });
+    return send({ data: empty ? [] : state.accounts });
   }
   if (path.startsWith("/portfolio/accounts/")) {
     const found = state.accounts.find((a) => a.id === path.split("/").at(-1));
@@ -113,43 +136,60 @@ export async function portfolioFixture(request, response, key) {
       totalValue: money("1000"),
       marketValue: money("0"),
       cash: money("1000"),
-      unrealizedPl: money("0"),
-      dayChange: null,
+      unrealizedPl: fresh ? money("-12.34") : money("0"),
+      dayChange: fresh ? money("1.25") : null,
       dayChangeRatio: null,
       view,
-      isComplete: false,
+      isComplete: fresh,
       exclusions,
       meta,
-      accounts: [
-        { accountId, name: account.name, totalValue: money("1000"), totalValueBase: money("1000") },
-      ],
+      accounts: empty
+        ? []
+        : [
+            {
+              accountId,
+              name: account.name,
+              totalValue: money("1000"),
+              totalValueBase: money("1000"),
+            },
+          ],
     });
-  if (path === "/portfolio/positions")
+  if (path === "/portfolio/positions") {
+    const large = key.includes("redesign-fresh-large");
     return send({
-      data: [
-        {
-          instrument,
-          ...(url.searchParams.get("groupBy") === "instrument" ? {} : { accountId }),
-          quantity: "4",
-          averageCost: null,
-          costBasis: null,
-          marketValue: null,
-          marketValueBase: null,
-          weight: null,
-          unrealizedPl: null,
-          meta,
-        },
-      ],
+      data: Array.from({ length: large ? 200 : 1 }, (_, index) => ({
+        instrument: large
+          ? {
+              ...instrument,
+              id: `01900000-0000-7000-8000-${String(index + 1).padStart(12, "0")}`,
+              name: `Instrument syntetyczny ${index + 1}`,
+            }
+          : instrument,
+        ...(url.searchParams.get("groupBy") === "instrument" ? {} : { accountId }),
+        quantity: "4",
+        averageCost: fresh ? money("12.3125") : null,
+        costBasis: fresh ? money("49.25") : null,
+        // The last known price stays available when the valuation is stale.
+        price: "12",
+        priceCurrency: "PLN",
+        marketValue: fresh ? money("48") : null,
+        marketValueBase: fresh ? money("48") : null,
+        weight: fresh ? (large ? 0.005 : 1) : null,
+        unrealizedPl: fresh ? money("-1.25") : null,
+        unrealizedPlRatio: fresh ? -0.0254 : null,
+        meta,
+      })),
       totals: {
-        marketValueBase: money("0"),
-        costBasis: money("0"),
-        unrealizedPl: money("0"),
+        marketValueBase: fresh ? money(large ? "9600" : "48") : money("0"),
+        costBasis: fresh ? money(large ? "9850" : "49.25") : money("0"),
+        unrealizedPl: fresh ? money(large ? "-250" : "-1.25") : money("0"),
         exclusions,
       },
       view,
-      isComplete: false,
+      isComplete: fresh,
       meta,
     });
+  }
   if (path === "/portfolio/cash")
     return send({
       data: [{ accountId, balance: money("1000"), balanceBase: money("1000"), asOf: "2026-10-13" }],

@@ -2,10 +2,11 @@ import { LegalFooter } from "@oliginvest/ui";
 import type { ReactNode } from "react";
 import { requireMe } from "../../auth/session";
 import { Providers } from "../../shell/providers";
+import { ShellNavigation } from "../../shell/shell-navigation";
 export default async function Layout({ children }: { children: ReactNode }) {
   const me = await requireMe();
   return (
-    <Providers initialMe={me} footer={<LegalFooter />}>
+    <Providers initialMe={me} footer={<LegalFooter />} navigation={<ShellNavigation me={me} />}>
       {children}
     </Providers>
   );

@@ -36,15 +36,39 @@ test("portfolio gaps remain visible with quantity and an accessible tax view", a
   await page.goto("/portfel");
   await expect(page.getByRole("heading", { name: "Pozycje", exact: true })).toBeVisible();
   await expect(page.getByText("Wycena częściowa", { exact: false })).toBeVisible();
-  await expect(page.getByText("Brak danych").first()).toBeVisible();
-  await expect(page.getByText("Koszt nieznany", { exact: true })).toHaveCount(2);
+  await expect(page.getByText("—", { exact: true }).first()).toBeVisible();
+  // BL-413: dense table; the last known price keeps an explicit stale tag, never a zero value.
+  const positions = page.getByRole("table", { name: "Pozycje", exact: true });
+  await expect(positions.getByText("Koszt nieznany", { exact: true })).toHaveCount(1);
+  await expect(positions.getByText("nieaktualne", { exact: true })).toBeVisible();
+  await expect(positions).not.toContainText("0,00");
+  await page.locator("summary", { hasText: "Rozbicie wyniku i średni koszt" }).click();
+  const breakdown = page.getByRole("table", { name: "Rozbicie wyniku i średni koszt" });
+  await expect(breakdown.getByText("Koszt nieznany", { exact: true })).toHaveCount(1);
+  // View and grouping live under "Opcje widoku"; a changed select applies the GET form.
+  await page.locator("summary", { hasText: "Opcje widoku" }).click();
   await page.getByLabel("Widok wyniku").selectOption("tax");
-  await page.getByRole("button", { name: "Zastosuj", exact: true }).click();
+  await expect(page).toHaveURL(/[?&]view=tax(?:&|$)/);
   await expect(page.locator('[data-disclaimer-key="tax_view"]')).toBeVisible();
   expect(
     (await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze())
       .violations,
   ).toEqual([]);
+});
+
+test("view options keep a GET form with Zastosuj for inputs that do not apply at once", async ({
+  page,
+}) => {
+  await page.goto("/portfel/operacje");
+  const form = page.locator("form.oi-filter-form");
+  await expect(form).toHaveAttribute("method", "get");
+  await expect(form.locator("#account-switch")).toHaveAttribute("name", "accountId");
+  await page.locator("summary", { hasText: "Opcje widoku" }).click();
+  await page.getByLabel("Od", { exact: true }).fill("2026-10-01");
+  await expect(page).not.toHaveURL(/from=/);
+  await page.getByRole("button", { name: "Zastosuj", exact: true }).click();
+  await expect(page).toHaveURL(/[?&]from=2026-10-01(?:&|$)/);
+  await expect(page.getByLabel("Od", { exact: true })).toHaveValue("2026-10-01");
 });
 
 test("Start exposes daily contributions and residual without substituting zero for gaps", async ({
@@ -53,12 +77,12 @@ test("Start exposes daily contributions and residual without substituting zero f
   await page.goto("/");
   const table = page.getByRole("table", { name: "Wynik dnia", exact: true });
   await expect(table.getByRole("columnheader", { name: "Wkład w stopę portfela" })).toBeVisible();
-  await expect(table.getByRole("row", { name: /Gotówka i pozostałe.*Brak danych/ })).toBeVisible();
-  await expect(table.getByRole("row", { name: /TEST.*Brak danych/ })).toBeVisible();
+  await expect(table.getByRole("row", { name: /Gotówka i pozostałe.*—/ })).toBeVisible();
+  await expect(table.getByRole("row", { name: /TEST.*—/ })).toBeVisible();
 });
 test("connection status and the pause/resume button agree", async ({ page }) => {
   await page.goto("/");
-  const status = page.locator(".oi-connection");
+  const status = page.locator(".oi-connection-current");
   await expect(page.getByRole("button", { name: "Wstrzymaj aktualizacje" })).toBeVisible();
   await expect(status).not.toHaveText("Aktualizacje wstrzymane");
   await page.getByRole("button", { name: "Wstrzymaj aktualizacje" }).click();

@@ -38,7 +38,7 @@ export function ThemeControls({
 
   return (
     <section className="border-t border-hairline py-5" aria-labelledby="appearance-heading">
-      <h2 id="appearance-heading" className="font-serif text-xl font-semibold">
+      <h2 id="appearance-heading" className="font-sans text-xl font-semibold">
         {messages.bootstrap.appearance}
       </h2>
       <div className="mt-4 grid gap-4 sm:grid-cols-2">

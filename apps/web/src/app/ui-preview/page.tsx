@@ -1,5 +1,6 @@
 import { disclaimers, errorMessages, messages } from "@oliginvest/i18n";
 import {
+  AllocationBar,
   AssumptionsBlock,
   Button,
   DataFreshness,
@@ -7,6 +8,7 @@ import {
   Disclosure,
   ModalDialog,
   Popover,
+  RangeBar,
   SelectField,
   TextField,
 } from "@oliginvest/ui";
@@ -16,7 +18,7 @@ import type * as React from "react";
 export default function UiPreviewPage(): React.JSX.Element {
   return (
     <main className="mx-auto grid max-w-prose gap-5 px-4 py-8">
-      <h1 className="font-serif text-2xl font-semibold">{messages.bootstrap.title}</h1>
+      <h1 className="font-sans text-2xl font-semibold">{messages.bootstrap.title}</h1>
       <p>{messages.bootstrap.description}</p>
       <TextField
         id="preview-price"
@@ -36,6 +38,13 @@ export default function UiPreviewPage(): React.JSX.Element {
         <option value="light">{messages.bootstrap.themes.light}</option>
       </SelectField>
       <Button>{messages.action.save}</Button>
+      <AllocationBar
+        items={[
+          { label: "PLN", weight: 0.75 },
+          { label: "EUR", weight: 0.25 },
+        ]}
+      />
+      <RangeBar low="8" high="14" value="12" currency="PLN" />
       <ModalDialog
         title={messages.nav.settings}
         triggerLabel={messages.nav.settings}
