@@ -31,10 +31,11 @@ RUN printf '%s\n' 'package main' '' 'import (' \
 FROM caddy:2.11.7@sha256:f2a1290d0463aad60660d4ec134943f183ee2a5f6c3eb7bf32dd984f2f020772
 COPY --from=builder /go/bin/caddy /usr/bin/caddy
 # Alpine v3.23 fixes not yet in the pinned base: brotli-libs 1.2.1-r0 (CVE-2026-111497, critical; built
-# 2026-10-22T02:32:51Z) and zlib 1.3.2-r1 (CVE-2026-85091, high; built 2026-10-06T20:35:04Z).
+# 2026-10-22T02:32:51Z) and zlib 1.4-r0 (CVE-2026-85091, high). Alpine removed 1.3.2-r1 from v3.23/main on
+# 2026-11-06; 1.4-r0 (built 2026-11-06T18:26:02Z) is pinned inside the 72-hour window by owner decision.
 # curl is unused (the healthcheck uses busybox wget; Caddy is a static Go binary). Removed because Alpine
 # curl 8.23.0-r0 with fixes for findings of unknown severity was built 2026-10-25 (inside the 72-hour window).
-RUN apk add --no-cache brotli-libs=1.2.1-r0 zlib=1.3.2-r1 \
+RUN apk add --no-cache brotli-libs=1.2.1-r0 zlib=1.4-r0 \
     && apk del --no-cache curl \
     && ! apk info -e curl libcurl \
     && mkdir -p /var/log/caddy && chown -R 10005:10005 /data /config /var/log/caddy
