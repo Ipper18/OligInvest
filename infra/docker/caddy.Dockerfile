@@ -10,6 +10,8 @@
 # x/crypto is pinned to commit 2f1f834330b2 (v0.58.0 plus only "openpgp: carve out openpgp as a module",
 # published 2026-10-09T18:17:18Z): OSV marks it as the fix for GO-2026-5932 (deprecated x/crypto/openpgp, no
 # CVSS score). No tagged release contains it yet; Caddy does not import openpgp, which the build asserts.
+# klauspost/compress v1.20.2 (published 2026-10-12T09:34:06Z) fixes GO-2026-6865 (panic on two-block frames,
+# no CVSS score; published 2026-11-05); Caddy 2.11.7 requires v1.20.1.
 FROM golang:1.26.10-alpine@sha256:9ce231b28998b32e116927c61aa5c406183061d4f3f2d61b292c88e7f6bdf7ca AS builder
 ENV CGO_ENABLED=0 GOTOOLCHAIN=local GOFLAGS=-mod=mod
 WORKDIR /src
@@ -19,10 +21,11 @@ RUN printf '%s\n' 'package main' '' 'import (' \
       '	_ "github.com/caddyserver/caddy/v2/modules/standard"' ')' '' \
       'func main() { caddycmd.Main() }' > main.go \
     && go mod init oliginvest.invalid/caddy \
-    && go get github.com/caddyserver/caddy/v2@v2.11.7 golang.org/x/net@v0.62.0 golang.org/x/crypto@v0.58.1-0.20261009181718-2f1f834330b2 github.com/go-chi/chi/v5@v5.4.0 github.com/go-jose/go-jose/v4@v4.1.6 \
+    && go get github.com/caddyserver/caddy/v2@v2.11.7 golang.org/x/net@v0.62.0 golang.org/x/crypto@v0.58.1-0.20261009181718-2f1f834330b2 github.com/go-chi/chi/v5@v5.4.0 github.com/go-jose/go-jose/v4@v4.1.6 github.com/klauspost/compress@v1.20.2 \
     && go mod tidy \
-    && go list -m golang.org/x/net golang.org/x/crypto golang.org/x/sys golang.org/x/term golang.org/x/text github.com/go-chi/chi/v5 github.com/go-jose/go-jose/v4 \
-    && ! go list -deps . | grep -F golang.org/x/crypto/openpgp \n    && go build -trimpath -ldflags="-s -w" -o /go/bin/caddy . \
+    && go list -m golang.org/x/net golang.org/x/crypto golang.org/x/sys golang.org/x/term golang.org/x/text github.com/go-chi/chi/v5 github.com/go-jose/go-jose/v4 github.com/klauspost/compress \
+    && ! go list -deps . | grep -F golang.org/x/crypto/openpgp \
+    && go build -trimpath -ldflags="-s -w" -o /go/bin/caddy . \
     && go version -m /go/bin/caddy
 
 FROM caddy:2.11.7@sha256:f2a1290d0463aad60660d4ec134943f183ee2a5f6c3eb7bf32dd984f2f020772
