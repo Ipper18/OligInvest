@@ -10,6 +10,7 @@ import { clearPrivateState, onLogout, onRemoteLogout } from "../auth/logout";
 import { updateImportCache, updatePortfolioCache } from "../portfolio/stream-cache";
 import { PwaLoader } from "../pwa/loader";
 import { connectStream, type StreamState } from "../sse/transport";
+import { afterFirstPaint } from "./after-first-paint";
 import { type ConnectionStatus, connectionStatus } from "./connection-status";
 
 // Every status, so the toolbar reserves the widest label (no layout shift after hydration).
@@ -85,7 +86,8 @@ export function Providers({
         if (!response.ok) setState("polling");
       })
       .catch(() => {
-        if (!abort.signal.aborted) setState("polling");
+        // A request cut off by going offline must not replace the transport's "offline".
+        if (!abort.signal.aborted) setState(navigator.onLine ? "polling" : "offline");
       });
     return () => abort.abort();
   }, [connectionId, pathname]);
@@ -119,7 +121,12 @@ export function Providers({
     });
     const unsubscribeRemote = onRemoteLogout(() => logout(true));
     // Validation is loaded outside the initial shell bundle; no Zod runtime in initial JS.
-    void import("@oliginvest/contracts/browser")
+    // SSR data is fresh, so the stream (and its `ready` refetch) waits for the first paint.
+    let cancelStart = () => {};
+    void new Promise<void>((resolve) => {
+      cancelStart = afterFirstPaint(resolve);
+    })
+      .then(() => import("@oliginvest/contracts/browser"))
       .then(({ realtimeSchemas }) => {
         if (disposed) return;
         stream.current = connectStream({
@@ -168,6 +175,7 @@ export function Providers({
       });
     return () => {
       disposed = true;
+      cancelStart();
       stream.current?.stop();
       unsubscribe();
       unsubscribeRemote();
