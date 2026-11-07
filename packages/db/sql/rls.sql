@@ -25,6 +25,16 @@ BEGIN
 END
 $$;
 
+-- Rejestr kwot: własne odczyty/dopisanie; brak UPDATE, usuwanie dopiero po 7 × 24 h (BL-115).
+ALTER TABLE platform.role_quota_usage ENABLE ROW LEVEL SECURITY;
+ALTER TABLE platform.role_quota_usage FORCE ROW LEVEL SECURITY;
+CREATE POLICY quota_read ON platform.role_quota_usage FOR SELECT TO oliginvest_app
+  USING (user_id = platform.current_user_id());
+CREATE POLICY quota_insert ON platform.role_quota_usage FOR INSERT TO oliginvest_app
+  WITH CHECK (user_id = platform.current_user_id());
+CREATE POLICY quota_retention ON platform.role_quota_usage FOR DELETE TO oliginvest_app
+  USING (user_id = platform.current_user_id() AND consumed_at < now() - interval '168 hours');
+
 -- 12.2 Tabele konfiguracyjne: odczyt dla wszystkich, zapis tylko admin/system (obrona w głąb obok RBAC w api).
 DO $$
 DECLARE t text;

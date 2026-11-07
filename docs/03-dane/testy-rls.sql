@@ -199,12 +199,48 @@ DO $$ BEGIN IF (SELECT count(*) FROM platform.erasure_log) <> 1 THEN RAISE EXCEP
 COMMIT;
 RESET ROLE;
 
+\echo '== role quota ledger: owner isolation, append-only and retention boundary =='
+SET ROLE oliginvest_app;
+BEGIN; SET LOCAL app.user_id = '0198a000-0000-7000-8000-00000000000a'; SET LOCAL app.role = 'pro';
+INSERT INTO platform.role_quota_usage(operation_id, user_id, quota_key, consumed_at) VALUES
+  ('0198a000-0000-7000-8000-0000000000e1', '0198a000-0000-7000-8000-00000000000a', 'analytics_heavy_per_day', now()),
+  ('0198a000-0000-7000-8000-0000000000e2', '0198a000-0000-7000-8000-00000000000a', 'analytics_heavy_per_day', now() - interval '168 hours'),
+  ('0198a000-0000-7000-8000-0000000000e3', '0198a000-0000-7000-8000-00000000000a', 'analytics_heavy_per_day', now() - interval '168 hours 1 second');
+DO $$ BEGIN
+  BEGIN
+    INSERT INTO platform.role_quota_usage VALUES (uuidv7(), '0198a000-0000-7000-8000-00000000000b', 'analytics_heavy_per_day', now());
+    RAISE EXCEPTION 'QUOTA CROSS-USER INSERT';
+  EXCEPTION WHEN insufficient_privilege THEN RAISE NOTICE 'OK: quota insert owner only'; END;
+  BEGIN
+    UPDATE platform.role_quota_usage SET consumed_at = now() - interval '8 days';
+    RAISE EXCEPTION 'QUOTA UPDATE ALLOWED';
+  EXCEPTION WHEN insufficient_privilege THEN RAISE NOTICE 'OK: quota cannot be changed'; END;
+  DELETE FROM platform.role_quota_usage;
+  IF (SELECT count(*) FROM platform.role_quota_usage) <> 2 THEN RAISE EXCEPTION 'QUOTA RETENTION BOUNDARY'; END IF;
+END $$;
+COMMIT;
+BEGIN; SET LOCAL app.user_id = '0198a000-0000-7000-8000-00000000000b'; SET LOCAL app.role = 'user';
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM platform.role_quota_usage) THEN RAISE EXCEPTION 'QUOTA OWNER LEAK'; END IF;
+  DELETE FROM platform.role_quota_usage;
+  IF FOUND THEN RAISE EXCEPTION 'QUOTA FOREIGN DELETE'; END IF;
+END $$;
+COMMIT;
+BEGIN; SET LOCAL app.user_id = '0198a000-0000-7000-8000-0000000000ad'; SET LOCAL app.role = 'admin';
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM platform.role_quota_usage) THEN RAISE EXCEPTION 'QUOTA ADMIN LEAK'; END IF; END $$;
+COMMIT;
+BEGIN; SET LOCAL app.user_id = ''; SET LOCAL app.role = 'system';
+DO $$ BEGIN IF EXISTS (SELECT 1 FROM platform.role_quota_usage) THEN RAISE EXCEPTION 'QUOTA SYSTEM LEAK'; END IF; END $$;
+COMMIT;
+RESET ROLE;
+
 \echo '== account deletion cascades through FORCE RLS tables (auth role) =='
 SET ROLE oliginvest_auth;
 DELETE FROM auth.users WHERE id = '0198a000-0000-7000-8000-00000000000a';
 RESET ROLE;
 DO $$ BEGIN
-  IF EXISTS (SELECT 1 FROM identity.consent_events WHERE user_id = '0198a000-0000-7000-8000-00000000000a')
+  IF EXISTS (SELECT 1 FROM platform.role_quota_usage WHERE user_id = '0198a000-0000-7000-8000-00000000000a')
+     OR EXISTS (SELECT 1 FROM identity.consent_events WHERE user_id = '0198a000-0000-7000-8000-00000000000a')
      OR EXISTS (SELECT 1 FROM portfolio.transactions WHERE user_id = '0198a000-0000-7000-8000-00000000000a')
   THEN RAISE EXCEPTION 'ACCOUNT DELETION DID NOT CASCADE'; END IF;
   RAISE NOTICE 'OK: account deletion removed consent events and portfolio rows';

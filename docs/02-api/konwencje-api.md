@@ -142,6 +142,42 @@ Sondy zdrowia (`getHealthLive`, `getHealthReady`) i `/openapi.json` (`getOpenApi
 
 Nagłówki: `RateLimit-Policy` i `RateLimit` wg [draft-ietf-httpapi-ratelimit-headers-11](https://datatracker.ietf.org/doc/draft-ietf-httpapi-ratelimit-headers/) (projekt, nie RFC — nazwy mogą się zmienić) oraz `Retry-After` przy `429`.
 
+### 7.1 Dzienne limity ról (BL-215)
+
+`packages/platform` rozstrzyga limit ciężkich analiz dla roli i zgłasza `QUOTA_EXCEEDED`.
+Kontrakt migawki limitu (`dailyRoleQuotaSchema`) znajduje się w `packages/contracts`.
+Adapter analytics odczytuje `platform.role_limits.limits.analytics_heavy_per_day`
+przy każdym żądaniu, bez cache: zmiana budżetu działa bez restartu. Brak pola lub
+wiersza oznacza udokumentowane 20 dla pro/admin; zero blokuje nowe uruchomienia.
+Nieprawidłowa wartość konfiguracji kończy się bezpiecznym `500 INTERNAL`, bez
+zastąpienia jej limitem domyślnym. Rola user nadal otrzymuje `403 FORBIDDEN`.
+
+Zużycie to każda przyjęta ciężka analiza użytkownika (także failed/cancelled/usunięta),
+w przedziale od północy w Europe/Warsaw włącznie do następnej północy wyłącznie.
+PostgreSQL wyznacza obie granice i chwilę oceny po uzyskaniu blokady użytkownika;
+uwzględnia doby 23/25-godzinne. Ta sama chwila trafia do `created_at` nowego
+uruchomienia oraz `platform.role_quota_usage.consumed_at`. Licznik odczytuje tylko
+ten trwały rejestr, niezależnie od `analytics_runs`. Wpis ma unikalne `operation_id`
+równe ID analizy, lecz bez FK do analizy; usunięcie wyniku nie usuwa zużycia.
+Sprawdzenie, INSERT analizy i INSERT zużycia odbywają się w jednej transakcji RLS pod istniejącą
+blokadą `analytics:{userId}`. Odtworzenie klucza idempotencji poprzedza limit;
+rollback nie zużywa kwoty, a równoległe żądania nie przekraczają budżetu.
+
+Odmowa ma `429`, `application/problem+json`, `code: QUOTA_EXCEEDED`,
+`Cache-Control: no-store` i `Retry-After` równy liczbie sekund do następnej
+północy (zaokrąglenie w górę, minimum 1). Format Problem pozostaje bez zmian.
+Nie dodajemy liczników w pamięci procesu ani w ulotnym cache Valkey.
+Panel i pozostałe limity z `RoleLimitValues` należą do dalszych zadań; BL-215
+nie ustala brakujących zasad ich naliczania ani wartości domyślnych.
+
+**Decyzja właściciela R-52, 2026-11-05:** usunięcie analizy NIE zwraca kwoty.
+Rejestr ma FORCE RLS per użytkownik (także admin), brak UPDATE; DELETE dopuszcza
+tylko własne wpisy starsze niż 7 × 24 h. Sprzątanie należy do BL-115 (bez nowego
+zadania w tej zmianie). Usunięcie konta usuwa rejestr kaskadowo przez FK do auth.users.
+Migracja 0010 przenosi zachowane ciężkie analizy z ostatnich 7 dni; danych analiz
+usuniętych przed migracją nie da się odtworzyć. Wdrożenie wymaga zatrzymania starego
+API przed migracją i uruchomienia dopiero nowej wersji, która zapisuje rejestr.
+
 ## 8. Cache i żądania warunkowe
 
 - Dane użytkownika (portfel, operacje, analizy, alerty, `/me/*`, tokeny, eksporty): `Cache-Control: no-store` — dane finansowe nie trafiają do pamięci podręcznej przeglądarki ani pośredników (ASVS V14.3.2); świeżość zapewniają pamięć zapytań TanStack Query i zdarzenia SSE.

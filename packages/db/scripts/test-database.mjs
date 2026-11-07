@@ -140,6 +140,9 @@ try {
       journal.rows,
     );
   });
+  const { testRoleQuotaMigration } = await import("../test/role-quota-migration.mjs");
+  await withClient(migrated, testRoleQuotaMigration);
+  console.log("Role quota migration: backfill, independent usage and account erasure PASS");
   const passwords = {
     app: randomBytes(32).toString("hex"),
     auth: randomBytes(32).toString("hex"),

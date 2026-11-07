@@ -10,7 +10,7 @@ import {
 } from "@oliginvest/contracts";
 import { Decimal, roundHalfUp, toDecimal } from "@oliginvest/core";
 import type { AppDatabase, DatabaseContext, DatabaseTransaction } from "@oliginvest/db";
-import { ProblemError } from "@oliginvest/platform";
+import { enforceDailyRoleQuota, ProblemError } from "@oliginvest/platform";
 import { sql } from "drizzle-orm";
 import { z } from "zod";
 import {
@@ -24,18 +24,12 @@ import {
   stressScenario,
 } from "../contracts.js";
 
-/** Heavy analyses need `analytics:run:heavy` and count against the daily role quota (FR-07.06). */
-export const HEAVY_TYPES = new Set([
-  "monte_carlo",
-  "optimization",
-  "stress_test",
-  "backtest",
-  "goal",
-]);
+import { HEAVY_TYPES, readHeavyRoleQuota } from "./role-limits.js";
+
+export { DEFAULT_HEAVY_RUNS_PER_DAY } from "@oliginvest/platform";
+export { HEAVY_TYPES } from "./role-limits.js";
 /** Types computed by this release; the remaining FR-04 analyses answer 404 until implemented. */
 export const IMPLEMENTED_TYPES = new Set(["monte_carlo", "stress_test", "goal"]);
-/** Used when `platform.role_limits` has no row (example value of schema.sql). */
-export const DEFAULT_HEAVY_RUNS_PER_DAY = 20;
 export const ALGORITHM_VERSIONS = {
   monte_carlo: "mc-1.0.0",
   stress_test: "stress-1.0.0",
@@ -172,23 +166,13 @@ export class AnalyticsRepository {
     readonly now: () => Date = () => new Date(),
   ) {}
 
-  private warsawDayStart() {
-    const day = new Intl.DateTimeFormat("en-CA", {
-      timeZone: "Europe/Warsaw",
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    }).format(this.now());
-    return day;
-  }
-
   async limits(context: Owner) {
     return this.database.transaction(context, async (tx) => {
-      const perDay = await this.heavyPerDay(tx, context.role);
+      const quota = await readHeavyRoleQuota(tx, context.role);
       return {
         role: context.role,
-        heavyRunsPerDay: perDay,
-        heavyRunsUsedToday: await this.heavyUsedToday(tx),
+        heavyRunsPerDay: quota.limit,
+        heavyRunsUsedToday: quota.used,
         bounds: {
           monteCarloPaths: ANALYTICS_LIMITS.monteCarloPaths,
           horizonYears: ANALYTICS_LIMITS.horizonYears,
@@ -199,28 +183,6 @@ export class AnalyticsRepository {
         timeoutsSeconds: { ...ANALYTICS_TIMEOUTS_SECONDS },
       };
     });
-  }
-
-  private async heavyPerDay(tx: DatabaseTransaction, role: Role): Promise<number | null> {
-    if (role === "user") return null;
-    const row = (await tx.execute(sql`SELECT limits FROM platform.role_limits WHERE role=${role}`))
-      .rows[0];
-    const configured = z
-      .object({ analytics_heavy_per_day: z.number().int().min(0).optional() })
-      .loose()
-      .safeParse(row?.limits);
-    return configured.success && configured.data.analytics_heavy_per_day !== undefined
-      ? configured.data.analytics_heavy_per_day
-      : DEFAULT_HEAVY_RUNS_PER_DAY;
-  }
-
-  private async heavyUsedToday(tx: DatabaseTransaction) {
-    const row = (
-      await tx.execute(
-        sql`SELECT count(*)::int AS count FROM analytics.analytics_runs WHERE type=ANY(${sql.param([...HEAVY_TYPES])}::text[]) AND created_at>=(${this.warsawDayStart()}::date::timestamp AT TIME ZONE 'Europe/Warsaw')`,
-      )
-    ).rows[0];
-    return z.number().int().parse(row?.count);
   }
 
   /** Validated input → run row (RLS owner) → job in the queue after commit (ADR-003 § 4). */
@@ -245,20 +207,20 @@ export class AnalyticsRepository {
           throw new ProblemError("IDEMPOTENCY_CONFLICT");
         return { run: old.response_body as AnalyticsRun, job: undefined };
       }
-      if (HEAVY_TYPES.has(input.type)) {
-        const perDay = await this.heavyPerDay(tx, context.role);
-        if (perDay === null) throw new ProblemError("FORBIDDEN");
-        if ((await this.heavyUsedToday(tx)) >= perDay)
-          throw new ProblemError("QUOTA_EXCEEDED", { retryAfterSeconds: 3600 });
-      }
+      const quota = await readHeavyRoleQuota(tx, context.role);
+      if (HEAVY_TYPES.has(input.type)) enforceDailyRoleQuota(quota);
       const requestedAt = iso(this.now());
       const prepared = await this.prepare(tx, input);
       const row = (
         await tx.execute(
-          sql`INSERT INTO analytics.analytics_runs(user_id,type,params,input_snapshot,assumptions,warnings,seed,algorithm_version) VALUES(${context.userId}::uuid,${input.type},${JSON.stringify(prepared.stored)}::jsonb,${JSON.stringify({ portfolio: prepared.portfolio })}::jsonb,${JSON.stringify(prepared.assumptions)}::jsonb,${JSON.stringify(prepared.warnings)}::jsonb,${prepared.seed},${prepared.algorithm}) RETURNING id::text,created_at AS "createdAt"`,
+          sql`INSERT INTO analytics.analytics_runs(user_id,type,params,input_snapshot,assumptions,warnings,seed,algorithm_version,created_at) VALUES(${context.userId}::uuid,${input.type},${JSON.stringify(prepared.stored)}::jsonb,${JSON.stringify({ portfolio: prepared.portfolio })}::jsonb,${JSON.stringify(prepared.assumptions)}::jsonb,${JSON.stringify(prepared.warnings)}::jsonb,${prepared.seed},${prepared.algorithm},${quota.observedAt}::timestamptz) RETURNING id::text,created_at AS "createdAt"`,
         )
       ).rows[0];
       const runId = z.uuid().parse(row?.id);
+      if (HEAVY_TYPES.has(input.type)) {
+        await tx.execute(sql`INSERT INTO platform.role_quota_usage(operation_id,user_id,quota_key,consumed_at)
+          VALUES(${runId}::uuid,${context.userId}::uuid,'analytics_heavy_per_day',${quota.observedAt}::timestamptz)`);
+      }
       const job = prepared.job(runId, requestedAt);
       if (Buffer.byteLength(JSON.stringify(job)) > ANALYTICS_LIMITS.jobPayloadBytes)
         throw outOfBounds("portfolio", "too_large", "Migawka portfela jest zbyt duża.");

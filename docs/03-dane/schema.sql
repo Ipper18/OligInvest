@@ -297,6 +297,17 @@ CREATE TABLE platform.role_limits (
   updated_at  timestamptz NOT NULL DEFAULT now()
 );
 
+-- BL-215: każda przyjęta ciężka analiza zużywa kwotę także po usunięciu wyniku.
+-- operation_id = identyfikator analizy, celowo BEZ FK do analytics_runs.
+CREATE TABLE platform.role_quota_usage (
+  operation_id uuid PRIMARY KEY,
+  user_id      uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  quota_key    text NOT NULL CHECK (quota_key IN ('analytics_heavy_per_day')),
+  consumed_at  timestamptz NOT NULL
+);
+CREATE INDEX role_quota_usage_user_window_idx ON platform.role_quota_usage (user_id, quota_key, consumed_at);
+CREATE INDEX role_quota_usage_retention_idx ON platform.role_quota_usage (consumed_at);
+
 CREATE TABLE platform.audit_log (                           -- append-only (FR-08.05, FR-08.10)
   id             uuid        PRIMARY KEY DEFAULT uuidv7(),
   occurred_at    timestamptz NOT NULL DEFAULT now(),
@@ -1095,6 +1106,16 @@ BEGIN
 END
 $$;
 
+-- Rejestr kwot: własne odczyty/dopisanie; brak UPDATE, usuwanie dopiero po 7 × 24 h (BL-115).
+ALTER TABLE platform.role_quota_usage ENABLE ROW LEVEL SECURITY;
+ALTER TABLE platform.role_quota_usage FORCE ROW LEVEL SECURITY;
+CREATE POLICY quota_read ON platform.role_quota_usage FOR SELECT TO oliginvest_app
+  USING (user_id = platform.current_user_id());
+CREATE POLICY quota_insert ON platform.role_quota_usage FOR INSERT TO oliginvest_app
+  WITH CHECK (user_id = platform.current_user_id());
+CREATE POLICY quota_retention ON platform.role_quota_usage FOR DELETE TO oliginvest_app
+  USING (user_id = platform.current_user_id() AND consumed_at < now() - interval '168 hours');
+
 -- 12.2 Tabele konfiguracyjne: odczyt dla wszystkich, zapis tylko admin/system (obrona w głąb obok RBAC w api).
 DO $$
 DECLARE t text;
@@ -1159,6 +1180,7 @@ GRANT EXECUTE ON FUNCTION identity.find_invitation(text), identity.consume_invit
 -- oliginvest_app: tabele domenowe (RLS egzekwuje własność); BRAK dostępu do schematu auth
 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA identity, notifications, market, portfolio, analytics, alerts, education TO oliginvest_app;
 GRANT SELECT, INSERT, UPDATE, DELETE ON platform.feature_flags, platform.role_limits, platform.idempotency_keys, platform.web_vitals TO oliginvest_app;
+GRANT SELECT, INSERT, DELETE ON platform.role_quota_usage TO oliginvest_app;            -- DELETE ograniczone retencją RLS
 GRANT SELECT, INSERT ON platform.audit_log TO oliginvest_app;                         -- append-only
 REVOKE UPDATE, DELETE, TRUNCATE ON identity.consent_events FROM oliginvest_app;       -- append-only (po GRANT ON ALL TABLES)
 GRANT SELECT, INSERT, DELETE ON platform.erasure_log TO oliginvest_app;                -- DELETE: czyszczenie po purge_after
