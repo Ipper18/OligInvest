@@ -16,7 +16,7 @@
 
 ## 2. Poprawka
 
-- `apps/web/src/shell/after-first-paint.ts`: `afterFirstPaint(run)` uruchamia pracę po wpisie `first-contentful-paint` z `PerformanceObserver` (`buffered: true` — także gdy FCP nastąpił przed hydratacją). Bez Paint Timing — od razu (dotychczasowe zachowanie); karta, która nie rysuje (tło) — po 3 s; anulowanie przy odmontowaniu/wylogowaniu.
+- `apps/web/src/shell/after-first-paint.ts`: `afterFirstPaint(run)` uruchamia pracę po wpisie `first-contentful-paint` z `PerformanceObserver` (`buffered: true` — także gdy FCP nastąpił przed hydratacją). Bez Paint Timing — od razu (dotychczasowe zachowanie); karta, która nie rysuje (tło) — po 3 s; anulowanie przy odmontowaniu/wylogowaniu. Od § 8 także czekanie na zniknięcie szkieletu trasy po FCP.
 - `apps/web/src/shell/providers.tsx`: import schematów realtime i `connectStream` (a w konsekwencji `ready` → odświeżenie zapytań i `PUT …/instruments`) czekają na `afterFirstPaint`. Logika ramek, wylogowania i pollingu bez zmian.
 - Wpis FCP jest dostarczany po zaprezentowaniu klatki, więc każde żądanie z tej bramki zaczyna się po obserwowanym LCP i nie wchodzi do grafu Lantern (dla `/portfel` FCP = LCP). Dla użytkownika: żądania te nie konkurują o łącze z chunkami pierwszego widoku; aktualizacje na żywo startują po pierwszym wyświetleniu zamiast w trakcie hydratacji.
 - Dokumentacja: `wydajnosc.md` § 5 (zasada) i § 6.3 (wrażliwość Lantern), `realtime.md` § 6 pkt 1 (moment startu strumienia), `ryzyka.md` **R-53**.
@@ -94,3 +94,21 @@ Kroki zadania `web` z `.github/workflows/web.yml` (bez Lighthouse, wykonanego w 
 - Bez zmian progów, profilu, dławienia i ponowień. Bez nowych zależności i bez zmian kontraktów API.
 - Konflikt przy scaleniu z PR #56: oba PR zmieniają wiersz podsumowania w `ryzyka.md` (licznik ryzyk); numer R-53 zostawia R-52 dla PR #56.
 - Skrypty diagnostyczne (pomiar pojedynczych przebiegów ze śladem, odtworzenie grafu Lantern) pozostały poza repozytorium — jednorazowe.
+
+## 8. Regresja e2e po pierwszej wersji poprawki (2026-11-07)
+
+CI PR #59 (`e2e` przebieg `42294791069`, `images` przebieg `42294791166`) — po jednej porażce w `apps/web/e2e/redesign.spec.ts`; `main` w 10 ostatnich przebiegach `e2e` zielony. Oba przypadki to wyścigi, które odroczony start strumienia uwidocznił; lokalnie (szybsza maszyna) 110/110 przebiegów przeszło, więc przyczynę ustaliłem ze śladów Playwright z CI i odtworzyłem deterministycznie (tymczasowy spec, nie w repozytorium).
+
+1. **webkit, `:294` (offline Start):** ślad pokazuje `PUT /api/v1/stream/connections/{id}/instruments` wysłane po ramce `ready`, przerwane przez `context.setOffline(true)`. `catch` w `providers.tsx` ustawiał wtedy `"polling"` („Aktualizacje co minutę”), nadpisując `"offline"` z transportu. Poprawka: przy przerwanym żądaniu stan zależy od `navigator.onLine` — tak samo jak w `sse/transport.ts`. Odtworzenie (żądanie wstrzymane przez `page.route` do chwili po przejściu offline): stary `catch` — 2/2 FAIL z „Aktualizacje co minutę”; nowy — 6/6 PASS (chromium, webkit, firefox).
+2. **firefox, `:215` (Start empty):** React 19.2 (`$RT` w skrypcie powłoki, `$RC`) odsłania strumieniowaną treść **najwcześniej 300 ms po pierwszej klatce**. Pierwsza wersja poprawki startowała strumień po FCP, a FCP to tu malowanie szkieletu `loading.tsx`; strumień zdążał przejść w „na żywo” przed odsłonięciem treści, więc test widział naraz szkielet `div.oi-kpis[aria-hidden]` i jeszcze ukryty `dl.oi-kpis` (w `div[hidden]` segmentu). Szkielet nie zostaje w DOM po odsłonięciu — treść nie była jeszcze odsłonięta. Poprawka: `afterFirstPaint` czeka po FCP także na zniknięcie szkieletu trasy (`[data-loading-fallback]` w `Skeleton`, `MutationObserver`), z dotychczasowym limitem 3 s. Odtworzenie (rozgrzany cache JS, dławiony tylko dokument, chromium): tylko FCP — strumień 913–978 ms vs odsłonięcie 1083–1153 ms (3/3 FAIL); FCP + szkielet — strumień 4–10 ms po odsłonięciu (6/6 PASS na `/` i `/portfel`).
+
+Dla Lighthouse bez zmian: gdy treść przychodzi przed pierwszą klatką (FCP = LCP), szkieletu już nie ma i start następuje zaraz po FCP. Dla użytkownika na wolnym łączu lepiej: SSE, Zod i odświeżenia nie konkurują z odsłonięciem treści. Testy e2e i ich asercje bez zmian; bez ponowień i dłuższych limitów czasu.
+
+Weryfikacja po poprawce regresji (lokalnie, Windows 11, 2026-11-07):
+
+| Kontrola | Wynik |
+|---|---|
+| `redesign.spec.ts`, chromium + firefox + webkit, `--repeat-each=5` | 165/165 passed (po 55 na silnik), bez flaky |
+| `lighthouse-assert.mjs --assert` × 2 | PASS; `/portfel` 1352,6 i 1353,5 ms; `/` 1352,4 i 1503,1 ms; `/logowanie` 1731,4 i 1740,6 ms; `/rynek/[id]` 1502,5 i 1802,8 ms; TBT ≤ 55 ms, CLS 0 |
+| `check:ui-text`, `test:boundary`, lint/typecheck/test/build (web, ui, i18n), `test:performance`, `size`, `budgets`, `check:docs`, `check:repository` | PASS (web 60 testów, w tym 8 `after-first-paint`; ui 13) |
+| `git grep` sekretów z `CLAUDE.md` | brak nowych trafień |

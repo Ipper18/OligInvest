@@ -86,7 +86,8 @@ export function Providers({
         if (!response.ok) setState("polling");
       })
       .catch(() => {
-        if (!abort.signal.aborted) setState("polling");
+        // A request cut off by going offline must not replace the transport's "offline".
+        if (!abort.signal.aborted) setState(navigator.onLine ? "polling" : "offline");
       });
     return () => abort.abort();
   }, [connectionId, pathname]);

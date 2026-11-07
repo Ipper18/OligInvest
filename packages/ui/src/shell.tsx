@@ -23,7 +23,7 @@ export function ScreenState({ title, children }: { title: string; children?: Rea
 }
 export function Skeleton() {
   return (
-    <section aria-busy="true" aria-label={appMessages.loading}>
+    <section aria-busy="true" aria-label={appMessages.loading} data-loading-fallback="">
       <div className="oi-kpis" aria-hidden="true">
         {[0, 1, 2, 3].map((key) => (
           <div key={key} className="oi-skeleton oi-skeleton-tile" />
