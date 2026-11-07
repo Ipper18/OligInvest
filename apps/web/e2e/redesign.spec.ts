@@ -37,9 +37,9 @@ for (const theme of ["dark", "light"])
           );
           await expect(page.locator("h1")).toHaveCSS("font-family", /system-ui/);
           await expect(page.locator(".oi-live-status button")).toHaveCount(1);
-          await expect(
-            page.locator('nav a[href="/admin"], nav a[href="/alerty"], nav a[href="/analizy"]'),
-          ).toHaveCount(0);
+          await expect(page.locator('nav a[href="/admin"], nav a[href="/alerty"]')).toHaveCount(0);
+          // BL-314 exposes analysis history in both responsive navigation trees.
+          await expect(page.locator('nav a[href="/analizy"]')).toHaveCount(2);
           // Sign-out lives in Settings; the shell header keeps only the status and its action.
           await expect(page.getByRole("button", { name: "Wyloguj się" })).toHaveCount(0);
           const desktop = width >= 1024;
