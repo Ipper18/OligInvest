@@ -25,7 +25,13 @@
   },
   {
     "id": "analytics",
-    "nav": []
+    "nav": [
+      {
+        "href": "/analizy",
+        "labelKey": "nav.analytics",
+        "permission": "analytics:run:light"
+      }
+    ]
   },
   {
     "id": "education",

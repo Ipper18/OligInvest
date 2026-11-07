@@ -1,0 +1,61 @@
+.screen {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+.screen section {
+  min-width: 0;
+}
+.screen dd,
+.screen td,
+.screen h3 {
+  overflow-wrap: anywhere;
+}
+.screen table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+.screen td,
+.screen th {
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--color-line);
+}
+.screen caption {
+  text-align: left;
+  font-weight: 600;
+  margin-block: 0.75rem;
+}
+.screen nav {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+  gap: 1rem;
+}
+.fields label {
+  display: grid;
+  gap: 0.5rem;
+}
+.screen input,
+.screen select {
+  min-height: 44px;
+  width: 100%;
+}
+.screen summary {
+  min-height: 44px;
+  cursor: pointer;
+}
+
+.fan {
+  min-height: 300px;
+  width: 100%;
+}
+.screen figure {
+  margin: 0;
+  min-width: 0;
+}

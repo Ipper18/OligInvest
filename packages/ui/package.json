@@ -23,13 +23,18 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
-    "./components.css": "./src/components.css"
+    "./components.css": "./src/components.css",
+    "./percentile-chart": {
+      "types": "./dist/percentile-chart.d.ts",
+      "import": "./dist/percentile-chart.js"
+    }
   },
   "dependencies": {
-    "lightweight-charts": "5.2.1",
-    "@tanstack/react-virtual": "3.14.13",
     "@oliginvest/i18n": "workspace:*",
-    "react": "19.3.0"
+    "@tanstack/react-virtual": "3.14.13",
+    "lightweight-charts": "5.2.1",
+    "react": "19.3.0",
+    "uplot": "1.6.32"
   },
   "devDependencies": {
     "@types/react": "19.3.0",

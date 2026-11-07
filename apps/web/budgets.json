@@ -125,7 +125,7 @@
         "tabs-slider": 19
       },
       "totalKb": 270,
-      "forbid": ["lightweight-charts", "zod"]
+      "forbid": ["lightweight-charts", "uplot", "zod"]
     },
     "/analizy/*": {
       "initialKb": 195,
@@ -135,7 +135,7 @@
         "tabs-slider": 19
       },
       "totalKb": 270,
-      "forbid": ["lightweight-charts", "zod"]
+      "forbid": ["lightweight-charts", "uplot", "zod"]
     },
     "/alerty": {
       "initialKb": 190,
