@@ -1,7 +1,7 @@
 // HTTP contract of /analytics (docs/02-api/openapi.yaml, tag analytics). Every schema mirrors the
 // document 1:1; `pnpm check:contracts` compares the generated OpenAPI with it.
 import { z } from "@hono/zod-openapi";
-import { ANALYTICS_ERROR_CODES } from "@oliginvest/contracts";
+import { ANALYTICS_ERROR_CODES, analyticsDataMetaSchema } from "@oliginvest/contracts";
 import { moneySchema, nullableMoney, object } from "@oliginvest/mod-portfolio/contracts";
 
 const uuid = z.uuid();
@@ -539,6 +539,15 @@ export const analyticsResult = z
     oneOf,
   );
 
+const seriesMetadata = z
+  .array(
+    object({
+      seriesKey: z.string().min(1).max(160),
+      meta: object(analyticsDataMetaSchema.shape).openapi("DataMeta"),
+    }),
+  )
+  .max(20000)
+  .openapi("AnalyticsSeriesMetadata");
 export const analyticsRun = object({
   id: uuid,
   type: analyticsRunType,
@@ -547,6 +556,7 @@ export const analyticsRun = object({
   params: z.record(z.string(), z.unknown()),
   result: analyticsResult.optional(),
   assumptions: z.record(z.string(), z.unknown()).optional(),
+  seriesMetadata: seriesMetadata.optional(),
   warnings: z.array(analyticsWarning).optional(),
   compliance: complianceBlock,
   reproducibility: object({

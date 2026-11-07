@@ -1,4 +1,5 @@
 import * as z from "zod";
+import { analyticsSeriesMetadataSchema } from "./analytics-metadata.js";
 
 // Queue `analytics` (api → Python worker) and `analytics-results` (worker → jobs), BL-311.
 // The worker validates the exported JSON Schema with `jsonschema`; refinements below have
@@ -528,6 +529,7 @@ export const analyticsResultSchema = z.discriminatedUnion("status", [
       goalResultSchema,
     ]),
     assumptions,
+    seriesMetadata: analyticsSeriesMetadataSchema.optional(),
     warnings: z.array(warning).max(20),
     reproducibility: object({
       seed: seed.optional(),
