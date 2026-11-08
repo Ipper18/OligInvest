@@ -6,6 +6,7 @@ import {
 import type { AppDatabase, DatabaseTransaction } from "@oliginvest/db";
 import { sql } from "drizzle-orm";
 import { z } from "zod";
+import { collectSeriesMetadata } from "./server/series-metadata.js";
 
 export interface RunEvent {
   event: "analytics.run.progress" | "analytics.run.completed" | "analytics.run.failed";
@@ -57,7 +58,9 @@ export function createAnalyticsResults(options: {
           ...result.assumptions,
         };
         const warnings = [...((current.warnings as unknown[]) ?? []), ...result.warnings];
+        const seriesMetadata = await collectSeriesMetadata(tx, result);
         const dataVersion = {
+          seriesMetadata,
           series: result.reproducibility.dataVersion,
           libraries: result.reproducibility.libraries,
         };

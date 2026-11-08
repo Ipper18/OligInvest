@@ -1,5 +1,6 @@
 // Synthetic UI boundary only. Real authentication/RLS is tested by apps/api/integration.
 import { randomUUID } from "node:crypto";
+import { analyticsFixture } from "./analytics-fixture.mjs";
 import { portfolioFixture } from "./portfolio-fixture.mjs";
 
 const preferences = {
@@ -45,7 +46,8 @@ export function fixtureCookie(route) {
     route.startsWith("/ustawienia") ||
     route.startsWith("/portfel") ||
     route.startsWith("/rynek") ||
-    route.startsWith("/nauka")
+    route.startsWith("/nauka") ||
+    route.startsWith("/analizy")
   )
     return "__Host-oliginvest.session_token=fixture-perf";
   return "";
@@ -115,7 +117,7 @@ export async function uiFixture(request, response) {
           id: user.id,
           email: user.email,
           name: user.name,
-          role: user.role,
+          role: key.includes("analytics-pro") || key === "fixture-perf" ? "pro" : user.role,
           emailVerified: true,
           mfa: {
             enrolled: profile.enrolled,
@@ -132,7 +134,7 @@ export async function uiFixture(request, response) {
           features: {
             "module.portfolio.import.mbank": !key.includes("no-mbank"),
             "module.alerts": !key.includes("no-alerts"),
-            "module.analytics": true,
+            "module.analytics": !key.includes("no-analytics"),
             "module.education": !key.includes("no-education"),
           },
           preferences: Object.fromEntries(Object.keys(preferences).map((k) => [k, profile[k]])),
@@ -158,6 +160,7 @@ export async function uiFixture(request, response) {
     request.on("close", () => clearInterval(interval));
     return true;
   }
+  if (await analyticsFixture(request, response, key)) return true;
   if (
     await portfolioFixture(
       request,

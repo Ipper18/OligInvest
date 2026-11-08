@@ -125,7 +125,11 @@ const SELECT_RUN = sql`SELECT id::text,type,status,progress,params,result,assump
 export function runDto(raw: unknown, full = true): AnalyticsRun {
   const row = runRow.parse(raw);
   const code = z.enum(ANALYTICS_ERROR_CODES).safeParse(row.error);
-  const data = (row.dataVersion ?? {}) as { series?: unknown; libraries?: unknown };
+  const data = (row.dataVersion ?? {}) as {
+    series?: unknown;
+    libraries?: unknown;
+    seriesMetadata?: AnalyticsRun["seriesMetadata"];
+  };
   return {
     id: row.id,
     type: row.type as AnalyticsRun["type"],
@@ -135,6 +139,7 @@ export function runDto(raw: unknown, full = true): AnalyticsRun {
     ...(full && row.result ? { result: row.result as AnalyticsRun["result"] } : {}),
     ...(row.assumptions ? { assumptions: row.assumptions } : {}),
     warnings: row.warnings as AnalyticsRun["warnings"],
+    ...(data.seriesMetadata ? { seriesMetadata: data.seriesMetadata } : {}),
     compliance: {
       disclaimerKey: DISCLAIMER.key,
       disclaimerVersion: DISCLAIMER.version,

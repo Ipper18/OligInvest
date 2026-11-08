@@ -336,3 +336,17 @@ pod `.git/` i usuwa ją po zakończeniu. Nie modyfikuje lockfile ani modułów g
 - API: prefiks `/api/v1`; zmiany niekompatybilne tylko w nowej wersji ścieżki lub po okresie przejściowym ≥ 90 dni z nagłówkami `Deprecation`/`Sunset` (NFR-02.05, szczegóły w `02-api/konwencje-api.md`).
 - Zdarzenia i zadania: pole `v` w payloadzie; konsument obsługuje wersję bieżącą i poprzednią; nowa wersja = nowy schemat w `contracts`.
 - Moduł: pole `version` (semver) w definicji; zmiana major kontraktu modułu wymaga wpisu w changelogu.
+
+### Metadane wyników analiz (BL-314)
+
+Opcjonalne `AnalyticsRun.seriesMetadata` jest addytywne. Jobs odczytuje pochodzenie
+historycznych serii z lokalnych tabel market przy zapisie wyniku, według zakresów
+wyniku i parametrów. Metadane trafiają do istniejącego JSON `data_version.seriesMetadata`
+w transakcji RLS właściciela; bez migracji i bez nowych uprawnień workera.
+`asOf` oznacza datę ostatniej obserwacji źródła w zakresie (północ UTC jak w wykresach
+EOD), `delayMinutes = 0` dla danych historycznych EOD. `stale` opisuje otwarty BLOCK
+w chwili odczytu metadanych, nie wiek historycznego scenariusza. To odczyt przy zapisie
+wyniku, nie gwarancja niezmienności serii między obliczeniem i zapisem; obecne
+`dataVersion` opisuje zakresy, nie niezmienną migawkę danych.
+Źródła mieszane mają osobne wpisy. Brak metadanych (także starszy wynik) pokazuje
+„brak informacji o źródle i opóźnieniu danych”. UI nie zgaduje dostawcy ani daty.

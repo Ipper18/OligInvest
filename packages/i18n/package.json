@@ -29,6 +29,10 @@
     "./legal": {
       "types": "./dist/legal.d.ts",
       "import": "./dist/legal.js"
+    },
+    "./analytics": {
+      "types": "./dist/analytics.d.ts",
+      "import": "./dist/analytics.js"
     }
   },
   "dependencies": {

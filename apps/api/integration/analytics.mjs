@@ -332,10 +332,33 @@ export async function testAnalyticsStorage(settings) {
     await results.handleProgress(second.id, { progress: 40, stage: "simulating" });
     let stored = await (await request(`runs/${second.id}`)).json();
     assert.deepEqual([stored.status, stored.progress], ["running", 40]);
-    await results.handleResult(workerResult(second.id));
+    await database.transaction({ userId: null, role: "system" }, async (tx) => {
+      await tx.execute(
+        sql`INSERT INTO market.bars_daily(instrument_id,session_date,close,source) VALUES(${proxies.WIG}::uuid,'2026-09-30',100,'gpw') ON CONFLICT(instrument_id,session_date) DO UPDATE SET source='gpw'`,
+      );
+    });
+    const completed = workerResult(second.id);
+    completed.reproducibility.dataVersion = { [proxies.WIG]: "2006-01..2026-09" };
+    // jobs owns provenance; worker-supplied metadata cannot replace the market record.
+    completed.seriesMetadata = [
+      {
+        seriesKey: "spoofed",
+        meta: { source: "demo", asOf: "2026-09-30T00:00:00Z", delayMinutes: 15, stale: false },
+      },
+    ];
+    await results.handleResult(completed);
     stored = await (await request(`runs/${second.id}`)).json();
     assert.equal(stored.status, "done");
     assert.equal(stored.result.kind, "monte_carlo");
+    assert.ok(
+      stored.seriesMetadata.some(
+        (entry) =>
+          entry.seriesKey.includes(proxies.WIG) &&
+          entry.meta.source === "gpw" &&
+          entry.meta.delayMinutes === 0,
+      ),
+    );
+    assert.ok(!stored.seriesMetadata.some((entry) => entry.seriesKey === "spoofed"));
     assert.equal(stored.assumptions.historyMonths, 240);
     assert.equal(stored.assumptions.portfolioAsOf, "2026-10-19");
     assert.deepEqual(

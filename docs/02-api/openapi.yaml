@@ -6370,6 +6370,16 @@ components:
           backtest: '#/components/schemas/BacktestResult'
           goal: '#/components/schemas/GoalResult'
           rebalance: '#/components/schemas/RebalanceResult'
+    AnalyticsSeriesMetadata:
+      type: array
+      maxItems: 20000
+      description: 'Metadane historycznych serii odczytane przez jobs z lokalnej bazy przy zapisie wyniku, dla zakresów analizy. Nie są metadanymi bieżących notowań. Brak pola lub pusta lista oznacza brak informacji, nigdy potwierdzenie świeżości.'
+      items:
+        type: object
+        required: [seriesKey, meta]
+        properties:
+          seriesKey: {type: string, minLength: 1, maxLength: 160}
+          meta: {$ref: '#/components/schemas/DataMeta'}
     AnalyticsRun:
       type: object
       required: [id, type, status, progress, params, createdAt, compliance]
@@ -6381,6 +6391,7 @@ components:
         params: {type: object, description: 'Parametry po uzupełnieniu wartości domyślnych.'}
         result: {$ref: '#/components/schemas/AnalyticsResult'}
         assumptions: {type: object, description: 'Blok założeń: dane, okno, model, koszty, podatki, proxy (FR-04.01).'}
+        seriesMetadata: {$ref: '#/components/schemas/AnalyticsSeriesMetadata'}
         warnings: {type: array, items: {$ref: '#/components/schemas/AnalyticsWarning'}}
         compliance: {$ref: '#/components/schemas/ComplianceBlock'}
         reproducibility:

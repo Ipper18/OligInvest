@@ -4829,6 +4829,11 @@ export interface components {
             weight: number;
         };
         AnalyticsResult: components["schemas"]["MonteCarloResult"] | components["schemas"]["OptimizationResult"] | components["schemas"]["StressTestResult"] | components["schemas"]["WhatIfResult"] | components["schemas"]["BacktestResult"] | components["schemas"]["GoalResult"] | components["schemas"]["RebalanceResult"];
+        /** @description Metadane historycznych serii odczytane przez jobs z lokalnej bazy przy zapisie wyniku, dla zakresów analizy. Nie są metadanymi bieżących notowań. Brak pola lub pusta lista oznacza brak informacji, nigdy potwierdzenie świeżości. */
+        AnalyticsSeriesMetadata: {
+            seriesKey: string;
+            meta: components["schemas"]["DataMeta"];
+        }[];
         AnalyticsRun: {
             id: components["schemas"]["Uuid"];
             type: components["schemas"]["AnalyticsRunType"];
@@ -4839,6 +4844,7 @@ export interface components {
             result?: components["schemas"]["AnalyticsResult"];
             /** @description Blok założeń: dane, okno, model, koszty, podatki, proxy (FR-04.01). */
             assumptions?: Record<string, never>;
+            seriesMetadata?: components["schemas"]["AnalyticsSeriesMetadata"];
             warnings?: components["schemas"]["AnalyticsWarning"][];
             compliance: components["schemas"]["ComplianceBlock"];
             reproducibility?: {
