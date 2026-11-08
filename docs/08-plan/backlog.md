@@ -341,7 +341,7 @@ Każde zadanie z analizą przyszłości kończy się przeglądem metodologicznym
 | ID | Zadanie | Wymagania | Dokumenty | Zależy od | d | Status |
 |---|---|---|---|---|---|---|
 | BL-601 | Przegląd tabeli ASVS z dowodami i protokołem w `docs/06-bezpieczenstwo/przeglady/` | NFR-03.01 | SEC | — | 3 | todo |
-| BL-602 | Pasywny skan DAST (ZAP baseline) na lokalnej instancji i poprawki | NFR-03.06, NFR-03.07 | SEC | — | 1,5 | todo |
+| BL-602 | Pasywny skan DAST (ZAP baseline) na lokalnej instancji i poprawki | NFR-03.06, NFR-03.07 | SEC | — | 1,5 | w toku (Claude Code, `feat/bl-602-zap-baseline`; zadanie CI `dast`, poprawka COEP; 0 × FAIL, 7 reguł WARN czeka na decyzje właściciela P1–P9; do zielonego CI i wspólnego DoD; nakład ok. 1 sesji, niezmierzony; [protokół](../06-bezpieczenstwo/przeglady/2026-11-08-zap-baseline-bl-602.md), [stan](bl-602-session-report.md)) |
 | BL-603 | Trusted Types w trybie report-only i decyzja o włączeniu | NFR-03.06 | SEC | — | 1 | todo |
 | BL-604 | Ćwiczenie DR — scenariusz D na zastępczej VM, protokół z RPO i RTO | NFR-09.03 | DR | — | 1,5 | todo |
 | BL-605 | Ręczny audyt WCAG 2.1 AA (VoiceOver, TalkBack, NVDA) i poprawki | NFR-06.01, NFR-06.02 | A11Y | — | 3 | todo |
