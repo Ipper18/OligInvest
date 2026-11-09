@@ -1,6 +1,7 @@
 "use client";
-import { formatMoney } from "@oliginvest/i18n";
-import { analyticsMessages as m } from "@oliginvest/i18n/analytics";
+
+import { analyticsMessages as defaultM } from "@oliginvest/i18n/analytics";
+import { useCopy, useFormatters } from "@oliginvest/ui/localization";
 import { useEffect, useRef, useState } from "react";
 import type uPlot from "uplot";
 import "uplot/dist/uPlot.min.css";
@@ -15,6 +16,10 @@ export type PercentileSeries = {
 };
 /** Display only: the worker computes percentiles. No money arithmetic in the browser. */
 export function PercentileChart({ series }: { series: PercentileSeries }) {
+  const { formatMoney } = useFormatters();
+
+  const m = useCopy("analyticsMessages", defaultM);
+
   const host = useRef<HTMLDivElement>(null);
   const [failed, setFailed] = useState(false);
   useEffect(() => {
@@ -87,7 +92,7 @@ export function PercentileChart({ series }: { series: PercentileSeries }) {
       theme?.disconnect();
       chart?.destroy();
     };
-  }, [series]);
+  }, [series, m.p75, m.p25, m.p95, m.p50, m.p5, m.month, formatMoney]);
   return (
     <>
       <div ref={host} aria-hidden="true" />

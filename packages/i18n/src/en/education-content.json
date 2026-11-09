@@ -1,0 +1,572 @@
+[
+  {
+    "key": "akcja",
+    "term": "Share",
+    "synonyms": ["share", "stock", "Share"],
+    "formula": "4",
+    "href": "/rynek",
+    "definition": "An ownership interest in an exchange-listed company.",
+    "reading": "The price describes the value of one share in the listing currency.",
+    "pitfalls": "The price can fall and dividends are not guaranteed."
+  },
+  {
+    "key": "alokacja",
+    "term": "Allocation",
+    "synonyms": ["udział", "weight", "ekspozycja", "Allocation"],
+    "formula": "4",
+    "href": "/portfel",
+    "definition": "The distribution of portfolio value along a selected dimension.",
+    "reading": "Weights refer to the same valuation basis.",
+    "pitfalls": "An ETF's listing currency does not describe all currencies of its assets."
+  },
+  {
+    "key": "atr",
+    "term": "ATR",
+    "synonyms": ["average true range", "ATR"],
+    "formula": "9",
+    "href": "/rynek",
+    "definition": "A smoothed measure of the price range that accounts for gaps.",
+    "reading": "The value is expressed in the instrument's price units.",
+    "pitfalls": "It does not specify direction or the maximum possible loss."
+  },
+  {
+    "key": "bb",
+    "term": "Bollinger Bands",
+    "synonyms": ["bollinger bands", "pasma", "Bollinger Bands"],
+    "formula": "9",
+    "href": "/rynek",
+    "definition": "A price average surrounded by bands based on historical volatility.",
+    "reading": "The period and multiplier determine band width.",
+    "pitfalls": "The band is not a range of guaranteed future prices."
+  },
+  {
+    "key": "benchmark",
+    "term": "Benchmark",
+    "synonyms": ["punkt odniesienia", "Benchmark"],
+    "formula": "4",
+    "href": "/rynek",
+    "definition": "An index or ETF used as a reference.",
+    "reading": "Comparison requires matching periods and currencies.",
+    "pitfalls": "Differences in composition and costs limit comparability."
+  },
+  {
+    "key": "cena",
+    "term": "Instrument price",
+    "synonyms": ["Instrument price"],
+    "formula": "5",
+    "href": "/portfel",
+    "definition": "The price of one instrument unit in its listing currency.",
+    "reading": "Check the quote's source, time and delay.",
+    "pitfalls": "The price is neither the value of the whole position nor a guaranteed execution price."
+  },
+  {
+    "key": "cfd",
+    "term": "CFD",
+    "synonyms": ["contract for difference", "CFD"],
+    "formula": "4",
+    "href": "/rynek",
+    "definition": "A contract settling the difference in an instrument's price.",
+    "reading": "It does not represent share ownership. OligInvest does not model CFD positions.",
+    "pitfalls": "Leverage increases both potential gains and losses."
+  },
+  {
+    "key": "dywidenda",
+    "term": "Dividend",
+    "synonyms": ["dividend", "Dividend"],
+    "formula": "4",
+    "href": "/rynek",
+    "definition": "A distribution of some of a company's funds to its shareholders.",
+    "reading": "Gross amount, withheld tax and net amount have different meanings.",
+    "pitfalls": "A historical dividend does not imply an identical future payment."
+  },
+  {
+    "key": "efekt-ceny",
+    "term": "Price effect",
+    "synonyms": ["Price effect"],
+    "formula": "4",
+    "href": "/portfel",
+    "definition": "The part of a foreign position's P/L associated with changes in the instrument price.",
+    "reading": "Together with the currency effect, it forms PLN P/L under the calculation definition.",
+    "pitfalls": "It depends on lot and exchange-rate data; it is not a separate rate of return."
+  },
+  {
+    "key": "efekt-waluty",
+    "term": "Currency effect",
+    "synonyms": ["Currency effect"],
+    "formula": "4",
+    "href": "/portfel",
+    "definition": "The part of a foreign position's P/L associated with changes in exchange rates.",
+    "reading": "It complements the price effect to form PLN P/L.",
+    "pitfalls": "The historical effect does not determine future exchange-rate direction."
+  },
+  {
+    "key": "ema",
+    "term": "EMA",
+    "synonyms": ["średnia wykładnicza", "EMA"],
+    "formula": "9",
+    "href": "/rynek",
+    "definition": "An average giving more weight to recent prices.",
+    "reading": "The period determines how quickly it responds to price changes.",
+    "pitfalls": "The result depends on warmup and the chosen start of history."
+  },
+  {
+    "key": "eod",
+    "term": "EOD",
+    "synonyms": ["end of day", "zamknięcie", "EOD"],
+    "formula": "4",
+    "href": "/rynek",
+    "definition": "Data available after a trading session ends.",
+    "reading": "The session date identifies the close it relates to.",
+    "pitfalls": "It is not a current executable transaction price."
+  },
+  {
+    "key": "etf",
+    "term": "ETF",
+    "synonyms": ["fundusz indeksowy", "exchange traded fund", "ETF"],
+    "formula": "4",
+    "href": "/rynek",
+    "definition": "A fund whose units are traded on an exchange.",
+    "reading": "The fund name and documents describe the market it tracks.",
+    "pitfalls": "The listing currency does not describe the fund's entire currency risk."
+  },
+  {
+    "key": "gotowka",
+    "term": "Cash",
+    "synonyms": ["Cash"],
+    "formula": "5",
+    "href": "/portfel",
+    "definition": "The account's cash balance, with its currency specified.",
+    "reading": "The base-currency balance uses the exchange rate applied in the valuation.",
+    "pitfalls": "Missing history or exchange rates can prevent full balance reconciliation."
+  },
+  {
+    "key": "gpw",
+    "term": "GPW",
+    "synonyms": ["giełda warszawska", "XWAR", "GPW"],
+    "formula": "4",
+    "href": "/rynek",
+    "definition": "The Warsaw Stock Exchange.",
+    "reading": "MIC XWAR identifies the market.",
+    "pitfalls": "A calendar day is not always a trading day."
+  },
+  {
+    "key": "ilosc",
+    "term": "Number of units",
+    "synonyms": ["Number of units"],
+    "formula": "3",
+    "href": "/portfel",
+    "definition": "The number of instrument units in a transaction, position or lot.",
+    "reading": "The initial quantity describes the lot at opening; the remaining quantity accounts for consumption so far.",
+    "pitfalls": "A split changes unit count and unit cost, but does not itself change total cost."
+  },
+  {
+    "key": "indeks",
+    "term": "Stock index",
+    "synonyms": ["index", "koszyk", "Stock index"],
+    "formula": "4",
+    "href": "/rynek",
+    "definition": "A measure of the value of a specified basket of instruments.",
+    "reading": "An index change describes the change in that basket.",
+    "pitfalls": "An index and a fund tracking it can have different performance and costs."
+  },
+  {
+    "key": "instrument-id",
+    "term": "Instrument identifier",
+    "synonyms": ["instrument_id", "tożsamość instrumentu", "Instrument identifier"],
+    "formula": "4",
+    "href": "/rynek",
+    "definition": "A permanent instrument identifier in OligInvest.",
+    "reading": "It links quotes and transactions for the same instrument.",
+    "pitfalls": "A symbol change does not necessarily mean a different instrument."
+  },
+  {
+    "key": "isin",
+    "term": "ISIN",
+    "synonyms": ["identyfikator papieru", "ISIN"],
+    "formula": "4",
+    "href": "/rynek",
+    "definition": "A 12-character international securities identifier.",
+    "reading": "It helps identify an instrument independently of its name.",
+    "pitfalls": "ISIN alone does not identify the listing market."
+  },
+  {
+    "key": "kapitalizacja",
+    "term": "Market capitalization",
+    "synonyms": ["market cap", "Market capitalization"],
+    "formula": "4",
+    "href": "/rynek",
+    "definition": "The market value of all shares in a company.",
+    "reading": "It combines the share price with the number of shares.",
+    "pitfalls": "It is not the amount of cash held by the company."
+  },
+  {
+    "key": "koszt-sredni",
+    "term": "Average unit cost",
+    "synonyms": ["Average unit cost"],
+    "formula": "3",
+    "href": "/portfel",
+    "definition": "The cost of remaining units divided by their quantity.",
+    "reading": "This is an informational average-cost view; lot matching uses FIFO per account.",
+    "pitfalls": "Missing acquisition cost means missing data, not zero cost."
+  },
+  {
+    "key": "koszt",
+    "term": "Acquisition cost",
+    "synonyms": ["cost basis", "FIFO", "partia", "Acquisition cost"],
+    "formula": "3",
+    "href": "/portfel",
+    "definition": "The cost assigned to held units under the accounting rules.",
+    "reading": "FIFO assigns disposals to the oldest lots in the account.",
+    "pitfalls": "An unknown cost is not a zero cost."
+  },
+  {
+    "key": "kurs-skorygowany",
+    "term": "Adjusted price",
+    "synonyms": ["adjusted price", "Adjusted price"],
+    "formula": "4",
+    "href": "/rynek",
+    "definition": "A historical price adjusted for events such as splits.",
+    "reading": "Indicators use split-adjusted prices.",
+    "pitfalls": "An adjusted price is not the actual settlement price of a transaction."
+  },
+  {
+    "key": "macd",
+    "term": "MACD",
+    "synonyms": ["moving average convergence divergence", "MACD"],
+    "formula": "9",
+    "href": "/rynek",
+    "definition": "The difference between two exponential averages and its smoothing.",
+    "reading": "The histogram shows the difference between the MACD line and its smoothing.",
+    "pitfalls": "Crossovers describe historical data and can frequently reverse direction."
+  },
+  {
+    "key": "mic",
+    "term": "MIC",
+    "synonyms": ["market identifier code", "rynek notowań", "MIC"],
+    "formula": "4",
+    "href": "/rynek",
+    "definition": "A code identifying the listing market.",
+    "reading": "XWAR, XNYS and XNAS represent different markets.",
+    "pitfalls": "The same instrument can be listed on more than one market."
+  },
+  {
+    "key": "newconnect",
+    "term": "NewConnect",
+    "synonyms": ["alternatywny system obrotu", "NewConnect"],
+    "formula": "4",
+    "href": "/rynek",
+    "definition": "An alternative trading system operated by GPW.",
+    "reading": "It is a separate market segment.",
+    "pitfalls": "Lower turnover can make execution at the displayed price difficult."
+  },
+  {
+    "key": "obrot",
+    "term": "Turnover",
+    "synonyms": ["turnover", "Turnover"],
+    "formula": "4",
+    "href": "/rynek",
+    "definition": "The value of transactions during a period.",
+    "reading": "It always has a monetary unit.",
+    "pitfalls": "It differs from the number of units, known as volume."
+  },
+  {
+    "key": "ohlcv",
+    "term": "OHLCV",
+    "synonyms": ["open", "high", "low", "close", "volume", "OHLCV"],
+    "formula": "4",
+    "href": "/rynek",
+    "definition": "Open, high, low and close prices, and volume, for one interval.",
+    "reading": "The candle shows the price range and change; volume is a separate measure.",
+    "pitfalls": "Daily data does not show the sequence of events within a session."
+  },
+  {
+    "key": "opoznienie",
+    "term": "Delayed data",
+    "synonyms": ["delayed quotes", "opóźnione notowania", "Delayed data"],
+    "formula": "4",
+    "href": "/rynek",
+    "definition": "Quotes displayed some time after they were recorded.",
+    "reading": "The label gives the time, source and declared delay.",
+    "pitfalls": "Source delay and stale data after an outage are different things."
+  },
+  {
+    "key": "pl",
+    "term": "P/L",
+    "synonyms": ["wynik", "zysk", "strata", "P/L"],
+    "formula": "4",
+    "href": "/portfel",
+    "definition": "The difference between value and cost in the selected view.",
+    "reading": "A positive sign means a gain and a negative sign a loss in that view.",
+    "pitfalls": "Economic and tax results may differ."
+  },
+  {
+    "key": "prowizja",
+    "term": "Commission",
+    "synonyms": ["commission", "opłata brokera", "Commission"],
+    "formula": "4",
+    "href": "/rynek",
+    "definition": "A fee charged for executing a transaction.",
+    "reading": "P/L after costs includes this fee.",
+    "pitfalls": "No commission does not mean no spread or currency costs."
+  },
+  {
+    "key": "przewalutowanie",
+    "term": "Currency conversion",
+    "synonyms": ["currency conversion", "FX", "Currency conversion"],
+    "formula": "4",
+    "href": "/rynek",
+    "definition": "Exchanging one currency for another.",
+    "reading": "PLN P/L also depends on the exchange rate.",
+    "pitfalls": "The broker's rate may differ from NBP's average rate."
+  },
+  {
+    "key": "przychod",
+    "term": "Proceeds",
+    "synonyms": ["Proceeds"],
+    "formula": "4",
+    "href": "/portfel",
+    "definition": "The amount received from the transactions being accounted for, under the selected view.",
+    "reading": "Proceeds and costs must cover the same complete set of transactions.",
+    "pitfalls": "Proceeds alone are not profit; account for cost and disclosed data exclusions."
+  },
+  {
+    "key": "rachunek",
+    "term": "Account",
+    "synonyms": ["account", "broker", "Account"],
+    "formula": "4",
+    "href": "/portfel",
+    "definition": "A brokerage account represented in the Application.",
+    "reading": "Each account has a currency and type.",
+    "pitfalls": "FIFO lots are matched separately for each account."
+  },
+  {
+    "key": "rsi",
+    "term": "RSI",
+    "synonyms": ["relative strength index", "RSI"],
+    "formula": "9",
+    "href": "/rynek",
+    "definition": "A measure of the relationship between historical price gains and losses.",
+    "reading": "The value lies on a scale from 0 to 100.",
+    "pitfalls": "The RSI level alone does not determine future price direction."
+  },
+  {
+    "key": "sesja",
+    "term": "Trading session",
+    "synonyms": ["trading day", "Trading session"],
+    "formula": "4",
+    "href": "/rynek",
+    "definition": "The period during which a market conducts trading.",
+    "reading": "Chart dates follow the exchange calendar.",
+    "pitfalls": "Holidays and time zones differ across exchanges."
+  },
+  {
+    "key": "sma",
+    "term": "SMA",
+    "synonyms": ["średnia prosta", "SMA"],
+    "formula": "9",
+    "href": "/rynek",
+    "definition": "The average closing price over a selected number of intervals.",
+    "reading": "A longer period smooths short-term changes more strongly.",
+    "pitfalls": "Smoothing delays the response; the start of the series lacks a full window."
+  },
+  {
+    "key": "split",
+    "term": "Split / consolidation",
+    "synonyms": ["reverse split", "podział akcji", "Split / consolidation"],
+    "formula": "4",
+    "href": "/rynek",
+    "definition": "A change in share count and unit price caused by splitting or combining shares.",
+    "reading": "A split itself does not change the position's value.",
+    "pitfalls": "Unadjusted history can appear to contain a sudden price jump."
+  },
+  {
+    "key": "spread",
+    "term": "Spread",
+    "synonyms": ["bid ask", "Spread"],
+    "formula": "4",
+    "href": "/rynek",
+    "definition": "The difference between prices on the two sides of the order book.",
+    "reading": "It is one component of transaction execution cost.",
+    "pitfalls": "The last traded price may not currently be available."
+  },
+  {
+    "key": "subindeks",
+    "term": "Sector subindex",
+    "synonyms": ["sektor", "branża", "Sector subindex"],
+    "formula": "4",
+    "href": "/rynek",
+    "definition": "An index containing companies from a selected sector.",
+    "reading": "It helps describe changes in one part of the market.",
+    "pitfalls": "Sector classification does not describe all sources of a company's revenue."
+  },
+  {
+    "key": "swieca",
+    "term": "Candlestick",
+    "synonyms": ["candlestick", "Candlestick"],
+    "formula": "4",
+    "href": "/rynek",
+    "definition": "A graphical record of an interval's open, close and extreme prices.",
+    "reading": "The body shows the change and the wicks show the price range.",
+    "pitfalls": "A candle's shape alone does not determine future price changes."
+  },
+  {
+    "key": "ticker",
+    "term": "Ticker / symbol",
+    "synonyms": ["symbol notowania", "Ticker / symbol"],
+    "formula": "4",
+    "href": "/rynek",
+    "definition": "An abbreviation identifying an instrument.",
+    "reading": "Search maps provider symbols to the instrument in the Application.",
+    "pitfalls": "The same abbreviation can identify different instruments."
+  },
+  {
+    "key": "twr",
+    "term": "TWR",
+    "synonyms": ["time weighted return", "TWR"],
+    "formula": "6",
+    "href": "/portfel",
+    "definition": "A rate of return that neutralizes external deposits and withdrawals.",
+    "reading": "It enables comparison of value changes over time without the effect of contribution size.",
+    "pitfalls": "It differs from the investor's personal capital return calculated using XIRR."
+  },
+  {
+    "key": "udzial",
+    "term": "Portfolio weight",
+    "synonyms": ["Portfolio weight"],
+    "formula": "5",
+    "href": "/portfel",
+    "definition": "A group's or position's share of portfolio value.",
+    "reading": "Weights describe concentration based on available data.",
+    "pitfalls": "Missing valuations can distort weights; these are not target allocations."
+  },
+  {
+    "key": "waluta",
+    "term": "Listing currency",
+    "synonyms": ["Listing currency"],
+    "formula": "2",
+    "href": "/portfel",
+    "definition": "The currency in which an instrument's price is quoted.",
+    "reading": "Converting its valuation to PLN requires the appropriate exchange rate.",
+    "pitfalls": "The listing currency does not describe a company's or ETF's full currency exposure."
+  },
+  {
+    "key": "wartosc",
+    "term": "Market value",
+    "synonyms": ["market value", "wycena", "Market value"],
+    "formula": "5",
+    "href": "/portfel",
+    "definition": "The value of held units at available prices and exchange rates.",
+    "reading": "The valuation's source and time show which data produced the result.",
+    "pitfalls": "A missing quote produces an incomplete valuation, not zero value."
+  },
+  {
+    "key": "watchlista",
+    "term": "Watchlist",
+    "synonyms": ["watchlist", "obserwowane", "Watchlist"],
+    "formula": "4",
+    "href": "/rynek",
+    "definition": "A personal list of instruments to follow.",
+    "reading": "The user sets the order and notes.",
+    "pitfalls": "Being on a watchlist does not mean a position is held in the portfolio."
+  },
+  {
+    "key": "wht",
+    "term": "Withholding tax",
+    "synonyms": ["withholding tax", "WHT", "Withholding tax"],
+    "formula": "4",
+    "href": "/rynek",
+    "definition": "Tax withheld from a payment, such as a foreign dividend.",
+    "reading": "The net amount reflects this deduction.",
+    "pitfalls": "It does not settle all of the investor's tax obligations."
+  },
+  {
+    "key": "wklad-dzienny",
+    "term": "Contribution to daily P/L",
+    "synonyms": ["Contribution to daily P/L"],
+    "formula": "5",
+    "href": "/portfel",
+    "definition": "An instrument's value change adjusted for flows assigned to it that day.",
+    "reading": "The percentage contribution uses the same portfolio basis as daily P/L.",
+    "pitfalls": "The residual includes cash and events not assigned to instruments; data gaps remain explicit."
+  },
+  {
+    "key": "wolumen",
+    "term": "Volume",
+    "synonyms": ["volume", "Volume"],
+    "formula": "4",
+    "href": "/rynek",
+    "definition": "The number of instrument units that changed hands during an interval.",
+    "reading": "Volume describes trading activity.",
+    "pitfalls": "High volume alone does not determine the direction of the next price change."
+  },
+  {
+    "key": "wynik-dnia",
+    "term": "Daily P/L",
+    "synonyms": ["day change", "Daily P/L"],
+    "formula": "5",
+    "href": "/portfel",
+    "definition": "The value change since the previous close, less the day's external flows.",
+    "reading": "A deposit is not treated as a gain.",
+    "pitfalls": "Incomplete prices or exchange rates can limit result completeness."
+  },
+  {
+    "key": "wynik-lokalny",
+    "term": "P/L in the instrument currency",
+    "synonyms": ["P/L in the instrument currency"],
+    "formula": "4",
+    "href": "/portfel",
+    "definition": "The difference between current position value and acquisition cost in the instrument currency.",
+    "reading": "Compare amounts only in the same currency.",
+    "pitfalls": "PLN P/L also depends on exchange rates."
+  },
+  {
+    "key": "wynik-zrealizowany",
+    "term": "Realized P/L",
+    "synonyms": ["Realized P/L"],
+    "formula": "4",
+    "href": "/portfel",
+    "definition": "The difference between proceeds and the cost of consumed FIFO lots during a period.",
+    "reading": "Economic and tax views may use different exchange rates and costs.",
+    "pitfalls": "Informational results do not replace tax reporting; unknown costs are excluded from totals."
+  },
+  {
+    "key": "xirr",
+    "term": "XIRR",
+    "synonyms": ["MWR", "IRR", "money weighted return", "XIRR"],
+    "formula": "6",
+    "href": "/portfel",
+    "definition": "A rate of return accounting for the amounts and dates of cash flows.",
+    "reading": "It also depends on when deposits and withdrawals occur.",
+    "pitfalls": "Some cash flows do not produce a unique result."
+  },
+  {
+    "key": "zakres-52-tygodni",
+    "term": "52-week range",
+    "synonyms": ["52-week range"],
+    "formula": "5",
+    "href": "/portfel",
+    "definition": "The lowest and highest available prices over the last 52 weeks.",
+    "reading": "The range describes the instrument's observed history.",
+    "pitfalls": "Historical bounds do not constrain future prices. Incomplete history can narrow the range."
+  },
+  {
+    "key": "zdarzenie-korporacyjne",
+    "term": "Corporate action",
+    "synonyms": ["corporate action", "Corporate action"],
+    "formula": "4",
+    "href": "/rynek",
+    "definition": "An instrument-related event, such as a split or dividend.",
+    "reading": "It explains some changes in unit count or price.",
+    "pitfalls": "A missing event in the data can distort analysis."
+  },
+  {
+    "key": "zmiana-kursu",
+    "term": "Price change",
+    "synonyms": ["Price change"],
+    "formula": "5",
+    "href": "/portfel",
+    "definition": "The price difference from the previous close, in amount and percentage.",
+    "reading": "The percentage uses the previous closing price as its base.",
+    "pitfalls": "It is not your portfolio's P/L; it does not account for quantity, costs or flows."
+  }
+]

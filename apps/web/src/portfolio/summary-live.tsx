@@ -1,5 +1,6 @@
 "use client";
-import { portfolioMessages as m } from "@oliginvest/i18n";
+import { portfolioMessages as defaultM } from "@oliginvest/i18n";
+import { useCopy } from "@oliginvest/ui/localization";
 import { type ComponentType, type ReactNode, useEffect, useState } from "react";
 import { useOnline } from "./online";
 import type { Resource } from "./resources";
@@ -11,6 +12,8 @@ export function SummaryLive({
   offlineFallback,
   ...props
 }: SummaryProps & { fallback: ReactNode; offlineFallback: ReactNode }) {
+  const m = useCopy("portfolioMessages", defaultM);
+
   // Until the live screen loads (or when its chunk cannot load offline), the server snapshot
   // must not present the current valuation without a network.
   const online = useOnline();

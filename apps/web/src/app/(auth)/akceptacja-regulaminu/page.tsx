@@ -1,11 +1,17 @@
-import { messages } from "@oliginvest/i18n";
+import { messages as defaultMessages } from "@oliginvest/i18n";
+import { getLocalization } from "@oliginvest/ui/localization-server";
 import { redirect } from "next/navigation";
 import { getApiClient } from "../../../api/server";
 import { legalSchema } from "../../../api/validation";
 import { AuthForm } from "../../../auth/form";
 import { authDestination, gatePath } from "../../../auth/navigation";
 import { getMe } from "../../../auth/session";
-export const metadata = { title: messages.app.termsTitle + " — " + messages.app.brand };
+export async function generateMetadata() {
+  const messages =
+    ((await getLocalization()).copies["messages"] as typeof defaultMessages | undefined) ??
+    defaultMessages;
+  return { title: messages.app.termsTitle + " — " + messages.app.brand };
+}
 export default async function Page({
   searchParams,
 }: {

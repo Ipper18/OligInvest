@@ -1,6 +1,6 @@
 "use client";
-
-import { messages } from "@oliginvest/i18n";
+import { messages as defaultMessages } from "@oliginvest/i18n";
+import { useCopy } from "@oliginvest/ui/localization";
 import { useEffect, useState } from "react";
 
 type Theme = "dark" | "light" | "system";
@@ -19,6 +19,8 @@ export function ThemeControls({
   initialTheme: Theme;
   initialPalette: Palette;
 }) {
+  const messages = useCopy("messages", defaultMessages);
+
   const [theme, setTheme] = useState(initialTheme);
   const [palette, setPalette] = useState(initialPalette);
   useEffect(() => {

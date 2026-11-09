@@ -1,6 +1,13 @@
 "use client";
-import { appMessages, errorMessages, formatMessage } from "@oliginvest/i18n";
+import {
+  appMessages,
+  appMessages as defaultAppMessages,
+  errorMessages as defaultErrorMessages,
+  type errorMessages,
+  formatMessage,
+} from "@oliginvest/i18n";
 import { Button, TextField } from "@oliginvest/ui";
+import { useCopy } from "@oliginvest/ui/localization";
 import { useSearchParams } from "next/navigation";
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import type { ActionName } from "../api/validation";
@@ -17,7 +24,7 @@ export type FormKind =
   | "requestReset"
   | "reset"
   | "accept";
-export const formTitles = {
+const titles = (t: typeof appMessages) => ({
   signIn: t.signIn,
   totp: t.code,
   register: t.register,
@@ -25,7 +32,8 @@ export const formTitles = {
   requestReset: t.reset,
   reset: t.newPassword,
   accept: t.termsTitle,
-};
+});
+export const formTitles = titles(t);
 export function AuthForm({
   kind,
   enrolled = false,
@@ -37,6 +45,10 @@ export function AuthForm({
   termsVersion?: string;
   privacyVersion?: string;
 }) {
+  const errorMessages = useCopy("errorMessages", defaultErrorMessages);
+  const t = useCopy("appMessages", defaultAppMessages);
+  const formTitles = titles(t);
+
   const [busy, setBusy] = useState(false),
     [ready, setReady] = useState(false),
     [error, setError] = useState<Extract<ActionResult, { ok: false }> | null>(null),
@@ -73,7 +85,7 @@ export function AuthForm({
       if (!value) setMessage(t.invalidReset);
     }
     return () => {};
-  }, [kind]);
+  }, [kind, t.invalidReset, t.invalidInvitation]);
   const destination = safeReturnTo(search.get("returnTo"));
   const returnTo = () => location.assign(destination);
   async function submit(event: FormEvent<HTMLFormElement>) {

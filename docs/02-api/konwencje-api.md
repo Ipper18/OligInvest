@@ -203,3 +203,9 @@ Każda odpowiedź ma `X-Request-Id` (przyjmujemy nagłówek klienta, jeśli popr
 ## 13. Nagłówki bezpieczeństwa odpowiedzi API
 
 `X-Content-Type-Options: nosniff`, `Cache-Control` wg § 8, `Referrer-Policy: no-referrer`, `Cross-Origin-Resource-Policy: same-origin`; brak nagłówków CORS (tylko ten sam origin); `Clear-Site-Data` przy wylogowaniu. Pozostałe nagłówki (HSTS, CSP) ustawia `caddy`/`web` — [`../06-bezpieczenstwo/kontrole-bezpieczenstwa.md`](../06-bezpieczenstwo/kontrole-bezpieczenstwa.md) § 2.
+
+### 4.4 Preferencje i język (BL-211)
+
+`packages/contracts/src/preferences.ts` jest wspólnym schematem Zod preferencji, częściowej zmiany i `costBasisContext`; eksportuje też ścisłe JSON Schema (`preferencesJsonSchemas`). PATCH wymaga co najmniej jednego pola i sprawdza strefę przez `Intl`. Aktualizuje wyłącznie przesłane pola w transakcji z blokadą wiersza i RLS. Zmiana dnia podatkowego lub marży publikuje przeliczenie po zatwierdzeniu; sam wybór średniej zmienia projekcję analityczną przy odczycie. Odpowiedzi pozycji, podsumowania, wyników zrealizowanych i szybkiego podglądu mają addytywne `costBasisContext`. Dla widoku podatkowego metoda pozostaje FIFO.
+
+Język i strefa są zapisywane w istniejącej tabeli `identity.user_preferences`. Wiadomości resetu hasła i 2FA w kolejce mogą zawierać opcjonalne `locale`; brak pola zachowuje polski język starych zadań. Nowe alerty i odpowiedzi tekstowe szybkich akcji używają preferencji odbiorcy. Zapisane powiadomienia historyczne zachowują pierwotny tekst.

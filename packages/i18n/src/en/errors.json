@@ -1,0 +1,94 @@
+{
+  "BAD_REQUEST": {
+    "title": "Invalid request",
+    "description": "Refresh the page and try again."
+  },
+  "UNAUTHENTICATED": {
+    "title": "Session expired",
+    "description": "Sign in again."
+  },
+  "FORBIDDEN": {
+    "title": "Access denied",
+    "description": "This section is not available for your account."
+  },
+  "MFA_REQUIRED": {
+    "title": "Verify sign-in",
+    "description": "Enter the code from your authenticator app."
+  },
+  "MFA_ENROLLMENT_REQUIRED": {
+    "title": "Enable two-factor authentication",
+    "description": "This is required to access your data."
+  },
+  "TERMS_ACCEPTANCE_REQUIRED": {
+    "title": "The terms of use have changed",
+    "description": "Read the changes and confirm to continue."
+  },
+  "STEP_UP_REQUIRED": {
+    "title": "Confirm this operation",
+    "description": "Enter the code from your authenticator app."
+  },
+  "PAT_SCOPE_MISSING": {
+    "title": "Token lacks permission",
+    "description": "Create a token with the scope required by this operation."
+  },
+  "NOT_FOUND": {
+    "title": "Not found",
+    "description": "The item does not exist or you do not have access to it."
+  },
+  "CONFLICT": {
+    "title": "Data has changed",
+    "description": "Refresh the view and repeat the change."
+  },
+  "IDEMPOTENCY_CONFLICT": {
+    "title": "Repeated request",
+    "description": "This request has already been sent with different content."
+  },
+  "INSTRUMENT_AMBIGUOUS": {
+    "title": "More than one instrument",
+    "description": "Choose the correct instrument from the list."
+  },
+  "DUPLICATE_IMPORT": {
+    "title": "This file has already been imported",
+    "description": "Open the previous import or select a different file."
+  },
+  "RECONCILIATION_REQUIRED": {
+    "title": "Reconcile the data first",
+    "description": "Account balances do not match the transactions."
+  },
+  "FILE_TOO_LARGE": {
+    "title": "File too large",
+    "description": "The maximum size is 10 MB."
+  },
+  "UNSUPPORTED_MEDIA_TYPE": {
+    "title": "Unsupported file type",
+    "description": "Upload an XLSX or CSV file."
+  },
+  "IMPORT_FORMAT_UNKNOWN": {
+    "title": "Unrecognized format",
+    "description": "Check that this is a full export from XTB or mBank."
+  },
+  "VALIDATION_FAILED": {
+    "title": "Correct the highlighted fields",
+    "description": "Details are shown next to the form fields."
+  },
+  "PARAMETERS_OUT_OF_BOUNDS": {
+    "title": "Parameters outside the allowed range",
+    "description": "Reduce the range or number of variants."
+  },
+  "RATE_LIMITED": {
+    "title": "Too many requests",
+    "description": "Try again in {seconds} seconds."
+  },
+  "QUOTA_EXCEEDED": {
+    "title": "Daily limit reached",
+    "description": "Further analyses will be available tomorrow."
+  },
+  "INTERNAL": {
+    "title": "Something went wrong",
+    "description": "Try again. If the error returns, provide request ID {requestId}."
+  },
+  "SERVICE_UNAVAILABLE": {
+    "title": "Service temporarily unavailable",
+    "description": "Try again in {seconds} seconds."
+  }
+}

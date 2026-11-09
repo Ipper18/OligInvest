@@ -1,14 +1,11 @@
 "use client";
-import {
-  formatDate,
-  formatDateTime,
-  marketMessages as m,
-  portfolioMessages as p,
-} from "@oliginvest/i18n";
+
+import { marketMessages as defaultM, portfolioMessages as defaultP } from "@oliginvest/i18n";
 import { Disclaimer } from "@oliginvest/ui";
+import { useCopy, useFormatters } from "@oliginvest/ui/localization";
 import { DataTable } from "@oliginvest/ui/table";
 import Link from "next/link";
-import { Amount, Freshness, ratio } from "../portfolio/presentation";
+import { Amount, Freshness, useRatio } from "../portfolio/presentation";
 import { QueryNotice, useResource } from "../portfolio/query";
 import type { Resource } from "../portfolio/resources";
 
@@ -23,6 +20,13 @@ export function MarketOverview({
   initialQuotes: Resource<"quotes">;
   initialStatus: Resource<"marketStatus">;
 }) {
+  const ratio = useRatio();
+
+  const { formatDate, formatDateTime } = useFormatters();
+
+  const m = useCopy("marketMessages", defaultM);
+  const p = useCopy("portfolioMessages", defaultP);
+
   const quotes = useResource(
     userId,
     "quotes",

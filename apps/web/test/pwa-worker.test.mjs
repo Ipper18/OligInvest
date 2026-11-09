@@ -154,3 +154,31 @@ describe("PWA cache and notifications", () => {
     expect(h.window.navigate).toHaveBeenCalledWith(h.origin + "/rynek/123");
   });
 });
+
+it("localizes only the public offline cache and malformed push fallback", async () => {
+  const h = harness();
+  await h.event("install");
+  h.fetch.mockClear();
+  for (const data of [
+    { type: "SET_LOCALE", locale: "xx" },
+    { type: "SET_LOCALE", locale: "en-US", url: "https://evil.test" },
+  ])
+    await h.event("message", { source: h.window, data });
+  expect(h.fetch).not.toHaveBeenCalled();
+  h.fetch.mockResolvedValue(
+    new Response("Offline English", { headers: { "Content-Language": "en" } }),
+  );
+  await h.event("message", { source: h.window, data: { type: "SET_LOCALE", locale: "en-US" } });
+  const request = h.fetch.mock.calls[0][0];
+  expect(request.url).toBe(h.origin + "/offline?locale=en-US");
+  expect(request.credentials).toBe("omit");
+  h.fetch.mockRejectedValue(new Error("OFFLINE"));
+  const response = await h.event("fetch", {
+    request: { url: h.origin + "/portfel", mode: "navigate", method: "GET" },
+  });
+  expect(await response.text()).toBe("Offline English");
+  await h.event("push", { data: { json: () => ({}) } });
+  expect(h.self.registration.showNotification.mock.calls[0][1].body).toBe(
+    "New notification. See the app for details.",
+  );
+});

@@ -17,9 +17,14 @@ export const normalizeTerm = (text: string) =>
     .replaceAll("ł", "l")
     .replaceAll("Ł", "L")
     .toLocaleLowerCase("pl-PL");
-export function searchGlossary(query: string) {
+export async function localizedEntries(locale: string): Promise<EducationEntry[]> {
+  return locale === "en-US"
+    ? (await import("@oliginvest/i18n/education-content-en")).entries
+    : entries;
+}
+export function searchGlossary(query: string, catalog = entries) {
   const needle = normalizeTerm(query.trim());
-  return entries.filter((entry) =>
+  return catalog.filter((entry) =>
     normalizeTerm([entry.term, ...entry.synonyms].join(" ")).includes(needle),
   );
 }

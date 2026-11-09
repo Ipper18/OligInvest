@@ -1,6 +1,7 @@
 import { Decimal } from "decimal.js";
 import { expect, test } from "vitest";
 import {
+  createFormatters,
   formatCompact,
   formatDate,
   formatDateTime,
@@ -87,4 +88,14 @@ test("session dates are civil dates; instants use explicit user timezone and DST
   for (const value of ["2026-02-30", "2026-13-01", "2026-09-18T00:00:00Z"])
     expect(() => formatDate(value)).toThrow();
   expect(() => formatDateTime("2026-09-18T13:42:00")).toThrow();
+});
+
+test("locale and timezone are isolated, with exact English decimal formatting", () => {
+  const en = createFormatters({ locale: "en-US", timezone: "America/New_York" });
+  const pl = createFormatters({ locale: "pl-PL", timezone: "Europe/Warsaw" });
+  expect(en.formatMoney("9007199254740993.125", "USD")).toBe("USD\u00a09,007,199,254,740,993.13");
+  expect(en.formatPercent("0.125")).toBe("12.50%");
+  expect(en.formatTime("2026-11-09T01:30:00Z")).not.toBe(pl.formatTime("2026-11-09T01:30:00Z"));
+  expect(pl.formatMoney("1.005", "PLN")).toBe("1,01\u00a0zł");
+  expect(() => en.formatMoney(1.23, "USD")).toThrow();
 });

@@ -1,5 +1,6 @@
 "use client";
-import { marketMessages as m, portfolioMessages as p } from "@oliginvest/i18n";
+import { marketMessages as defaultM, portfolioMessages as defaultP } from "@oliginvest/i18n";
+import { useCopy } from "@oliginvest/ui/localization";
 import { useState } from "react";
 import { Explainer } from "../education/explainer";
 import { readResource } from "../portfolio/read-action";
@@ -21,6 +22,9 @@ export function IndicatorControls({
   args: ReadArgs;
   onChange: (series: Resource<"indicators"> | null) => void;
 }) {
+  const m = useCopy("marketMessages", defaultM);
+  const p = useCopy("portfolioMessages", defaultP);
+
   const [pending, setPending] = useState(false),
     [failed, setFailed] = useState(false);
   return (

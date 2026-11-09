@@ -1,4 +1,5 @@
 import { z } from "@hono/zod-openapi";
+import { costBasisContextSchema } from "@oliginvest/contracts";
 import { TRANSACTION_TYPES } from "@oliginvest/core";
 import { metaSchema, summarySchema } from "@oliginvest/mod-market/contracts";
 export const object = <T extends z.ZodRawShape>(shape: T) =>
@@ -235,6 +236,7 @@ export const costExclusions = object({
   positions: z.array(object({ accountId: z.uuid(), instrumentId: z.uuid() })),
 }).openapi("CostExclusions");
 export const positionsResponse = object({
+  costBasisContext: costBasisContextSchema.optional(),
   data: z.array(positionSchema),
   totals: object({
     marketValueBase: moneySchema,
@@ -271,6 +273,7 @@ export const dayChangeResponse = object({
   meta: metaSchema,
 }).openapi("DayChange");
 export const portfolioSummary = object({
+  costBasisContext: costBasisContextSchema.optional(),
   totalValue: moneySchema,
   marketValue: moneySchema,
   cash: moneySchema,
@@ -340,6 +343,7 @@ export const realizedStatus = z.enum([
   "not_applicable",
 ]);
 export const realizedResponse = object({
+  costBasisContext: costBasisContextSchema.optional(),
   view: z.enum(["economic", "tax"]),
   groupBy: z.string(),
   rows: z.array(
@@ -387,3 +391,5 @@ export const portfolioHistorySchema = object({
   decimated: z.boolean(),
   meta: metaSchema,
 }).openapi("PortfolioHistory");
+
+export { costBasisContextSchema } from "@oliginvest/contracts";

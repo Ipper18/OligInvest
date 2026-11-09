@@ -1,12 +1,11 @@
 import {
   type DisclaimerKey,
-  disclaimers,
-  formatDate,
-  formatDateTime,
+  disclaimers as defaultDisclaimers,
+  messages as defaultMessages,
   formatMessage,
-  formatQuantity,
-  messages,
+  type messages,
 } from "@oliginvest/i18n";
+import { useCopy, useFormatters } from "@oliginvest/ui/localization";
 import type { ReactNode } from "react";
 import { Disclosure } from "./native-controls.js";
 
@@ -26,6 +25,10 @@ type FreshnessProps = { meta: DataMeta; timeZone?: string } & (
 );
 
 export function DataFreshness(props: FreshnessProps) {
+  const { formatDate, formatDateTime, formatQuantity } = useFormatters();
+
+  const messages = useCopy("messages", defaultMessages);
+
   const { meta, timeZone } = props;
   if (props.kind === "fx" && meta.source !== "nbp")
     throw new RangeError("FX copy requires NBP data");
@@ -77,6 +80,8 @@ export function AssumptionsBlock({
   children: ReactNode;
   initiallyOpen?: boolean;
 }) {
+  const messages = useCopy("messages", defaultMessages);
+
   return (
     <Disclosure
       initiallyOpen={initiallyOpen}
@@ -99,6 +104,8 @@ export function Disclaimer({
   disclaimerKey: DisclaimerKey;
   version: string;
 }) {
+  const disclaimers = useCopy("disclaimers", defaultDisclaimers);
+
   const entry = disclaimers[disclaimerKey];
   if (!entry || entry.version !== version)
     throw new RangeError("Unknown disclaimer key or version");

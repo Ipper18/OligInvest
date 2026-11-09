@@ -9,11 +9,9 @@ import {
 } from "@oliginvest/core";
 import type { DatabaseContext, DatabaseTransaction } from "@oliginvest/db";
 import {
+  createFormatters,
+  quickMessages as defaultQuickMessages,
   formatMessage,
-  formatMoney,
-  formatPrice,
-  formatQuantity,
-  quickMessages,
 } from "@oliginvest/i18n";
 import { summarySchema } from "@oliginvest/mod-market/contracts";
 import type { MarketRepository } from "@oliginvest/mod-market/server";
@@ -76,6 +74,7 @@ export function projectQuickSnapshot(snapshot: Snapshot, kind: "portfolio" | "to
     .map((p) => ({ ticker: p.instrument.ticker, weight: p.weight! }));
   return quickPortfolio.parse({
     ...base,
+    costBasisContext: summary.costBasisContext,
     totalValue: summary.isComplete ? summary.totalValue : null,
     unrealizedPl:
       summary.isComplete && summary.exclusions.count === 0 ? summary.unrealizedPl : null,
@@ -83,7 +82,13 @@ export function projectQuickSnapshot(snapshot: Snapshot, kind: "portfolio" | "to
   });
 }
 const currency = (value: string) => z.enum(["PLN", "USD", "EUR"]).parse(value);
-export function quickText(kind: "portfolio" | "today" | "quote", input: unknown): string {
+export function quickText(
+  kind: "portfolio" | "today" | "quote",
+  input: unknown,
+  options: { locale?: string; timezone?: string; messages?: typeof defaultQuickMessages } = {},
+): string {
+  const quickMessages = options.messages ?? defaultQuickMessages;
+  const { formatMoney, formatPrice } = createFormatters(options);
   const value =
     kind === "quote"
       ? quickQuote.parse(input)
@@ -116,7 +121,11 @@ export function quickText(kind: "portfolio" | "today" | "quote", input: unknown)
             change: money(value.dayChange),
           })
         : formatMessage(quickMessages.today, { change: money(value.dayChange) });
-  return `${line}\n${formatMessage(quickMessages.freshness, { time: new Intl.DateTimeFormat("pl-PL", { timeZone: "Europe/Warsaw", dateStyle: "short", timeStyle: "short" }).format(new Date(value.asOf)), delay: String(value.delayMinutes), source: value.source, stale: value.stale ? quickMessages.stale : "" })}`;
+  const context =
+    "costBasisContext" in value && value.costBasisContext?.analytical
+      ? `${quickMessages.analytical}\n`
+      : "";
+  return `${context}${line}\n${formatMessage(quickMessages.freshness, { time: new Intl.DateTimeFormat(options.locale ?? "pl-PL", { timeZone: options.timezone ?? "Europe/Warsaw", dateStyle: "short", timeStyle: "short" }).format(new Date(value.asOf)), delay: String(value.delayMinutes), source: value.source, stale: value.stale ? quickMessages.stale : "" })}`;
 }
 export class QuickRepository {
   constructor(
@@ -167,6 +176,15 @@ export class QuickRepository {
       context,
       (tx) =>
         this.portfolio.replay(tx, context, key, "/quick/transactions", input, 201, async () => {
+          const preference = (
+            await tx.execute(sql`SELECT locale,timezone FROM identity.user_preferences`)
+          ).rows[0];
+          const locale = preference?.locale === "en-US" ? "en-US" : "pl-PL";
+          const quickMessages =
+            locale === "en-US"
+              ? (await import("@oliginvest/i18n/en")).copies.quickMessages
+              : defaultQuickMessages;
+          const { formatQuantity, formatPrice } = createFormatters({ locale });
           const instrument = await this.resolve(tx, input.ticker, input.mic);
           const accounts = (
             await tx.execute(
@@ -210,8 +228,7 @@ export class QuickRepository {
           // A quick request has no FX-rate field: do not invent a conversion for a foreign-currency account.
           if (account.currency !== instrument.currency)
             throw new ProblemError("VALIDATION_FAILED", {
-              detail:
-                "Waluta rachunku musi odpowiadać walucie transakcji; przeliczenie wymaga pełnego formularza.",
+              detail: quickMessages.currencyMismatch,
             });
           const tradeDate =
             input.tradeDate ??

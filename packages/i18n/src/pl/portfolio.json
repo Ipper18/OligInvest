@@ -200,5 +200,6 @@
     "SECURITY_TRANSFER_IN": "Przeniesienie papierów do rachunku",
     "SECURITY_TRANSFER_OUT": "Przeniesienie papierów z rachunku",
     "ADJUSTMENT": "Korekta"
-  }
+  },
+  "analyticalCost": "Widok analityczny — średnia ważona. Nie jest widokiem podatkowym."
 }

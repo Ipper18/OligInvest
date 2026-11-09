@@ -1,4 +1,8 @@
-import { disclaimers, errorMessages, messages } from "@oliginvest/i18n";
+import {
+  disclaimers as defaultDisclaimers,
+  errorMessages as defaultErrorMessages,
+  messages as defaultMessages,
+} from "@oliginvest/i18n";
 import {
   AllocationBar,
   AssumptionsBlock,
@@ -12,10 +16,15 @@ import {
   SelectField,
   TextField,
 } from "@oliginvest/ui";
+import { useCopy } from "@oliginvest/ui/localization";
 import type * as React from "react";
 
 /** Technical M0 fixture. No user/market data and no product workflow. */
 export default function UiPreviewPage(): React.JSX.Element {
+  const disclaimers = useCopy("disclaimers", defaultDisclaimers);
+  const errorMessages = useCopy("errorMessages", defaultErrorMessages);
+  const messages = useCopy("messages", defaultMessages);
+
   return (
     <main className="mx-auto grid max-w-prose gap-5 px-4 py-8">
       <h1 className="font-sans text-2xl font-semibold">{messages.bootstrap.title}</h1>

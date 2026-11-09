@@ -1,13 +1,14 @@
 "use client";
-import { marketMessages as m, portfolioMessages as p } from "@oliginvest/i18n";
+import { marketMessages as defaultM, portfolioMessages as defaultP } from "@oliginvest/i18n";
 import { Disclaimer } from "@oliginvest/ui";
+import { useCopy } from "@oliginvest/ui/localization";
 import { DataTable } from "@oliginvest/ui/table";
 import { useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState, useTransition } from "react";
 import { FormError, InstrumentPicker } from "../portfolio/forms";
-import { Amount, Freshness, ratio } from "../portfolio/presentation";
+import { Amount, Freshness, useRatio } from "../portfolio/presentation";
 import { QueryNotice, useResource } from "../portfolio/query";
 import type { Resource } from "../portfolio/resources";
 import { mutateWatchlist } from "./watchlist-actions";
@@ -57,6 +58,8 @@ export function WatchlistsScreen({
   userId: string;
   initial: Resource<"watchlists">;
 }) {
+  const m = useCopy("marketMessages", defaultM);
+
   const lists = useResource(userId, "watchlists", {}, initial),
     mutation = useWatchlistMutation(userId);
   return (
@@ -130,6 +133,11 @@ export function WatchlistScreen({
   userId: string;
   initial: Resource<"watchlist">;
 }) {
+  const ratio = useRatio();
+
+  const m = useCopy("marketMessages", defaultM);
+  const p = useCopy("portfolioMessages", defaultP);
+
   const list = useResource(userId, "watchlist", { id: initial.id }, initial),
     mutation = useWatchlistMutation(userId);
   return (

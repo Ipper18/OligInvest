@@ -1,4 +1,5 @@
 import {
+  buildAverageCostView,
   buildLedger,
   createFxRateTable,
   currencyCode,
@@ -56,6 +57,40 @@ const input = () => ({
   date: isoDate("2026-10-12"),
   view: "economic",
   groupBy: "account_instrument",
+});
+test("average changes economic cost but leaves the FIFO tax view unchanged", () => {
+  const trades = [
+    ["BUY", "10", "10"],
+    ["BUY", "10", "20"],
+    ["SELL", "10", "30"],
+  ].map(([type, units, px], index) => ({
+    id: `0198a000-0000-7000-8000-00000000001${index}`,
+    accountId: a,
+    instrumentId: i,
+    type,
+    tradeDate: isoDate(`2026-10-0${index + 1}`),
+    settleDate: isoDate(`2026-10-0${index + 1}`),
+    quantity: quantity(units),
+    price: price(px, "PLN"),
+    amount: money(["-100", "-200", "300"][index], "PLN"),
+  }));
+  const args = { accounts, transactions: trades };
+  const ledger = buildLedger(args);
+  const average = buildAverageCostView(args);
+  const fifo = projectPortfolio({ ...input(), ledger });
+  const analytical = projectPortfolio({ ...input(), ledger, average });
+  expect(fifo.data[0].costBasis.amount).toBe("200.00000000");
+  expect(analytical.data[0].costBasis.amount).toBe("150.00000000");
+  expect(analytical.costBasisContext).toEqual({ method: "average", analytical: true });
+  expect(projectPortfolio({ ...input(), ledger, average, view: "tax" })).toEqual(
+    projectPortfolio({ ...input(), ledger, view: "tax" }),
+  );
+  const state = { fx: input().fx, transactions: trades };
+  const realized = projectRealized(ledger.sales, state, {}, "economic", average);
+  expect(realized.totals.realizedPl.amount).toBe("150.00000000");
+  expect(projectRealized(ledger.sales, state, {}, "tax", average)).toEqual(
+    projectRealized(ledger.sales, state, {}, "tax"),
+  );
 });
 test("valued unknown-cost holdings stay visible and are excluded from cost/P&L totals", () => {
   const result = projectPortfolio(input());

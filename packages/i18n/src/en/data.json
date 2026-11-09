@@ -1,0 +1,21 @@
+{
+  "quality": {
+    "WARN": "WARN — data quality warning",
+    "BLOCK": "BLOCK — data excluded from analysis"
+  },
+  "delayed": "{time} · delayed by about {minutes} min · {source}",
+  "eod": "close on {date} · {source}",
+  "fx": "NBP average rate for {date} (table A)",
+  "stale": "last updated {time} — {reason}",
+  "staleLabel": "stale",
+  "assumptions": "Analysis assumptions",
+  "reasons": {
+    "market_closed": "market closed",
+    "provider_error": "data provider is not responding",
+    "provider_quota": "data provider quota reached",
+    "provider_disabled": "data provider disabled",
+    "no_data": "no data",
+    "eod_only": "only end-of-day data available",
+    "data_quality_hold": "data withheld due to quality issues"
+  }
+}

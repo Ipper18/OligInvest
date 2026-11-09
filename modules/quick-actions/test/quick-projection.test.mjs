@@ -58,3 +58,26 @@ test("a complete empty portfolio is zero, not missing data", () => {
     incomplete: false,
   });
 });
+
+test("quick snapshot keeps the average-cost analytical label in JSON and English text", async () => {
+  const { copies } = await import("@oliginvest/i18n/en");
+  const value = projectQuickSnapshot(
+    {
+      ...snapshot,
+      gaps: [],
+      previousGaps: [],
+      missingCosts: [],
+      summary: { ...snapshot.summary, costBasisContext: { method: "average", analytical: true } },
+      day: { ...snapshot.day, change: money("0") },
+    },
+    "portfolio",
+  );
+  expect(value.costBasisContext).toEqual({ method: "average", analytical: true });
+  expect(
+    quickText("portfolio", value, {
+      locale: "en-US",
+      timezone: "UTC",
+      messages: copies.quickMessages,
+    }),
+  ).toContain("Analytical view: weighted average cost.");
+});

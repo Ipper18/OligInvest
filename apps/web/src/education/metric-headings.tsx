@@ -1,6 +1,10 @@
 import { Explainer } from "./explainer";
-import { headingKeys } from "./metric-keys";
-export function metricHeadings(headings: string[]) {
+import { localizedHeadingKeys } from "./metric-keys";
+export function metricHeadings(
+  headings: string[],
+  copy: typeof import("@oliginvest/i18n").portfolioMessages,
+) {
+  const headingKeys = localizedHeadingKeys(copy);
   return Object.fromEntries(
     headings
       .filter((heading) => headingKeys[heading])

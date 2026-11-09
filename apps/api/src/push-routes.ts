@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { createRoute, type OpenAPIHono, z } from "@hono/zod-openapi";
-import { pwaMessages } from "@oliginvest/i18n";
+import { pwaMessages as defaultPwaMessages } from "@oliginvest/i18n";
 import { type AppEnv, ProblemError } from "@oliginvest/platform";
 import type { AuthRouteDependencies } from "./auth/routes.js";
 import {
@@ -12,6 +12,8 @@ import {
   pushSubscriptionSchema,
 } from "./modules.js";
 import { conflictError, rateLimitedError } from "./rate-limited-response.js";
+
+import { userLocale } from "./user-locale.js";
 
 const json = (schema: z.ZodType) => ({
   description: "Web Push.",
@@ -146,6 +148,14 @@ export function mountPush(api: OpenAPIHono<AppEnv>, dependencies: AuthRouteDepen
       await service.options.state.limit(`push-test:${principal.user_id}`, 3, 60);
       if (!service.options.pushTest || !service.options.pushPublicKey)
         throw new ProblemError("SERVICE_UNAVAILABLE");
+      const { locale } = await userLocale(service.options.appDatabase, {
+        userId: principal.user_id,
+        role: principal.role,
+      });
+      const pwaMessages =
+        locale === "en-US"
+          ? (await import("@oliginvest/i18n/en")).copies.pwaMessages
+          : defaultPwaMessages;
       const id = randomUUID();
       await service.options.pushTest(`push-test-${principal.user_id}-${id}`, {
         v: 1,

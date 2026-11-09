@@ -1,17 +1,13 @@
 "use client";
-import {
-  type CurrencyCode,
-  formatDate,
-  formatMessage,
-  formatQuantity,
-  portfolioMessages as m,
-} from "@oliginvest/i18n";
+
+import { type CurrencyCode, portfolioMessages as defaultM, formatMessage } from "@oliginvest/i18n";
 import { ChangeValue, Disclosure, MoneyValue, StatTile } from "@oliginvest/ui";
+import { useCopy, useFormatters } from "@oliginvest/ui/localization";
 import Link from "next/link";
 import { Explainer } from "../education/explainer";
 import { metricKeys } from "../education/metric-keys";
 import { MetricTable as DataTable } from "../education/metric-table";
-import { Amount, Freshness, ratio, TaxDisclaimer } from "./presentation";
+import { Amount, Freshness, TaxDisclaimer, useRatio } from "./presentation";
 import { QueryNotice, useResource } from "./query";
 import type { ReadArgs, Resource } from "./resources";
 
@@ -22,7 +18,7 @@ type Props<K extends "summary" | "positions" | "transactions" | "accounts" | "lo
     initial: Resource<K>;
     accounts: Resource<"accounts">["data"];
   };
-const accountName = (accounts: Resource<"accounts">["data"], id?: string) =>
+const accountName = (m: typeof defaultM, accounts: Resource<"accounts">["data"], id?: string) =>
   accounts.find((a) => a.id === id)?.name ?? m.allAccounts;
 const instrumentLink = (id: string, title: string) => (
   <Link prefetch={false} href={`/rynek/${id}`}>
@@ -33,6 +29,8 @@ type Position = Resource<"positions">["data"][number];
 const currencies = ["PLN", "USD", "EUR"];
 // Last known price stays visible with an explicit "nieaktualne" tag; offline it is hidden.
 function LastPrice({ position, unavailable }: { position: Position; unavailable: boolean }) {
+  const m = useCopy("portfolioMessages", defaultM);
+
   const { price, priceCurrency } = position;
   if (unavailable || !price || !priceCurrency)
     return <span className="num oi-flat">{m.unavailable}</span>;
@@ -63,6 +61,12 @@ export function PositionsScreen({
   initialCash,
   initialDay,
 }: Props<"positions"> & { initialCash: Resource<"cash">; initialDay: Resource<"day"> }) {
+  const ratio = useRatio();
+
+  const { formatDate, formatQuantity } = useFormatters();
+
+  const m = useCopy("portfolioMessages", defaultM);
+
   const query = useResource(userId, "positions", args, initial),
     data = query.data;
   const accountArgs = args.accountId ? { accountId: args.accountId } : {};
@@ -83,7 +87,7 @@ export function PositionsScreen({
     [
       p.instrument.ticker,
       p.instrument.exchangeShortName ?? p.instrument.mic,
-      p.accountId && accountName(accounts, p.accountId),
+      p.accountId && accountName(m, accounts, p.accountId),
     ]
       .filter(Boolean)
       .join(" · ");
@@ -98,7 +102,7 @@ export function PositionsScreen({
           return query.refetch();
         }}
       />
-      <TaxDisclaimer view={data.view} />
+      <TaxDisclaimer view={data.view} costBasisContext={data.costBasisContext} />
       {!data.isComplete && <p className="oi-partial">{m.partial}</p>}
       {data.totals.exclusions.count > 0 && (
         <p>
@@ -312,7 +316,7 @@ export function PositionsScreen({
                         </div>
                         <div>
                           <dt>{m.account}</dt>
-                          <dd>{accountName(accounts, p.accountId)}</dd>
+                          <dd>{accountName(m, accounts, p.accountId)}</dd>
                         </div>
                       </dl>
                       {instrumentLink(p.instrument.id, m.instrumentCard)}
@@ -353,7 +357,7 @@ export function PositionsScreen({
         rows={cash.data.data.map((c) => ({
           id: `${c.accountId}:${c.balance.currency}`,
           cells: [
-            accountName(accounts, c.accountId),
+            accountName(m, accounts, c.accountId),
             <Amount key="cash" value={c.balance} />,
             <Amount key="base" value={c.balanceBase} />,
             formatDate(c.asOf),
@@ -370,6 +374,8 @@ export function PageLinks({
   page: { hasMore: boolean; nextCursor?: string | undefined };
   args: ReadArgs;
 }) {
+  const m = useCopy("portfolioMessages", defaultM);
+
   const params = new URLSearchParams(
     Object.entries(args).filter((p): p is [string, string] => Boolean(p[1])),
   );
@@ -384,6 +390,10 @@ export function PageLinks({
   );
 }
 export function TransactionsScreen({ userId, args, initial, accounts }: Props<"transactions">) {
+  const { formatDate, formatQuantity } = useFormatters();
+
+  const m = useCopy("portfolioMessages", defaultM);
+
   const query = useResource(userId, "transactions", args, initial);
   return (
     <>
@@ -396,7 +406,7 @@ export function TransactionsScreen({ userId, args, initial, accounts }: Props<"t
           cells: [
             formatDate(t.tradeDate),
             m.types[t.type],
-            accountName(accounts, t.accountId),
+            accountName(m, accounts, t.accountId),
             t.quantity ? formatQuantity(t.quantity) : m.unavailable,
             <Amount key="amount" value={t.amount} signed />,
             <Link key="edit" href={`/portfel/operacje/${t.id}`}>
@@ -410,6 +420,8 @@ export function TransactionsScreen({ userId, args, initial, accounts }: Props<"t
   );
 }
 export function AccountsScreen({ userId, args, initial }: Props<"accounts">) {
+  const m = useCopy("portfolioMessages", defaultM);
+
   const query = useResource(userId, "accounts", args, initial);
   return (
     <>
@@ -435,6 +447,10 @@ export function AccountsScreen({ userId, args, initial }: Props<"accounts">) {
   );
 }
 export function LotsScreen({ userId, args, initial, accounts }: Props<"lots">) {
+  const { formatDate, formatQuantity } = useFormatters();
+
+  const m = useCopy("portfolioMessages", defaultM);
+
   const query = useResource(userId, "lots", args, initial);
   return (
     <>
@@ -454,7 +470,7 @@ export function LotsScreen({ userId, args, initial, accounts }: Props<"lots">) {
         rows={query.data.data.map((lot) => ({
           id: lot.id,
           cells: [
-            accountName(accounts, lot.accountId),
+            accountName(m, accounts, lot.accountId),
             instrumentLink(lot.instrumentId, lot.instrumentId),
             formatDate(lot.acquiredOn),
             formatQuantity(lot.quantityOpen),
@@ -483,12 +499,14 @@ export function LotsScreen({ userId, args, initial, accounts }: Props<"lots">) {
   );
 }
 export function RealizedScreen({ userId, args, initial }: Props<"realized">) {
+  const m = useCopy("portfolioMessages", defaultM);
+
   const query = useResource(userId, "realized", args, initial),
     data = query.data;
   return (
     <>
       <QueryNotice failed={query.isError} retry={query.refetch} />
-      <TaxDisclaimer view={data.view} />
+      <TaxDisclaimer view={data.view} costBasisContext={data.costBasisContext} />
       {!data.isComplete && (
         <p className="oi-partial">
           {m.excluded} {data.exclusions.length}

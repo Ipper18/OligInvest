@@ -145,7 +145,7 @@ export async function valuationState(tx: DatabaseTransaction, to: string) {
       taxRates,
       ...(taxSettings ? { taxSettings } : {}),
     });
-  return { ...state, transactions, fx, taxSettings, bars, ledgerOn, quotesOn };
+  return { ...state, transactions, fx, taxRates, taxSettings, bars, ledgerOn, quotesOn };
 }
 function transferValue(
   t: Transaction,

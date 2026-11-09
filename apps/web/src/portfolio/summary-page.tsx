@@ -1,4 +1,5 @@
-import { portfolioMessages as m } from "@oliginvest/i18n";
+import { portfolioMessages as defaultM } from "@oliginvest/i18n";
+import { getLocalization } from "@oliginvest/ui/localization-server";
 import { notFound } from "next/navigation";
 import { requireMe } from "../auth/session";
 import type { SearchParams } from "./page";
@@ -9,6 +10,10 @@ import { SummaryTable } from "./summary-table";
 import { SummaryView } from "./summary-view";
 
 export async function summaryPage(search: SearchParams) {
+  const m =
+    ((await getLocalization()).copies["portfolioMessages"] as typeof defaultM | undefined) ??
+    defaultM;
+
   const me = await requireMe();
   const raw = Object.fromEntries(Object.entries(await search).filter((entry) => entry[1] !== ""));
   const parsed = readArgs.safeParse(raw);

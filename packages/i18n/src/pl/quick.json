@@ -12,5 +12,7 @@
   "created": "Zapisano transakcję {side}: {quantity} × {ticker} po {price} ({account})",
   "alerts": "Aktywne reguły: {count}",
   "accounts": "Wskaż rachunek: {names}",
-  "duplicate": "Możliwy duplikat transakcji z ostatnich 10 minut."
+  "duplicate": "Możliwy duplikat transakcji z ostatnich 10 minut.",
+  "currencyMismatch": "Waluta rachunku musi odpowiadać walucie transakcji; przeliczenie wymaga pełnego formularza.",
+  "analytical": "Widok analityczny: średni koszt ważony. Nie jest to widok podatkowy; podatki pozostają przy FIFO."
 }
