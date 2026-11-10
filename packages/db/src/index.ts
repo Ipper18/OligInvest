@@ -4,6 +4,15 @@ import type { DatabaseContext } from "./context.js";
 import { type DatabaseRole, type DatabaseTransaction, runTransaction } from "./transaction.js";
 
 export type { DatabaseContext } from "./context.js";
+export {
+  AUDIT_PARTITION_ROWS,
+  auditPartitioningDue,
+  RETENTION_BATCH_SIZE,
+  RETENTION_TARGETS,
+  type RetentionResult,
+  type RetentionTargetId,
+  runRetention,
+} from "./retention.js";
 export type { DatabaseTransaction } from "./transaction.js";
 
 const optionsSchema = z
