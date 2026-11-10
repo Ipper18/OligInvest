@@ -187,6 +187,7 @@ export async function startJobs(
       queues,
       connection: runtime.connection,
       logger,
+      metrics: activeMonitoring.metrics,
       observe,
     });
     const { startAnalyticsWorker } = await import("./analytics-runtime.js");

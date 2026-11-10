@@ -16,6 +16,7 @@ import { marketSchedules } from "../dist/modules.js";
 import { testFeatureFlags } from "./test-feature-flags.mjs";
 import { testProviderLimits } from "./test-provider-limits.mjs";
 import { testRecomputeQueue } from "./test-recompute-queue.mjs";
+import { testRetentionQueue } from "./test-retention-queue.mjs";
 
 const dev = await isolatedEnvironment();
 const env = applicationEnvironment(dev);
@@ -53,6 +54,7 @@ try {
   assert.equal(nightly.pattern, "0 3 * * *");
   assert.equal(nightly.tz, "Europe/Warsaw");
   await testRecomputeQueue(runtime.connection);
+  await testRetentionQueue(runtime.connection);
   const client = await jobs.queues[0].getBackend().client;
   const info = await client.info();
   assert.match(info, /maxmemory_policy:noeviction/u);
