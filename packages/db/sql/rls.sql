@@ -59,6 +59,11 @@ CREATE POLICY admin_all ON identity.invitations FOR ALL TO oliginvest_app
 -- Funkcje SECURITY DEFINER działają jako właściciel; przy FORCE RLS właściciel bez polityki nie widzi wierszy.
 -- Rola oliginvest_owner jest używana wyłącznie przez migracje i te funkcje (zasada dla każdej nowej funkcji DEFINER).
 CREATE POLICY definer_functions ON identity.invitations FOR ALL TO oliginvest_owner USING (true) WITH CHECK (true);
+-- Retencja (BL-115, NFR-11.02): kontekst systemowy widzi i usuwa wyłącznie niewykorzystane zaproszenia 30 dni po wygaśnięciu.
+CREATE POLICY retention_read ON identity.invitations FOR SELECT TO oliginvest_app
+  USING (platform.current_app_role() = 'system' AND used_at IS NULL AND expires_at < now() - interval '30 days');
+CREATE POLICY retention_delete ON identity.invitations FOR DELETE TO oliginvest_app
+  USING (platform.current_app_role() = 'system' AND used_at IS NULL AND expires_at < now() - interval '30 days');
 -- analytics.run_owner (BL-312): właściciel czyta wyłącznie user_id uruchomienia, bez zapisu.
 CREATE POLICY definer_functions ON analytics.analytics_runs FOR SELECT TO oliginvest_owner USING (true);
 
