@@ -6,6 +6,11 @@ import { API } from "typescript/unstable/sync";
 
 const ROOT = fileURLToPath(new URL("../", import.meta.url));
 const POLICY_PATH = "packages/i18n/src/compliance/forbidden-phrases.pl.json";
+// LAW § 4.1: English dictionaries are scanned with the English list in addition to the Polish one.
+// Components and MDX stay on the Polish list only: technical literals such as "buy"/"sell"
+// transaction types are not user-facing text, and every rendered EN string lives in en/*.json.
+const EN_POLICY_PATH = "packages/i18n/src/compliance/forbidden-phrases.en.json";
+const EN_DICTIONARIES = "packages/i18n/src/en/";
 const IGNORED = new Set([
   "node_modules",
   "dist",
@@ -71,22 +76,31 @@ function files(directory) {
   });
 }
 
-function strings(value, path = "") {
+// Array items with a string `key` (glossary entries) are addressed by that key, not by index,
+// so an exception names the entry it explains and cannot drift to another one after reordering.
+export function strings(value, path = "") {
   if (typeof value === "string") return [[path, value]];
   if (value && typeof value === "object")
-    return Object.entries(value).flatMap(([key, child]) =>
-      strings(child, path ? `${path}.${key}` : key),
-    );
+    return Object.entries(value).flatMap(([key, child]) => {
+      const segment =
+        Array.isArray(value) && typeof child?.key === "string" ? child.key : String(key);
+      return strings(child, path ? `${path}.${segment}` : segment);
+    });
   return [];
 }
 
+export function loadPolicies(root = ROOT) {
+  const read = (path) => JSON.parse(readFileSync(join(root, path), "utf8"));
+  return { pl: read(POLICY_PATH), en: read(EN_POLICY_PATH) };
+}
+
 export function checkUiText(root = ROOT, { literals = true, compliance = true } = {}) {
-  const policy = JSON.parse(readFileSync(join(ROOT, POLICY_PATH), "utf8"));
+  const { pl: policy, en: englishPolicy } = loadPolicies();
   const errors = [];
   const report = (path, rule, text) =>
     errors.push(`${slash(relative(root, path))}: ${rule}: ${text}`);
-  const scan = (path, text) => {
-    for (const phrase of forbiddenMatches(text, policy)) report(path, "forbidden-phrase", phrase);
+  const scan = (path, text, selected = policy) => {
+    for (const phrase of forbiddenMatches(text, selected)) report(path, "forbidden-phrase", phrase);
   };
   const paths = ["apps", "modules", "packages"].flatMap((group) => files(join(root, group)));
   if (compliance) {
@@ -95,15 +109,18 @@ export function checkUiText(root = ROOT, { literals = true, compliance = true } 
       if (
         local.startsWith("packages/i18n/src/") &&
         path.endsWith(".json") &&
-        local !== POLICY_PATH
+        local !== POLICY_PATH &&
+        local !== EN_POLICY_PATH
       ) {
         const dictionary = JSON.parse(readFileSync(path, "utf8"));
-        for (const [key, text] of strings(dictionary)) {
-          const exception = policy.exceptions.find(
-            (item) => item.file === local && item.keys.includes(key),
-          );
-          if (!exception) scan(path, text);
-        }
+        const selected = local.startsWith(EN_DICTIONARIES) ? [policy, englishPolicy] : [policy];
+        for (const [key, text] of strings(dictionary))
+          for (const current of selected) {
+            const exception = current.exceptions.find(
+              (item) => item.file === local && item.keys.includes(key),
+            );
+            if (!exception) scan(path, text, current);
+          }
       }
       if (path.endsWith(".mdx"))
         scan(
