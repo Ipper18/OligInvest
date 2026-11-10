@@ -34,7 +34,10 @@ test("palette updates without navigation and remains server-rendered after reloa
   page,
 }) => {
   await page.goto("/ui-preview/bootstrap");
-  const timeOrigin = await page.evaluate(() => performance.timeOrigin);
+  // WebKit recomputes performance.timeOrigin from the wall clock, so a window marker detects reloads.
+  await page.evaluate(() => {
+    (window as { documentMarker?: boolean }).documentMarker = true;
+  });
   let documentRequests = 0;
   // History updates during Next hydration can emit framenavigated without a reload.
   page.on("request", (request) => {
@@ -46,7 +49,9 @@ test("palette updates without navigation and remains server-rendered after reloa
     "rgb(90, 169, 255)",
   );
   expect(documentRequests).toBe(0);
-  expect(await page.evaluate(() => performance.timeOrigin)).toBe(timeOrigin);
+  expect(await page.evaluate(() => (window as { documentMarker?: boolean }).documentMarker)).toBe(
+    true,
+  );
   const response = await page.reload();
   expect(await response?.text()).toContain('data-palette="colorblind"');
 });
