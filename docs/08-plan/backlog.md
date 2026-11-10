@@ -341,7 +341,7 @@ Każde zadanie z analizą przyszłości kończy się przeglądem metodologicznym
 | ID | Zadanie | Wymagania | Dokumenty | Zależy od | d | Status |
 |---|---|---|---|---|---|---|
 | BL-601 | Przegląd tabeli ASVS z dowodami i protokołem w `docs/06-bezpieczenstwo/przeglady/` | NFR-03.01 | SEC | — | 3 | todo |
-| BL-602 | Pasywny skan DAST (ZAP baseline) na lokalnej instancji i poprawki | NFR-03.06, NFR-03.07 | SEC | — | 1,5 | w toku (Claude Code, `feat/bl-602-zap-baseline`; zadanie CI `dast`, poprawka COEP; 0 × FAIL, 7 reguł WARN czeka na decyzje właściciela P1–P9; do zielonego CI i wspólnego DoD; nakład ok. 1 sesji, niezmierzony; [protokół](../06-bezpieczenstwo/przeglady/2026-11-08-zap-baseline-bl-602.md), [stan](bl-602-session-report.md)) |
+| BL-602 | Pasywny skan DAST (ZAP baseline) na lokalnej instancji i poprawki | NFR-03.06, NFR-03.07 | SEC | — | 1,5 | gotowe (PR #62, CI zielone 2026-11-08; zadanie CI `dast` 2 min 15 s, poprawka COEP, 0 × FAIL, `WARN` bez wyjątków — decyzje właściciela 2026-11-10; nakład ok. 1 sesji, niezmierzony; [protokół](../06-bezpieczenstwo/przeglady/2026-11-08-zap-baseline-bl-602.md), [stan](bl-602-session-report.md)) |
 | BL-603 | Trusted Types w trybie report-only i decyzja o włączeniu | NFR-03.06 | SEC | — | 1 | todo |
 | BL-604 | Ćwiczenie DR — scenariusz D na zastępczej VM, protokół z RPO i RTO | NFR-09.03 | DR | — | 1,5 | todo |
 | BL-605 | Ręczny audyt WCAG 2.1 AA (VoiceOver, TalkBack, NVDA) i poprawki | NFR-06.01, NFR-06.02 | A11Y | — | 3 | todo |
@@ -352,7 +352,9 @@ Każde zadanie z analizą przyszłości kończy się przeglądem metodologicznym
 | BL-610 | Ćwiczenie planu reagowania (scenariusze P1, P6, P13) | NFR-03.10 | IR | — | 0,5 | todo |
 | BL-611 | Aktualizacja dokumentacji użytkownika i administratora do stanu faktycznego | NFR-10.01 | USR, ADMIN | — | 1 | todo |
 | BL-612 | OpenSSF Scorecard (opcjonalnie) i poprawki praktyk repozytorium | NFR-03.09 | CI | — | 0,5 | todo |
-| | **Suma etapu** | | | | **17** | |
+| BL-613 | Poprawki z ZAP baseline w `apps/web/src/proxy.ts` (osobny PR po scaleniu BL-211, PR #63): `Content-Type` przekierowań bramki (10019) i przekierowanie zalogowanego z `/logowanie` (10044); potem 10019 → `FAIL` w `apps/web/zap-baseline.conf` (decyzja właściciela P4/P5, 2026-11-10) | NFR-03.06 | SEC | BL-602, BL-211 | 0,5 | todo |
+| BL-614 | Skan ZAP baseline prawdziwego `api` (nagłówki API, ciasteczka Better Auth, trasy `/api/auth/*`) na lokalnym stosie z bazą — zakres sesji (bez sesji albo rejestracja z TOTP) do ustalenia; decyzja właściciela P7, R-56 | NFR-03.06, NFR-03.07 | SEC, CI | BL-602 | 1 | todo |
+| | **Suma etapu** | | | | **18,5** | |
 
 ## 9. Później (P3 i propozycje)
 
@@ -381,8 +383,8 @@ Poza planem etapów; estymacja orientacyjna. Przed startem każde zadanie przech
 | M4 Alerty, PWA i Skróty | 16 | 30,5 | z BL-413 (redesign, 2026-10-29), BL-414 (historia wartości na Starcie, 2026-11-04), BL-415 i BL-416 (wynik przeglądu PR #53, 2026-11-05) |
 | M5a Admin, edukacja, rynek | 15 | 27 |  |
 | M5b Analizy zaawansowane, OAuth, offline | 17 | 39,5 |  |
-| M6 Hardening i dostępność | 12 | 17 |  |
-| **Razem M0–M6** | **178** | **336** | bez narzutu przeglądu (ok. +30 %) |
+| M6 Hardening i dostępność | 14 | 18,5 | z BL-613 i BL-614 (decyzje BL-602, 2026-11-10) |
+| **Razem M0–M6** | **180** | **337,5** |
 | Później | 8 | 18,5 | poza planem |
 
 **Pokrycie wymagań:** każde z 151 wymagań FR/NFR z [`../00-przeglad/wymagania.md`](../00-przeglad/wymagania.md) ma co najmniej jedno zadanie (sprawdzone skryptem 2026-09-19: brak wymagań bez zadania, brak zależności wstecz między etapami, M3 i M4 niezależne). Pełna macierz wymaganie → dokument → zadanie: [`../00-przeglad/macierz-pokrycia.md`](../00-przeglad/macierz-pokrycia.md).
