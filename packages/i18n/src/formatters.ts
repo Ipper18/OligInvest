@@ -3,6 +3,11 @@ import type { Decimal } from "decimal.js";
 export type DecimalInput = string | Decimal;
 export type CurrencyCode = "PLN" | "USD" | "EUR";
 
+// ISO 8601 instant with a mandatory zone (ADR-014). Anchored and free of overlapping
+// quantifiers, so matching is linear in the input length (CodeQL js/polynomial-redos).
+const TIMESTAMP_WITH_ZONE =
+  /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d{1,9})?)?(?:Z|[+-]\d{2}:\d{2})$/u;
+
 function makeFormatters(locale: string, timezone: string) {
   const LOCALE = locale;
   const DEFAULT_TIME_ZONE = timezone;
@@ -126,7 +131,7 @@ function makeFormatters(locale: string, timezone: string) {
   }
 
   function instant(value: string | Date): Date {
-    if (typeof value === "string" && !/T.*(?:Z|[+-]\d{2}:\d{2})$/u.test(value))
+    if (typeof value === "string" && !TIMESTAMP_WITH_ZONE.test(value))
       throw new TypeError("Expected a timestamp with timezone");
     const date = new Date(value);
     if (!Number.isFinite(date.getTime())) throw new RangeError("Invalid timestamp");

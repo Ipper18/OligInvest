@@ -90,6 +90,47 @@ test("session dates are civil dates; instants use explicit user timezone and DST
   expect(() => formatDateTime("2026-09-18T13:42:00")).toThrow();
 });
 
+test("instants accept ISO 8601 with Z or offset, minutes-only and up to nanosecond fractions", () => {
+  expect(formatTime("2026-09-18T13:42Z")).toBe("15:42");
+  expect(formatTime("2026-09-18T14:42:00+01:00")).toBe("15:42");
+  expect(formatTime("2026-09-18T09:42:00-04:00")).toBe("15:42");
+  expect(formatTime("2026-09-18T13:42:00.123Z")).toBe("15:42");
+  // PostgreSQL timestamptz JSON (microseconds) and the 9-digit upper bound.
+  expect(formatDateTime("2026-09-18T13:42:00.123456+00:00")).toBe("18 wrz 2026, 15:42");
+  expect(formatDateTime("2026-09-18T13:42:00.123456789Z")).toBe("18 wrz 2026, 15:42");
+  expect(formatDateTime(new Date("2026-09-18T13:42:00Z"))).toBe("18 wrz 2026, 15:42");
+});
+
+test("instants without a zone or outside the ISO shape are rejected", () => {
+  for (const value of [
+    "2026-09-18T13:42:00",
+    "2026-09-18T13:42:00.123",
+    "2026-09-18 13:42:00Z",
+    "2026-09-18 13:42:00+00",
+    "2026-09-18T13:42:00+0100",
+    "2026-09-18T13:42:00+01",
+    "2026-09-18T13:42:00.1234567890Z",
+    "2026-09-18",
+    "T13:42:00Z",
+    "x2026-09-18T13:42:00Z",
+    "2026-09-18T13:42:00Zx",
+    "2026-09-18T13:42:00Z\n",
+    "",
+  ])
+    expect(() => formatDateTime(value), JSON.stringify(value)).toThrow(TypeError);
+  // Shape-valid but impossible instants still fail through Date.
+  expect(() => formatDateTime("2026-13-18T13:42:00Z")).toThrow(RangeError);
+});
+
+test("timestamp validation is linear: 50 000 × 'T' is rejected quickly (CodeQL js/polynomial-redos)", () => {
+  // The former /T.*(?:Z|…)$/ took ~1.6 s on this input; the anchored pattern takes well under 1 ms.
+  for (const value of ["T".repeat(50_000), `2026-09-18T${"T".repeat(50_000)}`]) {
+    const started = performance.now();
+    expect(() => formatDateTime(value)).toThrow(TypeError);
+    expect(performance.now() - started).toBeLessThan(50);
+  }
+});
+
 test("locale and timezone are isolated, with exact English decimal formatting", () => {
   const en = createFormatters({ locale: "en-US", timezone: "America/New_York" });
   const pl = createFormatters({ locale: "pl-PL", timezone: "Europe/Warsaw" });
