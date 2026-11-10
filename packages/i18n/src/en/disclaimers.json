@@ -5,7 +5,7 @@
   },
   "analysis": {
     "version": "2026-09",
-    "text": "These are scenarios calculated using historical data and stated assumptions, not a forecast. Actual outcomes may fall outside the displayed range. Past performance does not guarantee future results."
+    "text": "These are scenarios calculated from historical data and the assumptions adopted, not a forecast. Actual outcomes may fall outside the displayed range. Past performance does not guarantee future results."
   },
   "optimization": {
     "version": "2026-09",
@@ -33,7 +33,7 @@
   },
   "data_delay": {
     "version": "2026-09",
-    "text": "Quotes are delayed (usually by about 15 minutes) or come from the session close. The source and time are shown with each value."
+    "text": "Quotes are delayed (usually by about 15 minutes) or come from the session close. The data source and time are shown with each value."
   },
   "export": {
     "version": "2026-09",
