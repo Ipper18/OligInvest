@@ -189,10 +189,11 @@ const chrome = await chromeLauncher.launch({ chromeFlags: ['--headless=new'] });
 let failed = false;
 for (const route of ROUTES) {
   const runs = [];
+  // Sesja trafia do słoika cookies przeglądarki (CDP Storage.clearCookies + Storage.setCookies), nie do extraHeaders.
+  await applyRouteCookies(chrome.port, process.env.BASE_URL, process.env.LH_SESSION_COOKIE ?? '');
   for (let i = 0; i < 3; i++) {
     const { lhr } = await lighthouse(`${process.env.BASE_URL}${route}`, {
       port: chrome.port, output: 'json', onlyCategories: ['performance'],
-      extraHeaders: { Cookie: process.env.LH_SESSION_COOKIE ?? '' },
     });
     runs.push(lhr);
   }
@@ -204,6 +205,8 @@ for (const route of ROUTES) {
 await chrome.kill();
 process.exit(failed ? 1 : 0);
 ```
+
+BL-211 (2026-11-10): sesja testowa Lighthouse jest wpisywana do słoika cookies przeglądarki osobno dla każdej trasy (słoik czyszczony przed trasą), a nie przez `extraHeaders`. Chrome zastępuje nagłówek `Cookie` z CDP nagłówkiem ze słoika, gdy słoik zawiera jakiekolwiek cookie dla originu — po pierwszej prywatnej odpowiedzi z niesensytywnym `oi-locale` kolejne przebiegi traciły sesję i kończyły się na `/logowanie` (`LH_NAVIGATION_MISMATCH`). Lighthouse zachowuje cookies między przebiegami, więc słoik odpowiada zachowaniu zalogowanego użytkownika. Progi, liczba przebiegów i timeouty bez zmian.
 
 ## 7. Pomiar w terenie (RUM)
 
