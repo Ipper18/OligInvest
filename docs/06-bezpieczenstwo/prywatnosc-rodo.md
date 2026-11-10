@@ -82,17 +82,17 @@ Zasady (art. 7 RODO): zgoda nie jest warunkiem korzystania z aplikacji; jest odd
 | Dane | Okres | Mechanizm |
 |---|---|---|
 | Konto, portfel, dziennik, analizy, alerty, preferencje, zgody | do usunięcia konta (14 dni karencji po wniosku) | usunięcie kaskadowe |
-| Pliki importu | 90 dni | zadanie codzienne |
+| Pliki importu | 90 dni | zadanie codzienne (`retention.run`, BL-115) |
 | Wiersze importu | 1 rok po zatwierdzeniu | zadanie codzienne |
-| Archiwa eksportu RODO | 24 h lub do pierwszego pobrania | zadanie codzienne |
+| Archiwa eksportu RODO | 24 h lub do pierwszego pobrania | zadanie codzienne czyści archiwum (`content`), wiersz z metadanymi zostaje ze statusem `expired` — okres przechowywania metadanych do decyzji właściciela (BL-115) |
 | Sesje | do wygaśnięcia (maks. 30 dni) lub wylogowania | Better Auth + zadanie czyszczące |
-| Zaproszenia niewykorzystane | 30 dni po wygaśnięciu | zadanie codzienne |
-| Dziennik doręczeń powiadomień | 180 dni | zadanie codzienne |
-| Pomiary RUM | 90 dni | zadanie codzienne |
+| Zaproszenia niewykorzystane | 30 dni po wygaśnięciu | zadanie codzienne w kontekście `system`; polityka RLS `retention_*` dopuszcza tylko te wiersze (BL-115) |
+| Dziennik doręczeń powiadomień | 180 dni | zadanie codzienne (BL-115) |
+| Pomiary RUM | 90 dni | zadanie codzienne (BL-115) |
 | Logi aplikacji, Caddy, PostgreSQL | 14 dni | rotacja logów |
 | Logi VPS (nginx `stream`) | 14 dni | logrotate |
 | Logi SSH i systemu, alerty CrowdSec | 30 dni | journald, konfiguracja CrowdSec |
-| **Audyt (`platform.audit_log`)** | **2 lata** — rozliczalność działań administracyjnych i wyjaśnianie incydentów; po usunięciu konta tylko pseudonim (Z-21) | partycjonowanie i usuwanie najstarszych miesięcy |
+| **Audyt (`platform.audit_log`)** | **2 lata** — rozliczalność działań administracyjnych i wyjaśnianie incydentów; po usunięciu konta tylko pseudonim (Z-21) | partycjonowanie i usuwanie najstarszych miesięcy — migracją roli migracji, nie rolą aplikacji (brak `DELETE`, ADR-004); do tego czasu BL-115 tylko raportuje przekroczenie 1 mln wierszy |
 | `platform.erasure_log` | 40 dni (dłużej niż najdłuższa retencja kopii) | zadanie po `purge_after` |
 | `platform.role_quota_usage` | wpisy starsze niż 7 × 24 h mogą być usuwane; usunięcie analizy nie zwraca kwoty (R-52, 2026-11-05) | sprzątanie w BL-115 pod RLS użytkownika; kaskada przy usunięciu konta |
 | Kopie zapasowe | 35 dni (lokalnie i poza domem) | [`../07-wdrozenie/backup-dr.md`](../07-wdrozenie/backup-dr.md) |
