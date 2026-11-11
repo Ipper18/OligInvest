@@ -185,6 +185,7 @@ Moduły z wyświetlaniem danych rynkowych i wyników analiz korzystają ze wspó
 - Dostarczanie: publikacja = dodanie zadań do kolejek subskrybentów (fan-out w `platform`) + dla SSE: wpis w strumieniu użytkownika `sse:{userId}` (z odtwarzaniem) albo — dla notowań i flag — pub/sub w `valkey-cache` ([`realtime.md`](../02-api/realtime.md) § 5).
 - Handlery są **idempotentne** (klucz idempotencji w payloadzie, np. `batchId`, `date`); ponowienia z wykładniczym odstępem; po wyczerpaniu prób zadanie trafia do stanu `failed` widocznego w panelu admina (FR-08.07).
 - Siatka bezpieczeństwa: nocne pełne przeliczenie wycen i pozycji (`portfolio.recompute-all`) naprawia skutki ewentualnie utraconych zdarzeń.
+- Retencja (BL-115, NFR-11.02): to samo nocne zadanie dodaje do kolejki `recompute` zadanie `retention.run` z deduplikacją BullMQ (najwyżej jedno oczekujące lub aktywne). Logika i okresy są w `packages/db/src/retention.ts` (okresy wyłącznie z [`../06-bezpieczenstwo/prywatnosc-rodo.md`](../06-bezpieczenstwo/prywatnosc-rodo.md) § 6); partie po 500 wierszy w krótkich transakcjach pod RLS właściciela lub kontekstem `system`, z blokadą doradczą `pg_try_advisory_xact_lock` per cel i właściciel — równoległy przebieg pomija zajęty zakres zamiast czekać.
 
 Implementacja portfela (BL-146): przeliczenie działa pod blokadą właściciela i w jego
 kontekście RLS; atomowo odbudowuje partie FIFO, zużycia, pozycje, gotówkę i wyceny

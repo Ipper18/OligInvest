@@ -1,6 +1,6 @@
 import { persistentEventSchema } from "@oliginvest/contracts";
 import type { AppDatabase } from "@oliginvest/db";
-import type { PlatformLogger } from "@oliginvest/platform";
+import type { Metrics, PlatformLogger } from "@oliginvest/platform";
 import { type Queue, Worker } from "bullmq";
 import { sql } from "drizzle-orm";
 import type { Redis } from "ioredis";
@@ -12,6 +12,7 @@ import {
   parseImport,
   recomputePortfolio,
 } from "./modules.js";
+import { enqueueRetention, processRetention, RETENTION_JOB } from "./retention-runtime.js";
 import type { readRuntime } from "./runtime.js";
 
 export async function startPortfolioWorker(options: {
@@ -20,6 +21,7 @@ export async function startPortfolioWorker(options: {
   queues: Queue[];
   connection: ReturnType<typeof readRuntime>["connection"];
   logger: PlatformLogger;
+  metrics?: Metrics;
   observe?: (worker: Worker) => void;
 }) {
   const recompute = options.queues.find((q) => q.name === "recompute")!;
@@ -71,10 +73,6 @@ export async function startPortfolioWorker(options: {
     );
     for (const user of users) {
       const userId = z.uuid().parse(user.id);
-      if (reason === "recompute")
-        await options.database.transaction({ userId, role: "user" }, async (tx) => {
-          await tx.execute(sql`DELETE FROM portfolio.import_files WHERE expires_at<=now()`);
-        });
       if (user.banned) continue;
       await enqueuePortfolioRecompute(recompute, { userId, accountIds: [], fromDate, reason });
       if (reason === "recompute") {
@@ -106,10 +104,22 @@ export async function startPortfolioWorker(options: {
   const recomputeWorker = new Worker(
     "recompute",
     async (job) => {
+      if (job.name === RETENTION_JOB) {
+        try {
+          await processRetention(job.data, options);
+        } catch {
+          options.logger.warn({ event: "retention.failed" });
+          throw new Error("RETENTION_FAILED");
+        }
+        return;
+      }
       try {
         if (job.name === "portfolio.recompute-all") {
           z.object({}).strict().parse(job.data);
           await enqueueAll("recompute");
+          // Retention (BL-115) rides on the existing nightly job; expired import files
+          // are removed there instead of inline above.
+          await enqueueRetention(recompute);
         } else if (job.name === "portfolio.recompute")
           await recomputePortfolio(portfolio, job.data, publish);
         else throw new Error("UNKNOWN_JOB");

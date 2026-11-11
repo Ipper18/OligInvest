@@ -154,6 +154,45 @@ SELECT identity.consume_invitation('hash-123', '0198a000-0000-7000-8000-00000000
 SELECT identity.consume_invitation('hash-123', '0198a000-0000-7000-8000-00000000000b') AS consumed_second_should_be_false;
 RESET ROLE;
 
+\echo '== invitation retention: system sees and deletes only unused invitations 30 days after expiry (BL-115) =='
+SET ROLE oliginvest_app;
+BEGIN; SET LOCAL app.user_id = '0198a000-0000-7000-8000-0000000000ad'; SET LOCAL app.role = 'admin';
+INSERT INTO identity.invitations (email, role, token_hash, invited_by, expires_at, used_at, used_by, revoked_at) VALUES
+  ('stale@example.test', 'user', 'retention-stale', '0198a000-0000-7000-8000-0000000000ad', now() - interval '30 days 1 minute', NULL, NULL, NULL),
+  ('revoked@example.test', 'user', 'retention-revoked', '0198a000-0000-7000-8000-0000000000ad', now() - interval '31 days', NULL, NULL, now() - interval '40 days'),
+  ('recent@example.test', 'user', 'retention-recent', '0198a000-0000-7000-8000-0000000000ad', now() - interval '29 days 23 hours', NULL, NULL, NULL),
+  ('used@example.test', 'user', 'retention-used', '0198a000-0000-7000-8000-0000000000ad', now() - interval '60 days', now() - interval '61 days', '0198a000-0000-7000-8000-00000000000b', NULL);
+COMMIT;
+BEGIN; SET LOCAL app.user_id = ''; SET LOCAL app.role = 'system';
+DO $$ BEGIN
+  IF (SELECT count(*) FROM identity.invitations) <> 2 THEN RAISE EXCEPTION 'INVITATION RETENTION READ SCOPE'; END IF;
+  UPDATE identity.invitations SET used_at = now();
+  IF FOUND THEN RAISE EXCEPTION 'SYSTEM UPDATES INVITATIONS'; END IF;
+  BEGIN
+    INSERT INTO identity.invitations (email, role, token_hash, invited_by, expires_at)
+      VALUES ('system@example.test', 'admin', 'retention-system', '0198a000-0000-7000-8000-0000000000ad', now());
+    RAISE EXCEPTION 'SYSTEM CREATES INVITATIONS';
+  EXCEPTION WHEN insufficient_privilege THEN RAISE NOTICE 'OK: system cannot create invitations'; END;
+  DELETE FROM identity.invitations;
+  IF EXISTS (SELECT 1 FROM identity.invitations) THEN RAISE EXCEPTION 'INVITATION RETENTION DELETE'; END IF;
+END $$;
+COMMIT;
+BEGIN; SET LOCAL app.user_id = '0198a000-0000-7000-8000-00000000000b'; SET LOCAL app.role = 'user';
+DO $$ BEGIN
+  DELETE FROM identity.invitations;
+  IF FOUND THEN RAISE EXCEPTION 'USER DELETES INVITATIONS'; END IF;
+END $$;
+COMMIT;
+BEGIN; SET LOCAL app.user_id = '0198a000-0000-7000-8000-0000000000ad'; SET LOCAL app.role = 'admin';
+DO $$ BEGIN
+  IF (SELECT array_agg(token_hash ORDER BY token_hash) FROM identity.invitations WHERE token_hash LIKE 'retention-%')
+     IS DISTINCT FROM ARRAY['retention-recent', 'retention-used'] THEN RAISE EXCEPTION 'INVITATION RETENTION BOUNDARY'; END IF;
+  RAISE NOTICE 'OK: invitation retention boundary, used invitations kept';
+END $$;
+DELETE FROM identity.invitations WHERE token_hash LIKE 'retention-%';
+COMMIT;
+RESET ROLE;
+
 \echo '== consent events: own rows only, append-only, action matches document =='
 SET ROLE oliginvest_app;
 BEGIN; SET LOCAL app.user_id = '0198a000-0000-7000-8000-00000000000a'; SET LOCAL app.role = 'user';

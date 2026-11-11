@@ -65,6 +65,7 @@ export function observeWorker(
         code: [
           "IMPORT_FAILED",
           "RECOMPUTE_FAILED",
+          "RETENTION_FAILED",
           "MARKET_INGESTION_FAILED",
           "AUTH_MAIL_DELIVERY_FAILED",
         ].includes(job.failedReason)

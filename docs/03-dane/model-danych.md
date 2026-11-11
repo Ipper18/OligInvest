@@ -18,7 +18,7 @@ Powiązane: [`schema.sql`](schema.sql) (DDL, role, RLS — zweryfikowane na Post
 | Schemat | Moduł | Najważniejsze tabele | RLS |
 |---|---|---|---|
 | `auth` | identity (Better Auth) | `users`, `sessions`, `accounts`, `verifications`, `two_factors`, `api_keys`, `rate_limits` | brak (dostęp wyłącznie rola `oliginvest_auth`) |
-| `identity` | identity | `invitations`, `user_preferences`, `deletion_requests`, `data_exports`, `consent_events`, widok `user_directory` | tak (zaproszenia: tylko admin + funkcje DEFINER; zgody: append-only) |
+| `identity` | identity | `invitations`, `user_preferences`, `deletion_requests`, `data_exports`, `consent_events`, widok `user_directory` | tak (zaproszenia: tylko admin + funkcje DEFINER, `system` wyłącznie dla retencji niewykorzystanych 30 dni po wygaśnięciu; zgody: append-only) |
 | `platform` | jądro | `feature_flags`, `role_limits`, `role_quota_usage`, `audit_log`, `idempotency_keys`, `web_vitals`, `erasure_log` | konfiguracja: zapis admin/system; kwoty: właściciel, bez UPDATE, DELETE po 7 dniach; audyt: append-only; `erasure_log`: tylko system |
 | `notifications` | notifications | `push_subscriptions`, `notification_preferences`, `notification_deliveries` | tak |
 | `market` | market | `instruments`, `instrument_provider_symbols`, `bars_daily`, `bars_intraday`, `quotes_latest`, `fx_rates`, `corporate_actions`, `trading_calendar`, `sectors`, `sector_memberships`, `universes`, `universe_members`, `calendar_events`, `news_items`, `macro_series`, `macro_observations`, `fundamentals_snapshots`, `data_quality_issues` + dane użytkownika: `watchlists`, `watchlist_items`, `screener_presets` | tylko tabele użytkownika |
@@ -246,6 +246,12 @@ erDiagram
 
 ## 4. Cykl życia i retencja danych
 
+Zadania czyszczące z tej tabeli dla plików importu, eksportów, zaproszeń, dziennika doręczeń, RUM i
+`role_quota_usage` wykonuje `retention.run` (BL-115, `packages/db/src/retention.ts`) po nocnym
+`portfolio.recompute-all`. `erasure_log` należy do BL-114. Wiersze importu, `bars_intraday`, `news_items` i
+`idempotency_keys` nie są wymienione w żadnym zadaniu backlogu — przypisanie czeka na decyzję właściciela
+([raport BL-115](../08-plan/bl-115-session-report.md)).
+
 | Dane | Retencja | Mechanizm | Uwagi |
 |---|---|---|---|
 | Operacje, rachunki, dziennik, alokacje | do usunięcia konta | — | eksport RODO (FR-07.09) |
@@ -258,7 +264,7 @@ erDiagram
 | `idempotency_keys` | 24 h | zadanie czyszczące | |
 | `web_vitals` | 90 dni | zadanie czyszczące | bez danych osobowych |
 | `audit_log` | 2 lata ([`../06-bezpieczenstwo/prywatnosc-rodo.md`](../06-bezpieczenstwo/prywatnosc-rodo.md) § 6) | partycjonowanie miesięczne przy wzroście > 1 mln wierszy | pseudonim `actor_ref` po usunięciu konta (Z-21) |
-| Eksporty RODO (`data_exports`) | 24 h lub do pierwszego pobrania | zadanie czyszczące | pobranie wymaga sesji z 2FA i step-up |
+| Eksporty RODO (`data_exports`) | 24 h lub do pierwszego pobrania | zadanie czyszczące zeruje `content`, status `expired`; metadane zostają (okres — pytanie do właściciela) | pobranie wymaga sesji z 2FA i step-up |
 | Konto usunięte | 14 dni karencji, potem kasowanie kaskadowe | `deletion_requests` | audyt zostaje z pseudonimem; UUID trafia do `erasure_log` |
 | Zgody i akceptacje (`consent_events`) | do usunięcia konta | kasowanie kaskadowe | append-only — dowód akceptacji i zgody (art. 7 ust. 1 RODO) |
 | `erasure_log` | 40 dni (dłużej niż najdłuższa retencja kopii — 35 dni) | zadanie czyszczące po `purge_after` | ponowne usunięcie kont po odtworzeniu kopii ([`../07-wdrozenie/backup-dr.md`](../07-wdrozenie/backup-dr.md) § 7) |

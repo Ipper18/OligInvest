@@ -98,6 +98,8 @@ do BL-507/124; aktywacja 13 sond i odbiór alarmów wymagają serwera właścici
 | `provider_circuit_open` | dostawca | degradacja |
 | `data_quality_issues_open` | waga | jakość danych rynkowych |
 | `db_pool_in_use`, `valkey_used_memory_bytes` | instancja | zasoby |
+| `retention_rows_total`, `retention_skipped_total` | cel retencji (tabela) | przebieg zadania `retention.run` (BL-115); tylko liczby wierszy |
+| `audit_log_rows_estimate` | — | szacunek `pg_class.reltuples`; ostrzeżenie `retention.audit_partitioning_due` powyżej 1 mln wierszy |
 
 Etykiety nigdy nie zawierają identyfikatorów użytkowników ani instrumentów z portfeli (NFR-03.05). Historia zasobów VM — wykresy Proxmoxa; historia wydajności z przeglądarek — RUM w bazie (90 dni, tylko przy zgodzie użytkownika).
 
