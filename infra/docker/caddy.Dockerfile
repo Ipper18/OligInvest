@@ -1,4 +1,4 @@
-# Caddy 2.11.7 rebuilt with Go 1.26.10 and golang.org/x/net v0.62.0: the official image ships Go 1.26.8
+# Caddy 2.11.7 rebuilt with Go 1.26.11 and golang.org/x/net v0.62.0: the official image ships Go 1.26.8
 # and x/net v0.59.0 with fixed HTTP/2 vulnerabilities (GO-2026-66xx; M1-3, 2026-10-11). Go 1.26.10 fixes
 # GO-2026-6809 (crypto/x509 distrust of compromised intermediates, published 2026-10-21). Golang manifest
 # pushed 2026-10-20T04:26:03Z and x/net v0.60.0 published 2026-10-08T17:22:58Z, both outside the 72-hour
@@ -12,7 +12,10 @@
 # CVSS score). No tagged release contains it yet; Caddy does not import openpgp, which the build asserts.
 # klauspost/compress v1.20.2 (published 2026-10-12T09:34:06Z) fixes GO-2026-6865 (panic on two-block frames,
 # no CVSS score; published 2026-11-05); Caddy 2.11.7 requires v1.20.1.
-FROM golang:1.26.10-alpine@sha256:9ce231b28998b32e116927c61aa5c406183061d4f3f2d61b292c88e7f6bdf7ca AS builder
+# Go 1.26.11 fixes GO-2026-6859 (net/http HTTP/1 server crash, MaxBytesReader header race; no CVSS score,
+# published 2026-11-11). Golang manifest pushed 2026-11-10T18:54:39Z, adopted inside the 72-hour window by
+# owner decision of 2026-11-11 (official Go security release, build stage only, pinned by digest).
+FROM golang:1.26.11-alpine@sha256:ae52b5bc6ed045a9ed26ab03dc19327a802a9cc9aa8b27ed57f5c6b60579b0bb AS builder
 ENV CGO_ENABLED=0 GOTOOLCHAIN=local GOFLAGS=-mod=mod
 WORKDIR /src
 # Same entry point as the official build (cmd + standard modules); go.sum is verified by the Go checksum database.
