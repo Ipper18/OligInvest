@@ -89,6 +89,9 @@
             "context": "web"
           },
           {
+            "context": "dast"
+          },
+          {
             "context": "workers"
           },
           {
