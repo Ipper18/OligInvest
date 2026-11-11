@@ -315,6 +315,30 @@ test("auth pages retain only a validated returnTo when the session is already ve
   }
 });
 
+test("proxy redirects are minimal plain-text 307s, also for a signed-in /logowanie", async ({
+  context,
+}) => {
+  // BL-613: ZAP 10019 (redirect without Content-Type) and 10044 (big redirect from the page).
+  const anonymous = await context.request.get("/", { maxRedirects: 0 });
+  expect(anonymous.status()).toBe(307);
+  expect(anonymous.headers()["content-type"]).toBe("text/plain; charset=utf-8");
+  expect(await anonymous.text()).toBe("/logowanie?returnTo=%2F");
+  await session(context, "return-to");
+  for (const [returnTo, destination] of [
+    ["/ustawienia?tab=security", "/ustawienia?tab=security"],
+    ["//outside.example.test/", "/"],
+  ] as const) {
+    const response = await context.request.get(`/logowanie?${new URLSearchParams({ returnTo })}`, {
+      maxRedirects: 0,
+    });
+    expect(response.status()).toBe(307);
+    expect(response.headers().location).toBe(destination);
+    expect(response.headers()["content-type"]).toBe("text/plain; charset=utf-8");
+    expect(response.headers()["content-security-policy"]).toContain("frame-ancestors 'none'");
+    expect(await response.text()).toBe(destination);
+  }
+});
+
 test("a pending legal gate preserves the destination from the MFA page", async ({
   page,
   context,

@@ -2,6 +2,8 @@
 
 **Cel:** zapisać przebieg, wyniki i decyzje pierwszego pasywnego skanu ZAP baseline lokalnej instancji OligInvest (NFR-03.06, NFR-03.07), tak aby każdą regułę dało się odtworzyć, ocenić i — tylko decyzją właściciela — wyłączyć.
 
+Ponowny skan po poprawkach BL-613 (2026-11-11): § 7.
+
 Metoda, przypięcia i polityka reguł: [`../kontrole-bezpieczenstwa.md`](../kontrole-bezpieczenstwa.md) § 9.1. Raport sesji: [`../../08-plan/bl-602-session-report.md`](../../08-plan/bl-602-session-report.md).
 
 ## 1. Przebieg
@@ -35,12 +37,12 @@ Pierwszy przebieg (po dołączeniu reguł beta) zgłosił dodatkowo **90004 „C
 | 10049 Non-Storable / Storable and Cacheable Content | Informational (Medium) | oba | HTML (`no-store`) i `/_next/static/*` (`immutable`) | zachowanie zamierzone | dokładnie polityka z § 2.2: dane użytkownika `no-store`, zasoby z hashem w nazwie cache'owane rok | `WARN` — P3 |
 | 10111 Authentication Request Identified | Informational (Low) | `public` | `/logowanie` | informacja | reguła tylko rozpoznaje formularz logowania | `WARN` — P3 |
 | 10109 Modern Web Application | Informational (Medium) | `authenticated` | `/logowanie` | informacja | sugestia użycia pająka AJAX; trasy MVP są osiągalne pająkiem tradycyjnym (153 URL-e) | `WARN` — P3 |
-| 10019 Content-Type Header Missing | Informational (Medium) | `public` | `/` (307) | rzeczywiste, znikome | Przekierowanie bramki w `apps/web/src/proxy.ts` (`NextResponse.redirect`) ma 23-bajtową treść (sam adres) bez `Content-Type`. Skutek ograniczają `X-Content-Type-Options: nosniff` z Caddy i brak treści aktywnej. Poprawka wymaga zmiany `proxy.ts` — wstrzymana do scalenia BL-211 (równoległa praca w `apps/web`) | `WARN` — P4 |
-| 10044 Big Redirect Detected | Low (Medium) | `authenticated` | `/logowanie` (307 → `/`) | fałszywy alarm (proponowany) | Zalogowany użytkownik na `/logowanie`: `redirect()` w komponencie strony zwraca 307 z ~40 KB powłoki błędu Next (`__next_error__`, `NEXT_REDIRECT`). Sprawdzono brak e-maila, nazwy, identyfikatorów użytkownika i sesji, ciasteczka i uprawnień. Przeniesienie przekierowania do `proxy.ts` usunęłoby alert — obszar BL-211 | `WARN` — P5 |
+| 10019 Content-Type Header Missing | Informational (Medium) | `public` | `/` (307) | rzeczywiste, znikome | Przekierowanie bramki w `apps/web/src/proxy.ts` (`NextResponse.redirect`) ma 23-bajtową treść (sam adres) bez `Content-Type`. Skutek ograniczają `X-Content-Type-Options: nosniff` z Caddy i brak treści aktywnej. Poprawka wymaga zmiany `proxy.ts` — wstrzymana do scalenia BL-211 (równoległa praca w `apps/web`) | **rozwiązane 2026-11-11 (BL-613)** — przekierowania `proxy.ts` mają `Content-Type: text/plain; charset=utf-8`; reguła `FAIL` — § 7 |
+| 10044 Big Redirect Detected | Low (Medium) | `authenticated` | `/logowanie` (307 → `/`) | fałszywy alarm (proponowany) | Zalogowany użytkownik na `/logowanie`: `redirect()` w komponencie strony zwraca 307 z ~40 KB powłoki błędu Next (`__next_error__`, `NEXT_REDIRECT`). Sprawdzono brak e-maila, nazwy, identyfikatorów użytkownika i sesji, ciasteczka i uprawnień. Przeniesienie przekierowania do `proxy.ts` usunęłoby alert — obszar BL-211 | **rozwiązane 2026-11-11 (BL-613)** — przekierowanie w `proxy.ts`, 307 z treścią równą `Location` — § 7 |
 | 10096 Timestamp Disclosure - Unix | Low (Low) | `authenticated` | `/rynek/{id}` | fałszywy alarm (proponowany) | znaczniki czasu świec (`"t":[1791763200,…]`) w danych wykresu — zamierzone dane rynkowe | `WARN` — P6 |
 | 10031 User Controllable HTML Element Attribute (Potential XSS) | Informational (Low) | `authenticated` | `/`, `/portfel`, `/portfel/import` | fałszywy alarm (proponowany) | Parametry `accountId`, `view`, `groupBy` (zwalidowane wartości) trafiają do atrybutów linków i pól. Sonda ręczna z `"><script>alert(1)</script>` i `"onmouseover=1`: brak odbicia w atrybutach HTML, wartość wyłącznie jako zakodowany ciąg JSON w danych RSC; React koduje atrybuty, CSP z nonce (§ 2.3, § 3.3) | `WARN` — P6 |
 
-Reguły z poziomem `FAIL` (26, lista w `apps/web/zap-baseline.conf`) — wszystkie `PASS`, m.in. CSP (10038, 10055), HSTS (10035), nosniff (10021), clickjacking (10020), Permissions-Policy (10063), izolacja (90004), ciasteczka (10010, 10011, 10054, 90033), nagłówki `Server`/`X-Powered-By` (10036, 10037), sekrety w URL (10024), skrypty z innych domen (10017, 10115), błędy aplikacji (10023, 90022).
+Reguły z poziomem `FAIL` (26 w dniu skanu; 27 od BL-613 z 10019, lista w `apps/web/zap-baseline.conf`) — wszystkie `PASS`, m.in. CSP (10038, 10055), HSTS (10035), nosniff (10021), clickjacking (10020), Permissions-Policy (10063), izolacja (90004), ciasteczka (10010, 10011, 10054, 90033), nagłówki `Server`/`X-Powered-By` (10036, 10037), sekrety w URL (10024), skrypty z innych domen (10017, 10115), błędy aplikacji (10023, 90022).
 
 ## 4. Integracja z CI — decyzja z dowodami
 
@@ -82,3 +84,15 @@ Propozycje z 2026-11-08; żadna nie została wpisana do pliku reguł. Decyzje w�
 - Syntetyczne API zastępuje prawdziwe `api`: nagłówki i ciasteczka Better Auth (`__Host-`, `HttpOnly`, `Secure`, `SameSite`) sprawdzają testy API (O-01 w § 8), nie ten skan (R-56).
 - Pająk tradycyjny nie wykonuje JavaScriptu; żądania `fetch` po hydratacji (SSE, `/api/v1/*` z przeglądarki) nie są w zakresie.
 - Produkcja (TLS, HSTS na prawdziwej domenie, porty z zewnątrz) — BL-156.
+
+## 7. Ponowny skan po BL-613 (2026-11-11)
+
+| Pole | Wartość |
+|---|---|
+| Wykonał | Claude Code (gałąź `fix/bl-613-zap-proxy`, baza `origin/main` `233b129`), lokalnie `pnpm --filter @oliginvest/web exec node scripts/zap-baseline.mjs`, 37 s |
+| Zmiana | `apps/web/src/proxy.ts`: (1) każde przekierowanie z proxy ma `Content-Type: text/plain; charset=utf-8` — Next zapisuje względny `Location` jako treść przekierowania z proxy (`res.end(destination)` w `router-server`), więc treść jest tekstem, a nie brakuje jej typu; (2) zalogowany użytkownik na `/logowanie` dostaje 307 z proxy do `returnTo` zwalidowanego tym samym `safeReturnTo` (albo do bramki MFA/regulaminu z `returnTo`), a strona `/logowanie` już nie czyta sesji. Proxy używa istniejącego sprawdzenia ciasteczka sesji i jednego `GET /api/v1/me` tylko przy obecnym ciasteczku — bez dodatkowych wywołań; anonimowe wejście na `/logowanie` nie woła już API wcale. Niedostępne API na `/logowanie` → formularz (trasy prywatne nadal 503). Pierwsze ładowanie `/` i `/portfel` bez zmian (R-53) |
+| Reguły | 10019 `WARN` → `FAIL` w `apps/web/zap-baseline.conf` (decyzja P4) |
+| Wynik | 10019 i 10044 — `PASS` w obu przebiegach; 10109 zniknęła (dotyczyła treści `/logowanie` w przebiegu `authenticated`, który teraz dostaje przekierowanie). Pozostałe `WARN` bez zmian: 10202, 10015, 10049, 10111 (`public`), 10096, 10031 (`authenticated`) |
+| Dowody | `apps/web/test/proxy-redirects.test.mjs` (typ treści i nagłówki bezpieczeństwa przekierowań, 307 z proxy dla zalogowanego na `/logowanie`, bramki z `returnTo`, niezmieniona walidacja `returnTo`, formularz bez sesji lub przy 401/500); E2E `shell-auth.spec.ts` „proxy redirects are minimal plain-text 307s…” (treść odpowiedzi = `Location`, `Content-Type`, CSP) |
+
+**Ustalenie niezależne od BL-613 — `FAIL` 10010 Cookie No HttpOnly Flag (`authenticated`, `/`, `/portfel`).** Źródłem jest ciasteczko preferencji `oi-locale` (BL-211, PR #63), które `proxy.ts` ustawia bez `HttpOnly`, a `apps/web/src/appearance/settings.tsx` zapisuje przez `document.cookie`. Błąd występuje już na `main`: zadanie `dast` czerwone od scalenia BL-211 (`242bd22`) i na `233b129` (przebieg Web security 43013104332, 2026-11-11). Ciasteczko nie zawiera danych wrażliwych (`pl-PL`/`en-US`), ale reguła ma poziom `FAIL` i wyjątków skanera nie dodajemy (§ 5.1). Poprawka (`HttpOnly` i ustawianie wyłącznie przez serwer zamiast `document.cookie`) zmienia przepływ preferencji BL-211, więc wymaga decyzji właściciela co do zakresu — poza BL-613.
