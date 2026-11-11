@@ -1,12 +1,15 @@
-import { pwaMessages as t } from "@oliginvest/i18n";
+import { pwaMessages as defaultT } from "@oliginvest/i18n";
 import type { MetadataRoute } from "next";
-export default function manifest(): MetadataRoute.Manifest {
+import { getRequestLocalization } from "../appearance/localization";
+export default async function manifest(): Promise<MetadataRoute.Manifest> {
+  const localization = await getRequestLocalization();
+  const t = (localization.copies.pwaMessages as typeof defaultT | undefined) ?? defaultT;
   return {
     id: "/",
     name: "OligInvest",
     short_name: "OligInvest",
     description: t.description,
-    lang: "pl",
+    lang: localization.locale === "en-US" ? "en" : "pl",
     start_url: "/",
     scope: "/",
     display: "standalone",

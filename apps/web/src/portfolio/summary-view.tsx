@@ -1,9 +1,10 @@
-import { appMessages, portfolioMessages as m } from "@oliginvest/i18n";
+import { appMessages as defaultAppMessages, portfolioMessages as defaultM } from "@oliginvest/i18n";
 import { AllocationBar, Panel, StatTile } from "@oliginvest/ui";
+import { useCopy } from "@oliginvest/ui/localization";
 import type { DataTable } from "@oliginvest/ui/table";
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { Amount, Freshness, ratio, TaxDisclaimer } from "./presentation";
+import { Amount, Freshness, TaxDisclaimer, useRatio } from "./presentation";
 import type { Resource } from "./resources";
 
 const instrumentLink = (id: string, title: string) => (
@@ -30,10 +31,15 @@ export function SummaryView({
   unavailable?: boolean;
   exposure?: readonly { label: string; weight: number }[];
 }) {
+  const ratio = useRatio();
+
+  const appMessages = useCopy("appMessages", defaultAppMessages);
+  const m = useCopy("portfolioMessages", defaultM);
+
   return (
     <>
       {notice}
-      <TaxDisclaimer view={data.view} />
+      <TaxDisclaimer view={data.view} costBasisContext={data.costBasisContext} />
       {!data.isComplete && <p className="oi-partial">{m.partial}</p>}
       {data.exclusions.count > 0 && (
         <p>

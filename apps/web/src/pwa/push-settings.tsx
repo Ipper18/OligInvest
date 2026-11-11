@@ -1,10 +1,13 @@
 "use client";
-import { pwaMessages as t } from "@oliginvest/i18n";
+import { pwaMessages as defaultT } from "@oliginvest/i18n";
 import { Button } from "@oliginvest/ui";
+import { useCopy } from "@oliginvest/ui/localization";
 import { useEffect, useState } from "react";
 import { clearPrivateState } from "../auth/logout";
 
 export function PushSettings({ publicKey }: { publicKey: string | null }) {
+  const t = useCopy("pwaMessages", defaultT);
+
   const [available, setAvailable] = useState(false),
     [install, setInstall] = useState(false),
     [active, setActive] = useState(false),

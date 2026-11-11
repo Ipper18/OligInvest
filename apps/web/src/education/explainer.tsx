@@ -1,11 +1,15 @@
 "use client";
+
 import { formatMessage } from "@oliginvest/i18n";
-import { educationMessages as m } from "@oliginvest/i18n/education";
+import { educationMessages as defaultM } from "@oliginvest/i18n/education";
 import { Explainer as InfoPopover } from "@oliginvest/ui";
+import { useCopy } from "@oliginvest/ui/localization";
 import { type ComponentType, useState } from "react";
 import type { EducationEntry } from "./catalog";
 
 export function Explainer({ termKey, term }: { termKey: string; term: string }) {
+  const m = useCopy("educationMessages", defaultM);
+
   const [entry, setEntry] = useState<EducationEntry | null>(null);
   const [failed, setFailed] = useState(false);
   const [View, setView] = useState<ComponentType<{ entry: EducationEntry }> | null>(null);

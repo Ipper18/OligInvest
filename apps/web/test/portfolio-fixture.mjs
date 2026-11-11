@@ -38,7 +38,7 @@ const defaultMeta = {
 };
 const emptyPage = { hasMore: false };
 const users = new Map();
-export async function portfolioFixture(request, response, key) {
+export async function portfolioFixture(request, response, key, preferences = {}) {
   const url = new URL(request.url, "https://example.test"),
     path = url.pathname.replace("/api/v1", "");
   if (!path.startsWith("/portfolio/") && !path.startsWith("/market/")) return false;
@@ -92,7 +92,11 @@ export async function portfolioFixture(request, response, key) {
   if (request.method !== "GET") for await (const chunk of request) body += chunk;
   const data =
     body && !request.headers["content-type"]?.includes("multipart") ? JSON.parse(body) : {};
-  const view = url.searchParams.get("view") ?? "economic";
+  const view = url.searchParams.get("view") ?? preferences?.plView ?? "economic";
+  const costBasisContext = {
+    method: view === "economic" ? (preferences?.costBasisMethod ?? "fifo") : "fifo",
+    analytical: view === "economic" && preferences?.costBasisMethod === "average",
+  };
   const exclusions = fresh
     ? { count: 0, positions: [] }
     : { count: 1, positions: [{ accountId, instrumentId }] };
@@ -140,6 +144,7 @@ export async function portfolioFixture(request, response, key) {
       dayChange: fresh ? money("1.25") : null,
       dayChangeRatio: null,
       view,
+      costBasisContext,
       isComplete: fresh,
       exclusions,
       meta,
@@ -186,6 +191,7 @@ export async function portfolioFixture(request, response, key) {
         exclusions,
       },
       view,
+      costBasisContext,
       isComplete: fresh,
       meta,
     });
@@ -198,6 +204,7 @@ export async function portfolioFixture(request, response, key) {
   if (path === "/portfolio/realized")
     return send({
       view,
+      costBasisContext,
       groupBy: "month",
       rows: [],
       totals: { proceeds: money("0"), cost: money("0"), realizedPl: money("0") },

@@ -13,6 +13,7 @@ import { Queue } from "bullmq";
 import { sql } from "drizzle-orm";
 import { Redis } from "ioredis";
 import { enqueuePortfolioRecompute, notificationJobSchema } from "../modules.js";
+import { userLocale } from "../user-locale.js";
 import { Administration } from "./administration.js";
 import { AuditWriter } from "./audit.js";
 import { defaultPasswordChecks } from "./password.js";
@@ -78,6 +79,16 @@ export function createAuthRuntime(
     }
     return value;
   };
+  const mailLocale = async (email: string) => {
+    const user = await database.transaction(
+      async (tx) =>
+        (await tx.execute(sql`SELECT id::text FROM auth.users WHERE lower(email)=lower(${email})`))
+          .rows[0],
+    );
+    return user
+      ? (await userLocale(appDatabase, { userId: String(user.id), role: "user" })).locale
+      : "pl-PL";
+  };
   const service = new AuthService({
     database,
     appDatabase,
@@ -99,7 +110,11 @@ export function createAuthRuntime(
         );
         await queue("notify").add(
           "auth.password-reset",
-          authMailSchema.parse({ ...message, issuedAt: new Date().toISOString() }),
+          authMailSchema.parse({
+            ...message,
+            locale: await mailLocale(message.email),
+            issuedAt: new Date().toISOString(),
+          }),
           {
             attempts: 3,
             backoff: { type: "exponential", delay: 1000 },
@@ -232,7 +247,7 @@ export function createAuthRuntime(
       resetMail: async (message) => {
         await queue("notify").add(
           "auth.two-factor-reset",
-          twoFactorResetMailSchema.parse(message),
+          twoFactorResetMailSchema.parse({ ...message, locale: await mailLocale(message.email) }),
           {
             attempts: 3,
             backoff: { type: "exponential", delay: 1000 },

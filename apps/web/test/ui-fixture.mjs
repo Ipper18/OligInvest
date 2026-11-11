@@ -166,6 +166,7 @@ export async function uiFixture(request, response) {
       request,
       response,
       profile?.enrolled && profile.verified && !profile.required ? key : null,
+      profile,
     )
   )
     return true;
@@ -177,6 +178,8 @@ export async function uiFixture(request, response) {
       "Set-Cookie",
       `__Host-oliginvest.${name}=${value}; Secure; HttpOnly; SameSite=Lax; Path=/; Max-Age=${max}`,
     );
+  if (path === "/api/v1/me/preferences" && request.method === "GET" && profile)
+    return send(Object.fromEntries(Object.keys(preferences).map((k) => [k, profile[k]])));
   if (path === "/api/v1/me/preferences" && request.method === "PATCH" && profile) {
     Object.assign(profile, data);
     saved.set(key, profile);

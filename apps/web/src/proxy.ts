@@ -76,11 +76,22 @@ export async function proxy(request: NextRequest) {
             (me.features[`module.${module.id}`] === false ||
               !module.nav?.some((item) => me.permissions.includes(item.permission))))
         )
-          response = new NextResponse(appMessages.notFound, {
-            status: 404,
-            headers: { "Content-Type": "text/plain; charset=utf-8" },
-          });
+          response = new NextResponse(
+            me.preferences.locale === "en-US"
+              ? (await import("@oliginvest/i18n/en")).copies.appMessages.notFound
+              : appMessages.notFound,
+            {
+              status: 404,
+              headers: { "Content-Type": "text/plain; charset=utf-8" },
+            },
+          );
       }
+      if (me && request.cookies.get("oi-locale")?.value !== me.preferences.locale)
+        response.cookies.set("oi-locale", me.preferences.locale, {
+          secure: !development,
+          sameSite: "lax",
+          path: "/",
+        });
     }
   }
   response.headers.set("Content-Security-Policy", csp);

@@ -1,10 +1,14 @@
-import { marketMessages as m } from "@oliginvest/i18n";
+import { marketMessages as defaultM } from "@oliginvest/i18n";
+import { getLocalization } from "@oliginvest/ui/localization-server";
 import { requireMe } from "../../../auth/session";
 import { MarketNav } from "../../../market/navigation";
 import { MarketOverview } from "../../../market/overview";
 import { fetchResource } from "../../../portfolio/resources";
 
 export default async function Page() {
+  const m =
+    ((await getLocalization()).copies["marketMessages"] as typeof defaultM | undefined) ?? defaultM;
+
   const me = await requireMe();
   const [benchmarks, status] = await Promise.all([
     fetchResource("benchmarks"),

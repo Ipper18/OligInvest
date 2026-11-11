@@ -36,3 +36,9 @@ export const metricKeys = {
 export const headingKeys: Record<string, string> = Object.fromEntries(
   Object.entries(metricKeys).map(([key, value]) => [m[key as keyof typeof metricKeys], value]),
 );
+
+export function localizedHeadingKeys(copy: typeof m): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries(metricKeys).map(([key, value]) => [copy[key as keyof typeof metricKeys], value]),
+  );
+}

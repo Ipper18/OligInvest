@@ -27,6 +27,19 @@ test("all twelve disclaimers match the legal source verbatim, including their ve
   expect(disclaimers).toEqual(expected);
 });
 
+test("English disclaimers match the owner-review translation in LAW § 4.5, key by key and version", async () => {
+  const { copies } = await import("../dist/en.js");
+  const law = read("../../../docs/11-zgodnosc-prawna.md");
+  const section = law.split("### 4.5 ")[1].split("## 5.")[0];
+  const version = section.match(/wersja `([^`]+)`/)[1];
+  const expected = Object.fromEntries(
+    rows(section).map(([key, text]) => [key.replaceAll("`", ""), { version, text }]),
+  );
+  expect(Object.keys(expected)).toEqual(Object.keys(disclaimers));
+  expect(version).toBe(disclaimers.general.version);
+  expect(copies.disclaimers).toEqual(expected);
+});
+
 test("contract errors use the exact title and help text from the UI source", () => {
   const section = read("../../../docs/04-frontend/teksty-ui.md")
     .split("## 7. ")[1]

@@ -5,7 +5,11 @@ export * from "./realtime.js";
 export * from "./role-limits.js";
 export * from "./stress-scenarios.js";
 export const twoFactorResetMailSchema = z
-  .object({ email: z.email(), issuedAt: z.iso.datetime() })
+  .object({
+    email: z.email(),
+    issuedAt: z.iso.datetime(),
+    locale: z.enum(["pl-PL", "en-US"]).optional(),
+  })
   .strict();
 export const invitationMailSchema = z
   .object({
@@ -29,6 +33,7 @@ export const authMailSchema = z
       .max(256)
       .regex(/^[A-Za-z0-9_-]+$/u),
     issuedAt: z.iso.datetime(),
+    locale: z.enum(["pl-PL", "en-US"]).optional(),
   })
   .strict();
 export const authSecurityEventSchema = z
@@ -51,3 +56,5 @@ export const applicationErrorSchema = z
 
 export * from "./analytics-metadata.js";
 export * from "./analytics-view.js";
+
+export * from "./preferences.js";

@@ -1,4 +1,5 @@
 import {
+  type AverageCostView,
   convertMoney,
   Decimal,
   divideMoney,
@@ -21,6 +22,7 @@ import { parsePosition, positionsResponse } from "../contracts.js";
 
 export type ReadQuote = Quote & { meta: z.infer<typeof metaSchema> };
 export type ReadInput = {
+  average?: AverageCostView | undefined;
   accounts: Parameters<typeof valuePortfolio>[0]["accounts"];
   ledger: Ledger;
   quotes: ReadQuote[];
@@ -71,12 +73,20 @@ export function projectPortfolio(input: ReadInput) {
       const original = input.ledger.positions.find(
         (i) => i.accountId === p.accountId && i.instrumentId === p.instrumentId,
       )!;
-      const cost = input.view === "tax" ? original.taxCost : baseMoney(p.cost, fx, date);
+      const average = input.view === "economic" ? input.average : undefined;
+      const averagePosition = average?.positions.find(
+        (item) => item.accountId === p.accountId && item.instrumentId === p.instrumentId,
+      );
+      const cost =
+        input.view === "tax"
+          ? original.taxCost
+          : baseMoney(average ? (averagePosition?.cost ?? null) : p.cost, fx, date);
       const value = baseMoney(p.marketValue, fx, date);
       const pl = value && cost ? subtractMoney(value, cost) : null;
       if (!cost) exclusions.push({ accountId: p.accountId, instrumentId: p.instrumentId });
       const market = p.price ? grossValue(p.price, p.quantity) : null;
       const effects =
+        !average &&
         input.view === "economic" &&
         cost &&
         value &&
@@ -107,7 +117,7 @@ export function projectPortfolio(input: ReadInput) {
           marketValueBase: jsonMoney(value),
           unrealizedPl: jsonMoney(pl),
           unrealizedPlInstrumentCurrency: jsonMoney(
-            input.view === "economic" && market && original.costInstrument
+            !average && input.view === "economic" && market && original.costInstrument
               ? subtractMoney(market, original.costInstrument)
               : null,
           ),
@@ -200,6 +210,10 @@ export function projectPortfolio(input: ReadInput) {
         })
       : data;
   return positionsResponse.parse({
+    costBasisContext: {
+      method: input.view === "economic" && input.average ? "average" : "fifo",
+      analytical: input.view === "economic" && Boolean(input.average),
+    },
     data: combined,
     totals,
     view: input.view,

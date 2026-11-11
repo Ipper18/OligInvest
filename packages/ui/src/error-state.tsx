@@ -1,4 +1,5 @@
-import { appMessages as m } from "@oliginvest/i18n";
+import { appMessages as defaultM } from "@oliginvest/i18n";
+import { useCopy } from "@oliginvest/ui/localization";
 import type { ReactNode } from "react";
 export function ErrorState({
   title,
@@ -9,6 +10,8 @@ export function ErrorState({
   requestId?: string | undefined;
   action?: ReactNode;
 }) {
+  const m = useCopy("appMessages", defaultM);
+
   return (
     <div className="oi-panel oi-error-state" role="alert">
       <p>{title}</p>

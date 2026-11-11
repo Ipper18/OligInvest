@@ -40,6 +40,62 @@ export function assessLighthouse(runs, expectedUrl) {
 export const lighthouseExitCode = (results, enforce) =>
   enforce && results.some((row) => row.failed) ? 1 : 0;
 
+/** "a=1; b=2" → CDP cookie params for a secure origin (host-only, Path=/, as __Host- requires). */
+export function browserCookies(header, origin) {
+  return header
+    .split(";")
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .map((part) => {
+      const index = part.indexOf("=");
+      if (index < 1) throw failure("LH_COOKIE_INVALID");
+      return {
+        name: part.slice(0, index),
+        value: part.slice(index + 1),
+        url: `${origin}/`,
+        secure: true,
+        httpOnly: true,
+        sameSite: "Lax",
+      };
+    });
+}
+
+// The fixture session goes into the browser's cookie jar, like a real login. A CDP `Cookie`
+// extra header is replaced by Chrome as soon as the jar holds any cookie for the origin
+// (e.g. the non-sensitive `oi-locale` set by BL-211), which silently drops the session.
+// Lighthouse keeps cookies between runs, so each route starts from a cleared jar.
+async function applyRouteCookies(port, origin, header) {
+  const version = await (
+    await fetch(`http://127.0.0.1:${port}/json/version`, { signal: AbortSignal.timeout(5000) })
+  ).json();
+  const socket = new WebSocket(version.webSocketDebuggerUrl);
+  await new Promise((accept, reject) => {
+    socket.addEventListener("open", accept, { once: true });
+    socket.addEventListener("error", () => reject(failure("LH_CDP_UNAVAILABLE")), { once: true });
+  });
+  let id = 0;
+  const send = (method, params = {}) =>
+    new Promise((accept, reject) => {
+      const current = ++id;
+      const listener = (event) => {
+        const message = JSON.parse(String(event.data));
+        if (message.id !== current) return;
+        socket.removeEventListener("message", listener);
+        if (message.error) reject(failure("LH_CDP_COOKIE_FAILED"));
+        else accept(message.result);
+      };
+      socket.addEventListener("message", listener);
+      socket.send(JSON.stringify({ id: current, method, params }));
+    });
+  try {
+    await send("Storage.clearCookies");
+    const cookies = browserCookies(header, origin);
+    if (cookies.length) await send("Storage.setCookies", { cookies });
+  } finally {
+    socket.close();
+  }
+}
+
 export async function main() {
   const fullGate = process.argv.includes("--assert");
   const enforce = fullGate || process.argv.includes("--assert-available");
@@ -87,6 +143,7 @@ export async function main() {
       for (const route of routes) {
         const url = new URL(route, origin).href;
         await fetchChecked(url, { cookie: fixtureCookie(route) });
+        await applyRouteCookies(chrome.port, new URL(url).origin, fixtureCookie(route));
         const runs = [];
         for (let iteration = 0; iteration < 3; iteration++) {
           const result = await lighthouse(url, {
@@ -96,7 +153,6 @@ export async function main() {
             logLevel: "error",
             formFactor: "mobile",
             throttlingMethod: "simulate",
-            extraHeaders: fixtureCookie(route) ? { Cookie: fixtureCookie(route) } : {},
           });
           if (!result?.lhr) throw failure("LH_NO_REPORT");
           runs.push(result.lhr);

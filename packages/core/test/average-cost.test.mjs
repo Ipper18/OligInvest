@@ -62,6 +62,15 @@ const vectorA = [
 ];
 
 describe("weighted average cost as a view (§ 3.3) — vector A", () => {
+  test("FX margins follow the average pool rather than FIFO lots", () => {
+    const transactions = vectorA.map((tx, index) => ({
+      ...tx,
+      fxFee: money(["40", "10", "12"][index], "PLN"),
+    }));
+    const view = buildAverageCostView({ accounts, transactions });
+    expect(view.sales[0].fxCosts.amount.toFixed()).toBe("52");
+    expect(view.positions[0].fxFee.amount.toFixed()).toBe("10");
+  });
   test("average after purchases and realized P/L of the sale", () => {
     const view = buildAverageCostView({ accounts, transactions: vectorA });
     const [sale] = view.sales;

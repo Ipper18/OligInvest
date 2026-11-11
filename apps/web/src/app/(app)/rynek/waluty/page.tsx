@@ -1,10 +1,10 @@
 import {
-  formatDate,
-  formatQuantity,
-  marketMessages as m,
-  portfolioMessages as p,
+  createFormatters,
+  marketMessages as defaultM,
+  portfolioMessages as defaultP,
 } from "@oliginvest/i18n";
 import { DataFreshness } from "@oliginvest/ui";
+import { getLocalization } from "@oliginvest/ui/localization-server";
 import { DataTable } from "@oliginvest/ui/table";
 import { notFound } from "next/navigation";
 import { z } from "zod";
@@ -24,6 +24,14 @@ const filters = z
   .refine((v) => !v.from || !v.to || v.from <= v.to);
 
 export default async function Page({ searchParams }: { searchParams: SearchParams }) {
+  const { formatDate, formatQuantity } = createFormatters(await getLocalization());
+
+  const m =
+    ((await getLocalization()).copies["marketMessages"] as typeof defaultM | undefined) ?? defaultM;
+  const p =
+    ((await getLocalization()).copies["portfolioMessages"] as typeof defaultP | undefined) ??
+    defaultP;
+
   await requireMe();
   const parsed = filters.safeParse(
     Object.fromEntries(Object.entries(await searchParams).filter(([, value]) => value !== "")),

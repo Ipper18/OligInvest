@@ -33,6 +33,26 @@
     "./analytics": {
       "types": "./dist/analytics.d.ts",
       "import": "./dist/analytics.js"
+    },
+    "./en": {
+      "types": "./dist/en.d.ts",
+      "import": "./dist/en.js"
+    },
+    "./preferences": {
+      "types": "./dist/preferences.d.ts",
+      "import": "./dist/preferences.js"
+    },
+    "./education-content-en": {
+      "types": "./dist/education-content-en.d.ts",
+      "import": "./dist/education-content-en.js"
+    },
+    "./onboarding-en": {
+      "types": "./dist/onboarding-en.d.ts",
+      "import": "./dist/onboarding-en.js"
+    },
+    "./pwa-en": {
+      "types": "./dist/pwa-en.d.ts",
+      "import": "./dist/pwa-en.js"
     }
   },
   "dependencies": {

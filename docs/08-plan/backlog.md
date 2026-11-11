@@ -147,7 +147,7 @@ Brama A (**[A]**) — MVP właściciela; brama B (**[B]**) — funkcje wymagane 
 | BL-101 | **[A]** Better Auth: e-mail + hasło z Argon2id (`@node-rs/argon2`), pula `oliginvest_auth`, polityka haseł (12–128, lista 10k, słowa kontekstowe, HIBP), limity prób i opóźnienia per konto | FR-07.02, NFR-03.02 | AUTH, [ADR-004](../09-decyzje/ADR-004-postgres-better-auth-rls.md) | BL-007, BL-009, BL-031 | 3 | gotowe |
 | BL-102 | **[A]** Zaproszenia i rejestracja: `adminCreateInvitation`, `previewInvitation` (token we fragmencie), akceptacja regulaminu i informacji (`consent_events`), CLI pierwszego konta właściciela (`create-owner`) | FR-07.01, FR-07.12 | AUTH, RODO, API | BL-101 | 3 | gotowe |
 | BL-103 | **[A]** TOTP: 10 kodów zapasowych (`encrypted`), ochrona przed powtórzeniem kodu, blokada po 5 błędach, bramka MFA | FR-07.04 | AUTH | BL-101 | 3 | gotowe |
-| BL-104 | **[B]** Bramka regulaminu `TERMS_ACCEPTANCE_REQUIRED`, `/me/legal*`, zgoda na diagnostykę; `getLegalStatus` i `acceptLegalDocuments` z testami przeniesione do M1-4a (decyzja 2026-10-11), pozostały zakres w bramie B | FR-07.12 | RODO, API | BL-102 | 1,5 | todo |
+| BL-104 | **[B]** Bramka regulaminu `TERMS_ACCEPTANCE_REQUIRED`, `/me/legal*`, zgoda na diagnostykę; `getLegalStatus` i `acceptLegalDocuments` z testami przeniesione do M1-4a (decyzja 2026-10-11), pozostały zakres w bramie B | FR-07.12 | RODO, API | BL-102 | 1,5 | w toku — audyt BL-211 (2026-11-08): bramka i GET /me/legal + POST /me/legal/acceptances istnieją z testami; updateConsent nadal pending, brak wycofania zgody w UI; estymata bez zmian, nakład niezmierzony |
 | BL-105 | **[A]** Sesje: ciasteczka `__Host-` (albo O-01), 7/30 dni, rotacja, lista sesji i wylogowanie zdalne ≤ 60 s, `Clear-Site-Data` | FR-07.05, NFR-03.03 | AUTH | BL-103, BL-030 | 2 | gotowe |
 | BL-106 | **[A]** Step-up TOTP (15 min) dla operacji wrażliwych | FR-07.04 | AUTH | BL-103 | 1 | gotowe |
 | BL-107 | **[A]** Reset hasła (link 30 min we fragmencie, unieważnienie sesji); e-maile systemowe przez SMTP Brevo; SPF, DKIM, DMARC | FR-07.10, NFR-11.03 | AUTH, [ADR-010](../09-decyzje/ADR-010-kanaly-powiadomien.md) | BL-101 | 2 | w toku |
@@ -216,7 +216,7 @@ Brama A (**[A]**) — MVP właściciela; brama B (**[B]**) — funkcje wymagane 
 | BL-208 | Import mBank eMakler (historia transakcji i finansowa, Windows-1250, mapowanie po nazwie) | FR-03.02 | IMP | BL-145 | 3 | w toku — czeka na odbiór właściciela: realny eksport mBank i akceptacja 415/propagacji mapowania |
 | BL-209 | Pełna kontrola jakości danych: reguły BLOCK/WARN/INFO, `data_quality_issues`, oznaczenia w UI, blokada analiz | NFR-08.04, NFR-09.02 | OBL | BL-139 | 1,5 | w toku (Claude Code, `feat/m2-market-backend`, [PR #15](https://github.com/Ipper18/OligInvest/pull/15); backend — ekran `/rynek` i oznaczenia UI u Codex; nakład/odchylenie niezmierzone) |
 | BL-210 | Zapasowe adaptery USA: Finnhub, Twelve Data, Alpha Vantage — kwoty, testy kontraktowe na zapisanych odpowiedziach | NFR-02.04, NFR-09.02 | SRC, CACHE | BL-131 | 2 | todo |
-| BL-211 | Preferencje: metoda kosztu (FIFO/średnia), ustawienia widoku podatkowego (dzień przychodu, marża przewalutowania w koszcie — przelicza widok podatkowy), strefa czasowa, język; synchronizacja między urządzeniami | FR-07.08 | API | BL-113 | 1 | todo |
+| BL-211 | Preferencje: metoda kosztu (FIFO/średnia), ustawienia widoku podatkowego (dzień przychodu, marża przewalutowania w koszcie — przelicza widok podatkowy), strefa czasowa, język; synchronizacja między urządzeniami | FR-07.08 | API | BL-113 | 1 | w toku — draft [PR #63](https://github.com/Ipper18/OligInvest/pull/63) (Codex `1db8ef9` + Claude Code: lista zakazanych zwrotów EN, disclaimery EN do akceptacji właściciela, pomiar Lighthouse); lokalnie lint/unit/kontrakty/DB z RLS/e2e ×3/budżety/Lighthouse PASS — [raport](bl-211-session-report.md). Decyzja właściciela: pełne PL/EN w całej aplikacji; rozszerzenie względem estymaty 1 d, nakład/odchylenie niezmierzone. Czeka na CI i akceptację tłumaczeń EN |
 | BL-212 | Test opóźnienia SSE < 2 s p95 i wznowienia z `Last-Event-ID` | NFR-01.06 | RT, [ADR-007](../09-decyzje/ADR-007-sse-zamiast-websocket.md) | BL-125 | 1 | todo |
 | BL-213 | Raport kompletności EOD GPW (weryfikacja ADR-005 przez 20 sesji) | NFR-09.02 | [ADR-005](../09-decyzje/ADR-005-strategia-danych-rynkowych.md) | BL-133 | 0,5 | w toku (Claude Code, `feat/m2-market-backend`, [PR #15](https://github.com/Ipper18/OligInvest/pull/15); backend — ekran `/rynek` i oznaczenia UI u Codex; nakład/odchylenie niezmierzone) |
 | BL-214 | Ekran kursów walut `/rynek/waluty` z historią NBP | FR-01.14 | EKR | BL-132 | 1 | w toku — PR #17; implementacja i lokalne testy PASS; nakład niezmierzony |
@@ -341,7 +341,7 @@ Każde zadanie z analizą przyszłości kończy się przeglądem metodologicznym
 | ID | Zadanie | Wymagania | Dokumenty | Zależy od | d | Status |
 |---|---|---|---|---|---|---|
 | BL-601 | Przegląd tabeli ASVS z dowodami i protokołem w `docs/06-bezpieczenstwo/przeglady/` | NFR-03.01 | SEC | — | 3 | todo |
-| BL-602 | Pasywny skan DAST (ZAP baseline) na lokalnej instancji i poprawki | NFR-03.06, NFR-03.07 | SEC | — | 1,5 | todo |
+| BL-602 | Pasywny skan DAST (ZAP baseline) na lokalnej instancji i poprawki | NFR-03.06, NFR-03.07 | SEC | — | 1,5 | gotowe (PR #62, CI zielone 2026-11-08; zadanie CI `dast` 2 min 15 s, poprawka COEP, 0 × FAIL, `WARN` bez wyjątków — decyzje właściciela 2026-11-10; nakład ok. 1 sesji, niezmierzony; [protokół](../06-bezpieczenstwo/przeglady/2026-11-08-zap-baseline-bl-602.md), [stan](bl-602-session-report.md)) |
 | BL-603 | Trusted Types w trybie report-only i decyzja o włączeniu | NFR-03.06 | SEC | — | 1 | todo |
 | BL-604 | Ćwiczenie DR — scenariusz D na zastępczej VM, protokół z RPO i RTO | NFR-09.03 | DR | — | 1,5 | todo |
 | BL-605 | Ręczny audyt WCAG 2.1 AA (VoiceOver, TalkBack, NVDA) i poprawki | NFR-06.01, NFR-06.02 | A11Y | — | 3 | todo |
@@ -352,7 +352,9 @@ Każde zadanie z analizą przyszłości kończy się przeglądem metodologicznym
 | BL-610 | Ćwiczenie planu reagowania (scenariusze P1, P6, P13) | NFR-03.10 | IR | — | 0,5 | todo |
 | BL-611 | Aktualizacja dokumentacji użytkownika i administratora do stanu faktycznego | NFR-10.01 | USR, ADMIN | — | 1 | todo |
 | BL-612 | OpenSSF Scorecard (opcjonalnie) i poprawki praktyk repozytorium | NFR-03.09 | CI | — | 0,5 | todo |
-| | **Suma etapu** | | | | **17** | |
+| BL-613 | Poprawki z ZAP baseline w `apps/web/src/proxy.ts` (osobny PR po scaleniu BL-211, PR #63): `Content-Type` przekierowań bramki (10019) i przekierowanie zalogowanego z `/logowanie` (10044); potem 10019 → `FAIL` w `apps/web/zap-baseline.conf` (decyzja właściciela P4/P5, 2026-11-10) | NFR-03.06 | SEC | BL-602, BL-211 | 0,5 | todo |
+| BL-614 | Skan ZAP baseline prawdziwego `api` (nagłówki API, ciasteczka Better Auth, trasy `/api/auth/*`) na lokalnym stosie z bazą — zakres sesji (bez sesji albo rejestracja z TOTP) do ustalenia; decyzja właściciela P7, R-56 | NFR-03.06, NFR-03.07 | SEC, CI | BL-602 | 1 | todo |
+| | **Suma etapu** | | | | **18,5** | |
 
 ## 9. Później (P3 i propozycje)
 
@@ -381,8 +383,8 @@ Poza planem etapów; estymacja orientacyjna. Przed startem każde zadanie przech
 | M4 Alerty, PWA i Skróty | 16 | 30,5 | z BL-413 (redesign, 2026-10-29), BL-414 (historia wartości na Starcie, 2026-11-04), BL-415 i BL-416 (wynik przeglądu PR #53, 2026-11-05) |
 | M5a Admin, edukacja, rynek | 15 | 27 |  |
 | M5b Analizy zaawansowane, OAuth, offline | 17 | 39,5 |  |
-| M6 Hardening i dostępność | 12 | 17 |  |
-| **Razem M0–M6** | **178** | **336** | bez narzutu przeglądu (ok. +30 %) |
+| M6 Hardening i dostępność | 14 | 18,5 | z BL-613 i BL-614 (decyzje BL-602, 2026-11-10) |
+| **Razem M0–M6** | **180** | **337,5** |
 | Później | 8 | 18,5 | poza planem |
 
 **Pokrycie wymagań:** każde z 151 wymagań FR/NFR z [`../00-przeglad/wymagania.md`](../00-przeglad/wymagania.md) ma co najmniej jedno zadanie (sprawdzone skryptem 2026-09-19: brak wymagań bez zadania, brak zależności wstecz między etapami, M3 i M4 niezależne). Pełna macierz wymaganie → dokument → zadanie: [`../00-przeglad/macierz-pokrycia.md`](../00-przeglad/macierz-pokrycia.md).

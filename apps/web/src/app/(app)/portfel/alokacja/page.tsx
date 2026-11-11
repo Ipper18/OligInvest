@@ -1,9 +1,14 @@
-import { allocationMessages as m } from "@oliginvest/i18n/allocation";
+import { allocationMessages as defaultM } from "@oliginvest/i18n/allocation";
+import { getLocalization } from "@oliginvest/ui/localization-server";
 import { requireMe } from "../../../../auth/session";
 import { AllocationView, ClassificationFields } from "../../../../portfolio/allocation-view";
 import { PortfolioHeader } from "../../../../portfolio/page-header";
 
 export default async function Page() {
+  const m =
+    ((await getLocalization()).copies["allocationMessages"] as typeof defaultM | undefined) ??
+    defaultM;
+
   await requireMe();
   return (
     <section>

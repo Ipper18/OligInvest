@@ -226,7 +226,7 @@
 |---|---|---|---|---|
 | NFR-06.01 | WCAG 2.1 AA: kontrast, obsługa klawiatury, widoczny focus, etykiety, role ARIA, alternatywa tabelaryczna dla każdego wykresu, respektowanie `prefers-reduced-motion`. | P0 | axe (Playwright) bez naruszeń krytycznych; ręczny test VoiceOver przed wydaniem. | 5 (`04-frontend/dostepnosc.md`) |
 | NFR-06.02 | Zysk/strata komunikowane nie tylko kolorem (znak, ikona ▲▼, tekst); paleta przyjazna daltonistom do wyboru; tryb ciemny. | P0 | Test kontrastu tokenów; przegląd. | 5 (`system-projektowy.md`) |
-| NFR-06.03 | Prosty język w treściach edukacyjnych; liczby i daty formatowane wg locale pl-PL. | P1 | Przegląd treści. | 3.1.6 |
+| NFR-06.03 | Prosty język w treściach edukacyjnych; liczby i daty formatowane wg locale użytkownika (pl-PL/en-US; BL-211, decyzja właściciela 2026-11-08). | P1 | Przegląd treści. | 3.1.6 |
 
 ### NFR-07 Zgodność regulacyjna i przejrzystość (§6.4–6.5)
 
@@ -264,7 +264,7 @@
 | NFR-10.01 | Dokumentacja jako produkt: każdy dokument zaczyna się od celu, decyzje w ADR, dokumentacja aktualizowana przed kodem. | P0 | Przegląd PR. | 6.7 |
 | NFR-10.02 | Testy: jednostkowe (core), integracyjne API z prawdziwym Postgresem (RLS), kontraktowe (parsery, adaptery, OpenAPI), e2e Playwright dla ścieżek krytycznych. | P0 | Progi w CI. | 6.7 |
 | NFR-10.03 | Conventional Commits, zielone CI przed scaleniem, Definition of Done w `CONTRIBUTING.md`. | P0 | Ochrona gałęzi `main`. | 5 |
-| NFR-10.04 | UI po polsku, architektura gotowa na i18n (klucze komunikatów, formatowanie `Intl`). | P1 | Brak literałów tekstowych w komponentach (lint/test). | 5 |
+| NFR-10.04 | UI po polsku lub angielsku według preferencji użytkownika (klucze komunikatów, formatowanie `Intl`; BL-211, decyzja właściciela 2026-11-08). | P1 | Brak literałów tekstowych w komponentach (lint/test). | 5 |
 | NFR-10.05 | Minimalizm zależności: każda biblioteka uzasadniona w `stack-technologiczny.md` lub ADR; standard platformy ma pierwszeństwo. | P0 | Przegląd PR; polityka zależności. | 6.6 |
 
 ### NFR-11 Prywatność (RODO)

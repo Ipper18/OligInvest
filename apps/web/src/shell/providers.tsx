@@ -1,7 +1,7 @@
 "use client";
-
-import { appMessages } from "@oliginvest/i18n";
+import { appMessages as defaultAppMessages } from "@oliginvest/i18n";
 import { AppShell, LiveStatus } from "@oliginvest/ui";
+import { useCopy } from "@oliginvest/ui/localization";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { usePathname, useRouter } from "next/navigation";
 import { type ReactNode, useEffect, useRef, useState } from "react";
@@ -21,9 +21,6 @@ const statusKeys: Record<ConnectionStatus, true> = {
   paused: true,
   offline: true,
 };
-const connectionLabels = (Object.keys(statusKeys) as ConnectionStatus[]).map(
-  (status) => appMessages[status],
-);
 export const queryKey = (userId: string, ...parts: unknown[]) => [userId, ...parts];
 export function Providers({
   initialMe,
@@ -36,6 +33,11 @@ export function Providers({
   footer: ReactNode;
   navigation: ReactNode;
 }) {
+  const appMessages = useCopy("appMessages", defaultAppMessages);
+  const connectionLabels = (Object.keys(statusKeys) as ConnectionStatus[]).map(
+    (status) => appMessages[status],
+  );
+
   const [client] = useState(
     () =>
       new QueryClient({

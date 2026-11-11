@@ -1,19 +1,27 @@
-import { messages } from "@oliginvest/i18n";
-import type { Metadata, Viewport } from "next";
+import { messages as defaultMessages } from "@oliginvest/i18n";
+import { LocalizationProvider } from "@oliginvest/ui/localization-provider";
+import { getLocalization } from "@oliginvest/ui/localization-server";
+import type { Viewport } from "next";
 import { headers } from "next/headers";
 import type { ReactNode } from "react";
 import inline from "../appearance/inline-css.json";
+import { clientLocalization, getRequestLocalization } from "../appearance/localization";
 import { getTestPreferences } from "../appearance/preferences";
 import { getMe } from "../auth/session";
 
 export const dynamic = "force-dynamic";
-export const metadata: Metadata = {
-  title: messages.app.brand,
-  manifest: "/manifest.webmanifest",
-  icons: { apple: "/icons/icon-180.png" },
-  appleWebApp: { capable: true, title: messages.app.brand },
-  description: messages.bootstrap.description,
-};
+export async function generateMetadata() {
+  const messages =
+    ((await getLocalization()).copies["messages"] as typeof defaultMessages | undefined) ??
+    defaultMessages;
+  return {
+    title: messages.app.brand,
+    manifest: "/manifest.webmanifest",
+    icons: { apple: "/icons/icon-180.png" },
+    appleWebApp: { capable: true, title: messages.app.brand },
+    description: messages.bootstrap.description,
+  };
+}
 
 async function appearance() {
   const pathname = (await headers()).get("x-oi-pathname") ?? "";
@@ -46,12 +54,21 @@ export async function generateViewport(): Promise<Viewport> {
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
   const { theme, palette } = await appearance();
+  const localization = await getRequestLocalization();
   return (
-    <html lang="pl" data-theme={theme} data-palette={palette}>
+    <html
+      lang={localization.locale === "en-US" ? "en" : "pl"}
+      data-theme={theme}
+      data-palette={palette}
+    >
       <head>
         <style nonce={(await headers()).get("x-nonce") ?? undefined}>{inline.css}</style>
       </head>
-      <body className="min-h-dvh bg-bg font-sans text-ink">{children}</body>
+      <body className="min-h-dvh bg-bg font-sans text-ink">
+        <LocalizationProvider value={clientLocalization(localization)}>
+          {children}
+        </LocalizationProvider>
+      </body>
     </html>
   );
 }

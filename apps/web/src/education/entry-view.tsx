@@ -1,4 +1,5 @@
-import { educationMessages as m } from "@oliginvest/i18n/education";
+import { educationMessages as defaultM } from "@oliginvest/i18n/education";
+import { useCopy } from "@oliginvest/ui/localization";
 import Link from "next/link";
 import type { EducationEntry } from "./catalog";
 
@@ -10,6 +11,8 @@ const formulaLink = (entry: EducationEntry) => {
   return `https://github.com/Ipper18/OligInvest/blob/main/docs/03-dane/obliczenia-finansowe.md#L${line}`;
 };
 export function EntryView({ entry }: { entry: EducationEntry }) {
+  const m = useCopy("educationMessages", defaultM);
+
   return (
     <dl>
       <dt>{m.definition}</dt>

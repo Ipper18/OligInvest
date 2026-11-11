@@ -1,7 +1,13 @@
-import { appMessages, commonMessages } from "@oliginvest/i18n";
+import {
+  appMessages as defaultAppMessages,
+  commonMessages as defaultCommonMessages,
+} from "@oliginvest/i18n";
+import { useCopy } from "@oliginvest/ui/localization";
 import type { ReactNode } from "react";
 import { Disclaimer } from "./compliance.js";
 export function LegalFooter() {
+  const appMessages = useCopy("appMessages", defaultAppMessages);
+
   return (
     <footer className="oi-footer">
       <nav aria-label={appMessages.publicNavigation}>
@@ -22,6 +28,8 @@ export function ScreenState({ title, children }: { title: string; children?: Rea
   );
 }
 export function Skeleton() {
+  const appMessages = useCopy("appMessages", defaultAppMessages);
+
   return (
     <section aria-busy="true" aria-label={appMessages.loading} data-loading-fallback="">
       <div className="oi-kpis" aria-hidden="true">
@@ -44,6 +52,9 @@ export function AppShell({
   footer: ReactNode;
   children: ReactNode;
 }) {
+  const appMessages = useCopy("appMessages", defaultAppMessages);
+  const commonMessages = useCopy("commonMessages", defaultCommonMessages);
+
   return (
     <div className="oi-shell">
       <a href="#main" className="oi-skip">
@@ -64,6 +75,9 @@ export function AppShell({
   );
 }
 export function PublicShell({ children }: { children: ReactNode }) {
+  const appMessages = useCopy("appMessages", defaultAppMessages);
+  const commonMessages = useCopy("commonMessages", defaultCommonMessages);
+
   return (
     <div className="oi-public">
       <a href="#main" className="oi-skip">

@@ -180,5 +180,25 @@
     "belka_simplified": "Uproszczony podatek Belki",
     "none": "Brak",
     "monthly": "Co miesiąc"
+  },
+  "warningTemplates": {
+    "TRANSACTION_COSTS_NOT_MODELLED": "Roczny koszt {value}% (opłaty funduszy i przewalutowanie) odejmowany raz w roku; prowizje transakcyjne są poza modelem.",
+    "COSTS_NOT_MODELLED": "Roczny koszt ustawiono na 0 %: opłaty funduszy i przewalutowanie są pominięte, a prowizje transakcyjne są poza modelem; rzeczywiste wartości będą niższe.",
+    "CONCENTRATION_NOT_MODELLED": "Największa pozycja to {value}% portfela; proxy indeksowe nie oddają ryzyka pojedynczego instrumentu, więc rozrzut jest niedoszacowany.",
+    "SHORT_HISTORY": "Historia proxy obejmuje {value} miesięcy (< 20 lat); sprawdź tabelę wrażliwości.",
+    "RISK_FREE_MISSING": "Brak stopy referencyjnej NBP — gotówka bez oprocentowania (założenie).",
+    "SEQUENCE_RISK": "W {value}% scenariuszy wypłaty wyczerpały portfel przed końcem horyzontu (ryzyko sekwencji).",
+    "MODEL_PROBABILITY": "Prawdopodobieństwa dotyczą scenariuszy modelu opartego na historii proxy; nie są gwarancją. Sprawdź tabelę wrażliwości.",
+    "GOAL_OUT_OF_RANGE": "Dla części poziomów prawdopodobieństwa model nie wyznacza wpłaty w rozsądnym zakresie (brak wartości).",
+    "LINEAR_SINGLE_FACTOR": "Szoki hipotetyczne zakładają liniową zależność od jednego czynnika z ostatnich 60 miesięcy; w kryzysach bety i korelacje zwykle rosną.",
+    "NORMAL_TAILS": "Szok korelacji używa rozkładu normalnego dla jednego miesiąca; w kryzysach ogony są grubsze, więc rzeczywiste skrajne straty bywają większe.",
+    "LOW_FACTOR_FIT": "Czynnik wyjaśnia mniej niż 30 % zmienności portfela (R²); wynik szoku jednoczynnikowego mówi o portfelu niewiele.",
+    "HISTORICAL_PATH_NOT_WORST_CASE": "Scenariusz historyczny to jeden przebieg z przeszłości zastosowany do dzisiejszych pozycji, a nie najgorszy możliwy wynik; kolejny kryzys może przebiec inaczej.",
+    "PROXY_SUBSTITUTED": "Do {value}% wartości pozycji liczono na serii zastępczej (proxy indeksowe); proxy nie oddaje ryzyka pojedynczego instrumentu.",
+    "PARTIAL_COVERAGE": "Część pozycji nie ma danych w oknie scenariusza ani proxy; wynik dotyczy pozycji pokrytych i gotówki.",
+    "SCENARIO_REFUSED": "Pominięto {value} scenariusz(e): pokrycie wartości poniżej 80 % albo brak danych czynnika (pola bez wartości).",
+    "OWN_SERIES_QUALITY_HOLD": "Seria części instrumentów czeka na weryfikację jakości; użyto ich proxy.",
+    "CASH_ZERO_RETURN": "Gotówka w scenariuszach nie zmienia wartości (0 %, założenie).",
+    "ILLIQUID_SERIES": "Część instrumentów ma ponad 20 % sesji bez transakcji w oknie scenariusza; zamknięcia mogą być nieaktualne, a spadek zaniżony."
   }
 }

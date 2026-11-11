@@ -1,17 +1,7 @@
+import { preferencesPatchSchema, preferencesSchema } from "@oliginvest/contracts";
 import * as z from "zod";
-export const preferencesSchema = z
-  .object({
-    baseCurrency: z.literal("PLN"),
-    costBasisMethod: z.enum(["fifo", "average"]),
-    plView: z.enum(["economic", "tax"]),
-    taxDateBasis: z.enum(["settlement", "trade"]),
-    taxIncludeFxFee: z.boolean(),
-    timezone: z.string(),
-    locale: z.enum(["pl-PL", "en-US"]),
-    theme: z.enum(["dark", "light", "system"]),
-    plPalette: z.enum(["default", "colorblind"]),
-  })
-  .strict();
+
+export { preferencesSchema };
 export const meSchema = z
   .object({
     id: z.uuid(),
@@ -183,12 +173,7 @@ export const actionSchemas = {
   },
   preferences: {
     path: "/api/v1/me/preferences",
-    input: z
-      .object({
-        theme: z.enum(["dark", "light", "system"]),
-        plPalette: z.enum(["default", "colorblind"]),
-      })
-      .strict(),
+    input: preferencesPatchSchema,
     output: preferencesSchema,
   },
   stepUp: {

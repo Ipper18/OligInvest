@@ -155,6 +155,7 @@ export class AlertRepository {
         const payload = z
           .object({
             message: z.string(),
+            subject: z.string().optional(),
             channels: z.array(z.enum(["push", "email"])),
             enqueued: z.boolean(),
           })

@@ -1,11 +1,16 @@
-import { educationMessages as m } from "@oliginvest/i18n/education";
+import { educationMessages as defaultM } from "@oliginvest/i18n/education";
 import { Disclaimer } from "@oliginvest/ui";
+import { getLocalization } from "@oliginvest/ui/localization-server";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireMe } from "../../../../auth/session";
-import { entries, searchGlossary } from "../../../../education/catalog";
+import { entries, localizedEntries, searchGlossary } from "../../../../education/catalog";
 import type { SearchParams } from "../../../../portfolio/page";
 export default async function Page({ searchParams }: { searchParams: SearchParams }) {
+  const m =
+    ((await getLocalization()).copies["educationMessages"] as typeof defaultM | undefined) ??
+    defaultM;
+
   const me = await requireMe();
   if (
     !entries.length ||
@@ -15,7 +20,7 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
     notFound();
   const query = (await searchParams).q ?? "";
   if (typeof query !== "string" || query.length > 100) notFound();
-  const items = searchGlossary(query);
+  const items = searchGlossary(query, await localizedEntries(me.preferences.locale));
   return (
     <section>
       <h1>{m.glossary}</h1>

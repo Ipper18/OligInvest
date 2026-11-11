@@ -4,8 +4,12 @@ import { expect, test } from "vitest";
 import { Amount } from "../src/portfolio/presentation.tsx";
 
 test("unknown costs have a distinct label while missing valuations stay unavailable", () => {
-  expect(Amount({ value: null, unknownCost: true }).props.children).toBe("Koszt nieznany");
-  expect(Amount({ value: null }).props.children).not.toBe("Koszt nieznany");
+  expect(renderToStaticMarkup(createElement(Amount, { value: null, unknownCost: true }))).toContain(
+    "Koszt nieznany",
+  );
+  expect(renderToStaticMarkup(createElement(Amount, { value: null }))).not.toContain(
+    "Koszt nieznany",
+  );
 });
 
 test("zero stays neutral and changes include text, signs and arrows without money conversion", () => {

@@ -1,9 +1,10 @@
-import { allocationMessages as m } from "@oliginvest/i18n/allocation";
+import { allocationMessages as defaultM } from "@oliginvest/i18n/allocation";
 import { AllocationBar, AssumptionsBlock, Disclaimer } from "@oliginvest/ui";
+import { useCopy } from "@oliginvest/ui/localization";
 import { DataTable } from "@oliginvest/ui/table";
 import type { components, operations } from "../api/schema";
 import { Explainer } from "../education/explainer";
-import { Amount, Freshness, ratio } from "./presentation";
+import { Amount, Freshness, useRatio } from "./presentation";
 
 export type Allocation = components["schemas"]["Allocation"];
 export type InstrumentOverride = components["schemas"]["InstrumentOverride"];
@@ -11,6 +12,10 @@ export type AllocationBy = NonNullable<operations["getAllocation"]["parameters"]
 
 // Presentation only: the portfolio session will provide data and mutation handlers.
 export function AllocationView({ data }: { data: Allocation | null }) {
+  const ratio = useRatio();
+
+  const m = useCopy("allocationMessages", defaultM);
+
   return (
     <>
       <p>{m.basis}</p>
@@ -66,6 +71,8 @@ export function ClassificationFields({
   value?: InstrumentOverride;
   disabled?: boolean;
 }) {
+  const m = useCopy("allocationMessages", defaultM);
+
   return (
     <fieldset disabled={disabled}>
       <legend>{m.classification}</legend>

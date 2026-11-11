@@ -1,5 +1,5 @@
 import { createRoute, type OpenAPIHono, z } from "@hono/zod-openapi";
-import { formatMessage, quickMessages } from "@oliginvest/i18n";
+import { quickMessages as defaultQuickMessages, formatMessage } from "@oliginvest/i18n";
 import { type AppEnv, ProblemError } from "@oliginvest/platform";
 import { sql } from "drizzle-orm";
 import { PatService } from "./auth/pat-service.js";
@@ -13,6 +13,8 @@ import {
   readPortfolio,
 } from "./modules.js";
 import { conflictError, rateLimitedError } from "./rate-limited-response.js";
+
+import { userLocale } from "./user-locale.js";
 
 const format = z.enum(["json", "text"]).default("json");
 export function mountQuick(
@@ -115,6 +117,14 @@ export function mountQuick(
         c.header("Cache-Control", "no-store");
         c.header("Vary", "Authorization");
         const params = query.parse(c.req.query());
+        const localization =
+          params.format === "text"
+            ? await userLocale(service.options.appDatabase, context)
+            : undefined;
+        const quickMessages =
+          localization?.locale === "en-US"
+            ? (await import("@oliginvest/i18n/en")).copies.quickMessages
+            : defaultQuickMessages;
         if (name === "alerts") {
           const result = await service.options.appDatabase.transaction(context, async (tx) => {
             const count = (
@@ -177,7 +187,7 @@ export function mountQuick(
               )
             : await repository.snapshot(context, name);
         return params.format === "text"
-          ? c.text(quickText(name, result), 200)
+          ? c.text(quickText(name, result, { ...localization, messages: quickMessages }), 200)
           : c.json(result, 200);
       } catch (error) {
         if (error instanceof z.ZodError) throw new ProblemError("VALIDATION_FAILED");

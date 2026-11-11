@@ -10,6 +10,8 @@ Odczyt GitHub API z 2026-09-20: `main`, włączone secret scanning i push protec
 
 **Stan BL-017 (2026-09-30):** plik rulesetu obejmuje 17 rzeczywistych kontekstów: `repository`, `lint`, `typecheck`, `unit`, `contracts`, `db`, `modules`, `workers`, `web`, `e2e`, `deps-audit`, `build (all)` oraz `build (without analytics/alerts/education/admin/quick-actions)` (każdy osobno). `node scripts/check-ci.mjs` i testy w `modules` blokują duplikaty oraz różnice między YAML a JSON. Dowody rzeczywistych przebiegów w [raporcie M0-1](../08-plan/m0-1-session-report.md). Budżety i Lighthouse pozostają krokami `web`, typy klienta w `contracts`.
 
+**BL-602 (2026-11-08):** plik rulesetu ma nowy kontekst `dast` (pasywny ZAP baseline, osobne zadanie workflow Web security); razem z `images` i `infrastructure` to 20 kontekstów. Właściciel dodaje `dast` do wymaganych status checks po pierwszym zielonym przebiegu PR BL-602 — kroki z § 3 bez innych zmian.
+
 Plik rulesetu ma `enforcement: disabled` i pustą listę obejść. Import jest wyłącznie przygotowaniem; aktywacja następuje dopiero po wykonaniu punktów poniżej. Nie dodawaj właściciela do bypass i nie włączaj automatycznego scalania.
 
 ### Ograniczenie zatwierdzania własnego PR

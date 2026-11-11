@@ -1,0 +1,36 @@
+{
+  "title": "Allocation",
+  "classification": "Instrument classification",
+  "pending": "Allocation and classification saving will be available once the portfolio service is running.",
+  "by": "Breakdown by",
+  "group": "Group",
+  "value": "Value",
+  "weight": "Weight",
+  "total": "Total value",
+  "overridden": "Custom classification",
+  "catalog": "Catalog classification",
+  "save": "Save classification",
+  "restore": "Restore catalog classification",
+  "note": "Note",
+  "unchanged": "No override",
+  "basis": "Weights describe the current composition based on available valuations. They are neither a target allocation nor a transaction suggestion.",
+  "currencyHelp": "The listing currency comes from the catalog. Overriding the classification does not change the instrument currency.",
+  "groups": {
+    "asset_class": "Asset class",
+    "sector": "Sector",
+    "country": "Country",
+    "listing_market": "Listing market",
+    "currency": "Currency",
+    "instrument": "Instrument"
+  },
+  "classes": {
+    "equity": "Equities",
+    "bond": "Bonds",
+    "cash": "Cash",
+    "commodity": "Commodities",
+    "real_estate": "Real estate",
+    "crypto": "Cryptoassets",
+    "mixed": "Mixed",
+    "other": "Other"
+  }
+}

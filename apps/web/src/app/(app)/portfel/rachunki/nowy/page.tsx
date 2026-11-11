@@ -1,6 +1,12 @@
-import { portfolioMessages as m } from "@oliginvest/i18n";
+import { portfolioMessages as defaultM } from "@oliginvest/i18n";
+import { getLocalization } from "@oliginvest/ui/localization-server";
 import { formPage } from "../../../../../portfolio/form-page";
-export const metadata = { title: m.newAccount };
+export async function generateMetadata() {
+  const m =
+    ((await getLocalization()).copies["portfolioMessages"] as typeof defaultM | undefined) ??
+    defaultM;
+  return { title: m.newAccount };
+}
 export default function Page() {
   return formPage("account");
 }

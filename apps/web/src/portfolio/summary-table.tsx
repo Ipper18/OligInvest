@@ -1,8 +1,11 @@
-import { portfolioMessages as m } from "@oliginvest/i18n";
+import { portfolioMessages as defaultM } from "@oliginvest/i18n";
+import { useCopy } from "@oliginvest/ui/localization";
 import type { DataTable } from "@oliginvest/ui/table";
 import type { ComponentProps } from "react";
 // HTML fallback before the live screen hydrates; the client owns virtualization.
 export function SummaryTable({ caption, headings, rows }: ComponentProps<typeof DataTable>) {
+  const m = useCopy("portfolioMessages", defaultM);
+
   if (!rows.length) return <p>{m.empty}</p>;
   return (
     <section

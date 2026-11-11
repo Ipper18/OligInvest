@@ -32,7 +32,9 @@ export async function fetchChecked(url, { cookie = "", type = "text/html" } = {}
 }
 
 // Local rendering uses synthetic boundary fixtures, never an authentication bypass in web.
-export async function withPerformanceServer(run) {
+// `edge: false` (BL-602 DAST) skips the local TLS proxy and passes the raw upstream
+// origins, so a real Caddy edge can front them; Lighthouse keeps the default path.
+export async function withPerformanceServer(run, { edge = true } = {}) {
   if (process.env.BASE_URL) return run(new URL(process.env.BASE_URL).origin);
   const fixture = createServer(async (request, response) => {
     if (!(await uiFixture(request, response))) response.writeHead(404).end();
@@ -83,6 +85,7 @@ export async function withPerformanceServer(run) {
       }
     }
     if (!ready) throw new Error("next start timed out; inspect .git/bl016-next.log");
+    if (!edge) return await run({ web: origin, api: `http://127.0.0.1:${fixture.address().port}` });
     proxy = await startPerformanceProxy(origin, `http://127.0.0.1:${fixture.address().port}`);
     return await run(proxy.origin);
   } finally {

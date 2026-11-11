@@ -1,11 +1,10 @@
 "use client";
+
 import {
-  appMessages,
   type CurrencyCode,
-  formatDate,
-  formatQuantity,
-  portfolioMessages as m,
-  marketMessages,
+  appMessages as defaultAppMessages,
+  portfolioMessages as defaultM,
+  marketMessages as defaultMarketMessages,
 } from "@oliginvest/i18n";
 import {
   Button,
@@ -17,6 +16,7 @@ import {
   Sheet,
 } from "@oliginvest/ui";
 import { CandlestickChart } from "@oliginvest/ui/chart";
+import { useCopy, useFormatters } from "@oliginvest/ui/localization";
 import { DataTable } from "@oliginvest/ui/table";
 import { type ComponentType, useState } from "react";
 import { Explainer } from "../education/explainer";
@@ -36,6 +36,12 @@ export function InstrumentScreen({
   initialChart: Resource<"chart">;
   args: ReadArgs;
 }) {
+  const { formatDate, formatQuantity } = useFormatters();
+
+  const appMessages = useCopy("appMessages", defaultAppMessages);
+  const m = useCopy("portfolioMessages", defaultM);
+  const marketMessages = useCopy("marketMessages", defaultMarketMessages);
+
   const instrument = useResource(userId, "instrument", { id: initial.id }, initial);
   const chart = useResource(userId, "chart", args, initialChart);
   const [table, setTable] = useState(false);

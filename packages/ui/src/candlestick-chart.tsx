@@ -1,5 +1,7 @@
 "use client";
-import { formatDate, formatQuantity, portfolioMessages as m } from "@oliginvest/i18n";
+
+import { portfolioMessages as defaultM } from "@oliginvest/i18n";
+import { useCopy, useFormatters, useLocalization } from "@oliginvest/ui/localization";
 import type { IChartApi, UTCTimestamp } from "lightweight-charts";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "./native-controls.js";
@@ -27,6 +29,11 @@ export function CandlestickChart({
   series: CandleSeries;
   indicators?: ChartIndicators | null;
 }) {
+  const { locale } = useLocalization();
+  const { formatDate, formatQuantity } = useFormatters();
+
+  const m = useCopy("portfolioMessages", defaultM);
+
   const host = useRef<HTMLDivElement>(null),
     chart = useRef<IChartApi | null>(null);
   const [selected, setSelected] = useState(0),
@@ -49,7 +56,7 @@ export function CandlestickChart({
               attributionLogo: true,
             },
             timeScale: { timeVisible: false },
-            localization: { locale: "pl-PL" },
+            localization: { locale },
           });
           chart.current = instance;
           const candles = instance.addSeries(CandlestickSeries);
@@ -157,7 +164,7 @@ export function CandlestickChart({
       observer.disconnect();
       cleanup();
     };
-  }, [series, indicators]);
+  }, [series, indicators, locale]);
   function zoom(factor: number) {
     const scale = chart.current?.timeScale(),
       range = scale?.getVisibleLogicalRange();

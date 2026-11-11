@@ -81,6 +81,22 @@ class HostConfigTests(unittest.TestCase):
         self.assertIn("fallback_policy reject", caddy)
         self.assertLess(caddy.index("proxy_protocol {"), caddy.index("\n   tls"))
 
+    def test_caddy_security_headers_match_production_and_scanned_edge(self):
+        # BL-602: the ZAP baseline scans Caddyfile.test, so its header block must equal production.
+        blocks = []
+        for filename in ("Caddyfile", "Caddyfile.test"):
+            caddy = (ROOT / "infra/caddy" / filename).read_text()
+            blocks.append(re.search(r"\n header \{\n(.*?)\n \}\n", caddy, re.S).group(1))
+        self.assertEqual(blocks[0], blocks[1])
+        for line in (
+            "Cross-Origin-Opener-Policy same-origin",
+            "Cross-Origin-Embedder-Policy require-corp",
+            "Cross-Origin-Resource-Policy same-origin",
+            "X-Frame-Options DENY",
+            "-Server",
+        ):
+            self.assertIn(f"  {line}", blocks[0].splitlines())
+
     def test_internal_monitoring_is_not_exposed_by_caddy(self):
         for filename in ("Caddyfile", "Caddyfile.test"):
             caddy = (ROOT / "infra/caddy" / filename).read_text()

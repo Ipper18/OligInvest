@@ -1,10 +1,13 @@
 "use client";
-import { analyticsMessages as m } from "@oliginvest/i18n/analytics";
+import { analyticsMessages as defaultM } from "@oliginvest/i18n/analytics";
+import { useCopy } from "@oliginvest/ui/localization";
 import type { PercentileSeries } from "@oliginvest/ui/percentile-chart";
 import { type ComponentType, useEffect, useRef, useState } from "react";
 import styles from "./screens.module.css";
 
 export function ChartLoader({ series }: { series: PercentileSeries }) {
+  const m = useCopy("analyticsMessages", defaultM);
+
   const host = useRef<HTMLDivElement>(null);
   const [Chart, setChart] = useState<ComponentType<{ series: PercentileSeries }> | null>(null);
   const [failed, setFailed] = useState(false);

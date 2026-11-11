@@ -1,5 +1,6 @@
 "use client";
-import { portfolioMessages as m } from "@oliginvest/i18n";
+import { portfolioMessages as defaultM } from "@oliginvest/i18n";
+import { useCopy } from "@oliginvest/ui/localization";
 import { type ComponentType, type ReactNode, useEffect, useState } from "react";
 export type TableProps = {
   caption: string;
@@ -8,6 +9,8 @@ export type TableProps = {
   rows: { id: string; cells: ReactNode[] }[];
 };
 export function DataTable(props: TableProps) {
+  const m = useCopy("portfolioMessages", defaultM);
+
   const [Virtual, setVirtual] = useState<ComponentType<TableProps> | null>(null);
   useEffect(() => {
     if (props.rows.length > 100)

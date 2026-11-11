@@ -29,3 +29,18 @@ test("portfolio amounts and arbitrary fields cannot enter the message", () => {
     alertMessage({ ...input, portfolioValue: "100000" }, "https://example.test", "UTC"),
   ).toThrow();
 });
+
+test("English alerts retain exact quote, source and recipient timezone", async () => {
+  const { copies } = await import("@oliginvest/i18n/en");
+  const text = alertMessage(
+    input,
+    "https://example.test",
+    "America/New_York",
+    "en-US",
+    copies.alertMessages,
+  );
+  expect(text).toContain("101.25 PLN");
+  expect(text).toContain("6:15");
+  expect(text).toContain("Yahoo");
+  expect(text).toContain("threshold");
+});

@@ -1,4 +1,10 @@
-import { appMessages, commonMessages, portfolioMessages } from "@oliginvest/i18n";
+import {
+  type commonMessages,
+  appMessages as defaultAppMessages,
+  commonMessages as defaultCommonMessages,
+  portfolioMessages as defaultPortfolioMessages,
+} from "@oliginvest/i18n";
+import { useCopy } from "@oliginvest/ui/localization";
 import type { Me } from "../api/validation";
 import { portfolioSections } from "../portfolio/sections";
 import { uiModules } from "../ui-registry";
@@ -9,6 +15,10 @@ type NavKey = keyof typeof commonMessages.nav & IconName;
 // Items always shown in the phone bottom bar; the rest go under "Więcej".
 const bottom = new Set<NavKey>(["start", "portfolio", "market", "alerts"]);
 export function ShellNavigation({ me }: { me: Me }) {
+  const appMessages = useCopy("appMessages", defaultAppMessages);
+  const commonMessages = useCopy("commonMessages", defaultCommonMessages);
+  const portfolioMessages = useCopy("portfolioMessages", defaultPortfolioMessages);
+
   const entries: { key: NavKey; href: string }[] = [
     { key: "start", href: "/" },
     ...uiModules.flatMap((module) =>

@@ -1,0 +1,56 @@
+{
+  "nav": {
+    "start": "Overview",
+    "portfolio": "Portfolio",
+    "market": "Market",
+    "alerts": "Alerts",
+    "more": "More",
+    "analytics": "Analysis",
+    "learn": "Learn",
+    "settings": "Settings",
+    "admin": "Administration"
+  },
+  "shell": {
+    "skipLink": "Skip to content",
+    "accounts": {
+      "all": "All accounts"
+    },
+    "search": {
+      "placeholder": "Search instruments — name, ticker, ISIN",
+      "hint": "Press slash to search"
+    },
+    "offline": "No connection. Showing the most recently saved data.",
+    "stale": "Data may be stale — last updated {time}."
+  },
+  "col": {
+    "instrument": "Instrument",
+    "quantity": "Quantity",
+    "price": "Price",
+    "value": "Value",
+    "share": "Weight",
+    "today": "Today",
+    "result": "P/L",
+    "account": "Account",
+    "date": "Date",
+    "type": "Type",
+    "fee": "Commission",
+    "currency": "Currency",
+    "note": "Note"
+  },
+  "action": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "retry": "Try again",
+    "addTransaction": "Add transaction",
+    "import": "Import file",
+    "commitImport": "Confirm import",
+    "discardImport": "Discard import",
+    "runAnalysis": "Run analysis",
+    "cancelAnalysis": "Cancel",
+    "showTable": "Show table",
+    "export": "Export",
+    "createAlert": "Create alert",
+    "revokeSession": "End session",
+    "deleteAccount": "Delete account"
+  }
+}

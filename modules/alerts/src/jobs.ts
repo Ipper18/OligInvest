@@ -1,6 +1,6 @@
 import { evaluatePriceAlert, toDecimal } from "@oliginvest/core";
 import type { AppDatabase } from "@oliginvest/db";
-import { alertMessages } from "@oliginvest/i18n";
+import { alertMessages as defaultAlertMessages } from "@oliginvest/i18n";
 import { sql } from "drizzle-orm";
 import { z } from "zod";
 import { alertJob, priceRuleInput, stateSchema } from "./contracts.js";
@@ -16,10 +16,15 @@ export async function evaluateAlerts(
   const job = alertJob.parse(input),
     context = { userId: job.userId, role: "user" as const };
   await database.transaction(context, async (tx) => {
-    const timezone = String(
-      (await tx.execute(sql`SELECT timezone FROM identity.user_preferences`)).rows[0]?.timezone ??
-        "Europe/Warsaw",
-    );
+    const preference = (
+      await tx.execute(sql`SELECT timezone,locale FROM identity.user_preferences`)
+    ).rows[0];
+    const timezone = String(preference?.timezone ?? "Europe/Warsaw");
+    const locale = preference?.locale === "en-US" ? "en-US" : "pl-PL";
+    const alertMessages =
+      locale === "en-US"
+        ? (await import("@oliginvest/i18n/en")).copies.alertMessages
+        : defaultAlertMessages;
     const rules = (
       await tx.execute(
         sql`SELECT * FROM alerts.alert_rules WHERE enabled AND type IN ('price_above','price_below','change_pct') ORDER BY id FOR UPDATE`,
@@ -117,10 +122,12 @@ export async function evaluateAlerts(
         },
         origin,
         timezone,
+        locale,
+        alertMessages,
       );
       const event = (
         await tx.execute(
-          sql`INSERT INTO alerts.alert_events(user_id,rule_id,triggered_at,value,threshold,data_as_of,data_source,payload)VALUES(${job.userId}::uuid,${dto.id}::uuid,${triggeredAt}::timestamptz,${result.value},${threshold},${asOf}::timestamptz,${observation.source},${JSON.stringify({ message, channels: rule.channels, enqueued: false })}::jsonb)RETURNING id::text`,
+          sql`INSERT INTO alerts.alert_events(user_id,rule_id,triggered_at,value,threshold,data_as_of,data_source,payload)VALUES(${job.userId}::uuid,${dto.id}::uuid,${triggeredAt}::timestamptz,${result.value},${threshold},${asOf}::timestamptz,${observation.source},${JSON.stringify({ message, subject: alertMessages.subject, channels: rule.channels, enqueued: false })}::jsonb)RETURNING id::text`,
         )
       ).rows[0]!;
       await tx.execute(
@@ -151,6 +158,7 @@ export async function flushAlertEvents(
     const payload = z
         .object({
           message: z.string(),
+          subject: z.string().optional(),
           channels: z.array(z.enum(["push", "email"])),
           enqueued: z.boolean(),
         })
@@ -163,7 +171,7 @@ export async function flushAlertEvents(
       kind: "alert",
       sourceRef: `alert:${row.rule_id}:${row.id}`,
       channels: payload.channels,
-      subject: alertMessages.subject,
+      subject: payload.subject ?? defaultAlertMessages.subject,
       text: payload.message,
       occurredAt: at,
       url: row.instrument_id ? `/rynek/${z.uuid().parse(row.instrument_id)}` : "/",

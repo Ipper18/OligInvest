@@ -1,4 +1,4 @@
-import { onboardingMessages as m } from "@oliginvest/i18n/onboarding";
+import { onboardingMessages as defaultM } from "@oliginvest/i18n/onboarding";
 import { onboardingAction } from "./onboarding-action";
 
 let starting = false;
@@ -8,6 +8,10 @@ export async function startOnboarding(
   focusTarget?: HTMLElement,
 ) {
   if (starting) return () => {};
+  const m =
+    document.documentElement.lang === "en"
+      ? (await import("@oliginvest/i18n/onboarding-en")).onboardingMessages
+      : defaultM;
   starting = true;
   try {
     const state = await onboardingAction(restart ? { action: "restart" } : undefined);

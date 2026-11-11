@@ -1,6 +1,6 @@
 "use client";
-
-import { appMessages } from "@oliginvest/i18n";
+import { appMessages as defaultAppMessages } from "@oliginvest/i18n";
+import { useCopy } from "@oliginvest/ui/localization";
 import { type ReactNode, useId, useRef } from "react";
 import { Button } from "./native-controls.js";
 
@@ -83,6 +83,8 @@ export function Explainer({
   onOpen?: () => void;
   children: ReactNode;
 }) {
+  const appMessages = useCopy("appMessages", defaultAppMessages);
+
   const id = useId();
   return (
     <span className="oi-popover-root oi-explainer">
