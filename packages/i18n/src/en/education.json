@@ -1,0 +1,17 @@
+{
+  "title": "Learn",
+  "glossary": "Glossary",
+  "search": "Search a term or synonym",
+  "submit": "Search",
+  "empty": "No matching terms",
+  "explain": "What {term} means",
+  "definition": "Definition",
+  "reading": "How to read it",
+  "pitfalls": "Pitfalls",
+  "glossaryLink": "Glossary entry",
+  "formula": "Calculation definition",
+  "appLink": "View in the app",
+  "loading": "Loading explanation",
+  "unavailable": "Explanation unavailable",
+  "retry": "Try again"
+}

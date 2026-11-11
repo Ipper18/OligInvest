@@ -1,6 +1,12 @@
 "use client";
-import { errorMessages, portfolioMessages as m, type ProblemCode } from "@oliginvest/i18n";
+import {
+  errorMessages as defaultErrorMessages,
+  portfolioMessages as defaultM,
+  type portfolioMessages as m,
+  type ProblemCode,
+} from "@oliginvest/i18n";
 import { Button, SelectField, TextField } from "@oliginvest/ui";
+import { useCopy } from "@oliginvest/ui/localization";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useEffect, useRef, useState } from "react";
@@ -11,6 +17,9 @@ import type { Resource } from "./resources";
 
 type Failure = { code: string; requestId: string; fields?: string[] };
 export function FormError({ error }: { error: Failure | null }) {
+  const errorMessages = useCopy("errorMessages", defaultErrorMessages);
+  const m = useCopy("portfolioMessages", defaultM);
+
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (error) ref.current?.focus();
@@ -41,6 +50,8 @@ export function InstrumentPicker({
   initialId?: string;
   onSelect?: (id: string) => void;
 }) {
+  const m = useCopy("portfolioMessages", defaultM);
+
   const [id, setId] = useState(initialId),
     [query, setQuery] = useState(""),
     [items, setItems] = useState<Resource<"search">["data"]>([]),
@@ -101,6 +112,8 @@ function TransactionField({
   initial: Resource<"transaction"> | undefined;
   error: Failure | null;
 }) {
+  const m = useCopy("portfolioMessages", defaultM);
+
   const value = initial?.[name as keyof typeof initial];
   const numeric = ![
     "note",
@@ -144,6 +157,8 @@ export function TransactionForm({
   accounts: Resource<"accounts">["data"];
   initial?: Resource<"transaction">;
 }) {
+  const m = useCopy("portfolioMessages", defaultM);
+
   const [type, setType] = useState<keyof typeof m.types>(initial?.type ?? "BUY");
   const [busy, setBusy] = useState(false),
     [error, setError] = useState<Failure | null>(null),
@@ -352,6 +367,8 @@ export function TransactionForm({
   );
 }
 export function AccountForm({ initial }: { initial?: Resource<"account"> }) {
+  const m = useCopy("portfolioMessages", defaultM);
+
   const [busy, setBusy] = useState(false),
     [error, setError] = useState<Failure | null>(null),
     [deleting, setDeleting] = useState(false);

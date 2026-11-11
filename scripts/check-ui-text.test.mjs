@@ -102,6 +102,68 @@ test("only the documented disclaimer keys have a reasoned exception", (t) => {
   assert.deepEqual(checkUiText(root), []);
 });
 
+for (const [path, text] of [
+  ["packages/i18n/src/en/new.json", '{"message":"Buy"}'],
+  ["packages/i18n/src/en/new.json", '{"message":"The price will reach 120"}'],
+  ["packages/i18n/src/en/new.json", '{"nested":{"message":"We recommend a guaranteed return"}}'],
+  ["packages/i18n/src/en/disclaimers.json", '{"unexpected":{"text":"Sell"}}'],
+  [
+    "packages/i18n/src/en/education-content.json",
+    '[{"key":"akcja","definition":"Profit is guaranteed"}]',
+  ],
+  ["packages/i18n/src/en/new.json", '{"message":"Kup"}'],
+])
+  test(`scans English dictionary ${path}: ${text}`, (t) =>
+    assert.match(checkUiText(fixture(t, path, text)).join("\n"), /forbidden-phrase/));
+
+test("English exceptions cover only listed disclaimers and glossary pitfalls by entry key", (t) => {
+  assert.deepEqual(
+    checkUiText(
+      fixture(
+        t,
+        "packages/i18n/src/en/disclaimers.json",
+        '{"general":{"text":"No recommendation"}}',
+      ),
+    ),
+    [],
+  );
+  assert.deepEqual(
+    checkUiText(
+      fixture(
+        t,
+        "packages/i18n/src/en/education-content.json",
+        '[{"key":"bb","pitfalls":"Not a guaranteed range"}]',
+      ),
+    ),
+    [],
+  );
+  // The same text at another glossary entry is not covered by an exception.
+  assert.match(
+    checkUiText(
+      fixture(
+        t,
+        "packages/i18n/src/en/education-content.json",
+        '[{"key":"other","pitfalls":"Not a guaranteed range"}]',
+      ),
+    ).join("\n"),
+    /forbidden-phrase: guaranteed/,
+  );
+});
+
+test("the English list does not apply to Polish dictionaries or technical code literals", (t) => {
+  assert.deepEqual(checkUiText(fixture(t, "packages/i18n/src/pl/new.json", '{"code":"hold"}')), []);
+  assert.deepEqual(
+    checkUiText(
+      fixture(
+        t,
+        "modules/portfolio/src/side.ts",
+        'export const side = (type: string) => (type === "buy" ? 1 : -1);',
+      ),
+    ),
+    [],
+  );
+});
+
 test("nested conditional JSX keeps technical attributes distinct from text", (t) => {
   const root = fixture(
     t,

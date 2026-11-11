@@ -1,0 +1,50 @@
+{
+  "general": {
+    "version": "2026-09",
+    "text": "OligInvest is for analysis and learning. It does not provide investment advice or make investment recommendations. You make investment decisions independently and at your own risk."
+  },
+  "analysis": {
+    "version": "2026-09",
+    "text": "These are scenarios calculated from historical data and the assumptions adopted, not a forecast. Actual outcomes may fall outside the displayed range. Past performance does not guarantee future results."
+  },
+  "optimization": {
+    "version": "2026-09",
+    "text": "The weights are the output of a mathematical model sensitive to assumptions and estimation errors. They are not a recommendation to change your portfolio."
+  },
+  "rebalance": {
+    "version": "2026-09",
+    "text": "The list shows the transactions needed to reach the target allocation you set. It is not a recommendation to execute them; costs and tax are estimates."
+  },
+  "backtest": {
+    "version": "2026-09",
+    "text": "A backtest shows how a rule would have performed in the past under the assumed costs and simplifications. It does not predict the future. The more variants tested, the greater the risk that a good result is due to chance."
+  },
+  "screener": {
+    "version": "2026-09",
+    "text": "The list contains instruments matching your criteria. It is neither a ranking nor an encouragement to purchase."
+  },
+  "alerts": {
+    "version": "2026-09",
+    "text": "An alert reports that a condition you set has been met. It is not a signal to enter a transaction."
+  },
+  "tax_view": {
+    "version": "2026-09",
+    "text": "The tax view is informational and may differ from PIT-8C and your tax return. It is not tax advice."
+  },
+  "data_delay": {
+    "version": "2026-09",
+    "text": "Quotes are delayed (usually by about 15 minutes) or come from the session close. The data source and time are shown with each value."
+  },
+  "export": {
+    "version": "2026-09",
+    "text": "Data exported from OligInvest is for personal use; it includes data covered by provider licences — do not publish it. Analyses are not recommendations or advice."
+  },
+  "education": {
+    "version": "2026-09",
+    "text": "Educational materials are general and do not take your circumstances into account."
+  },
+  "demo": {
+    "version": "2026-09",
+    "text": "Demo mode: a fictional portfolio using historical data. Transactions do not affect your data."
+  }
+}

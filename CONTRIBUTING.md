@@ -50,7 +50,7 @@ Zadanie jest skończone, gdy spełnia **wszystkie** punkty (lista trafia do szab
 7. **Wydajność:** budżety tras dotrzymane; biblioteki wykresów, onboarding, panel admina i analizy tylko leniwie ([`docs/04-frontend/wydajnosc.md`](docs/04-frontend/wydajnosc.md)).
 8. **Dostępność:** obsługa klawiaturą, etykiety, kontrast, tabela zamiast wykresu, `prefers-reduced-motion`; zysk/strata nie tylko kolorem.
 9. **Zgodność:** ekrany analiz, screenera, alertów i eksportów przechodzą checklistę z [`docs/11-zgodnosc-prawna.md`](docs/11-zgodnosc-prawna.md) § 4.4; funkcje przewidujące lub backtestowe mają w PR przegląd metodologiczny według checklist z [`AGENTS.md`](AGENTS.md).
-10. **i18n:** brak literałów tekstowych w komponentach; formatowanie `Intl` pl-PL.
+10. **i18n:** brak literałów tekstowych w komponentach; formatowanie `Intl` według preferencji `pl-PL` / `en-US` i strefy użytkownika (BL-211).
 11. **Zależności:** każda nowa zależność uzasadniona w PR i wpisana do [`docs/01-architektura/stack-technologiczny.md`](docs/01-architektura/stack-technologiczny.md) (albo ADR); wersja przypięta w lockfile; licencja z listy dozwolonych.
 
 ## 4. Przegląd kodu

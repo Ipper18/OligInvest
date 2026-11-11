@@ -1,6 +1,7 @@
-import { formatDateTime, formatMessage } from "@oliginvest/i18n";
-import { analyticsMessages as m } from "@oliginvest/i18n/analytics";
+import { createFormatters, formatMessage } from "@oliginvest/i18n";
+import { analyticsMessages as defaultM } from "@oliginvest/i18n/analytics";
 import { AssumptionsBlock, Disclaimer, Panel } from "@oliginvest/ui";
+import { getLocalization } from "@oliginvest/ui/localization-server";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import * as z from "zod";
@@ -18,6 +19,12 @@ const types = {
   cel: "goal",
 } as const;
 export async function AnalyticsList({ searchParams }: { searchParams: Search }) {
+  const { formatDateTime } = createFormatters(await getLocalization());
+
+  const m =
+    ((await getLocalization()).copies["analyticsMessages"] as typeof defaultM | undefined) ??
+    defaultM;
+
   await requireAnalytics();
   const search = await searchParams;
   const cursor = z.string().max(512).optional().parse(search.cursor);
@@ -102,6 +109,10 @@ export async function AnalyticsList({ searchParams }: { searchParams: Search }) 
   );
 }
 export async function AnalyticsNew({ params }: { params: Promise<{ typ: string }> }) {
+  const m =
+    ((await getLocalization()).copies["analyticsMessages"] as typeof defaultM | undefined) ??
+    defaultM;
+
   const me = await requireAnalytics();
   const { typ } = await params;
   if (!(typ in types)) notFound();
@@ -232,6 +243,10 @@ export async function AnalyticsDetail({
   params: Promise<{ runId: string }>;
   searchParams: Search;
 }) {
+  const m =
+    ((await getLocalization()).copies["analyticsMessages"] as typeof defaultM | undefined) ??
+    defaultM;
+
   const me = await requireAnalytics();
   const run = await readRun((await params).runId);
   const search = await searchParams;

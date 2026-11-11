@@ -1,12 +1,16 @@
 "use client";
+
 import type { AnalyticsRunView } from "@oliginvest/contracts";
-import { analyticsMessages as m } from "@oliginvest/i18n/analytics";
+import { analyticsMessages as defaultM } from "@oliginvest/i18n/analytics";
+import { useCopy } from "@oliginvest/ui/localization";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { refreshRun } from "./actions";
 
 export function LiveRun({ initial, userId }: { initial: AnalyticsRunView; userId: string }) {
+  const m = useCopy("analyticsMessages", defaultM);
+
   const router = useRouter();
   const query = useQuery({
     queryKey: [userId, "analytics", initial.id],

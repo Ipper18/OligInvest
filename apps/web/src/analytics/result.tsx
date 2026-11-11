@@ -1,36 +1,42 @@
 import type { AnalyticsRunView } from "@oliginvest/contracts";
-import { formatDateTime, formatMoney, formatPercent } from "@oliginvest/i18n";
-import { analyticsMessages as m } from "@oliginvest/i18n/analytics";
+import { analyticsMessages as defaultM, localizeWarning } from "@oliginvest/i18n/analytics";
 import { AssumptionsBlock, DataFreshness, Disclaimer, Panel } from "@oliginvest/ui";
+import { useCopy, useFormatters } from "@oliginvest/ui/localization";
 import { DataTable } from "@oliginvest/ui/table";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { ChartLoader } from "./chart-loader";
 
-export const money = (value: number | string | null | undefined) =>
-  value == null ? m.noValue : formatMoney(String(value), "PLN");
-export const percent = (value: number | null | undefined) =>
-  value == null ? m.noValue : formatPercent(String(value));
 function pageRows<T>(rows: T[], page: number, size: number) {
   const offset = Math.min(page, Math.max(0, Math.ceil(rows.length / size) - 1)) * size;
   return rows.slice(offset, offset + size);
 }
-const label = (key: string) => (m.labels as Record<string, string>)[key] ?? key;
-const RATE_KEYS = new Set([
-  "annualCostRate",
-  "inflationRate",
-  "taxRate",
-  "cashShare",
-  "cashRateAnnual",
-]);
-function valueText(value: unknown, key: string): string {
-  if (value == null) return m.noValue;
-  if (typeof value === "boolean") return value ? m.yes : m.no;
-  if (typeof value === "number" && RATE_KEYS.has(key)) return percent(value);
-  if (typeof value === "string") return (m.values as Record<string, string>)[value] ?? value;
-  return typeof value === "object" ? JSON.stringify(value) : String(value);
+function useResultFormatters() {
+  const m = useCopy("analyticsMessages", defaultM);
+  const { formatMoney, formatPercent } = useFormatters();
+  const money = (value: number | string | null | undefined) =>
+    value == null ? m.noValue : formatMoney(String(value), "PLN");
+  const percent = (value: number | null | undefined) =>
+    value == null ? m.noValue : formatPercent(String(value));
+  const label = (key: string) => (m.labels as Record<string, string>)[key] ?? key;
+  const RATE_KEYS = new Set([
+    "annualCostRate",
+    "inflationRate",
+    "taxRate",
+    "cashShare",
+    "cashRateAnnual",
+  ]);
+  function valueText(value: unknown, key: string): string {
+    if (value == null) return m.noValue;
+    if (typeof value === "boolean") return value ? m.yes : m.no;
+    if (typeof value === "number" && RATE_KEYS.has(key)) return percent(value);
+    if (typeof value === "string") return (m.values as Record<string, string>)[value] ?? value;
+    return typeof value === "object" ? JSON.stringify(value) : String(value);
+  }
+  return { money, percent, label, valueText };
 }
 export function Values({ values }: { values: Record<string, unknown> }) {
+  const { label, valueText } = useResultFormatters();
   return (
     <dl>
       {Object.entries(values).map(([key, value]) => (
@@ -72,6 +78,11 @@ export function Result({
   sourcePage?: number;
   positionPage?: number;
 }) {
+  const { formatDateTime } = useFormatters();
+
+  const { money, percent } = useResultFormatters();
+  const m = useCopy("analyticsMessages", defaultM);
+
   const result = run.result;
   const mc = result?.kind === "monte_carlo" ? result : undefined;
   const fan = mc && real ? mc.real : mc?.nominal;
@@ -262,7 +273,7 @@ export function Result({
           <p key={`${warning.code}-${warning.message}`} data-warning-code={warning.code}>
             {warning.code === "CRISIS_TESTS_UNAVAILABLE" || warning.code === "CRISIS_TESTS_SEPARATE"
               ? m.crisis
-              : warning.message}
+              : localizeWarning(warning.code, warning.message, m.warningTemplates)}
           </p>
         ))}
         <AssumptionsBlock summary={m.assumptions}>

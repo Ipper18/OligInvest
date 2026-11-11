@@ -5,7 +5,8 @@ import {
   invitationMailSchema,
   twoFactorResetMailSchema,
 } from "@oliginvest/contracts";
-import { authMailMessages, formatMessage } from "@oliginvest/i18n";
+import { authMailMessages as defaultAuthMailMessages, formatMessage } from "@oliginvest/i18n";
+import { copies } from "@oliginvest/i18n/en";
 import nodemailer from "nodemailer";
 import { z } from "zod";
 
@@ -47,6 +48,8 @@ export function mailOptions(
 
 export function passwordResetMail(input: unknown, origin: string, from: string, now = Date.now()) {
   const data = authMailSchema.parse(input);
+  const authMailMessages =
+    data.locale === "en-US" ? copies.authMailMessages : defaultAuthMailMessages;
   const age = now - Date.parse(data.issuedAt);
   if (age < 0 || age >= 30 * 60_000) throw new Error("AUTH_MAIL_EXPIRED");
   const url = new URL("/reset-hasla/nowe", origin);
@@ -132,6 +135,8 @@ export function twoFactorResetMail(
   now = Date.now(),
 ) {
   const data = twoFactorResetMailSchema.parse(input);
+  const authMailMessages =
+    data.locale === "en-US" ? copies.authMailMessages : defaultAuthMailMessages;
   if (
     Date.parse(data.issuedAt) > now ||
     now - Date.parse(data.issuedAt) > 86400_000 ||
@@ -153,6 +158,7 @@ export function twoFactorResetMail(
 
 export function invitationMail(input: unknown, config: ServiceConfig<"jobs">, now = Date.now()) {
   const data = invitationMailSchema.parse(input);
+  const authMailMessages = defaultAuthMailMessages;
   if (Date.parse(data.expiresAt) <= now) throw new Error("AUTH_MAIL_EXPIRED");
   if (!config.SMTP_FROM || !config.LEGAL_CONTROLLER_NAME)
     throw new Error("INVITATION_MAIL_NOT_CONFIGURED");

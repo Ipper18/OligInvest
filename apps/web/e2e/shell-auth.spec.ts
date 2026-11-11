@@ -81,6 +81,73 @@ test("preferences persist without document reload and system follows OS", async 
   await page.emulateMedia({ colorScheme: "light" });
   await expect(page.locator("body")).toHaveCSS("background-color", "rgb(241, 240, 235)");
 });
+
+test("BL-211 persists analysis preferences, translates navigation and synchronizes devices", async ({
+  page,
+  context,
+  browser,
+}) => {
+  await session(context, "preferences-211");
+  await page.goto("/ustawienia");
+  await page.getByLabel("Metoda kosztu", { exact: true }).selectOption("average");
+  await page.getByLabel("Dzień przychodu i kosztu", { exact: true }).selectOption("trade");
+  await page.getByLabel("Wliczaj marżę przewalutowania do kosztu podatkowego").uncheck();
+  await page.getByLabel("Strefa czasowa", { exact: true }).fill("America/New_York");
+  await page.getByLabel("Język", { exact: true }).selectOption("en-US");
+  await page.getByRole("button", { name: "Zapisz", exact: true }).click();
+  await expect(page.locator("html")).toHaveAttribute("lang", "en");
+  await expect(page.getByRole("heading", { name: "Settings", exact: true })).toBeVisible();
+  await expect(page.getByLabel("Cost method", { exact: true })).toHaveValue("average");
+  await expect(page.getByLabel("Income and cost date", { exact: true })).toHaveValue("trade");
+  await expect(
+    page.getByLabel("Include the currency conversion margin in the tax cost"),
+  ).not.toBeChecked();
+  await expect(page.getByLabel("Time zone", { exact: true })).toHaveValue("America/New_York");
+  await expect(page.getByText("Live updates", { exact: true })).toBeVisible();
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  const second = await browser.newContext({
+    storageState: await context.storageState(),
+    ignoreHTTPSErrors: true,
+    baseURL: "https://127.0.0.1:3197",
+  });
+  try {
+    const other = await second.newPage();
+    await other.goto("/ustawienia");
+    await expect(other.getByLabel("Cost method", { exact: true })).toHaveValue("average");
+    await page.getByLabel("Theme", { exact: true }).selectOption("light");
+    await page.getByRole("button", { name: "Save", exact: true }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Preferences saved." })).toBeVisible();
+    await other.bringToFront();
+    await other.evaluate(() => window.dispatchEvent(new Event("focus")));
+    await expect(other.getByLabel("Theme", { exact: true })).toHaveValue("light");
+    await other.getByLabel("Time zone", { exact: true }).fill("Europe/London");
+    await other.evaluate(() => window.dispatchEvent(new Event("focus")));
+    await expect(other.getByLabel("Time zone", { exact: true })).toHaveValue("Europe/London");
+    await page.goto("/portfel");
+    await expect(
+      page.getByText("Analytical view — weighted average. This is not the tax view.", {
+        exact: true,
+      }),
+    ).toBeVisible();
+    await page.goto("/portfel?view=tax");
+    await expect(page.locator('[data-disclaimer-key="tax_view"]')).toBeVisible();
+    await expect(
+      page.getByText("Analytical view — weighted average. This is not the tax view.", {
+        exact: true,
+      }),
+    ).toHaveCount(0);
+    await page.getByRole("link", { name: "Learn", exact: true }).click();
+    await page.getByRole("link", { name: "Glossary", exact: true }).click();
+    await page.getByRole("link", { name: "Share", exact: true }).click();
+    await expect(
+      page.getByText("An ownership interest in an exchange-listed company.", { exact: true }),
+    ).toBeVisible();
+    await page.getByRole("link", { name: "Terms of use", exact: true }).click();
+    await expect(page.getByText("§ 2. Scope of services", { exact: true })).toBeVisible();
+  } finally {
+    await second.close();
+  }
+});
 test("password challenge gates data, bad TOTP focuses documented error, logout clears cookies", async ({
   page,
   context,

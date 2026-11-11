@@ -145,6 +145,8 @@ Pula średniej (per rachunek i instrument; decyzja właściciela 2026-09-24): za
 
 Średnia jest przeliczana po każdym zakupie; sprzedaż nie zmienia `c̄` pozostałych sztuk.
 
+BL-211: preferencja `costBasisMethod` wybiera koszt wyłącznie w widoku ekonomicznym. Wariant `average` jest oznaczony jako analityczny, nie podatkowy; widok podatkowy i partie pozostają FIFO. Pula kosztów przewalutowania jest rozdzielana proporcjonalnie do ilości na tych samych operacjach co pula kosztu. Rozbicie efektu ceny i waluty wymaga kosztu w walucie instrumentu; gdy średnia go nie wyznacza, składniki pozostają niedostępne (nie zastępujemy ich wartościami FIFO).
+
 ### 3.4 Split / scalenie
 
 Split zapisujemy jako **parę liczb całkowitych** `ratioFrom → ratioTo` (decyzja właściciela 2026-09-24, przegląd C-03; ułamek dziesiętny nie zapisze dokładnie scaleń 1:3, 1:7 itd.): split 4:1 → `1 → 4`, scalenie 1:10 → `10 → 1`, `k = ratioTo / ratioFrom`. Dla każdej otwartej partii `q_L ← q_L·ratioTo/ratioFrom`, `c_L ← c_L·ratioFrom/ratioTo`, `koszt_L` bez zmian, data nabycia bez zmian. Ułamek powstały przy scaleniu rozliczany gotówką (`cash_in_lieu`, pole `cashInLieu` operacji `SPLIT`) jak sprzedaż FIFO — w rdzeniu przed przeskalowaniem, w jednostkach sprzed scalenia, tak aby pozostałe całe akcje wyszły dokładnie (31 szt. przy 1:3: sprzedaż 1 szt., zostaje 10 szt.). Zmiana kolumn `schema.sql` (`transactions.split_ratio`, `corporate_actions.ratio`) — zadanie BL-144.

@@ -1,11 +1,16 @@
-import { educationMessages as m } from "@oliginvest/i18n/education";
+import { educationMessages as defaultM } from "@oliginvest/i18n/education";
 import { Disclaimer } from "@oliginvest/ui";
+import { getLocalization } from "@oliginvest/ui/localization-server";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireMe } from "../../../auth/session";
 import { entries } from "../../../education/catalog";
 import { OnboardingButton } from "../../../education/onboarding-button";
 export default async function Page() {
+  const m =
+    ((await getLocalization()).copies["educationMessages"] as typeof defaultM | undefined) ??
+    defaultM;
+
   const me = await requireMe();
   if (
     !entries.length ||

@@ -13,6 +13,7 @@ export interface AveragePosition {
   /** Null while the pool holds units without an acquisition cost (§ 3.5). */
   readonly cost: Money | null;
   readonly unitCost: Money | null;
+  readonly fxFee: Money;
 }
 
 export interface AverageSale {
@@ -26,6 +27,7 @@ export interface AverageSale {
   readonly proceeds: Money;
   readonly cost: Money | null;
   readonly realizedPl: Money | null;
+  readonly fxCosts: Money;
 }
 
 export interface AverageCostView {
@@ -39,6 +41,7 @@ interface Pool {
   currency: string;
   quantity: Decimal;
   cost: Decimal;
+  fxFee: Decimal;
   known: boolean;
 }
 
@@ -55,7 +58,14 @@ export function buildAverageCostView(input: LedgerInput): AverageCostView {
   const pools = new Map<string, Pool>();
   const moved = new Map<
     string,
-    { quantity: Decimal; cost: Decimal; known: boolean; currency: string; instrumentId: string }
+    {
+      quantity: Decimal;
+      cost: Decimal;
+      fxFee: Decimal;
+      known: boolean;
+      currency: string;
+      instrumentId: string;
+    }
   >();
   const sales: AverageSale[] = [];
   const outIds = new Set<string>();
@@ -76,6 +86,7 @@ export function buildAverageCostView(input: LedgerInput): AverageCostView {
         currency,
         quantity: new Decimal(0),
         cost: new Decimal(0),
+        fxFee: new Decimal(0),
         known: true,
       };
       pools.set(key, found);
@@ -83,7 +94,7 @@ export function buildAverageCostView(input: LedgerInput): AverageCostView {
     return found;
   };
 
-  const take = (p: Pool, units: Decimal, tx: Transaction): Decimal => {
+  const take = (p: Pool, units: Decimal, tx: Transaction) => {
     if (units.greaterThan(p.quantity)) {
       throw new CoreError("short_position", "Sale or transfer exceeds the quantity held", {
         transactionId: tx.id,
@@ -92,10 +103,12 @@ export function buildAverageCostView(input: LedgerInput): AverageCostView {
       });
     }
     const cost = units.equals(p.quantity) ? p.cost : p.cost.times(units).div(p.quantity);
+    const fxFee = units.equals(p.quantity) ? p.fxFee : p.fxFee.times(units).div(p.quantity);
+    p.fxFee = p.fxFee.minus(fxFee);
     p.quantity = p.quantity.minus(units);
     p.cost = p.cost.minus(cost);
     if (p.quantity.isZero()) p.known = true;
-    return cost;
+    return { cost, fxFee };
   };
 
   const currencyOf = (accountId: string) =>
@@ -107,13 +120,14 @@ export function buildAverageCostView(input: LedgerInput): AverageCostView {
         const p = pool(tx.accountId, tx.instrumentId, currencyOf(tx.accountId));
         p.quantity = p.quantity.plus(tx.quantity);
         p.cost = p.cost.plus(tx.amount.amount.negated()).minus(chargeSum(tx.id));
+        p.fxFee = p.fxFee.plus(tx.fxFee?.amount ?? 0);
         break;
       }
       case "SELL": {
         const p = pool(tx.accountId, tx.instrumentId, currencyOf(tx.accountId));
         const known = p.known;
         const unitCost = p.quantity.isZero() ? new Decimal(0) : p.cost.div(p.quantity);
-        const cost = take(p, tx.quantity, tx);
+        const { cost, fxFee } = take(p, tx.quantity, tx);
         const proceeds = money(tx.amount.amount.plus(chargeSum(tx.id)), p.currency);
         sales.push(
           Object.freeze({
@@ -126,6 +140,7 @@ export function buildAverageCostView(input: LedgerInput): AverageCostView {
             proceeds,
             cost: known ? money(cost, p.currency) : null,
             realizedPl: known ? money(proceeds.amount.minus(cost), p.currency) : null,
+            fxCosts: money(fxFee.plus(tx.fxFee?.amount ?? 0), p.currency),
           }),
         );
         break;
@@ -140,7 +155,7 @@ export function buildAverageCostView(input: LedgerInput): AverageCostView {
         if (tx.cashInLieu && fraction.isPositive() && !fraction.isZero()) {
           const known = p.known;
           const unitCost = p.cost.div(p.quantity);
-          const cost = take(p, fraction, tx);
+          const { cost, fxFee } = take(p, fraction, tx);
           sales.push(
             Object.freeze({
               transactionId: tx.id,
@@ -152,6 +167,7 @@ export function buildAverageCostView(input: LedgerInput): AverageCostView {
               proceeds: tx.cashInLieu,
               cost: known ? money(cost, p.currency) : null,
               realizedPl: known ? money(tx.cashInLieu.amount.minus(cost), p.currency) : null,
+              fxCosts: money(fxFee, p.currency),
             }),
           );
         }
@@ -164,7 +180,7 @@ export function buildAverageCostView(input: LedgerInput): AverageCostView {
         const record = {
           quantity: tx.quantity,
           known,
-          cost: take(p, tx.quantity, tx),
+          ...take(p, tx.quantity, tx),
           currency: p.currency,
           instrumentId: tx.instrumentId,
         };
@@ -204,6 +220,9 @@ export function buildAverageCostView(input: LedgerInput): AverageCostView {
           p.cost = p.cost.plus(
             rate ? record.cost.times(rate.rate) : converted ? record.cost : new Decimal(0),
           );
+          p.fxFee = p.fxFee.plus(
+            rate ? record.fxFee.times(rate.rate) : converted ? record.fxFee : new Decimal(0),
+          );
           p.known = p.known && record.known && converted;
         } else if (tx.acquisitionCost !== undefined) {
           p.cost = p.cost.plus(tx.acquisitionCost.amount);
@@ -232,6 +251,7 @@ export function buildAverageCostView(input: LedgerInput): AverageCostView {
         quantity: p.quantity as Quantity,
         cost: p.known ? money(p.cost, p.currency) : null,
         unitCost: p.known ? money(p.cost.div(p.quantity), p.currency) : null,
+        fxFee: money(p.fxFee, p.currency),
       }),
     );
   return Object.freeze({ positions: Object.freeze(positions), sales: Object.freeze(sales) });

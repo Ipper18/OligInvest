@@ -1,10 +1,5 @@
-import {
-  type CurrencyCode,
-  formatMessage,
-  formatMoney,
-  formatPercent,
-  appMessages as m,
-} from "@oliginvest/i18n";
+import { type CurrencyCode, appMessages as defaultM, formatMessage } from "@oliginvest/i18n";
+import { useCopy, useFormatters } from "@oliginvest/ui/localization";
 import type { ReactNode } from "react";
 
 type ValueProps = {
@@ -13,9 +8,15 @@ type ValueProps = {
   stale?: boolean | undefined;
 };
 export function MoneyValue({ value, currency = "PLN", stale }: ValueProps) {
+  const { formatMoney } = useFormatters();
+
   return <span className="num">{value == null || stale ? "—" : formatMoney(value, currency)}</span>;
 }
 export function ChangeValue({ value, currency, stale }: ValueProps) {
+  const { formatMoney, formatPercent } = useFormatters();
+
+  const m = useCopy("appMessages", defaultM);
+
   if (value == null || stale) return <span className="num oi-flat">—</span>;
   const nonzero = /[1-9]/.test(value);
   const negative = nonzero && value.startsWith("-");
@@ -67,6 +68,8 @@ export function StatTile({
   );
 }
 export function AllocationBar({ items }: { items: readonly { label: string; weight: number }[] }) {
+  const { formatPercent } = useFormatters();
+
   if (
     items.length > 8 ||
     items.some((item) => !Number.isFinite(item.weight) || item.weight < 0 || item.weight > 1)
@@ -115,6 +118,10 @@ export function RangeBar({
   currency: CurrencyCode;
   stale?: boolean | undefined;
 }) {
+  const { formatPercent } = useFormatters();
+
+  const m = useCopy("appMessages", defaultM);
+
   // Like canvas charts, numbers are used only for graphical coordinates. Money stays as strings.
   const min = Number(low),
     max = Number(high),

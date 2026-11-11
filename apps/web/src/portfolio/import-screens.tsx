@@ -1,6 +1,8 @@
 "use client";
-import { formatDateTime, formatQuantity, portfolioMessages as m } from "@oliginvest/i18n";
+
+import { portfolioMessages as defaultM, type portfolioMessages as m } from "@oliginvest/i18n";
 import { Button, Disclosure, SelectField, TextField } from "@oliginvest/ui";
+import { useCopy, useFormatters } from "@oliginvest/ui/localization";
 import { DataTable } from "@oliginvest/ui/table";
 import { useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
@@ -13,7 +15,7 @@ import { QueryNotice, useResource } from "./query";
 import type { ReadArgs, Resource } from "./resources";
 import { PageLinks } from "./screens";
 
-const statusLabel = (s: string) =>
+const statusLabel = (m: typeof defaultM, s: string) =>
   s === "failed" ? m.failedImport : (m[s as keyof typeof m] as string);
 export function ImportUpload({
   userId,
@@ -26,6 +28,10 @@ export function ImportUpload({
   initial: Resource<"imports">;
   mbank: boolean;
 }) {
+  const { formatDateTime } = useFormatters();
+
+  const m = useCopy("portfolioMessages", defaultM);
+
   const [busy, setBusy] = useState(false),
     [error, setError] = useState<{ code: string; requestId: string } | null>(null);
   const [source, setSource] = useState("xtb");
@@ -121,7 +127,7 @@ export function ImportUpload({
             <Link key="batch" href={`/portfel/import/${batch.id}`}>
               {batch.fileName}
             </Link>,
-            statusLabel(batch.status),
+            statusLabel(m, batch.status),
             formatDateTime(batch.createdAt),
           ],
         }))}
@@ -138,6 +144,8 @@ function RowEditor({
   row: Resource<"rows">["data"][number];
   run: (kind: "row", body: unknown, rowId: string) => Promise<void>;
 }) {
+  const m = useCopy("portfolioMessages", defaultM);
+
   const [action, setAction] = useState("map_instrument");
   return (
     <form
@@ -214,6 +222,10 @@ export function ImportPreview({
   initial: Resource<"import">;
   initialRows: Resource<"rows">;
 }) {
+  const { formatQuantity } = useFormatters();
+
+  const m = useCopy("portfolioMessages", defaultM);
+
   const query = useResource(userId, "import", { id: initial.id }, initial),
     rows = useResource(userId, "rows", args, initialRows);
   const batch = query.data,
@@ -283,7 +295,7 @@ export function ImportPreview({
         }}
       />
       <FormError error={error} />
-      <p role="status">{statusLabel(batch.status)}</p>
+      <p role="status">{statusLabel(m, batch.status)}</p>
       <p>{batch.fileName}</p>
       {batch.error && <p role="alert">{batch.error}</p>}
       <DataTable
@@ -291,7 +303,7 @@ export function ImportPreview({
         headings={[m.status, m.rowCount]}
         rows={Object.entries(counts).map(([status, count]) => ({
           id: status,
-          cells: [statusLabel(status), count],
+          cells: [statusLabel(m, status), count],
         }))}
       />
       <form method="get" className="oi-filters">
@@ -327,7 +339,7 @@ export function ImportPreview({
           id: r.id,
           cells: [
             r.rowNumber,
-            statusLabel(r.status),
+            statusLabel(m, r.status),
             r.statusReason ?? m.not_applicable,
             <Disclosure key="raw" summary={m.raw}>
               <dl>

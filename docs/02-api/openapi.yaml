@@ -4231,6 +4231,7 @@ components:
           type: boolean
         timezone:
           type: string
+          minLength: 1
           maxLength: 64
         locale:
           type: string
@@ -5327,6 +5328,14 @@ components:
       type: object
       required: [totalValue, marketValue, cash, unrealizedPl, dayChange, dayChangeRatio, view, isComplete, exclusions, meta]
       properties:
+        costBasisContext:
+          type: object
+          additionalProperties: false
+          required: [method, analytical]
+          properties:
+            method: {type: string, enum: [fifo, average]}
+            analytical: {type: boolean}
+          description: Metoda faktycznie użyta w wyniku; średnia wyłącznie jako widok analityczny, widok podatkowy zawsze FIFO.
         totalValue: {$ref: '#/components/schemas/Money'}
         marketValue: {$ref: '#/components/schemas/Money'}
         cash: {$ref: '#/components/schemas/Money'}
@@ -5407,6 +5416,14 @@ components:
       type: object
       required: [data, totals, view, isComplete, meta]
       properties:
+        costBasisContext:
+          type: object
+          additionalProperties: false
+          required: [method, analytical]
+          properties:
+            method: {type: string, enum: [fifo, average]}
+            analytical: {type: boolean}
+          description: Metoda faktycznie użyta w wyniku; średnia wyłącznie jako widok analityczny, widok podatkowy zawsze FIFO.
         isComplete: {type: boolean, description: "false — wycena częściowa; brak ceny lub FX nie usuwa pozycji."}
         data: {type: array, items: {$ref: '#/components/schemas/Position'}}
         totals:
@@ -5548,6 +5565,14 @@ components:
       type: object
       required: [view, groupBy, rows, totals, isComplete, exclusions]
       properties:
+        costBasisContext:
+          type: object
+          additionalProperties: false
+          required: [method, analytical]
+          properties:
+            method: {type: string, enum: [fifo, average]}
+            analytical: {type: boolean}
+          description: Metoda faktycznie użyta w wyniku; średnia wyłącznie jako widok analityczny, widok podatkowy zawsze FIFO.
         view: {type: string, enum: [economic, tax]}
         groupBy: {type: string}
         rows:
@@ -6960,6 +6985,13 @@ components:
         - type: object
           required: [totalValue, dayChange, dayChangeRatio, unrealizedPl, incomplete, reasons]
           properties:
+            costBasisContext:
+              type: object
+              additionalProperties: false
+              required: [method, analytical]
+              properties:
+                method: {type: string, enum: [fifo, average]}
+                analytical: {type: boolean}
             incomplete: {type: boolean}
             reasons: {type: array, items: {$ref: '#/components/schemas/QuickIncompleteReason'}}
             totalValue: {oneOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}]}

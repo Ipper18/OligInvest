@@ -1,0 +1,18 @@
+{
+  "incomplete": "Incomplete valuation: {reasons}",
+  "missing_fx_rate": "missing {pair} exchange rate",
+  "missing_price": "missing instrument price",
+  "missing_cost_basis": "missing acquisition cost",
+  "missing_day_baseline": "missing daily P/L baseline",
+  "freshness": "Data: {time}, delay {delay} min, source: {source}{stale}",
+  "stale": " (stale)",
+  "portfolio": "Portfolio: {value}\nToday: {change}",
+  "today": "Today: {change}",
+  "quote": "{ticker}: {price}",
+  "created": "Saved {side} transaction: {quantity} × {ticker} at {price} ({account})",
+  "alerts": "Active rules: {count}",
+  "accounts": "Choose an account: {names}",
+  "duplicate": "Possible duplicate transaction from the last 10 minutes.",
+  "currencyMismatch": "The account and transaction currencies must match; currency conversion requires the full form.",
+  "analytical": "Analytical view: weighted average cost. This is not a tax view; tax calculations retain FIFO."
+}

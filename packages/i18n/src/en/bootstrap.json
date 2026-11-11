@@ -1,0 +1,24 @@
+{
+  "title": "OligInvest — test page",
+  "description": "Application scaffold. Product features are not available yet.",
+  "appearance": "Appearance preview",
+  "themeLabel": "Theme",
+  "paletteLabel": "Palette",
+  "themes": {
+    "dark": "Dark",
+    "light": "Light",
+    "system": "System"
+  },
+  "palettes": {
+    "standard": "Standard",
+    "colorblind": "Color vision accessible"
+  },
+  "preferenceNotice": "This choice is stored only in this browser for the test page.",
+  "gainSample": "+ increase — color sample",
+  "lossSample": "− decrease — color sample",
+  "apiStatus": {
+    "ok": "API: process is running.",
+    "fail": "API: probe reports an error.",
+    "unavailable": "API: probe is unavailable."
+  }
+}

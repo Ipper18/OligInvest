@@ -3821,6 +3821,12 @@ export interface components {
             }[];
         };
         PortfolioSummary: {
+            /** @description Metoda faktycznie użyta w wyniku; średnia wyłącznie jako widok analityczny, widok podatkowy zawsze FIFO. */
+            costBasisContext?: {
+                /** @enum {string} */
+                method: "fifo" | "average";
+                analytical: boolean;
+            };
             totalValue: components["schemas"]["Money"];
             marketValue: components["schemas"]["Money"];
             cash: components["schemas"]["Money"];
@@ -3913,6 +3919,12 @@ export interface components {
             meta: components["schemas"]["DataMeta"];
         };
         PositionsResponse: {
+            /** @description Metoda faktycznie użyta w wyniku; średnia wyłącznie jako widok analityczny, widok podatkowy zawsze FIFO. */
+            costBasisContext?: {
+                /** @enum {string} */
+                method: "fifo" | "average";
+                analytical: boolean;
+            };
             /** @description false — wycena częściowa; brak ceny lub FX nie usuwa pozycji. */
             isComplete: boolean;
             data: components["schemas"]["Position"][];
@@ -4027,6 +4039,12 @@ export interface components {
             meta: components["schemas"]["DataMeta"];
         };
         RealizedPl: {
+            /** @description Metoda faktycznie użyta w wyniku; średnia wyłącznie jako widok analityczny, widok podatkowy zawsze FIFO. */
+            costBasisContext?: {
+                /** @enum {string} */
+                method: "fifo" | "average";
+                analytical: boolean;
+            };
             /** @enum {string} */
             view: "economic" | "tax";
             groupBy: string;
@@ -5184,6 +5202,11 @@ export interface components {
             instrumentId?: components["schemas"]["Uuid"];
         };
         QuickPortfolio: components["schemas"]["QuickFreshness"] & {
+            costBasisContext?: {
+                /** @enum {string} */
+                method: "fifo" | "average";
+                analytical: boolean;
+            };
             incomplete: boolean;
             reasons: components["schemas"]["QuickIncompleteReason"][];
             totalValue: components["schemas"]["Money"] | null;

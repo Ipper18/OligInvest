@@ -8,5 +8,7 @@
   "patNetworkSubject": "OligInvest — użycie tokenu z nowej sieci",
   "patNetworkBody": "Token {name} został użyty {time} z sieci {network}. Ustawienia tokenów: {url}",
   "patExpirySubject": "OligInvest — token wkrótce wygaśnie",
-  "patExpiryBody": "Token {name} wygaśnie {time}. Ustawienia tokenów: {url}"
+  "patExpiryBody": "Token {name} wygaśnie {time}. Ustawienia tokenów: {url}",
+  "manualSource": "GPW — import ręczny",
+  "computedSource": "dane obliczone"
 }

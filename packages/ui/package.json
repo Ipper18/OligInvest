@@ -27,6 +27,22 @@
     "./percentile-chart": {
       "types": "./dist/percentile-chart.d.ts",
       "import": "./dist/percentile-chart.js"
+    },
+    "./localization": {
+      "react-server": {
+        "types": "./dist/localization-server.d.ts",
+        "import": "./dist/localization-server.js"
+      },
+      "types": "./dist/localization.d.ts",
+      "import": "./dist/localization.js"
+    },
+    "./localization-server": {
+      "types": "./dist/localization-server.d.ts",
+      "import": "./dist/localization-server.js"
+    },
+    "./localization-provider": {
+      "types": "./dist/localization.d.ts",
+      "import": "./dist/localization.js"
     }
   },
   "dependencies": {

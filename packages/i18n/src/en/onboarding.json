@@ -1,0 +1,52 @@
+{
+  "title": "Onboarding",
+  "start": "Restart the guide",
+  "skip": "Skip",
+  "next": "Next",
+  "previous": "Back",
+  "done": "Finish",
+  "error": "Unable to save guide progress. You can restart it in Learn.",
+  "dismiss": "Dismiss message",
+  "steps": [
+    {
+      "key": "welcome",
+      "title": "Welcome to OligInvest",
+      "text": "Welcome to OligInvest. This one-minute guide shows where things are. You can skip it and return to it in Learn."
+    },
+    {
+      "key": "account",
+      "title": "Portfolio → Accounts",
+      "text": "Start with an account matching your broker account, such as “XTB — regular” or “XTB — IKE”."
+    },
+    {
+      "key": "import",
+      "title": "Portfolio → Import",
+      "text": "Import history from XTB or mBank. You will first see a preview and reconciliation against the broker balance — nothing is saved without your confirmation."
+    },
+    {
+      "key": "demo",
+      "title": "Learn → Demo",
+      "text": "No data yet? Demo mode shows a fictional portfolio you can explore."
+    },
+    {
+      "key": "value",
+      "title": "Portfolio value",
+      "text": "Value in PLN with the data time and source. “Delayed ~15 min” means quotes are not current."
+    },
+    {
+      "key": "day",
+      "title": "Daily P/L",
+      "text": "Change since the previous close, excluding today's deposits and withdrawals."
+    },
+    {
+      "key": "explainer",
+      "title": "Explanations beside numbers",
+      "text": "Each number has an explanation: what it measures, how to read it and what to watch for."
+    },
+    {
+      "key": "footer",
+      "title": "Information and education",
+      "text": "OligInvest helps you analyze and learn — it does not advise. You make your own decisions."
+    }
+  ]
+}

@@ -4,7 +4,12 @@ import { createServer } from "node:http";
 import test from "node:test";
 import { gzipSync } from "node:zlib";
 import { build } from "esbuild";
-import { assessLighthouse, diagnosticCode, lighthouseExitCode } from "./lighthouse-assert.mjs";
+import {
+  assessLighthouse,
+  browserCookies,
+  diagnosticCode,
+  lighthouseExitCode,
+} from "./lighthouse-assert.mjs";
 import { fetchChecked, webDirectory } from "./performance-server.mjs";
 import {
   assessRoute,
@@ -210,4 +215,32 @@ test("local TLS fixture trusts its own certificate without disabling certificate
     upstream.closeAllConnections();
     await new Promise((resolve) => upstream.close(resolve));
   }
+});
+
+test("Lighthouse fixture sessions become host-only secure jar cookies, never a header", () => {
+  assert.deepEqual(browserCookies("", "https://127.0.0.1:3000"), []);
+  assert.deepEqual(
+    browserCookies("__Host-oliginvest.session_token=fixture-perf; a=b=c", "https://127.0.0.1:3000"),
+    [
+      {
+        name: "__Host-oliginvest.session_token",
+        value: "fixture-perf",
+        url: "https://127.0.0.1:3000/",
+        secure: true,
+        httpOnly: true,
+        sameSite: "Lax",
+      },
+      {
+        name: "a",
+        value: "b=c",
+        url: "https://127.0.0.1:3000/",
+        secure: true,
+        httpOnly: true,
+        sameSite: "Lax",
+      },
+    ],
+  );
+  assert.throws(() => browserCookies("=x", "https://127.0.0.1:3000"), {
+    code: "LH_COOKIE_INVALID",
+  });
 });

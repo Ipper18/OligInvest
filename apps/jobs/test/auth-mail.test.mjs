@@ -132,3 +132,22 @@ test("nodemailer delivers a synthetic message over SMTP without external traffic
     await new Promise((resolve) => server.close(resolve));
   }
 });
+
+test("reset messages follow the persisted recipient language and retain token protection", () => {
+  const english = passwordResetMail(
+    { ...message, locale: "en-US" },
+    config.PUBLIC_BASE_URL,
+    config.SMTP_FROM,
+  );
+  expect(english.subject).toBe("OligInvest — password reset");
+  expect(english.text).toContain(`/reset-hasla/nowe#t=${message.token}`);
+  expect(
+    twoFactorResetMail(
+      { email: message.email, issuedAt: message.issuedAt, locale: "en-US" },
+      config,
+    ).subject,
+  ).toContain("administrator reset");
+  expect(() =>
+    passwordResetMail({ ...message, locale: "xx" }, config.PUBLIC_BASE_URL, config.SMTP_FROM),
+  ).toThrow();
+});

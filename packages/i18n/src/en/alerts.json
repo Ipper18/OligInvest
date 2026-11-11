@@ -1,0 +1,14 @@
+{
+  "subject": "OligInvest — price alert",
+  "priceAbove": "{ticker}: price {value} crossed above threshold {threshold}.",
+  "priceBelow": "{ticker}: price {value} fell below threshold {threshold}.",
+  "change": "{ticker}: daily change {value}; threshold {threshold}.",
+  "metadata": "Triggered: {triggeredAt}. Data: {dataAsOf}, delay {delayMinutes} min. Source: {source}. {url}",
+  "patAlreadyShown": "This token has already been shown — revoke it and create a new one",
+  "patNetworkSubject": "OligInvest — token used from a new network",
+  "patNetworkBody": "Token {name} was used at {time} from network {network}. Token settings: {url}",
+  "patExpirySubject": "OligInvest — token expires soon",
+  "patExpiryBody": "Token {name} expires at {time}. Token settings: {url}",
+  "manualSource": "GPW — manual import",
+  "computedSource": "computed data"
+}

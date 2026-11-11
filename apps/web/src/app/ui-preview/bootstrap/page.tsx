@@ -1,10 +1,15 @@
-import { messages } from "@oliginvest/i18n";
+import { messages as defaultMessages } from "@oliginvest/i18n";
+import { getLocalization } from "@oliginvest/ui/localization-server";
 import type * as React from "react";
 import { getHealthStatus } from "../../../api/server";
 import { getTestPreferences } from "../../../appearance/preferences";
 import { ThemeControls } from "../../../appearance/theme-controls";
 
 export default async function TestPage(): Promise<React.JSX.Element> {
+  const messages =
+    ((await getLocalization()).copies["messages"] as typeof defaultMessages | undefined) ??
+    defaultMessages;
+
   const status = await getHealthStatus();
   const { theme, palette } = await getTestPreferences();
   return (

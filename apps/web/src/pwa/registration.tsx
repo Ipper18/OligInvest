@@ -1,7 +1,10 @@
 "use client";
-import { pwaMessages } from "@oliginvest/i18n";
+import { pwaMessages as defaultPwaMessages } from "@oliginvest/i18n";
+import { useCopy } from "@oliginvest/ui/localization";
 import { useEffect, useState } from "react";
 export function PwaRegistration() {
+  const pwaMessages = useCopy("pwaMessages", defaultPwaMessages);
+
   const [waiting, setWaiting] = useState<ServiceWorker | null>(null);
   useEffect(() => {
     if (!("serviceWorker" in navigator)) return;
@@ -46,6 +49,12 @@ export function PwaRegistration() {
     navigator.serviceWorker.addEventListener("controllerchange", precache);
     document.addEventListener("visibilitychange", refresh);
     // Capture before register(): clients.claim() may supply a controller during first install.
+    const setLocale = () =>
+      navigator.serviceWorker.controller?.postMessage({
+        type: "SET_LOCALE",
+        locale: document.documentElement.lang === "en" ? "en-US" : "pl-PL",
+      });
+    navigator.serviceWorker.addEventListener("controllerchange", setLocale);
     const previousController = navigator.serviceWorker.controller;
     void navigator.serviceWorker
       .register("/sw.js", { scope: "/", updateViaCache: "none" })
@@ -56,6 +65,7 @@ export function PwaRegistration() {
         watch(previousController);
         update(previousController);
         precache();
+        setLocale();
       })
       .catch(() => {});
     return () => {
@@ -63,6 +73,7 @@ export function PwaRegistration() {
       registration?.removeEventListener("updatefound", found);
       for (const [worker, changed] of listeners) worker.removeEventListener("statechange", changed);
       navigator.serviceWorker.removeEventListener("controllerchange", precache);
+      navigator.serviceWorker.removeEventListener("controllerchange", setLocale);
       document.removeEventListener("visibilitychange", refresh);
     };
   }, []);

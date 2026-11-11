@@ -1,9 +1,10 @@
 import { createHash } from "node:crypto";
 import type { DatabaseContext } from "@oliginvest/db";
-import { alertMessages, formatMessage } from "@oliginvest/i18n";
+import { alertMessages as defaultAlertMessages, formatMessage } from "@oliginvest/i18n";
 import { ProblemError } from "@oliginvest/platform";
 import { sql } from "drizzle-orm";
 import { z } from "zod";
+import { userLocale } from "../user-locale.js";
 import { approximateIp } from "./client-ip.js";
 import { CURRENT_LEGAL_VERSION } from "./inputs.js";
 import {
@@ -163,6 +164,11 @@ export class PatService {
   async scheduleExpiry(context: DatabaseContext, token: z.infer<typeof patSchema>) {
     if (!this.service.options.patMail) throw new Error("PAT_MAIL_NOT_CONFIGURED");
     const enqueue = this.service.options.patMail;
+    const { locale } = await userLocale(this.service.options.appDatabase, context);
+    const alertMessages =
+      locale === "en-US"
+        ? (await import("@oliginvest/i18n/en")).copies.alertMessages
+        : defaultAlertMessages;
     await this.service.options.database.transaction(async (tx) => {
       const row = (
         await tx.execute(
@@ -293,6 +299,14 @@ export class PatService {
       };
     });
     if (result.newNetwork) {
+      const { locale } = await userLocale(this.service.options.appDatabase, {
+        userId: result.userId,
+        role: result.role,
+      });
+      const alertMessages =
+        locale === "en-US"
+          ? (await import("@oliginvest/i18n/en")).copies.alertMessages
+          : defaultAlertMessages;
       if (!this.service.options.patMail) throw new Error("PAT_MAIL_NOT_CONFIGURED");
       await this.service.options.patMail(
         `pat-network-${result.tokenId}-${digest(result.network)}`,

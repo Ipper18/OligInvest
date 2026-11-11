@@ -1,4 +1,5 @@
-import { portfolioMessages as m } from "@oliginvest/i18n";
+import { portfolioMessages as defaultM } from "@oliginvest/i18n";
+import { getLocalization } from "@oliginvest/ui/localization-server";
 import { notFound } from "next/navigation";
 import { requireMe } from "../../../../../auth/session";
 import { ImportPreview } from "../../../../../portfolio/import-screens";
@@ -13,6 +14,10 @@ export default async function Page({
   params: Promise<{ importId: string }>;
   searchParams: SearchParams;
 }) {
+  const m =
+    ((await getLocalization()).copies["portfolioMessages"] as typeof defaultM | undefined) ??
+    defaultM;
+
   const me = await requireMe();
   const { importId } = await params;
   const parsed = readArgs.safeParse({ ...(await searchParams), id: importId });

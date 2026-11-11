@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { createRoute, type OpenAPIHono, z } from "@hono/zod-openapi";
+import { preferencesSchema as sharedPreferencesSchema } from "@oliginvest/contracts";
 import { type AppEnv, ProblemError, permissionsForRole } from "@oliginvest/platform";
 import { sql } from "drizzle-orm";
 import { bodyLimit } from "hono/body-limit";
@@ -15,17 +16,7 @@ const idempotencyKey = z
   .regex(/^[A-Za-z0-9_-]+$/u)
   .openapi({ pattern: "^[A-Za-z0-9_-]+$" });
 export const preferencesSchema = z
-  .object({
-    baseCurrency: z.enum(["PLN"]),
-    costBasisMethod: z.enum(["fifo", "average"]),
-    plView: z.enum(["economic", "tax"]),
-    taxDateBasis: z.enum(["settlement", "trade"]),
-    taxIncludeFxFee: z.boolean(),
-    timezone: z.string(),
-    locale: z.enum(["pl-PL", "en-US"]),
-    theme: z.enum(["system", "light", "dark"]),
-    plPalette: z.enum(["default", "colorblind"]),
-  })
+  .object(sharedPreferencesSchema.shape)
   .strict()
   .openapi("Preferences");
 export const meSchema = z

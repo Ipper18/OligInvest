@@ -204,3 +204,11 @@ testów granicy UI. Pełna ścieżka z rzeczywistym kontem i importem pozostaje 
 - **Rozmiary bibliotek** (Radix per komponent, `openapi-fetch`) nie są tu podawane — mierzy je `size-limit` w CI względem budżetów tras.
 
 M1-4a: nawigacja jest generowana z publicznych definicji `UiModuleDefinition` do rejestru web podczas budowania. Pominięcie katalogu modułu funkcjonalnego usuwa jego wpis bez importowania serwera modułu do web. `proxy.ts` sprawdza sesję i bramki przez wewnętrzne API, a układ serwerowy ponawia kontrolę przed renderowaniem prywatnej zawartości. Dane profilu i preferencji nie są pobierane przez publiczne strony prawne.
+
+## Preferencje i PL/EN (BL-211)
+
+Ekran `/ustawienia` zapisuje tylko zmienione pola przez istniejące `/me/preferences`. Po odzyskaniu fokusu odczytuje ustawienia z serwera; niezapisany formularz nie jest nadpisywany. Kolejne urządzenie pobiera zapisane preferencje po zalogowaniu. Zmiana języka lub strefy przeładowuje dokument, żeby RSC, formatowanie i interaktywny widok miały ten sam kontekst.
+
+Język `pl-PL` / `en-US` i strefa pochodzą z istniejącego, buforowanego w obrębie żądania odczytu `/me`; nie dodajemy żądania preferencji ani synchronizacji w pierwszym ładowaniu `/portfel` (R-53). `packages/ui/localization` wybiera implementację serwerową lub kontekst React. Wspólny resolver nie przechowuje danych użytkownika. Słowniki EN są wybierane na serwerze, a interaktywne komunikaty przekazywane z dokumentem; treści prawne i artykuły pozostają w RSC. Klucze, parametry tłumaczeń oraz dokładność kwot sprawdzają testy. Formularze, metadane, dokumenty prawne, edukacja, onboarding i publiczny ekran offline mają oba języki.
+
+Niesensytywne cookie `oi-locale` zachowuje język na ekranach publicznych; nie daje uprawnień i nie zmienia ustawienia konta. Service worker zapisuje wyłącznie publiczny wariant HTML offline, bez danych konta. Historyczne ostrzeżenia analiz są tłumaczone tylko po dopasowaniu pełnego znanego wzorca; nieznany komunikat jest zachowany w oryginale, aby nie ukrywać ostrzeżeń.

@@ -1,7 +1,10 @@
 "use client";
-import { onboardingMessages as m } from "@oliginvest/i18n/onboarding";
+import { onboardingMessages as defaultM } from "@oliginvest/i18n/onboarding";
+import { useCopy } from "@oliginvest/ui/localization";
 import { useState } from "react";
 export function OnboardingButton() {
+  const m = useCopy("onboardingMessages", defaultM);
+
   const [error, setError] = useState(false),
     [busy, setBusy] = useState(false);
   return (

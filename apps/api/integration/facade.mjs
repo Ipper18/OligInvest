@@ -34,6 +34,7 @@ export async function testAuthFacade(settings) {
   const delays = [];
   const events = [];
   const securityEvents = [];
+  const preferenceChanges = [];
   const state = {
     limit: async () => {},
     failures: async (email) => failures.get(email) ?? 0,
@@ -55,6 +56,18 @@ export async function testAuthFacade(settings) {
     event: (event) => events.push(event),
     audit: new AuditWriter(appDatabase, configuration.secrets[0].value),
     securityEvent: async (event) => securityEvents.push(event),
+    preferencesChanged: async (userId) => {
+      const row = await appDatabase.transaction(
+        { userId, role: "user" },
+        async (tx) =>
+          (
+            await tx.execute(
+              sql`SELECT tax_date_basis,tax_include_fx_fee FROM identity.user_preferences`,
+            )
+          ).rows[0],
+      );
+      preferenceChanges.push({ userId, ...row });
+    },
   });
   const cookies = new Map();
   const invitations = [];
@@ -937,6 +950,42 @@ export async function testAuthFacade(settings) {
     assert.equal((await prefCall("/me/preferences", "PATCH", { theme: "blue" })).status, 422);
     assert.equal((await prefCall("/me/preferences", "PATCH", { userId: ownerId })).status, 422);
     assert.equal((await prefCall("/me/preferences", "PATCH", {})).status, 422);
+    // BL-211: persistence across reads, patch isolation, real RLS and post-commit recomputation.
+    const changedPreferences = {
+      costBasisMethod: "average",
+      plView: "tax",
+      taxDateBasis: "trade",
+      taxIncludeFxFee: true,
+      timezone: "America/New_York",
+      locale: "en-US",
+    };
+    assert.equal((await prefCall("/me/preferences", "PATCH", changedPreferences)).status, 200);
+    const savedPreferences = await (await prefCall("/me/preferences")).json();
+    for (const [key, value] of Object.entries(changedPreferences))
+      assert.equal(savedPreferences[key], value);
+    assert.equal(savedPreferences.theme, "system");
+    assert.equal(preferenceChanges.length, 1);
+    assert.equal(preferenceChanges[0].tax_date_basis, "trade");
+    assert.equal(preferenceChanges[0].tax_include_fx_fee, true);
+    assert.equal((await prefCall("/me/preferences", "PATCH", changedPreferences)).status, 200);
+    assert.equal(
+      (await prefCall("/me/preferences", "PATCH", { costBasisMethod: "fifo" })).status,
+      200,
+    );
+    assert.equal(preferenceChanges.length, 1);
+    for (const invalid of [
+      { timezone: "" },
+      { timezone: "Invalid/Zone" },
+      { locale: "xx-XX" },
+      { taxIncludeFxFee: "true" },
+    ])
+      assert.equal((await prefCall("/me/preferences", "PATCH", invalid)).status, 422);
+    assert.equal((await (await prefCall("/me/preferences")).json()).locale, "en-US");
+    const otherPreferences = await appDatabase.transaction(
+      { userId: preferenceChanges[0].userId === ownerId ? userId : ownerId, role: "user" },
+      async (tx) => (await tx.execute(sql`SELECT locale FROM identity.user_preferences`)).rows,
+    );
+    assert.ok(otherPreferences.every((row) => row.locale !== "en-US"));
     assert.deepEqual(events, []);
   } finally {
     if (ownerId)

@@ -1,4 +1,8 @@
-import { commonMessages, portfolioMessages as m } from "@oliginvest/i18n";
+import {
+  commonMessages as defaultCommonMessages,
+  portfolioMessages as defaultM,
+} from "@oliginvest/i18n";
+import { useCopy } from "@oliginvest/ui/localization";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { FilterForm } from "./filter-form";
@@ -7,6 +11,9 @@ import { type PortfolioSection, portfolioSections } from "./sections";
 
 // Phone-width section chips; on desktop the sidebar submenu lists the same pages.
 export function PortfolioNav({ current }: { current: PortfolioSection }) {
+  const commonMessages = useCopy("commonMessages", defaultCommonMessages);
+  const m = useCopy("portfolioMessages", defaultM);
+
   return (
     <nav className="oi-section-nav" aria-label={commonMessages.nav.portfolio}>
       {portfolioSections.map(([key, href]) => (
@@ -43,6 +50,8 @@ export function PortfolioHeader({
   };
   children?: ReactNode;
 }) {
+  const m = useCopy("portfolioMessages", defaultM);
+
   const head = (
     <>
       <div className="oi-page-head">

@@ -1,0 +1,69 @@
+{
+  "phrases": [
+    "price in 30 days",
+    "portfolio in a year",
+    "expected price",
+    "projected value",
+    "forecast value",
+    "will reach",
+    "price target",
+    "target price",
+    "buy",
+    "sell",
+    "hold",
+    "buy more",
+    "reduce your position",
+    "worth buying",
+    "we recommend",
+    "we suggest",
+    "we advise",
+    "you should",
+    "buy signal",
+    "sell signal",
+    "strong buy",
+    "opportunity",
+    "investment opportunity",
+    "undervalued",
+    "overvalued",
+    "best stocks",
+    "top 10",
+    "top picks",
+    "attractiveness",
+    "guaranteed",
+    "guaranteed profit",
+    "guaranteed return",
+    "risk-free",
+    "no risk",
+    "sure profit",
+    "suitable for you",
+    "right for you",
+    "recommendation",
+    "optimal portfolio",
+    "safe investment"
+  ],
+  "exceptions": [
+    {
+      "file": "packages/i18n/src/en/disclaimers.json",
+      "keys": [
+        "general.text",
+        "analysis.text",
+        "optimization.text",
+        "rebalance.text",
+        "backtest.text",
+        "screener.text",
+        "alerts.text",
+        "tax_view.text",
+        "data_delay.text",
+        "export.text",
+        "education.text",
+        "demo.text"
+      ],
+      "reason": "LAW § 4.1 and § 4.5: versioned disclaimers explain limitations (e.g. 'not a recommendation'); their exact wording is checked against the documentation by a separate test."
+    },
+    {
+      "file": "packages/i18n/src/en/education-content.json",
+      "keys": ["akcja.pitfalls", "bb.pitfalls", "cena.pitfalls"],
+      "reason": "LAW § 4.1: glossary pitfalls explain that something is NOT guaranteed (dividends, Bollinger band, execution price); the negated term describes a limitation, not a promise."
+    }
+  ]
+}

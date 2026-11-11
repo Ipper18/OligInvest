@@ -67,6 +67,8 @@ Skutek dla produktu: żadnych prognoz ceny instrumentu (także „przedziałów 
 
 Egzekwowanie w kodzie: test CI przeszukuje komunikaty w `packages/i18n` i treści MDX pod kątem listy zakazanych zwrotów (plik `packages/i18n/src/compliance/forbidden-phrases.pl.json`, dopasowanie całych słów). Wyjątki — z uzasadnieniem w tym samym pliku — dotyczą wyłącznie tekstów disclaimerów i haseł glosariusza, które objaśniają pojęcia (np. hasło „Sygnał transakcyjny” w słowniku).
 
+Interfejs angielski (BL-211): słowniki `packages/i18n/src/en/*.json` są dodatkowo sprawdzane listą `packages/i18n/src/compliance/forbidden-phrases.en.json` (te same kategorie co wyżej, m.in. „buy”, „sell”, „hold”, „price target”, „will reach”, „guaranteed”, „we recommend”, „you should”, „opportunity”, „top 10”, „risk-free”, „recommendation”; dopasowanie całych słów). Wyjątki EN obejmują tylko disclaimery z § 4.5 i trzy hasła glosariusza, które objaśniają, że coś *nie jest* gwarantowane (`akcja`, `bb`, `cena` — pole „Pułapki”); hasła glosariusza są adresowane kluczem hasła, nie pozycją na liście. Komponenty i MDX nie mają literałów EN (reguła `jsx-literal`), więc lista EN nie obejmuje kodu — techniczne wartości typu `BUY`/`SELL` nie są tekstem interfejsu.
+
 ### 4.2 Wymogi dla ekranów analiz, screenera, alertów i eksportów
 
 | Element | Treść | Komponent |
@@ -107,6 +109,27 @@ Powiadomienia push i odpowiedzi Skrótów są zbyt krótkie na disclaimer — za
 - [ ] Treść alertów i Skrótów: tylko fakty, bez oceny.
 - [ ] Eksport zawiera linię `export` i atrybucje źródeł.
 - [ ] Nowa funkcja predykcyjna lub backtestowa ma przegląd metodologiczny (checklisty w [`../AGENTS.md`](../AGENTS.md), [`03-dane/obliczenia-finansowe.md`](03-dane/obliczenia-finansowe.md) § 13).
+
+### 4.5 Angielskie brzmienie disclaimerów (wersja `2026-09`, tłumaczenie do akceptacji właściciela)
+
+Status: **tłumaczenie robocze BL-211, czeka na akceptację właściciela.** Wiążące jest brzmienie polskie z § 4.3; poniższe teksty są jego tłumaczeniem dla interfejsu `en-US` i mają ten sam klucz i wersję. Kod trzyma je w `packages/i18n/src/en/disclaimers.json`, a test CI porównuje oba miejsca. Zmiana tekstu PL wymaga zmiany tłumaczenia w tym samym PR (nowa wersja obu).
+
+| Klucz | Tekst (EN) |
+|---|---|
+| `general` | OligInvest is for analysis and learning. It does not provide investment advice or make investment recommendations. You make investment decisions independently and at your own risk. |
+| `analysis` | These are scenarios calculated from historical data and the assumptions adopted, not a forecast. Actual outcomes may fall outside the displayed range. Past performance does not guarantee future results. |
+| `optimization` | The weights are the output of a mathematical model sensitive to assumptions and estimation errors. They are not a recommendation to change your portfolio. |
+| `rebalance` | The list shows the transactions needed to reach the target allocation you set. It is not a recommendation to execute them; costs and tax are estimates. |
+| `backtest` | A backtest shows how a rule would have performed in the past under the assumed costs and simplifications. It does not predict the future. The more variants tested, the greater the risk that a good result is due to chance. |
+| `screener` | The list contains instruments matching your criteria. It is neither a ranking nor an encouragement to purchase. |
+| `alerts` | An alert reports that a condition you set has been met. It is not a signal to enter a transaction. |
+| `tax_view` | The tax view is informational and may differ from PIT-8C and your tax return. It is not tax advice. |
+| `data_delay` | Quotes are delayed (usually by about 15 minutes) or come from the session close. The data source and time are shown with each value. |
+| `export` | Data exported from OligInvest is for personal use; it includes data covered by provider licences — do not publish it. Analyses are not recommendations or advice. |
+| `education` | Educational materials are general and do not take your circumstances into account. |
+| `demo` | Demo mode: a fictional portfolio using historical data. Transactions do not affect your data. |
+
+Dokumenty prawne (regulamin, informacja o prywatności, źródła danych) w wersji EN są generowane z tłumaczeń w `packages/i18n/src/en/legal.json` (`apps/web/scripts/generate-legal.mjs`) i również czekają na akceptację właściciela. Źródłem tłumaczenia jest wersja polska z [`12-dla-uzytkownika/`](12-dla-uzytkownika/); to, czy dokumenty EN mają wskazywać wersję polską jako rozstrzygającą, pozostaje decyzją właściciela (❓, nie rozstrzygamy w BL-211).
 
 ## 5. Podatki — podstawy widoku podatkowego
 

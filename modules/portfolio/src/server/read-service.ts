@@ -1,6 +1,8 @@
 import { createHash } from "node:crypto";
 import {
+  type AverageCostView,
   addDays,
+  buildAverageCostView,
   dayChange,
   externalFlows,
   grossValue,
@@ -81,10 +83,22 @@ export async function readPortfolio(
       sales: ledger.sales.filter((p) => ids.has(p.accountId)),
     };
     const preferences = (
-      await tx.execute(sql`SELECT pl_view AS view FROM identity.user_preferences`)
+      await tx.execute(
+        sql`SELECT pl_view AS view, cost_basis_method AS method FROM identity.user_preferences`,
+      )
     ).rows[0];
     const view = query.view ?? z.enum(["economic", "tax"]).parse(preferences?.view ?? "economic");
-    if (operation === "getRealizedPl") return projectRealized(selected.sales, state, query, view);
+    const method = z.enum(["fifo", "average"]).parse(preferences?.method ?? "fifo");
+    const average =
+      method === "average" && view === "economic"
+        ? buildAverageCostView({
+            accounts: state.accounts,
+            transactions: state.transactions.filter((t) => t.tradeDate <= date),
+            taxRates: state.taxRates,
+          })
+        : undefined;
+    if (operation === "getRealizedPl")
+      return projectRealized(selected.sales, state, query, view, average);
     const instruments = (
       await tx.execute(
         sql`SELECT id::text,coalesce(ticker,isin,id::text) AS ticker,name,isin,mic,currency,type,country,is_active AS "isActive",exchange_short_name AS "exchangeShortName" FROM market.instruments WHERE id=ANY(${sql.param(instrumentIds)}::uuid[])`,
@@ -146,6 +160,7 @@ export async function readPortfolio(
       date,
     });
     const model = projectPortfolio({
+      average,
       accounts: coreAccounts,
       ledger: selected,
       quotes,
@@ -236,6 +251,7 @@ export async function readPortfolio(
     });
     if (operation === "getDayChange") return result;
     const summary = portfolioSummary.parse({
+      costBasisContext: model.costBasisContext,
       totalValue: jsonMoney(valuation.total),
       marketValue: model.totals.marketValueBase,
       cash: jsonMoney(
@@ -288,6 +304,7 @@ export function projectRealized(
   state: Pick<Awaited<ReturnType<typeof valuationState>>, "fx" | "taxSettings" | "transactions">,
   query: ReadQuery,
   view: "economic" | "tax",
+  average?: AverageCostView,
 ) {
   const groupBy = query.groupBy ?? "month";
   const groups = new Map<
@@ -309,20 +326,26 @@ export function projectRealized(
         ? (sale.tax?.taxDate ?? transaction?.settleDate ?? sale.tradeDate)
         : sale.tradeDate;
     if ((query.from && date < query.from) || (query.to && date > query.to)) continue;
+    const averageSale =
+      view === "economic" && average
+        ? average.sales.find((item) => item.transactionId === sale.transactionId)
+        : undefined;
+    const economicCost =
+      view === "economic" && average ? (averageSale?.cost ?? null) : sale.costEconomic;
+    const economicPl =
+      view === "economic" && average ? (averageSale?.realizedPl ?? null) : sale.realizedPlEconomic;
     const cost =
-      view === "tax" ? (sale.tax?.costPln ?? null) : baseMoney(sale.costEconomic, state.fx, date);
+      view === "tax" ? (sale.tax?.costPln ?? null) : baseMoney(economicCost, state.fx, date);
     const proceeds =
       view === "tax"
         ? (sale.tax?.proceedsPln ?? null)
         : baseMoney(sale.proceedsEconomic, state.fx, date);
     const pl =
-      view === "tax"
-        ? (sale.tax?.realizedPlPln ?? null)
-        : baseMoney(sale.realizedPlEconomic, state.fx, date);
+      view === "tax" ? (sale.tax?.realizedPlPln ?? null) : baseMoney(economicPl, state.fx, date);
     const status =
       view === "tax" && sale.taxStatus === "not_applicable"
         ? "not_applicable"
-        : !sale.costEconomic
+        : !economicCost
           ? "missing_cost"
           : view === "tax" && !sale.tax
             ? "missing_tax_data"
@@ -332,14 +355,16 @@ export function projectRealized(
     const fx =
       view === "tax"
         ? (sale.tax?.fxCostsPln ?? null)
-        : baseMoney(
-            sumMoney(
-              [sale.sellFxFee, ...sale.consumptions.map((c) => c.lotFxFee)],
-              sale.sellFxFee.currency,
-            ),
-            state.fx,
-            date,
-          );
+        : average
+          ? baseMoney(averageSale?.fxCosts ?? null, state.fx, date)
+          : baseMoney(
+              sumMoney(
+                [sale.sellFxFee, ...sale.consumptions.map((c) => c.lotFxFee)],
+                sale.sellFxFee.currency,
+              ),
+              state.fx,
+              date,
+            );
     if (status !== "complete")
       exclusions.push({
         transactionId: sale.transactionId,
@@ -386,6 +411,10 @@ export function projectRealized(
   });
   const priority = ["missing_cost", "missing_fx", "missing_tax_data", "not_applicable"];
   return realizedResponse.parse({
+    costBasisContext: {
+      method: view === "economic" && average ? "average" : "fifo",
+      analytical: view === "economic" && Boolean(average),
+    },
     view,
     groupBy,
     rows: [...groups]

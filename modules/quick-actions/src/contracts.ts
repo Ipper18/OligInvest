@@ -1,7 +1,13 @@
 import { z } from "@hono/zod-openapi";
 import { toDecimal } from "@oliginvest/core";
 import { metaSchema, summarySchema } from "@oliginvest/mod-market/contracts";
-import { currency, decimal, moneySchema, object } from "@oliginvest/mod-portfolio/contracts";
+import {
+  costBasisContextSchema,
+  currency,
+  decimal,
+  moneySchema,
+  object,
+} from "@oliginvest/mod-portfolio/contracts";
 export const quickDecimal = z
   .string()
   .regex(/^\d{1,14}([.,]\d{1,10})?$/)
@@ -38,6 +44,7 @@ export const incompleteReason = object({
 const incompleteFields = { incomplete: z.boolean(), reasons: z.array(incompleteReason) };
 const nullableMoney = z.union([moneySchema, z.null()]).openapi({}, { unionPreferredType: "oneOf" });
 const portfolioFields = object({
+  costBasisContext: costBasisContextSchema.optional(),
   ...incompleteFields,
   totalValue: nullableMoney,
   dayChange: nullableMoney,

@@ -1,4 +1,5 @@
 import { createRoute, type OpenAPIHono, z } from "@hono/zod-openapi";
+import { preferencesPatchSchema } from "@oliginvest/contracts";
 import { type AppEnv, ProblemError } from "@oliginvest/platform";
 import { sql } from "drizzle-orm";
 import { bodyLimit } from "hono/body-limit";
@@ -20,12 +21,10 @@ export const defaultPreferences = {
   plPalette: "default",
 } as const;
 const columns = sql`base_currency AS "baseCurrency",cost_basis_method AS "costBasisMethod",pl_view AS "plView",tax_date_basis AS "taxDateBasis",tax_include_fx_fee AS "taxIncludeFxFee",timezone,locale,theme,pl_palette AS "plPalette"`;
-const patch = preferencesSchema
-  .omit({ baseCurrency: true })
-  .partial()
-  .extend({ timezone: z.string().max(64).optional() })
+const patch = z
+  .object(preferencesPatchSchema.shape)
   .strict()
-  .refine((v) => Object.keys(v).length > 0)
+  .refine((value) => preferencesPatchSchema.safeParse(value).success)
   .openapi("PreferencesPatch", { minProperties: 1 });
 const acceptance = z
   .object({ termsVersion: legalVersion, privacyNoticeVersion: legalVersion })
@@ -125,7 +124,7 @@ export function mountPreferences(api: OpenAPIHono<AppEnv>, dependencies: AuthRou
           if (!legal) {
             if (method === "patch") {
               const value = patch.parse(await c.req.json());
-              if (value.timezone)
+              if (value.timezone !== undefined)
                 try {
                   new Intl.DateTimeFormat("pl-PL", { timeZone: value.timezone });
                 } catch {
@@ -140,7 +139,6 @@ export function mountPreferences(api: OpenAPIHono<AppEnv>, dependencies: AuthRou
               );
               const next = { ...previous, ...value };
               recalculate =
-                next.costBasisMethod !== previous.costBasisMethod ||
                 next.taxDateBasis !== previous.taxDateBasis ||
                 next.taxIncludeFxFee !== previous.taxIncludeFxFee;
               await tx.execute(

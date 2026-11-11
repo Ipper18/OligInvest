@@ -2,7 +2,8 @@ import { randomUUID } from "node:crypto";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { deflateSync } from "node:zlib";
-import { pwaMessages as t } from "@oliginvest/i18n";
+import { pwaMessages as defaultCopy } from "@oliginvest/i18n";
+import { pwaMessages as englishCopy } from "@oliginvest/i18n/pwa-en";
 import { build } from "esbuild";
 import { createElement as h } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -69,12 +70,12 @@ for (const [name, size] of [
   );
 }
 
-const html =
+const offlineHtml = (t, lang) =>
   "<!doctype html>" +
   renderToStaticMarkup(
     h(
       "html",
-      { lang: "pl" },
+      { lang },
       h(
         "head",
         null,
@@ -98,7 +99,10 @@ const html =
   );
 writeFileSync(
   new URL("../src/pwa/offline-page.json", import.meta.url),
-  JSON.stringify({ html }) + "\n",
+  JSON.stringify({
+    html: offlineHtml(defaultCopy, "pl"),
+    english: offlineHtml(englishCopy, "en"),
+  }) + "\n",
 );
 writeFileSync(
   new URL("offline.css", directory),

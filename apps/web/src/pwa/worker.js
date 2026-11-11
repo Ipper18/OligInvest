@@ -1,5 +1,6 @@
 import { safeReturnTo } from "@oliginvest/contracts/navigation";
 import { pwaMessages } from "@oliginvest/i18n";
+import { pwaMessages as englishCopy } from "@oliginvest/i18n/pwa-en";
 import { z } from "zod";
 
 const version = "__PWA_VERSION__";
@@ -13,6 +14,7 @@ const payloadSchema = z
   })
   .strict();
 const messageSchema = z.discriminatedUnion("type", [
+  z.object({ type: z.literal("SET_LOCALE"), locale: z.enum(["pl-PL", "en-US"]) }).strict(),
   z.object({ type: z.literal("GET_VERSION") }).strict(),
   z.object({ type: z.literal("ACTIVATE_UPDATE") }).strict(),
   z.object({ type: z.literal("CLEAR_PRIVATE"), unsubscribePush: z.boolean().optional() }).strict(),
@@ -64,6 +66,16 @@ self.addEventListener("message", (event) => {
   const parsed = messageSchema.safeParse(event.data);
   if (!parsed.success) return;
   const data = parsed.data;
+  if (data.type === "SET_LOCALE")
+    event.waitUntil(
+      (async () => {
+        const response = await fetch(
+          new Request(`/offline?locale=${data.locale}`, { credentials: "omit", redirect: "error" }),
+        );
+        if (response.ok && !response.redirected && response.type !== "opaque")
+          await (await caches.open(cacheName)).put("/offline", response);
+      })().catch(() => {}),
+    );
   if (data.type === "GET_VERSION") event.ports[0]?.postMessage({ version });
   if (data.type === "ACTIVATE_UPDATE") event.waitUntil(self.skipWaiting());
   if (data.type === "CACHE_STATIC" && Array.isArray(data.urls))
@@ -125,11 +137,13 @@ self.addEventListener("push", (event) => {
       } catch {
         /* Always visible, including malformed messages. */
       }
+      const offline = await (await caches.open(cacheName)).match("/offline");
+      const copy = offline?.headers.get("Content-Language") === "en" ? englishCopy : pwaMessages;
       const data = parsed?.success
         ? parsed.data
         : {
-            title: pwaMessages.fallbackTitle,
-            body: pwaMessages.fallbackBody,
+            title: copy.fallbackTitle,
+            body: copy.fallbackBody,
             url: "/",
             tag: "oliginvest",
           };

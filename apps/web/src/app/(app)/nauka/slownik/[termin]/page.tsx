@@ -1,16 +1,21 @@
-import { educationMessages as m } from "@oliginvest/i18n/education";
+import { educationMessages as defaultM } from "@oliginvest/i18n/education";
 import { Disclaimer } from "@oliginvest/ui";
+import { getLocalization } from "@oliginvest/ui/localization-server";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireMe } from "../../../../../auth/session";
-import { entries } from "../../../../../education/catalog";
+import { localizedEntries } from "../../../../../education/catalog";
 import { EntryView } from "../../../../../education/entry-view";
 export default async function Page({ params }: { params: Promise<{ termin: string }> }) {
+  const m =
+    ((await getLocalization()).copies["educationMessages"] as typeof defaultM | undefined) ??
+    defaultM;
+
   const me = await requireMe();
   if (me.features["module.education"] === false || !me.permissions.includes("education:use"))
     notFound();
   const { termin } = await params;
-  const entry = entries.find((item) => item.key === termin);
+  const entry = (await localizedEntries(me.preferences.locale)).find((item) => item.key === termin);
   if (!entry) notFound();
   return (
     <section>
