@@ -10,9 +10,11 @@ https://localhost {
   X-Content-Type-Options nosniff
   X-Frame-Options DENY
   Cross-Origin-Opener-Policy same-origin
+  Cross-Origin-Embedder-Policy require-corp
   Cross-Origin-Resource-Policy same-origin
   Referrer-Policy no-referrer
   Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=(), serial=(), hid=(), bluetooth=(), display-capture=(), browsing-topics=()"
+  -Server
  }
  reverse_proxy /api/* api:3000 {
   header_up X-Request-Id {http.request.uuid}
