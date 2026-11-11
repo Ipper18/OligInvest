@@ -4,6 +4,7 @@ import { appMessages } from "@oliginvest/i18n";
 import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { meSchema } from "./api/validation";
+import { LOCALE_COOKIE, localeCookieOptions } from "./appearance/locale-cookie";
 import { authDestination, gatePath, safeReturnTo } from "./auth/navigation";
 import { uiModules } from "./ui-registry";
 
@@ -112,12 +113,12 @@ export async function proxy(request: NextRequest) {
             },
           );
       }
-      if (me && request.cookies.get("oi-locale")?.value !== me.preferences.locale)
-        response.cookies.set("oi-locale", me.preferences.locale, {
-          secure: !development,
-          sameSite: "lax",
-          path: "/",
-        });
+      if (me && request.cookies.get(LOCALE_COOKIE)?.value !== me.preferences.locale)
+        response.cookies.set(
+          LOCALE_COOKIE,
+          me.preferences.locale,
+          localeCookieOptions(development),
+        );
     }
   }
   response.headers.set("Content-Security-Policy", csp);

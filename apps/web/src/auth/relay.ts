@@ -3,6 +3,7 @@ import { loadConfig } from "@oliginvest/config";
 import { cookies, headers } from "next/headers";
 import QRCode from "qrcode";
 import { type ActionName, actionSchemas, problemSchema } from "../api/validation";
+import { LOCALE_COOKIE, localeCookieOptions } from "../appearance/locale-cookie";
 import type { ActionResult } from "./actions";
 
 // Runs inside the /auth/action route handler, not a Server Action: cookie writes here must not
@@ -77,6 +78,12 @@ export async function relayAction(name: ActionName, input: unknown): Promise<Act
         ...(attr.has("expires") ? { expires: new Date(attr.get("expires")!) } : {}),
       });
     }
+    if (name === "preferences" && (data.locale === "pl-PL" || data.locale === "en-US"))
+      jar.set(
+        LOCALE_COOKIE,
+        data.locale,
+        localeCookieOptions(process.env.NODE_ENV === "development"),
+      );
     if (name === "enable")
       data.qr = await QRCode.toDataURL(String(data.totpURI), {
         errorCorrectionLevel: "M",

@@ -104,7 +104,7 @@ export function Settings({ preferences, userId }: { preferences: Preferences; us
           { predicate: (query) => query.queryKey[1] === "me" },
           (me) => me && { ...me, preferences: next },
         );
-        document.cookie = `oi-locale=${next.locale}; Path=/; SameSite=Lax; Secure`;
+        // The /auth/action response already set the HttpOnly language cookie (locale-cookie.ts).
         if (next.locale !== current.locale || next.timezone !== current.timezone)
           window.location.reload();
       }}

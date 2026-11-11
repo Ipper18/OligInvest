@@ -138,3 +138,15 @@ test("/logowanie renders the form without a session or when the session is unusa
   context.status = 500;
   expect((await proxy(request("/ustawienia"))).status).toBe(503);
 });
+
+test("the proxy syncs the language cookie only as HttpOnly (ZAP 10010)", async () => {
+  context.me = me({ preferences: { ...me().preferences, locale: "en-US" } });
+  const response = await proxy(request("/ustawienia"));
+  expect(response.status).toBe(200);
+  const cookie = response.headers.getSetCookie().find((value) => value.startsWith("oi-locale="));
+  expect(cookie).toMatch(/^oi-locale=en-US;/u);
+  expect(cookie).toMatch(/; HttpOnly/iu);
+  expect(cookie).toMatch(/; Secure/iu);
+  expect(cookie).toMatch(/; SameSite=lax/iu);
+  expect(cookie).toMatch(/; Path=\//iu);
+});

@@ -104,6 +104,14 @@ test("BL-211 persists analysis preferences, translates navigation and synchroniz
   ).not.toBeChecked();
   await expect(page.getByLabel("Time zone", { exact: true })).toHaveValue("America/New_York");
   await expect(page.getByText("Live updates", { exact: true })).toBeVisible();
+  // ZAP 10010: the public-page language cookie is server-set and HttpOnly. SameSite is pinned by
+  // unit tests: Playwright's WebKit on Windows reports every cookie as SameSite=None.
+  expect((await context.cookies()).find((cookie) => cookie.name === "oi-locale")).toMatchObject({
+    value: "en-US",
+    httpOnly: true,
+    secure: true,
+  });
+  expect(await page.evaluate(() => document.cookie)).not.toContain("oi-locale");
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   const second = await browser.newContext({
     storageState: await context.storageState(),
