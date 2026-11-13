@@ -18,6 +18,7 @@ import { Administration } from "./administration.js";
 import { AuditWriter } from "./audit.js";
 import { defaultPasswordChecks } from "./password.js";
 import { PatService } from "./pat-service.js";
+import { SecurityMonitor } from "./security-monitor.js";
 import { AuthService } from "./service.js";
 import { RedisAuthState } from "./state.js";
 
@@ -89,6 +90,7 @@ export function createAuthRuntime(
       ? (await userLocale(appDatabase, { userId: String(user.id), role: "user" })).locale
       : "pl-PL";
   };
+  const audit = new AuditWriter(appDatabase, config.AUDIT_PSEUDONYM_KEY);
   const service = new AuthService({
     database,
     appDatabase,
@@ -150,7 +152,21 @@ export function createAuthRuntime(
       if (job && (await job.getState()) !== "active") await job.remove();
     },
     passwordChecks: defaultPasswordChecks(() => logger.warn({ event: "auth.hibp_unavailable" })),
-    audit: new AuditWriter(appDatabase, config.AUDIT_PSEUDONYM_KEY),
+    audit,
+    securityMonitor: new SecurityMonitor({
+      appDatabase,
+      audit,
+      origin: new URL(config.PUBLIC_BASE_URL).origin,
+      notify: async (id, payload) => {
+        await queue("notify").add("notifications.deliver", notificationJobSchema.parse(payload), {
+          jobId: id,
+          attempts: 3,
+          backoff: { type: "exponential", delay: 1000 },
+          removeOnComplete: { age: 86400 },
+          removeOnFail: { age: 604800 },
+        });
+      },
+    }),
     securityEvent: async (event) => {
       await queue("events").add(event.kind, authSecurityEventSchema.parse(event), {
         removeOnComplete: true,
@@ -286,6 +302,7 @@ export function createAuthRuntime(
     close: async () => {
       clearInterval(patRecoveryTimer);
       await recovering;
+      await service.settleSecurityEvents();
       await Promise.allSettled([...queues.values()].map((value) => value.close()));
       state.disconnect();
       subscriber.disconnect();

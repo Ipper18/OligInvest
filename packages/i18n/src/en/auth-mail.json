@@ -4,5 +4,18 @@
   "twoFactorResetSubject": "OligInvest — administrator reset two-factor authentication",
   "twoFactorResetBody": "An administrator reset TOTP for your OligInvest account: {issuedAt} (UTC). All sessions have been revoked. Your next sign-in requires TOTP setup again. If you did not request a reset, contact the instance administrator: {privacyUrl}",
   "invitationBody": "{inviter} invites you to OligInvest.\n\nYour email address is processed by {controller} solely to send this invitation and enable registration (legitimate interest). If you do not create an account, the address will be deleted within 30 days after the invitation expires. Contact details and your rights: {privacyUrl}\n\nThe invitation is valid until {expiresAt} (UTC). Single-use link:\n{url}",
-  "passwordResetBody": "We received a request to reset your OligInvest password.\n\nOpen this link within 30 minutes of the request:\n{url}\n\nIf you did not send this request, ignore this message. Your password remains unchanged. After a password change, all sessions are revoked. TOTP will still be required when you sign in again."
+  "passwordResetBody": "We received a request to reset your OligInvest password.\n\nOpen this link within 30 minutes of the request:\n{url}\n\nIf you did not send this request, ignore this message. Your password remains unchanged. After a password change, all sessions are revoked. TOTP will still be required when you sign in again.",
+  "securityNewDeviceSubject": "OligInvest — new sign-in to your account",
+  "securityNewDeviceBody": "Your OligInvest account was signed in to from a new device or a new network.\n\nTime: {time} ({timezone})\nBrowser and system: {device}\nApproximate network: {network}\n\nIf this was you, no action is needed. If you do not recognise this sign-in, you can end the other sessions and change your password in settings: {url}",
+  "securityFailedSignInSubject": "OligInvest — series of failed sign-in attempts",
+  "securityFailedSignInBody": "A series of failed sign-in attempts to your OligInvest account was recorded (wrong password or TOTP code).\n\nAttempts in the last {minutes} min: {count}\nLatest attempt: {time} ({timezone})\n\nFurther attempts are slowed down, and after 5 wrong TOTP codes verification is locked for 15 minutes. If this was not you, you can change your password and review active sessions in settings: {url}",
+  "securityRecoveryStartedSubject": "OligInvest — two-factor authentication replacement started",
+  "securityRecoveryStartedBody": "After a sign-in with a backup code, setup of a new TOTP started for your OligInvest account: {time} ({timezone}). Other sessions were ended.\n\nIf this was not you, contact the instance administrator: {url}",
+  "securityRecoveredSubject": "OligInvest — new two-factor authentication configured",
+  "securityRecoveredBody": "A new TOTP and a new set of backup codes were configured for your OligInvest account: {time} ({timezone}). Previous backup codes are no longer valid.\n\nIf this was not you, contact the instance administrator: {url}",
+  "securityMassExportSubject": "OligInvest — unusual data export",
+  "securityMassExportBody": "A data export of account {account} matched the unusual export rule: {reason}.\n\nTime: {time} ({timezone})\n\nDownloading this export requires a fresh TOTP confirmation. Event details are in the audit log.",
+  "securityMassExportReasonVolume": "more than 3 exports within 24 hours",
+  "securityMassExportReasonCombination": "an export, a new PAT and a sign-in from a new device within 1 hour",
+  "securityUnknown": "unknown"
 }

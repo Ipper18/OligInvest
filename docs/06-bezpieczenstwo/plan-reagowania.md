@@ -66,7 +66,8 @@ Każdy playbook: **sygnały → pierwsze kroki (ograniczenie) → usunięcie prz
 
 ### P1. Przejęte konto użytkownika (SEV2; T-ID-01…05, T-ID-03)
 
-- **Sygnały:** użytkownik zgłasza obce logowanie lub reset; alert serii nieudanych logowań; nietypowe operacje lub eksport.
+- **Sygnały:** użytkownik zgłasza obce logowanie lub reset (np. po e-mailu „nowe logowanie do konta”); alert serii nieudanych logowań; nietypowe operacje lub eksport.
+- **Przegląd zdarzeń konta:** w audycie (`platform.audit_log`, kontekst administratora) wpisy konta z ostatnich dni: `auth.sign_in` i `session.new_device` (IP, przeglądarka), `auth.sign_in_failed`, `auth.2fa_failed`, `security.failed_sign_in_series`, `identity.export_requested`, `security.mass_export`, `pat.*`, `auth.two_factor.recovery.*` — kolejność i adresy pokazują, czy logowanie przeszło przez drugi czynnik i skąd ([`kontrole-bezpieczenstwa.md`](kontrole-bezpieczenstwa.md) § 5.3).
 - **Ograniczenie:** unieważnić sesje i tokeny PAT użytkownika; czasowo zablokować konto; skontaktować się z użytkownikiem niezależnym kanałem.
 - **Usunięcie i odtworzenie:** po potwierdzeniu tożsamości — reset hasła i 2FA; przegląd audytu konta (eksporty, tokeny, zmiany operacji, zmiany preferencji); przywrócenie zmienionych danych (z historii audytu lub odtworzenia do punktu w czasie na osobnej instancji i selektywnego przeniesienia); odblokowanie.
 - **RODO:** jeśli atakujący widział lub pobrał dane — ocena naruszenia (§ 7); użytkownik jest informowany zawsze.
