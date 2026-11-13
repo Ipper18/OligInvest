@@ -2,7 +2,7 @@
 
 **Cel:** przekazać stan BL-110 (NFR-03.10) — co wdrożono, jak to sprawdzono i jakie decyzje czekają na właściciela.
 
-**2026-11-13**, gałąź `feat/bl-110-security-events` z `origin/main` 233b129, wykonawca Claude Code. Status **w toku** do zielonego CI, wspólnego DoD i odpowiedzi na § 4.
+**2026-11-13**, gałąź `feat/bl-110-security-events` z `origin/main` 233b129, wykonawca Claude Code, draft [PR #74](https://github.com/Ipper18/OligInvest/pull/74). Status **w toku** do zielonego CI, wspólnego DoD i odpowiedzi na § 4.
 
 ## 1. Stan zastany (backlog był aktualny co do BL-110)
 
