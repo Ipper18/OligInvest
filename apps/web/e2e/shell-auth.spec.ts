@@ -104,6 +104,14 @@ test("BL-211 persists analysis preferences, translates navigation and synchroniz
   ).not.toBeChecked();
   await expect(page.getByLabel("Time zone", { exact: true })).toHaveValue("America/New_York");
   await expect(page.getByText("Live updates", { exact: true })).toBeVisible();
+  // ZAP 10010: the public-page language cookie is server-set and HttpOnly. SameSite is pinned by
+  // unit tests: Playwright's WebKit on Windows reports every cookie as SameSite=None.
+  expect((await context.cookies()).find((cookie) => cookie.name === "oi-locale")).toMatchObject({
+    value: "en-US",
+    httpOnly: true,
+    secure: true,
+  });
+  expect(await page.evaluate(() => document.cookie)).not.toContain("oi-locale");
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   const second = await browser.newContext({
     storageState: await context.storageState(),
@@ -312,6 +320,30 @@ test("auth pages retain only a validated returnTo when the session is already ve
       await expect(page).toHaveURL(destination);
       await liveShell(page);
     }
+  }
+});
+
+test("proxy redirects are minimal plain-text 307s, also for a signed-in /logowanie", async ({
+  context,
+}) => {
+  // BL-613: ZAP 10019 (redirect without Content-Type) and 10044 (big redirect from the page).
+  const anonymous = await context.request.get("/", { maxRedirects: 0 });
+  expect(anonymous.status()).toBe(307);
+  expect(anonymous.headers()["content-type"]).toBe("text/plain; charset=utf-8");
+  expect(await anonymous.text()).toBe("/logowanie?returnTo=%2F");
+  await session(context, "return-to");
+  for (const [returnTo, destination] of [
+    ["/ustawienia?tab=security", "/ustawienia?tab=security"],
+    ["//outside.example.test/", "/"],
+  ] as const) {
+    const response = await context.request.get(`/logowanie?${new URLSearchParams({ returnTo })}`, {
+      maxRedirects: 0,
+    });
+    expect(response.status()).toBe(307);
+    expect(response.headers().location).toBe(destination);
+    expect(response.headers()["content-type"]).toBe("text/plain; charset=utf-8");
+    expect(response.headers()["content-security-policy"]).toContain("frame-ancestors 'none'");
+    expect(await response.text()).toBe(destination);
   }
 });
 

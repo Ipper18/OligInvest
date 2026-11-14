@@ -41,4 +41,4 @@ Test integracyjny: 12 równoległych porażek → jeden e-mail; cooldown; poraż
 
 ## 5. CI
 
-`dast` na PR #74 czerwony z powodu spoza BL-110: ZAP 10010 na ciasteczku `oi-locale` (`apps/web/src/proxy.ts`, obszar BL-613); ten sam błąd na PR #73. Naprawę niesie PR #67 — gałąź zostanie zaktualizowana z `main` po scaleniu #67 i #73.
+`dast` na PR #74 czerwony z powodu spoza BL-110: ZAP 10010 na ciasteczku `oi-locale` (`apps/web/src/proxy.ts`, obszar BL-613); ten sam błąd na PR #73. Naprawę przyniósł PR #67 (scalony 2026-11-14); gałąź zaktualizowana scaleniem `origin/main` (konflikt tylko w `ryzyka.md`: R-56 z `main` + R-57 z tej gałęzi). PR #73 (zależności) był wtedy jeszcze otwarty.
