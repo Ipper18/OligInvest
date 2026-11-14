@@ -64,6 +64,8 @@ flowchart LR
 | `/portfel/dziennik`, `/portfel/dziennik/[entryId]` | dziennik, postmortem, statystyki decyzji | FR-03.11, FR-03.12 | `listJournalEntries`, `createJournalEntry`, `upsertJournalPostmortem`, `getDecisionStats` | W | ocena procesu oddzielnie od wyniku |
 | `/portfel/rachunki`, `/portfel/rachunki/[accountId]` | rachunki, status uzgodnienia | FR-02.01 | `listAccounts`, `createAccount`, `updateAccount`, `deleteAccount` | — | usunięcie wymaga step-up |
 
+BL-303 (2026-11-13): osobna trasa wyników portfela zbiorczego lub rachunku, okres dowolny i tabela 1M/3M/6M/YTD/1Y/3Y/5Y/od początku. Waluta stóp: PLN lub waluta jednego rachunku. Przełącznik ekonomiczny/podatkowy dotyczy P/L; stopy pozostają ekonomiczne. XIRR < 30 dni ma wyjaśnienie, luki wycen/przepływów nie są zerami. Teksty PL/EN, źródło i data EOD, założenia i disclaimer `general` (oraz `tax_view` w P/L podatkowym). Wyniki pozycji odroczone decyzją właściciela do osobnej metodologii, benchmark w BL-304. Brak nowych odczytów i ciężkich komponentów na `/` i `/portfel`.
+
 ## 4. Rynek
 
 | Trasa | Ekran | Wymagania | Operacje API | Zgodność | Uwagi dla telefonu |

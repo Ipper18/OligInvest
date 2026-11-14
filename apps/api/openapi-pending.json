@@ -60,7 +60,6 @@
   "getJournalEntry",
   "getMacroSeries",
   "getMarketCalendar",
-  "getPerformance",
   "getRiskMetrics",
   "getSectorHeatmap",
   "getStrategy",

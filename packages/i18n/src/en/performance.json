@@ -1,0 +1,32 @@
+{
+  "title": "Portfolio performance",
+  "returns": "Returns",
+  "period": "Period",
+  "total": "Selected period",
+  "twr": "Cumulative TWR",
+  "annualized": "Annualized TWR",
+  "xirr": "Annualized XIRR",
+  "currency": "Return currency",
+  "base": "PLN — base currency",
+  "account": "Single account currency",
+  "assumptions": "Daily valuations, start-of-day flows, ACT/365",
+  "explanation": "TWR measures the change in value independently of deposit and withdrawal sizes. XIRR reflects their amounts and dates. TWR is annualized only for periods of at least 365 days; XIRR is not shown for periods shorter than 30 days.",
+  "range": "Dates include flows from the first day; the baseline is the previous close. Table periods end on the latest available valuation date. Returns use the economic view; the view selector applies only to realized P/L.",
+  "gaps": "Incomplete valuations or flows prevent calculation. An unavailable result does not mean a zero return.",
+  "statuses": {
+    "ok": "Calculated",
+    "no_convergence": "XIRR did not converge",
+    "insufficient_flows": "Insufficient cash flows or valuations",
+    "period_too_short": "Period shorter than 30 days"
+  },
+  "periods": {
+    "1m": "1 month",
+    "3m": "3 months",
+    "6m": "6 months",
+    "ytd": "Year to date",
+    "1y": "1 year",
+    "3y": "3 years",
+    "5y": "5 years",
+    "inception": "Since inception"
+  }
+}

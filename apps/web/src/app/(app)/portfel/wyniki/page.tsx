@@ -1,12 +1,7 @@
-import { portfolioMessages as defaultM } from "@oliginvest/i18n";
+import { getPerformanceCopy } from "@oliginvest/i18n";
 import { getLocalization } from "@oliginvest/ui/localization-server";
-import { portfolioPage, type SearchParams } from "../../../../portfolio/page";
+import { PerformancePage } from "../../../../portfolio/performance-page";
 export async function generateMetadata() {
-  const m =
-    ((await getLocalization()).copies["portfolioMessages"] as typeof defaultM | undefined) ??
-    defaultM;
-  return { title: m.realized };
+  return { title: getPerformanceCopy((await getLocalization()).locale).title };
 }
-export default function Page({ searchParams }: { searchParams: SearchParams }) {
-  return portfolioPage("realized", searchParams);
-}
+export default PerformancePage;

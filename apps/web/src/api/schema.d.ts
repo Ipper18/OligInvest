@@ -1440,7 +1440,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** TWR i XIRR dla okresu oraz porównanie z benchmarkiem (przykład B) */
+        /**
+         * TWR i XIRR dla okresu oraz porównanie z benchmarkiem (przykład B)
+         * @description BL-303: portfel zbiorczy i rachunek. instrumentId (wynik pozycji) i benchmarkId (BL-304) są zarezerwowane i zwracają 422. Okres obejmuje przepływy od from włącznie; bazą jest zamknięcie poprzedniego dnia. Luki wyceny lub przepływu dają null, nigdy stopę 0. Decyzja właściciela 2026-11-13: wynik pozycji wymaga osobnej metodologii; stopy w tej operacji są ciągami dziesiętnymi.
+         */
         get: operations["getPerformance"];
         put?: never;
         post?: never;
@@ -3992,23 +3995,31 @@ export interface components {
             meta: components["schemas"]["DataMeta"];
         };
         ReturnFigures: {
-            twr: number | null;
+            /** @description Ułamek dziesiętny; null przy niepełnych wycenach lub przepływach. */
+            twr: string | null;
             /** @description Tylko dla okresów ≥ 1 rok. */
-            twrAnnualized?: number | null;
+            twrAnnualized?: string | null;
             /** @description `null` = nie da się wyznaczyć (patrz `xirrStatus`). */
-            xirr?: number | null;
-            /** @enum {string} */
-            xirrStatus?: "ok" | "no_convergence" | "insufficient_flows";
+            xirr?: string | null;
+            /**
+             * @description period_too_short: okres < 30 dni (§ 6.3); insufficient_flows obejmuje brakujące dane wejściowe.
+             * @enum {string}
+             */
+            xirrStatus?: "ok" | "no_convergence" | "insufficient_flows" | "period_too_short";
         };
         Performance: {
             currency: components["schemas"]["CurrencyCode"];
             from: components["schemas"]["LocalDate"];
             to: components["schemas"]["LocalDate"];
             total: components["schemas"]["ReturnFigures"];
-            periods: (components["schemas"]["ReturnFigures"] & {
+            periods: {
                 /** @enum {string} */
                 key: "1m" | "3m" | "6m" | "ytd" | "1y" | "3y" | "5y" | "inception";
-            })[];
+                twr: components["schemas"]["ReturnFigures"]["twr"];
+                twrAnnualized?: components["schemas"]["ReturnFigures"]["twrAnnualized"];
+                xirr?: components["schemas"]["ReturnFigures"]["xirr"];
+                xirrStatus?: components["schemas"]["ReturnFigures"]["xirrStatus"];
+            }[];
             benchmark?: {
                 instrumentId?: components["schemas"]["Uuid"];
                 name?: string;
@@ -8651,6 +8662,7 @@ export interface operations {
             };
             401: components["responses"]["Unauthenticated"];
             403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
             422: components["responses"]["ValidationFailed"];
         };
     };

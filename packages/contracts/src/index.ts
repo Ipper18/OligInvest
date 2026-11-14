@@ -56,5 +56,5 @@ export const applicationErrorSchema = z
 
 export * from "./analytics-metadata.js";
 export * from "./analytics-view.js";
-
+export * from "./performance.js";
 export * from "./preferences.js";

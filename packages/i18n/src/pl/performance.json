@@ -1,0 +1,32 @@
+{
+  "title": "Wyniki portfela",
+  "returns": "Stopy zwrotu",
+  "period": "Okres",
+  "total": "Wybrany okres",
+  "twr": "TWR skumulowany",
+  "annualized": "TWR roczny",
+  "xirr": "XIRR roczny",
+  "currency": "Waluta stóp zwrotu",
+  "base": "PLN — waluta bazowa",
+  "account": "Waluta jednego rachunku",
+  "assumptions": "Wyceny dzienne, przepływy na początku dnia, ACT/365",
+  "explanation": "TWR mierzy zmianę wartości niezależnie od wielkości wpłat i wypłat. XIRR uwzględnia ich wielkość i daty. TWR jest annualizowany dopiero dla okresów co najmniej 365 dni; XIRR nie jest pokazywany dla okresów krótszych niż 30 dni.",
+  "range": "Daty obejmują przepływy od pierwszego dnia włącznie; bazą jest poprzednie zamknięcie. Okresy w tabeli kończą się w ostatnim dostępnym dniu wyceny. Stopy są ekonomiczne; przełącznik widoku dotyczy wyłącznie P/L zrealizowanego.",
+  "gaps": "Niepełne wyceny lub przepływy uniemożliwiają obliczenie wyniku. Brak wyniku nie oznacza zerowej stopy zwrotu.",
+  "statuses": {
+    "ok": "Wyznaczony",
+    "no_convergence": "Brak zbieżności XIRR",
+    "insufficient_flows": "Brak wystarczających przepływów lub wycen",
+    "period_too_short": "Okres krótszy niż 30 dni"
+  },
+  "periods": {
+    "1m": "1 miesiąc",
+    "3m": "3 miesiące",
+    "6m": "6 miesięcy",
+    "ytd": "Od początku roku",
+    "1y": "1 rok",
+    "3y": "3 lata",
+    "5y": "5 lat",
+    "inception": "Od początku portfela"
+  }
+}

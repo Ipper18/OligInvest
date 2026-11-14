@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { createAppDatabase, createAuthDatabase } from "@oliginvest/db";
 import { ProblemError } from "@oliginvest/platform";
 import { sql } from "drizzle-orm";
+import { testPerformance } from "../../../modules/portfolio/integration/performance.mjs";
 import { createApp } from "../dist/app.js";
 import { PortfolioRepository } from "../dist/modules.js";
 import { testPortfolioReads } from "./portfolio-reads.mjs";
@@ -257,6 +258,7 @@ export async function testPortfolioStorage(settings) {
     assert.equal((await request(`transactions/${first.id}`)).status, 404);
     assert.equal(events.length, responses.filter((r) => r.status === 201).length + 3);
     await testPortfolioReads({ request, database, owner, instrumentId, repository });
+    await testPerformance({ request, database, owner });
   } finally {
     await auth.transaction(async (tx) => {
       await tx.execute(
