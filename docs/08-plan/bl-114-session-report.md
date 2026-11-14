@@ -2,7 +2,7 @@
 
 **Cel:** przekazać stan implementacji praw z RODO (eksport, usunięcie konta, rejestr usunięć poza bazą) z wynikami weryfikacji i pytaniami do właściciela.
 
-**2026-11-14**, gałąź `feat/bl-114-gdpr-export-erasure` (worktree sesji Claude Code), baza `origin/main` 16892d4.
+**2026-11-14**, gałąź `feat/bl-114-gdpr-export-erasure` (worktree sesji Claude Code), baza `origin/main` 16892d4, draft [PR #76](https://github.com/Ipper18/OligInvest/pull/76).
 Status **w toku** do zielonego CI i wspólnego DoD. Decyzje właściciela z 2026-11-14 wdrożone; BL-160 i BL-161
 dopisane do backlogu.
 
