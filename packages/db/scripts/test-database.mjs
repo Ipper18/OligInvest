@@ -217,6 +217,9 @@ try {
   const { testAuthFacade } = await import("../../../apps/api/integration/facade.mjs");
   await testAuthFacade({ host, port, database: migrated, passwords });
   console.log("Auth facade invitations, MFA, replay, session rotation and password reset: PASS");
+  const { testSecurityEvents } = await import("../../../apps/api/integration/security-events.mjs");
+  await testSecurityEvents({ host, port, database: migrated, passwords });
+  console.log("BL-110 security events: failed-login series, new device, mass export, RLS: PASS");
   const { testM4Backend } = await import("../../../apps/api/integration/m4-backend.mjs");
   await testM4Backend({ host, port, database: migrated, passwords });
   console.log("M4 PAT replay, scopes, lifecycle, security mail and notification isolation: PASS");

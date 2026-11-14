@@ -17,6 +17,7 @@ import {
   type PasswordChecks,
   verifyPassword,
 } from "./password.js";
+import type { SecurityMonitor } from "./security-monitor.js";
 import {
   findSession,
   type Principal,
@@ -50,6 +51,14 @@ const sensitivePaths = new Set([
   "/revoke-session",
   "/revoke-other-sessions",
 ]);
+type Role = "user" | "pro" | "admin";
+type SecurityTask =
+  | {
+      kind: "failed";
+      actor: { userId: string; role: Role };
+      factor: "password" | "totp" | "backup";
+    }
+  | { kind: "signed_in"; actor: { userId: string; role: Role } };
 export type AuthSecurityEvent = {
   userId: string;
   kind: "two_factor_recovery_started" | "two_factor_recovered";
@@ -60,8 +69,9 @@ type AuthResult =
       response: Response;
       consent?: { userId: string; diagnostics: boolean };
       securityEvent?: AuthSecurityEvent;
+      security?: SecurityTask;
     }
-  | { failure: ProblemError };
+  | { failure: ProblemError; security?: SecurityTask };
 export interface AuthServiceOptions {
   database: ServiceDatabase;
   appDatabase: AppDatabase;
@@ -70,6 +80,8 @@ export interface AuthServiceOptions {
   passwordChecks: PasswordChecks;
   audit: Pick<AuditWriter, "record" | "recordInTransaction">;
   securityEvent: (event: AuthSecurityEvent) => Promise<void>;
+  /** BL-110 anomaly rules; runs after the response is decided (no timing signal). */
+  securityMonitor?: Pick<SecurityMonitor, "signInFailed" | "signedIn" | "twoFactorRecovery">;
   preferencesChanged?: (userId: string) => Promise<void>;
   sessionsChanged?: () => Promise<void>;
   pushPublicKey?: string | undefined;
@@ -82,6 +94,7 @@ export interface AuthServiceOptions {
 
 export class AuthService {
   readonly features: FeatureFlags;
+  private readonly securityTasks = new Set<Promise<void>>();
   constructor(readonly options: AuthServiceOptions) {
     this.features = new FeatureFlags(() =>
       options.appDatabase.transaction(
@@ -90,6 +103,20 @@ export class AuthService {
           (await tx.execute(sql`SELECT key,enabled,rules FROM platform.feature_flags`)).rows,
       ),
     );
+  }
+  private monitor(
+    run: (monitor: NonNullable<AuthServiceOptions["securityMonitor"]>) => Promise<void>,
+  ) {
+    const monitor = this.options.securityMonitor;
+    if (!monitor) return;
+    const task: Promise<void> = run(monitor)
+      .catch(() => this.options.event("auth.security_monitor_failed"))
+      .finally(() => this.securityTasks.delete(task));
+    this.securityTasks.add(task);
+  }
+  /** Waits for background security evaluation (tests and graceful shutdown). */
+  async settleSecurityEvents(): Promise<void> {
+    while (this.securityTasks.size) await Promise.allSettled([...this.securityTasks]);
   }
   async principal(request: Request): Promise<Principal | null> {
     return this.options.database.transaction((tx) =>
@@ -297,11 +324,17 @@ export class AuthService {
         invitation = { role: z.enum(["user", "pro", "admin"]).parse(row.role) };
         body.email = signup.email.toLowerCase();
       }
+      let signInTarget: { userId: string; role: Role } | undefined;
       if (path === "/sign-in/email") {
         const account = (
-          await tx.execute(sql`SELECT a.password FROM auth.accounts a JOIN auth.users u ON u.id=a.user_id
+          await tx.execute(sql`SELECT a.password,u.id::text AS user_id,u.role FROM auth.accounts a JOIN auth.users u ON u.id=a.user_id
           WHERE u.email=${body.email} AND a.provider_id='credential'`)
         ).rows[0];
+        if (account)
+          signInTarget = {
+            userId: z.uuid().parse(account.user_id),
+            role: z.enum(["user", "pro", "admin"]).parse(account.role),
+          };
         if (!account) {
           await verifyPassword({
             hash: await dummyHash,
@@ -312,6 +345,7 @@ export class AuthService {
       }
       let verifiedUser: string | undefined;
       if (path === "/two-factor/verify-totp" || path === "/two-factor/verify-backup-code") {
+        const attempt: { actor?: { userId: string; role: Role } } = {};
         const verification = await this.checkSecondFactor(
           tx,
           auth,
@@ -319,8 +353,22 @@ export class AuthService {
           principal,
           z.string().parse(body.code),
           path.endsWith("backup-code"),
+          attempt,
         );
-        if (verification instanceof ProblemError) return { failure: verification };
+        if (verification instanceof ProblemError)
+          return {
+            failure: verification,
+            // Login-time second factor only; factor replacement has its own session.
+            ...(attempt.actor && !principal && verification.code === "UNAUTHENTICATED"
+              ? {
+                  security: {
+                    kind: "failed" as const,
+                    actor: attempt.actor,
+                    factor: path.endsWith("backup-code") ? ("backup" as const) : ("totp" as const),
+                  },
+                }
+              : {}),
+          };
         verifiedUser = verification;
       }
       if (path === "/two-factor/enable" && principal?.two_factor_enabled) {
@@ -385,6 +433,15 @@ export class AuthService {
         if (path === "/two-factor/enable" && principal?.two_factor_enabled)
           throw new ProblemError("BAD_REQUEST");
         return {
+          ...(signInTarget && native.status === 401
+            ? {
+                security: {
+                  kind: "failed" as const,
+                  actor: signInTarget,
+                  factor: "password" as const,
+                },
+              }
+            : {}),
           failure: new ProblemError(
             native.status === 429
               ? "RATE_LIMITED"
@@ -520,6 +577,15 @@ export class AuthService {
             response: Response.json(resultBody, { headers: responseHeaders }),
             ...(consent ? { consent } : {}),
             ...(securityEvent ? { securityEvent } : {}),
+            // A completed login: second factor verified without a prior session.
+            ...(verifiedUser && !principal
+              ? {
+                  security: {
+                    kind: "signed_in" as const,
+                    actor: { userId: active.user_id, role: active.role },
+                  },
+                }
+              : {}),
           };
         }
       }
@@ -546,6 +612,15 @@ export class AuthService {
       if ("failure" in result) await this.options.state.failed(email);
       else await this.options.state.succeeded(email);
     }
+    const security = result.security;
+    if (security) {
+      const client = { ip, userAgent: request.headers.get("user-agent") ?? undefined };
+      this.monitor((monitor) =>
+        security.kind === "failed"
+          ? monitor.signInFailed(security.actor, client, security.factor)
+          : monitor.signedIn(security.actor, client),
+      );
+    }
     if ("failure" in result) throw result.failure;
     if (result.securityEvent) {
       if (result.securityEvent.kind === "two_factor_recovered") {
@@ -559,6 +634,10 @@ export class AuthService {
         );
       }
       await this.options.securityEvent(result.securityEvent);
+      const event = result.securityEvent;
+      this.monitor((monitor) =>
+        monitor.twoFactorRecovery({ userId: event.userId, role: before?.role ?? "user" }, event),
+      );
     }
     if (result.consent) {
       try {
@@ -627,8 +706,10 @@ export class AuthService {
     principal: Principal | null,
     code: string,
     backup: boolean,
+    attempt: { actor?: { userId: string; role: Role } } = {},
   ): Promise<string | ProblemError> {
     let userId = principal?.user_id;
+    if (principal) attempt.actor = { userId: principal.user_id, role: principal.role };
     if (!userId) {
       const challenge = readSignedCookie(
         request,
@@ -637,12 +718,13 @@ export class AuthService {
       );
       if (!challenge) return new ProblemError("UNAUTHENTICATED");
       const found = (
-        await tx.execute(sql`SELECT u.id FROM auth.verifications v JOIN auth.users u ON u.id::text=v.value
+        await tx.execute(sql`SELECT u.id,u.role FROM auth.verifications v JOIN auth.users u ON u.id::text=v.value
         WHERE v.identifier=${challenge} AND v.expires_at>now() AND u.two_factor_enabled
           AND (NOT u.banned OR (u.ban_expires IS NOT NULL AND u.ban_expires<=now()))`)
       ).rows[0];
       if (!found) return new ProblemError("UNAUTHENTICATED");
       userId = z.uuid().parse(found.id);
+      attempt.actor = { userId, role: z.enum(["user", "pro", "admin"]).parse(found.role) };
     }
     const factor = (
       await tx.execute(sql`SELECT secret,backup_codes,verified,failed_verification_count,locked_until
