@@ -356,7 +356,8 @@ Każde zadanie z analizą przyszłości kończy się przeglądem metodologicznym
 | BL-611 | Aktualizacja dokumentacji użytkownika i administratora do stanu faktycznego | NFR-10.01 | USR, ADMIN | — | 1 | todo |
 | BL-612 | OpenSSF Scorecard (opcjonalnie) i poprawki praktyk repozytorium | NFR-03.09 | CI | — | 0,5 | todo |
 | BL-613 | Poprawki z ZAP baseline w `apps/web/src/proxy.ts` (osobny PR po scaleniu BL-211, PR #63): `Content-Type` przekierowań bramki (10019) i przekierowanie zalogowanego z `/logowanie` (10044); potem 10019 → `FAIL` w `apps/web/zap-baseline.conf` (decyzja właściciela P4/P5, 2026-11-10) | NFR-03.06 | SEC | BL-602, BL-211 | 0,5 | w toku (2026-11-11: lokalnie 10019 i 10044 `PASS`, 10019 → `FAIL`; za zgodą właściciela w tym samym PR naprawiony `FAIL` 10010 z BL-211 (`oi-locale` tylko z serwera, `HttpOnly`), który blokował `dast` na `main`; lokalny skan `FAIL` 0; status do zielonego CI; nakład ok. 0,4 d; [protokół § 7](../06-bezpieczenstwo/przeglady/2026-11-08-zap-baseline-bl-602.md#7-ponowny-skan-po-bl-613-2026-11-11)) |
-| BL-614 | Skan ZAP baseline prawdziwego `api` (nagłówki API, ciasteczka Better Auth, trasy `/api/auth/*`) na lokalnym stosie z bazą — zakres sesji (bez sesji albo rejestracja z TOTP) do ustalenia; decyzja właściciela P7, R-56 | NFR-03.06, NFR-03.07 | SEC, CI | BL-602 | 1 | todo |
+| BL-614 | Skan ZAP baseline prawdziwego `api` na lokalnym stosie z bazą: anonimowe odpowiedzi `/api/v1`, sond zdrowia i `/api/auth/*`, nagłówki i brak `Set-Cookie`; bez zalogowanej sesji (decyzja właściciela 2026-11-14, P7, R-56) | NFR-03.06, NFR-03.07 | SEC, CI | BL-602 | 1 | w toku — lokalnie 21 par metoda/ścieżka, 26 wymian HTTP, 34 URL-e, 0 FAIL, 3 informacyjne WARN do decyzji; próba negatywna 10021 blokuje; do CI i wspólnego DoD; estymata 1 d bez zmian, nakład niezmierzony ([przegląd](../06-bezpieczenstwo/przeglady/2026-11-14-zap-api-baseline-bl-614.md), [stan](bl-614-session-report.md)) |
+| BL-614b | Skan ZAP baseline prawdziwego `api` z zalogowaną sesją po TOTP: syntetyczna rejestracja/logowanie, chronione trasy i atrybuty faktycznie wydanych ciasteczek Better Auth (`__Host-`, `Secure`, `HttpOnly`, `SameSite`, `Path`, brak `Domain`); osobny PR (decyzja właściciela 2026-11-14, R-56) | NFR-03.06, NFR-03.07 | SEC, CI, AUTH | BL-614 | 1 | todo — estymata wstępna |
 | | **Suma etapu** | | | | **18,5** | |
 
 ## 9. Później (P3 i propozycje)
@@ -386,8 +387,8 @@ Poza planem etapów; estymacja orientacyjna. Przed startem każde zadanie przech
 | M4 Alerty, PWA i Skróty | 16 | 30,5 | z BL-413 (redesign, 2026-10-29), BL-414 (historia wartości na Starcie, 2026-11-04), BL-415 i BL-416 (wynik przeglądu PR #53, 2026-11-05) |
 | M5a Admin, edukacja, rynek | 15 | 27 |  |
 | M5b Analizy zaawansowane, OAuth, offline | 17 | 39,5 |  |
-| M6 Hardening i dostępność | 14 | 18,5 | z BL-613 i BL-614 (decyzje BL-602, 2026-11-10) |
-| **Razem M0–M6** | **185** | **340** |
+| M6 Hardening i dostępność | 15 | 19,5 | z BL-613, BL-614 i BL-614b (rozdzielenie sesji TOTP, 2026-11-14; BL-614b: estymata wstępna 1 d) |
+| **Razem M0–M6** | **186** | **341** |
 | Później | 8 | 18,5 | poza planem |
 
 **Pokrycie wymagań:** każde z 151 wymagań FR/NFR z [`../00-przeglad/wymagania.md`](../00-przeglad/wymagania.md) ma co najmniej jedno zadanie (sprawdzone skryptem 2026-09-19: brak wymagań bez zadania, brak zależności wstecz między etapami, M3 i M4 niezależne). Pełna macierz wymaganie → dokument → zadanie: [`../00-przeglad/macierz-pokrycia.md`](../00-przeglad/macierz-pokrycia.md).

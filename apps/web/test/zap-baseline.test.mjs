@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { expect, it } from "vitest";
 import {
+  API_REQUESTS,
   BETA_RULES,
   CADDY_IMAGE,
   edgeCaddyfile,
@@ -8,8 +9,10 @@ import {
   parseRules,
   RULES_FILE,
   SCANS,
+  scanStatus,
   summarize,
   urlTotal,
+  verifyApiCoverage,
   ZAP_IMAGE,
 } from "../scripts/zap-baseline.mjs";
 
@@ -27,6 +30,53 @@ it("scans the real Caddyfile.test edge with only port, upstreams and SNI substit
   const headers = (text) => /\n header \{\n([\s\S]*?)\n \}\n/u.exec(text)?.[1];
   expect(headers(derived)).toBe(headers(caddyTest));
   expect(headers(derived)).toContain("Cross-Origin-Embedder-Policy require-corp");
+});
+
+it("rejects an API scan that misses a route, reaches only errors or carries cookies", () => {
+  const covered = API_REQUESTS.map(({ method, path, status, code }) => ({
+    method,
+    path,
+    status,
+    code: code ?? null,
+    cookies: 0,
+    authenticated: false,
+    noStore: true,
+    sessionNull: path === "/api/auth/get-session",
+    ready: path === "/api/v1/health/ready",
+  }));
+  expect(() => verifyApiCoverage(covered)).not.toThrow();
+  expect(() => verifyApiCoverage(covered.slice(1))).toThrow(/coverage/u);
+  const replace = (path, change) =>
+    covered.map((row) => (row.path === path ? { ...row, ...change } : row));
+  for (const change of [
+    { status: 404 },
+    { method: "POST" },
+    { cookies: 1 },
+    { authenticated: true },
+    { noStore: false },
+    { ready: false },
+  ])
+    expect(() => verifyApiCoverage(replace("/api/v1/health/ready", change))).toThrow();
+  expect(() =>
+    verifyApiCoverage(replace("/api/auth/get-session", { sessionNull: false })),
+  ).toThrow();
+  expect(() => verifyApiCoverage(replace("/api/v1/me", { code: "INTERNAL" }))).toThrow();
+  expect(() =>
+    verifyApiCoverage([...covered, { ...covered[0], path: "/unexpected", cookies: 1 }]),
+  ).toThrow();
+});
+
+it("keeps every registered auth facade route in the anonymous scan plan", () => {
+  const routes = read("../../api/src/auth/routes.ts");
+  const registered = [...routes.matchAll(/\[\s*"(\/[^"\s]+)",\s*"auth[A-Z]/gu)]
+    .map((match) => `/api/auth${match[1]}`)
+    .toSorted();
+  expect(registered.length).toBeGreaterThan(0);
+  expect(
+    API_REQUESTS.filter((item) => item.path.startsWith("/api/auth/"))
+      .map((item) => item.path)
+      .toSorted(),
+  ).toEqual(registered);
 });
 
 it("fails loudly when Caddyfile.test drifts", () => {
@@ -81,6 +131,16 @@ it("summarizes the traditional JSON report by risk and reads the URL total", () 
   expect(rows[0]).toMatchObject({ count: 2, urls: ["/a"] });
   expect(urlTotal("Using the Automation Framework\nTotal of 153 URLs\nPASS: x")).toBe(153);
   expect(urlTotal("Automation plan failures")).toBe(0);
+});
+
+it("enforces rule levels even when legacy baseline ignores informational alerts", () => {
+  const findings = [{ id: "10019", risk: "Informational (Medium)" }];
+  expect(scanStatus(0, findings, new Map([["10019", "FAIL"]]))).toBe(1);
+  expect(scanStatus(0, findings, new Map())).toBe(2);
+  expect(scanStatus(1, [], new Map())).toBe(1);
+  expect(scanStatus(2, [], new Map())).toBe(2);
+  expect(scanStatus(0, [], new Map())).toBe(0);
+  for (const code of [3, 125, null]) expect(() => scanStatus(code, [], new Map())).toThrow();
 });
 
 it("pins every downloaded artifact and guards against vacuous scans", () => {
