@@ -28,5 +28,29 @@
     "3y": "3 lata",
     "5y": "5 lat",
     "inception": "Od początku portfela"
+  },
+  "drawdown": {
+    "title": "Obsunięcia portfela",
+    "maximum": "Maksymalne obsunięcie",
+    "peak": "Data szczytu",
+    "trough": "Data dołka",
+    "duration": "Czas trwania (dni)",
+    "recovery": "Data odrobienia",
+    "recoveryDays": "Czas odrabiania (dni)",
+    "unrecovered": "Nie odrobiono w wybranym okresie",
+    "unavailable": "Brak wyniku",
+    "empty": "Brak wycen w wybranym okresie. Obsunięcie nie zostało obliczone; brak wyniku nie oznacza zera.",
+    "incomplete": "Niepełne wyceny lub przepływy uniemożliwiają obliczenie obsunięcia. Brak wyniku nie oznacza zera.",
+    "noDecline": "W wybranym okresie indeks TWR nie spadł poniżej wcześniejszego szczytu.",
+    "assumptions": "Indeks TWR w PLN, wyceny dzienne, przepływy na początku dnia",
+    "explanation": "Obsunięcie to spadek indeksu TWR względem jego wcześniejszego szczytu. Wpłaty i wypłaty są skorygowane przez TWR. Zakres obejmuje poprzednie zamknięcie jako bazę, jeśli istnieje wcześniejsza historia. Czas trwania liczymy od szczytu do dołka, a odrabiania od dołka do pierwszego powrotu do szczytu, w dniach kalendarzowych. Waluta obsunięć to zawsze PLN, niezależnie od waluty tabeli stóp zwrotu.",
+    "chart": "Wykres underwater",
+    "table": "Dane wykresu obsunięć",
+    "chartUnavailable": "Wykres jest niedostępny. Wartości znajdują się w tabeli danych.",
+    "date": "Data",
+    "depth": "Obsunięcie",
+    "decimated": "Seria wykresu i tabeli jest uproszczona do najwyżej 3000 punktów. Maksymalne obsunięcie i czasy obliczono na pełnych danych dziennych.",
+    "previous": "Poprzednie 100 punktów",
+    "next": "Następne punkty"
   }
 }

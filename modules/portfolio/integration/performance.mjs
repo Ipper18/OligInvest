@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { sql } from "drizzle-orm";
+import { testDrawdown } from "./drawdown.mjs";
 
 export async function testPerformance({ request, database, owner }) {
+  await testDrawdown({ request, database, owner });
   const id = randomUUID();
   await database.transaction(owner, async (tx) => {
     await tx.execute(

@@ -44,7 +44,7 @@ const rowSchema = z
     asOf: z.union([z.string(), z.date()]),
   })
   .strict();
-type Row = AccountValuationRow & { asOf: string | Date };
+export type ValuationRow = AccountValuationRow & { asOf: string | Date };
 const unavailable: ReturnFigures = {
   twr: null,
   twrAnnualized: null,
@@ -55,7 +55,7 @@ const rate = (value: number | null) => (value === null ? null : new Decimal(valu
 
 /** Orchestrates the core functions; no duplicate return formulas and no sampled chart series. */
 export function performanceFromRows(
-  rows: readonly Row[],
+  rows: readonly ValuationRow[],
   currency: string,
   query: { from?: string | undefined; to: string },
   now: Date,
@@ -140,10 +140,16 @@ export function performanceFromRows(
   });
 }
 
-export async function readPerformance(
+export async function readValuationSeries<T>(
   repository: PortfolioRepository,
   context: DatabaseContext,
   query: PerformanceQuery,
+  project: (
+    rows: readonly ValuationRow[],
+    currency: string,
+    query: { from?: string | undefined; to: string },
+    now: Date,
+  ) => T,
 ) {
   const today = portfolioDate(repository.now()),
     to = query.to ?? today;
@@ -247,6 +253,14 @@ export async function readPerformance(
         }
       }
     }
-    return performanceFromRows(rows, currency, { from: query.from, to }, repository.now());
+    return project(rows, currency, { from: query.from, to }, repository.now());
   });
+}
+
+export function readPerformance(
+  repository: PortfolioRepository,
+  context: DatabaseContext,
+  query: PerformanceQuery,
+) {
+  return readValuationSeries(repository, context, query, performanceFromRows);
 }

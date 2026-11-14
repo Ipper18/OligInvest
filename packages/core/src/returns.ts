@@ -44,7 +44,9 @@ export function twrIndex(points: readonly PerformancePoint[]): TwrIndexPoint[] {
     // § 6.2: a non-positive base or value closes the period; the chain resumes later (C-05).
     if (base.isPositive() && !base.isZero() && value.isPositive() && !value.isZero()) {
       const growth = point.value.amount.div(base);
-      index = index.times(growth);
+      // Multiply before dividing: rounding value/base first can turn an exact
+      // recovery (100 -> 75 -> 100) into an index just below its previous peak.
+      index = index.times(value).div(base);
       dailyReturn = ratio(growth.minus(1));
     }
     previous = point.value.amount;

@@ -4119,24 +4119,26 @@ export interface components {
                 ratio: number;
             }[];
         };
+        /** @description Obsunięcia indeksu TWR z pełnych wycen dziennych w PLN, przepływy na początku dnia. Zakres od from obejmuje poprzednie zamknięcie jako bazę, jeśli istnieje wcześniejsza historia. Czas trwania: szczyt–dołek; odrabianie: dołek–pierwszy powrót do szczytu. Brak lub luka wycen/przepływów daje null i pustą serię. BL-305: stopy jako ciągi dziesiętne; LTTB dopiero po obliczeniach, zachowuje daty maksimum obsunięcia. */
         Drawdown: {
-            /** @description Ułamek ujemny (przykład C: -0.25). */
-            maxDrawdown: number;
-            peakDate?: components["schemas"]["LocalDate"];
-            troughDate?: components["schemas"]["LocalDate"];
-            recoveryDate?: components["schemas"]["LocalDate"] | null;
-            durationDays?: number;
-            recoveryDays?: number | null;
-            episodes?: {
-                depth: number;
-                peakDate: components["schemas"]["LocalDate"];
-                troughDate: components["schemas"]["LocalDate"];
-                recoveryDate?: components["schemas"]["LocalDate"] | null;
-            }[];
+            /** @enum {string} */
+            currency: "PLN";
+            from: components["schemas"]["LocalDate"];
+            to: components["schemas"]["LocalDate"];
+            /** @enum {string} */
+            status: "ok" | "no_data" | "incomplete";
+            /** @description Ułamek niedodatni; przykład C: "-0.25". Brak wyniku: null. */
+            maxDrawdown: string | null;
+            peakDate: components["schemas"]["LocalDate"] | null;
+            troughDate: components["schemas"]["LocalDate"] | null;
+            recoveryDate: components["schemas"]["LocalDate"] | null;
+            durationDays: number | null;
+            recoveryDays: number | null;
             underwater: {
-                t: components["schemas"]["TimeAxis"];
-                drawdown: components["schemas"]["NumberSeries"];
+                t: number[];
+                drawdown: string[];
             };
+            decimated: boolean;
             meta: components["schemas"]["DataMeta"];
         };
         RiskMetrics: {
@@ -8783,6 +8785,8 @@ export interface operations {
             };
             401: components["responses"]["Unauthenticated"];
             403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["ValidationFailed"];
         };
     };
     getRiskMetrics: {

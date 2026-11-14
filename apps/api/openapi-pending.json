@@ -56,7 +56,6 @@
   "getDecisionStats",
   "getDeletionRequest",
   "getDemoPortfolio",
-  "getDrawdown",
   "getJournalEntry",
   "getMacroSeries",
   "getMarketCalendar",

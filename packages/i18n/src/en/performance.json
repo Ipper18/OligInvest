@@ -28,5 +28,29 @@
     "3y": "3 years",
     "5y": "5 years",
     "inception": "Since inception"
+  },
+  "drawdown": {
+    "title": "Portfolio drawdowns",
+    "maximum": "Maximum drawdown",
+    "peak": "Peak date",
+    "trough": "Trough date",
+    "duration": "Duration (days)",
+    "recovery": "Recovery date",
+    "recoveryDays": "Recovery time (days)",
+    "unrecovered": "Not recovered within the selected period",
+    "unavailable": "Unavailable",
+    "empty": "No valuations in the selected period. Drawdown was not calculated; an unavailable result does not mean zero.",
+    "incomplete": "Incomplete valuations or flows prevent drawdown calculation. An unavailable result does not mean zero.",
+    "noDecline": "The TWR index did not fall below an earlier peak in the selected period.",
+    "assumptions": "TWR index in PLN, daily valuations, start-of-day flows",
+    "explanation": "Drawdown is the decline of the TWR index from its earlier peak. TWR adjusts for deposits and withdrawals. The range includes the previous close as its baseline when earlier history exists. Duration runs from peak to trough; recovery runs from trough to the first return to the peak, in calendar days. Drawdowns always use PLN, independently of the returns table currency.",
+    "chart": "Underwater chart",
+    "table": "Drawdown chart data",
+    "chartUnavailable": "The chart is unavailable. Values are available in the data table.",
+    "date": "Date",
+    "depth": "Drawdown",
+    "decimated": "The chart and table series is reduced to at most 3,000 points. Maximum drawdown and durations use the full daily history.",
+    "previous": "Previous 100 points",
+    "next": "Next points"
   }
 }

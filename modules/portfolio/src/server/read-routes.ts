@@ -11,7 +11,9 @@ import {
   positionsResponse,
   realizedResponse,
 } from "../contracts.js";
+import { createDrawdownSchema } from "../drawdown-contracts.js";
 import { createPerformanceSchema } from "../performance-contracts.js";
+import { readDrawdown } from "./drawdown.js";
 import { readPortfolioHistory } from "./history.js";
 import { readPerformance } from "./performance.js";
 import { readPortfolio } from "./read-service.js";
@@ -108,6 +110,40 @@ function queryValues(url: string) {
   return values;
 }
 export function mountPortfolioReads(api: OpenAPIHono<AppEnv>, deps: PortfolioDependencies) {
+  const drawdownQuery = historyQuery.omit({ interval: true }).strict();
+  const drawdown = createRoute({
+    method: "get",
+    path: "/portfolio/drawdown",
+    operationId: "getDrawdown",
+    tags: ["portfolio"],
+    security: [{ sessionCookie: [] }],
+    request: { query: drawdownQuery },
+    responses: {
+      200: {
+        description: "Obsunięcia.",
+        content: { "application/json": { schema: createDrawdownSchema() } },
+      },
+      401: marketError,
+      403: marketError,
+      404: marketError,
+      422: marketError,
+    },
+  });
+  api.openAPIRegistry.registerPath(drawdown);
+  api.get(drawdown.path, async (c) => {
+    try {
+      const principal = await deps.authorize(c.req.raw);
+      const response = await readDrawdown(
+        await deps.repository(),
+        principal,
+        drawdownQuery.parse(queryValues(c.req.url)),
+      );
+      c.header("Cache-Control", "no-store");
+      return c.json(response);
+    } catch (error) {
+      return validationError(error);
+    }
+  });
   const performanceSchema = createPerformanceSchema();
   const performanceQuery = z
     .object({
