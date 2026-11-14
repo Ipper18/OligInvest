@@ -4,29 +4,71 @@ import { privacyMessages as defaultT } from "@oliginvest/i18n/privacy";
 import { Button, TextField } from "@oliginvest/ui";
 import { useCopy, useFormatters } from "@oliginvest/ui/localization";
 import { useEffect, useRef, useState } from "react";
-import { z } from "zod";
 import { submitAction } from "../auth/actions";
 import { clearPrivateState } from "../auth/logout";
 
 /**
  * GDPR rights in settings (BL-114, prywatnosc-rodo.md § 7): export with a one-time download and
- * account deletion after 14 days. Loaded lazily on /ustawienia only (R-53).
+ * account deletion after 14 days. Loaded lazily on /ustawienia only (R-53). Responses are checked
+ * by small guards instead of Zod: extra Zod validators land in the shared Zod chunk of every route.
  */
-const dataExport = z.object({
-  id: z.uuid(),
-  status: z.enum(["queued", "running", "ready", "failed", "expired"]),
-  createdAt: z.iso.datetime(),
-  expiresAt: z.iso.datetime().optional(),
-  sizeBytes: z.number().int().min(0).optional(),
-});
-const deletionRequest = z.object({
-  id: z.uuid(),
-  requestedAt: z.iso.datetime(),
-  scheduledFor: z.iso.datetime(),
-  cancelledAt: z.iso.datetime().optional(),
-});
-type DataExport = z.infer<typeof dataExport>;
-type DeletionRequest = z.infer<typeof deletionRequest>;
+const EXPORT_STATUSES = ["queued", "running", "ready", "failed", "expired"] as const;
+type DataExport = {
+  id: string;
+  status: (typeof EXPORT_STATUSES)[number];
+  createdAt: string;
+  expiresAt?: string;
+  sizeBytes?: number;
+};
+type DeletionRequest = { id: string; requestedAt: string; scheduledFor: string };
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iu;
+
+class InvalidResponse extends Error {
+  constructor() {
+    super("GDPR_INVALID_RESPONSE");
+  }
+}
+
+function record(data: unknown): Record<string, unknown> {
+  if (typeof data !== "object" || data === null || Array.isArray(data)) throw new InvalidResponse();
+  return data as Record<string, unknown>;
+}
+function uuid(value: unknown): string {
+  if (typeof value !== "string" || !UUID.test(value)) throw new InvalidResponse();
+  return value;
+}
+function timestamp(value: unknown): string {
+  if (typeof value !== "string" || !value.includes("T") || Number.isNaN(Date.parse(value)))
+    throw new InvalidResponse();
+  return value;
+}
+const dataExport = {
+  parse(data: unknown): DataExport {
+    const row = record(data);
+    const status = EXPORT_STATUSES.find((item) => item === row["status"]);
+    const size = row["sizeBytes"];
+    if (!status) throw new InvalidResponse();
+    if (size !== undefined && (typeof size !== "number" || !Number.isSafeInteger(size) || size < 0))
+      throw new InvalidResponse();
+    return {
+      id: uuid(row["id"]),
+      status,
+      createdAt: timestamp(row["createdAt"]),
+      ...(row["expiresAt"] === undefined ? {} : { expiresAt: timestamp(row["expiresAt"]) }),
+      ...(size === undefined ? {} : { sizeBytes: size }),
+    };
+  },
+};
+const deletionRequest = {
+  parse(data: unknown): DeletionRequest {
+    const row = record(data);
+    return {
+      id: uuid(row["id"]),
+      requestedAt: timestamp(row["requestedAt"]),
+      scheduledFor: timestamp(row["scheduledFor"]),
+    };
+  },
+};
 const POLL_MS = 5000;
 const FIELD_IDS = { export: "gdpr-export-code", delete: "gdpr-delete-code" } as const;
 

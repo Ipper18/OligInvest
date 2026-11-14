@@ -32,6 +32,14 @@ class SecretTests(unittest.TestCase):
             self.assertEqual("~benchmark:*" in line, service == "jobs")
             self.assertEqual("~report:*" in line, service == "jobs")
 
+    def test_identity_queue_is_shared_by_api_and_jobs(self):
+        # BL-114: api enqueues GDPR exports, jobs runs exports and erasure; analytics never sees them.
+        values = {f"VALKEY_QUEUE_{name}_PASSWORD": b"synthetic-secret" for name in ["API", "JOBS", "ANALYTICS"]}
+        lines = module.acl(values).decode().splitlines()
+        for service in ["api", "jobs", "analytics"]:
+            line = next(line for line in lines if line.startswith(f"user {service} "))
+            self.assertEqual("~bull:identity:*" in line.split(), service != "analytics")
+
     def test_auth_state_is_private_to_api(self):
         values = {f"VALKEY_QUEUE_{name}_PASSWORD": b"synthetic-secret" for name in ["API", "JOBS", "ANALYTICS"]}
         lines = module.acl(values).decode().splitlines()

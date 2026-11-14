@@ -59,3 +59,14 @@ Pełny przebieg `turbo` i CI — w PR.
 6. CSV: przecinek, UTF-8 bez BOM. Dodać BOM dla Excela?
 7. Pobranie jest jednorazowe także przy przerwanym transferze (trzeba zlecić nowy eksport). Zgoda?
 8. BL-161: retencja `import_rows` (1 rok po zatwierdzeniu) dotyka `modules/portfolio` — zostawiona Codexowi.
+
+## 4. Poprawki po pierwszym CI
+
+- Teksty RODO trafiły do głównego wejścia `@oliginvest/i18n`, które jest częścią powłoki (30,75 / 30 KiB) — teraz
+  osobne wejście `@oliginvest/i18n/privacy`, ładowane leniwie (29,82 KiB).
+- Walidatory Zod komponentu RODO (`z.uuid()`, `z.iso.datetime()`) trafiły do wspólnego fragmentu Zod ładowanego na
+  każdej trasie (`/nauka`: 196,3 / 190 KiB przy 189,2 na `main`). Komponent sprawdza odpowiedzi małymi funkcjami
+  bez Zod; `/nauka` 189,1 KiB. Wniosek dla UI: nowe walidatory Zod po stronie klienta powiększają wspólny fragment,
+  nawet w komponentach ładowanych leniwie.
+- ACL Valkey produkcji (`infra/scripts/secret-files.py`) nie obejmował kolejki `identity` — dodane `~bull:identity:*`
+  dla `api` i `jobs` z testem.
