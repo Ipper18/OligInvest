@@ -247,6 +247,33 @@ z ostatniego dnia roboczego przed transakcją (jak w widoku podatkowym, § 2.2) 
 
 Stopa dywidendy od kosztu = suma dywidend brutto z 12 miesięcy / koszt nabycia pozycji, **w PLN** (decyzja właściciela 2026-09-24): brutto przeliczone kursem NBP D-1 jak w widoku podatkowym, niezależnie od typu rachunku.
 
+### 4.3.1 Widok dywidend (BL-307, FR-02.08)
+
+`GET /portfolio/dividends` (`listDividends`) pokazuje każdą wypłatę w walucie wypłaty (brutto, podatek u źródła,
+netto), wpływ na rachunek w walucie rachunku (widok ekonomiczny) i kwoty w PLN kursem NBP z ostatniego dnia
+roboczego przed dniem wypłaty — z datą i numerem tabeli, na każdym typie rachunku. Dzień wypłaty to `settle_date`
+operacji, a gdy go brak — `trade_date`; cykl rozliczenia transakcji (T+1/T+2) **nie** przesuwa dnia wypłaty
+dywidendy (poprawka BL-307 w `valuationState`, wcześniej dzień wypłaty bez `settle_date` dostawał datę jak
+transakcja kupna).
+
+- **Podatek u źródła niezapisany** (operacja bez pola `tax` i bez powiązanego wiersza `TAX`/`FEE`): podatek, netto
+  i szacowana dopłata są `null` z powodem `missing_withholding` — przyjęcie 0 zawyżyłoby dopłatę. Jawnie zapisane 0
+  jest znaną wartością. **Brak kursu NBP:** kwoty w PLN `null` z powodem `missing_fx`; kwoty w walucie wypłaty
+  zostają. Zasada „brak danych = `null`, nigdy 0” jak w § 4.2.1.
+- **Szacowana dopłata** (informacyjnie, disclaimer `tax_view` z [`11-zgodnosc-prawna.md`](../11-zgodnosc-prawna.md)
+  § 4.3): `max(0, 19 % · brutto_PLN − min(podatek_u_źródła_PLN, 19 % · brutto_PLN))`; IKE/IKZE — „nie dotyczy”
+  (`not_applicable`), nie 0.
+- **Sumy** (razem, per rok wypłaty, per instrument): w `Decimal` bez zaokrągleń pośrednich; dowolny nieznany składnik
+  daje sumę `null`. Suma dopłat obejmuje tylko wypłaty opodatkowane; gdy żadna nie jest opodatkowana — `null`
+  („nie dotyczy”). Sumy w walutach wypłat — osobno per waluta.
+- **Stopa od kosztu:** brutto w PLN z 12 miesięcy do `to` (niezależnie od `from`) / koszt FIFO otwartych pozycji
+  instrumentu w PLN z wybranych rachunków (widok ekonomiczny). Koszt w PLN jest znany tylko na rachunku w PLN; na
+  rachunku w walucie instrumentu — `null` z powodem `missing_cost_pln` (jak Z-29, BL-306b). Inne powody:
+  `no_open_position`, `missing_cost`, `missing_fx`. Brak wypłat w 12 miesiącach przy otwartej pozycji daje znane 0.
+
+Funkcje: `core.dividendPlnView`, `core.sumDividendPlnViews`, `core.yieldOnCostRatio` (obok `dividendTaxView`,
+`trailingDividends`); test na wektorze G.
+
 ### 4.4 Pozostałe pozycje gotówkowe
 
 Odsetki od wolnych środków (`INTEREST`) i podatek od nich (`TAX`), opłaty (`FEE`), podatki transakcyjne (FTT — `TAX` powiązany z transakcją lub część kosztu partii) wchodzą do wyniku okresu jako osobne kategorie; nie zmieniają kosztu nabycia (poza FTT przypisanym do zakupu). `TAX`/`FEE` powiązane przez `related_transaction_id` z `BUY`, `SELL` lub `DIVIDEND` tego samego rachunku (import zapisuje tak FTT, opłatę SEC i podatek u źródła z osobnego wiersza — [`formaty-importu.md`](formaty-importu.md) § 2.2) rdzeń przypisuje operacji docelowej w obu widokach: do kosztu partii, do przychodu sprzedaży albo do podatku u źródła dywidendy; gotówka jest księgowana raz, z wiersza `TAX`/`FEE` (przegląd C-04). Powiązanie z innym rachunkiem lub w innej walucie jest błędem danych.

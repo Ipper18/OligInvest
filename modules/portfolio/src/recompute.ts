@@ -105,7 +105,8 @@ export async function valuationState(tx: DatabaseTransaction, to: string) {
   const mics = new Map(instruments.map((r) => [String(r.id), String(r.mic)]));
   const days = new Map(calendar.map((r) => [`${r.mic}:${r.date}`, r]));
   const transactions = state.transactions.map((t): Transaction => {
-    if (t.settleDate || !("instrumentId" in t)) return t;
+    // A dividend's income day is its payment date (§ 4.3), not a trade settlement cycle.
+    if (t.settleDate || !("instrumentId" in t) || t.type === "DIVIDEND") return t;
     const mic = mics.get(t.instrumentId),
       region = mic ? settlementRegionForMic(mic) : undefined;
     if (!region) return t;

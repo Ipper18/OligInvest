@@ -24,6 +24,7 @@ export {
   accountSchema,
   cashBalanceSchema,
   createCurrencyExposureSchema,
+  createDividendsSchema,
   createDrawdownSchema,
   createPerformanceSchema,
   dayChangeResponse,

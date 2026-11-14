@@ -101,5 +101,63 @@
       "missing_cost_pln": "brak kosztu w PLN (rachunek w walucie instrumentu)"
     },
     "reasonCount": "{reason}: {count}"
+  },
+  "dividends": {
+    "title": "Dywidendy",
+    "assumptions": "Dzień wypłaty, kursy średnie NBP (tabela A) z ostatniego dnia roboczego przed wypłatą, stawka 19 %, FIFO",
+    "explanation": "Dzień przychodu to dzień wypłaty. Kwoty w PLN liczymy kursem średnim NBP z tabeli A z ostatniego dnia roboczego przed wypłatą — tak samo na każdym typie rachunku. Wpływ na rachunek to kwota zaksięgowana przez brokera w walucie rachunku (widok ekonomiczny).",
+    "topUpExplanation": "Szacowana dopłata = 19 % kwoty brutto w PLN minus podatek u źródła w PLN, zaliczony najwyżej do wysokości 19 % brutto, więc dopłata nie jest ujemna. To szacunek informacyjny według tej reguły, a nie wyliczenie zobowiązania podatkowego ani doradztwo podatkowe. Na IKE i IKZE dopłata nie dotyczy.",
+    "yieldExplanation": "Stopa od kosztu = suma dywidend brutto w PLN z 12 miesięcy do dnia {date} / koszt nabycia otwartej pozycji w PLN (FIFO, widok ekonomiczny). Koszt w PLN jest znany tylko na rachunku prowadzonym w PLN. To wynik historyczny, nie przyszła stopa dywidendy.",
+    "range": "Zakres: {from} – {to}",
+    "rangeAll": "Zakres: wszystkie wypłaty do {to}",
+    "summaryTable": "Dywidendy w PLN — razem",
+    "yearTable": "Dywidendy według lat",
+    "instrumentTable": "Dywidendy według pozycji i stopa od kosztu",
+    "paymentsTable": "Wypłaty dywidend",
+    "currencyTable": "Sumy w walutach wypłat",
+    "year": "Rok",
+    "instrument": "Pozycja",
+    "payDate": "Dzień wypłaty",
+    "payments": "Wypłaty",
+    "currency": "Waluta",
+    "gross": "Brutto",
+    "withholding": "Podatek u źródła",
+    "net": "Netto",
+    "credited": "Wpływ na rachunek",
+    "grossPln": "Brutto (PLN)",
+    "withholdingPln": "Podatek u źródła (PLN)",
+    "netPln": "Netto (PLN)",
+    "topUp": "Szacowana dopłata (PLN)",
+    "rate": "Kurs NBP",
+    "yieldOnCost": "Stopa od kosztu",
+    "trailingGross": "Brutto z 12 mies. (PLN)",
+    "cost": "Koszt pozycji (PLN)",
+    "status": "Stan",
+    "rateDetails": "{rate} PLN, {date}, tabela {table}",
+    "rateNoTable": "{rate} PLN, {date}, brak numeru tabeli",
+    "base": "waluta bazowa",
+    "total": "Razem",
+    "unavailable": "Brak wyniku",
+    "empty": "Brak wypłat dywidend w wybranym zakresie.",
+    "incomplete": "Część wypłat nie ma kursu NBP albo zapisanego podatku u źródła. Suma z brakującym składnikiem nie jest pokazywana; brak wyniku nie oznacza zera.",
+    "gapsTitle": "Wypłaty z brakującymi danymi",
+    "gapCount": "{reason}: {count}",
+    "gaps": {
+      "missing_fx": "brak kursu NBP",
+      "missing_withholding": "niezapisany podatek u źródła"
+    },
+    "taxStatuses": {
+      "computed": "Szacunek",
+      "not_applicable": "Nie dotyczy (IKE/IKZE)",
+      "missing_fx": "Brak kursu NBP",
+      "missing_withholding": "Brak danych o podatku u źródła"
+    },
+    "yieldReasons": {
+      "no_open_position": "brak otwartej pozycji",
+      "missing_cost": "nieznany koszt nabycia",
+      "missing_cost_pln": "brak kosztu w PLN (rachunek w walucie instrumentu)",
+      "missing_fx": "brak kursu NBP dla części wypłat"
+    },
+    "taxExempt": "Wypłaty na IKE/IKZE: {count} — dopłata nie dotyczy."
   }
 }

@@ -12,9 +12,11 @@ import {
   realizedResponse,
 } from "../contracts.js";
 import { createCurrencyExposureSchema } from "../currency-exposure-contracts.js";
+import { createDividendsSchema } from "../dividends-contracts.js";
 import { createDrawdownSchema } from "../drawdown-contracts.js";
 import { createPerformanceSchema } from "../performance-contracts.js";
 import { readCurrencyExposure } from "./currency-exposure.js";
+import { readDividends } from "./dividends.js";
 import { readDrawdown } from "./drawdown.js";
 import { readPortfolioHistory } from "./history.js";
 import { readPerformance } from "./performance.js";
@@ -173,6 +175,47 @@ export function mountPortfolioReads(api: OpenAPIHono<AppEnv>, deps: PortfolioDep
         await deps.repository(),
         principal,
         exposureQuery.parse(queryValues(c.req.url)),
+      );
+      c.header("Cache-Control", "no-store");
+      return c.json(response);
+    } catch (error) {
+      return validationError(error);
+    }
+  });
+  const dividendsQuery = z
+    .object({
+      ...accounts,
+      instrumentId: z.uuid().optional(),
+      from: z.iso.date().optional(),
+      to: z.iso.date().optional(),
+    })
+    .strict();
+  const dividends = createRoute({
+    method: "get",
+    path: "/portfolio/dividends",
+    operationId: "listDividends",
+    tags: ["portfolio"],
+    security: [{ sessionCookie: [] }],
+    request: { query: dividendsQuery },
+    responses: {
+      200: {
+        description: "Dywidendy i sumy.",
+        content: { "application/json": { schema: createDividendsSchema() } },
+      },
+      401: marketError,
+      403: marketError,
+      404: marketError,
+      422: marketError,
+    },
+  });
+  api.openAPIRegistry.registerPath(dividends);
+  api.get(dividends.path, async (c) => {
+    try {
+      const principal = await deps.authorize(c.req.raw);
+      const response = await readDividends(
+        await deps.repository(),
+        principal,
+        dividendsQuery.parse(queryValues(c.req.url)),
       );
       c.header("Cache-Control", "no-store");
       return c.json(response);

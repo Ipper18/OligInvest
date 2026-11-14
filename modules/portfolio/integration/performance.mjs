@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { sql } from "drizzle-orm";
 import { testCurrencyExposure } from "./currency-exposure.mjs";
+import { testDividends } from "./dividends.mjs";
 import { testDrawdown } from "./drawdown.mjs";
 
 export async function testPerformance({ request, database, owner }) {
@@ -102,4 +103,6 @@ export async function testPerformance({ request, database, owner }) {
   );
   // Last: it stores a shared USD/PLN rate that earlier FX-gap assertions must not see.
   await testCurrencyExposure({ request, database, owner });
+  // After the exposure test: it stores later USD/PLN rates the exposure gap must not see.
+  await testDividends({ request, database, owner });
 }

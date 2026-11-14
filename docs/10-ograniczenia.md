@@ -2,7 +2,7 @@
 
 **Cel:** wypisać jawnie, czego OligInvest nie zrobi albo zrobi gorzej przy budżecie 0 zł — z najtańszą płatną opcją, darmowym substytutem i tym, co tracimy — tak, aby każda taka decyzja była świadoma i odwracalna (NFR-05.01, NFR-01.09, §4.5 specyfikacji).
 
-Powiązane: [`00-przeglad/wymagania.md`](00-przeglad/wymagania.md) § 3 (zastrzeżenia Z-01…Z-28), [`01-architektura/stack-technologiczny.md`](01-architektura/stack-technologiczny.md) § 8, [`03-dane/zrodla-danych.md`](03-dane/zrodla-danych.md), [`04-frontend/wydajnosc.md`](04-frontend/wydajnosc.md) § 8, [`08-plan/ryzyka.md`](08-plan/ryzyka.md).
+Powiązane: [`00-przeglad/wymagania.md`](00-przeglad/wymagania.md) § 3 (zastrzeżenia Z-01…Z-30), [`01-architektura/stack-technologiczny.md`](01-architektura/stack-technologiczny.md) § 8, [`03-dane/zrodla-danych.md`](03-dane/zrodla-danych.md), [`04-frontend/wydajnosc.md`](04-frontend/wydajnosc.md) § 8, [`08-plan/ryzyka.md`](08-plan/ryzyka.md).
 
 Ceny sprawdzone **2026-09-19** (link przy każdej); ceny w walutach obcych podajemy w oryginalnej walucie. **NIEZWERYFIKOWANE** = cena lub warunek nie zostały sprawdzone u źródła.
 

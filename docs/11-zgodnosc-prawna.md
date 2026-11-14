@@ -151,7 +151,7 @@ Dokumenty prawne (regulamin, informacja o prywatności, źródła danych) w wers
 - `tax_date_basis = settlement` (domyślnie); `trade` tylko do porównań. Oba parametry widoku podatkowego są ustawieniami użytkownika (`identity.user_preferences`), a ich zmiana przelicza tylko widok podatkowy.
 - Marża przewalutowania brokera: poza kosztem podatkowym, jako osobna pozycja (`tax_include_fx_fee = false`) — § 5.3.
 - Widok podatkowy jest drugim widokiem obok ekonomicznego (Z-16, [ADR-014](09-decyzje/ADR-014-pieniadze-waluty-czas.md)) i zawsze ma disclaimer `tax_view`.
-- Dywidendy zagraniczne: kwota brutto, podatek u źródła i szacowana dopłata do 19 % — informacyjnie ([`03-dane/obliczenia-finansowe.md`](03-dane/obliczenia-finansowe.md) § 4.3).
+- Dywidendy zagraniczne: kwota brutto, podatek u źródła i szacowana dopłata do 19 % — informacyjnie ([`03-dane/obliczenia-finansowe.md`](03-dane/obliczenia-finansowe.md) § 4.3). Sekcja dywidend (BL-307) opisuje regułę szacunku (19 % brutto minus podatek u źródła zaliczony najwyżej do 19 %), nazywa wynik szacunkiem, a nie zobowiązaniem podatkowym, i zawsze ma disclaimer `tax_view`; brak danych o podatku u źródła daje „brak wyniku”, nie 0.
 
 ### 5.3 Kwestie nierozstrzygnięte (❓)
 

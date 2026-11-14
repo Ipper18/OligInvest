@@ -201,6 +201,190 @@ export async function portfolioFixture(request, response, key, preferences = {})
       data: [{ accountId, balance: money("1000"), balanceBase: money("1000"), asOf: "2026-10-13" }],
     });
   if (path === "/portfolio/lots") return send({ data: [], page: emptyPage, method: "fifo" });
+  if (path === "/portfolio/dividends") {
+    // Vector G (§ 4.3) on a PLN account plus a PLN dividend with Polish withholding.
+    const to = url.searchParams.get("to");
+    const empty = to === "2025-01-02",
+      gap = to === "2025-03-31";
+    const ko = {
+      id: "01900000-0000-7000-8000-000000000301",
+      ticker: "KO",
+      name: "Instrument syntetyczny USD",
+      mic: "XNYS",
+      type: "stock",
+      currency: "USD",
+      isActive: true,
+    };
+    const totals = (over = {}) => ({
+      payments: 2,
+      grossPln: money("592.25"),
+      withholdingTaxPln: money("108.8375"),
+      netPln: money("483.4125"),
+      estimatedTopUpPln: money("3.6875"),
+      taxablePayments: 2,
+      taxExemptPayments: 0,
+      isComplete: true,
+      ...over,
+    });
+    const tax = (topUp) => ({
+      status: "computed",
+      taxDuePln: money(topUp === "0" ? "95" : "17.5275"),
+      withholdingCreditPln: money(topUp === "0" ? "95" : "13.8375"),
+      estimatedTopUpPln: money(topUp),
+    });
+    const rows = [
+      {
+        transactionId: "01900000-0000-7000-8000-000000000311",
+        accountId,
+        instrument: ko,
+        payDate: "2025-08-14",
+        gross: money("25", "USD"),
+        withholdingTax: gap ? null : money("3.75", "USD"),
+        net: gap ? null : money("21.25", "USD"),
+        credited: money("77.81"),
+        grossPln: money("92.25"),
+        withholdingTaxPln: gap ? null : money("13.8375"),
+        netPln: gap ? null : money("78.4125"),
+        fxRate: { rate: "3.69", rateDate: "2025-08-13", source: "nbp", tableNo: "155/A/NBP/2025" },
+        tax: gap
+          ? {
+              status: "missing_withholding",
+              taxDuePln: null,
+              withholdingCreditPln: null,
+              estimatedTopUpPln: null,
+            }
+          : tax("3.6875"),
+        gaps: gap ? ["missing_withholding"] : [],
+      },
+      {
+        transactionId: "01900000-0000-7000-8000-000000000312",
+        accountId,
+        instrument,
+        payDate: "2025-06-20",
+        gross: money("500"),
+        withholdingTax: money("95"),
+        net: money("405"),
+        credited: money("405"),
+        grossPln: money("500"),
+        withholdingTaxPln: money("95"),
+        netPln: money("405"),
+        fxRate: null,
+        tax: tax("0"),
+        gaps: [],
+      },
+    ];
+    const gapTotals = totals({
+      withholdingTaxPln: null,
+      netPln: null,
+      estimatedTopUpPln: null,
+      isComplete: false,
+    });
+    return send({
+      currency: "PLN",
+      from: url.searchParams.get("from"),
+      to: to ?? "2025-12-31",
+      status: empty ? "no_data" : gap ? "incomplete" : "ok",
+      rows: empty ? [] : rows,
+      byYear: empty ? [] : [{ year: 2025, totals: gap ? gapTotals : totals() }],
+      byInstrument: empty
+        ? []
+        : [
+            {
+              instrument: ko,
+              totals: gap
+                ? totals({
+                    payments: 1,
+                    grossPln: money("92.25"),
+                    withholdingTaxPln: null,
+                    netPln: null,
+                    estimatedTopUpPln: null,
+                    taxablePayments: 1,
+                    isComplete: false,
+                  })
+                : totals({
+                    payments: 1,
+                    grossPln: money("92.25"),
+                    withholdingTaxPln: money("13.8375"),
+                    netPln: money("78.4125"),
+                    taxablePayments: 1,
+                  }),
+              yieldOnCost: {
+                ratio: "0.00375",
+                trailingGrossPln: money("92.25"),
+                costPln: money("24600"),
+                asOf: to ?? "2025-12-31",
+                reason: null,
+              },
+            },
+            {
+              instrument,
+              totals: totals({
+                payments: 1,
+                grossPln: money("500"),
+                withholdingTaxPln: money("95"),
+                netPln: money("405"),
+                estimatedTopUpPln: money("0"),
+                taxablePayments: 1,
+              }),
+              yieldOnCost: {
+                ratio: null,
+                trailingGrossPln: money("500"),
+                costPln: null,
+                asOf: to ?? "2025-12-31",
+                reason: "no_open_position",
+              },
+            },
+          ],
+      totals: empty
+        ? totals({
+            payments: 0,
+            grossPln: money("0"),
+            withholdingTaxPln: money("0"),
+            netPln: money("0"),
+            estimatedTopUpPln: null,
+            taxablePayments: 0,
+          })
+        : gap
+          ? gapTotals
+          : totals(),
+      totalsByCurrency: empty
+        ? []
+        : [
+            {
+              currency: "PLN",
+              payments: 1,
+              gross: money("500"),
+              withholdingTax: money("95"),
+              net: money("405"),
+            },
+            {
+              currency: "USD",
+              payments: 1,
+              gross: money("25", "USD"),
+              withholdingTax: gap ? null : money("3.75", "USD"),
+              net: gap ? null : money("21.25", "USD"),
+            },
+          ],
+      gaps: gap ? [{ reason: "missing_withholding", payments: 1 }] : [],
+      assumptions: {
+        incomeDate: "payment_date",
+        fxRates: "nbp_table_a_mid_previous_business_day",
+        plTaxRate: "0.19",
+        withholdingCredit: "capped_at_pl_rate",
+        topUp: "estimate",
+        yieldOnCost: "trailing_12m_gross_pln_over_open_cost_pln",
+        costBasisMethod: "fifo",
+      },
+      meta: {
+        source: "computed",
+        asOf: "2025-12-31T18:00:00.000Z",
+        delayMinutes: 0,
+        stale: empty || gap,
+        ...(empty || gap ? { staleReason: "no_data" } : {}),
+        ...(empty ? {} : { attribution: "Kursy: NBP" }),
+      },
+    });
+  }
   if (path === "/portfolio/currency-exposure") {
     // Vector A remainder (§ 3.7) valued at a synthetic close of 210 USD and rate 4.0000.
     const asOf = url.searchParams.get("asOf");
