@@ -1,6 +1,9 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
+// Synthetic sessions and portfolio data belong to the fixture server, including image CI.
+test.use({ baseURL: "https://127.0.0.1:3197" });
+
 test("English performance labels and decimal formatting follow preferences", async ({
   page,
   context,
