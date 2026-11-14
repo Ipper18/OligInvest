@@ -60,12 +60,24 @@ CREATE POLICY admin_all ON identity.invitations FOR ALL TO oliginvest_app
 -- Rola oliginvest_owner jest używana wyłącznie przez migracje i te funkcje (zasada dla każdej nowej funkcji DEFINER).
 CREATE POLICY definer_functions ON identity.invitations FOR ALL TO oliginvest_owner USING (true) WITH CHECK (true);
 -- Retencja (BL-115, NFR-11.02): kontekst systemowy widzi i usuwa wyłącznie niewykorzystane zaproszenia 30 dni po wygaśnięciu.
+-- E-mail wykorzystanego zaproszenia: anonimizacja 30 dni po użyciu (decyzja właściciela 2026-11-14, BL-114).
 CREATE POLICY retention_read ON identity.invitations FOR SELECT TO oliginvest_app
-  USING (platform.current_app_role() = 'system' AND used_at IS NULL AND expires_at < now() - interval '30 days');
+  USING (platform.current_app_role() = 'system' AND (
+    (used_at IS NULL AND expires_at < now() - interval '30 days')
+    OR (used_at IS NOT NULL AND used_at < now() - interval '30 days')));
 CREATE POLICY retention_delete ON identity.invitations FOR DELETE TO oliginvest_app
   USING (platform.current_app_role() = 'system' AND used_at IS NULL AND expires_at < now() - interval '30 days');
+CREATE POLICY retention_anonymize ON identity.invitations FOR UPDATE TO oliginvest_app
+  USING (platform.current_app_role() = 'system' AND used_at IS NOT NULL AND used_at < now() - interval '30 days')
+  WITH CHECK (platform.current_app_role() = 'system' AND used_at IS NOT NULL AND used_at < now() - interval '30 days'
+    AND email = 'anonymized-' || id::text || '@example.invalid');
 -- analytics.run_owner (BL-312): właściciel czyta wyłącznie user_id uruchomienia, bez zapisu.
 CREATE POLICY definer_functions ON analytics.analytics_runs FOR SELECT TO oliginvest_owner USING (true);
+-- identity.erase_account (BL-114): właściciel czyta wnioski o usunięcie, anonimizuje audyt i dopisuje erasure_log.
+CREATE POLICY definer_functions ON identity.deletion_requests FOR SELECT TO oliginvest_owner USING (true);
+CREATE POLICY definer_erasure_read ON platform.audit_log FOR SELECT TO oliginvest_owner USING (true);
+CREATE POLICY definer_erasure_update ON platform.audit_log FOR UPDATE TO oliginvest_owner USING (true) WITH CHECK (true);
+CREATE POLICY definer_functions ON platform.erasure_log FOR INSERT TO oliginvest_owner WITH CHECK (true);
 
 -- 12.4 Audyt: dopisywanie przez każdego, odczyt — admin lub własne wpisy; brak UPDATE/DELETE (brak uprawnień).
 ALTER TABLE platform.audit_log ENABLE ROW LEVEL SECURITY;

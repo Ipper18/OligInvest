@@ -17,5 +17,9 @@
   "securityMassExportBody": "A data export of account {account} matched the unusual export rule: {reason}.\n\nTime: {time} ({timezone})\n\nDownloading this export requires a fresh TOTP confirmation. Event details are in the audit log.",
   "securityMassExportReasonVolume": "more than 3 exports within 24 hours",
   "securityMassExportReasonCombination": "an export, a new PAT and a sign-in from a new device within 1 hour",
+  "securityDeletionRequestedSubject": "OligInvest — account deletion scheduled",
+  "securityDeletionRequestedBody": "A request to delete your OligInvest account was made. The account and all data will be permanently deleted on {time} ({timezone}).\n\nUntil then you can cancel the request in settings: {url}\n\nIf this was not you, cancel the request, change your password and end other sessions.",
+  "securityDeletionCancelledSubject": "OligInvest — account deletion cancelled",
+  "securityDeletionCancelledBody": "The request to delete your OligInvest account was cancelled: {time} ({timezone}). The account stays active.\n\nIf this was not you, change your password and review active sessions: {url}",
   "securityUnknown": "unknown"
 }

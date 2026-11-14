@@ -213,10 +213,51 @@ export class SecurityMonitor {
     });
   }
 
+  /** GDPR deletion request (BL-114): the account owner learns about it by e-mail at once. */
+  async deletionRequested(actor: Actor, event: { requestId: string; scheduledFor: string }) {
+    const text = await this.messages(actor);
+    const at = rowTime(event.scheduledFor);
+    await this.options.notify(`security-deletion-${event.requestId}`, {
+      v: 1,
+      userId: actor.userId,
+      kind: "security",
+      sourceRef: `security:deletion:${event.requestId}`,
+      channels: ["email"],
+      subject: text.messages.securityDeletionRequestedSubject,
+      text: formatMessage(text.messages.securityDeletionRequestedBody, {
+        time: text.time(at),
+        timezone: text.timezone,
+        url: this.url(),
+      }),
+      url: SETTINGS_PATH,
+      occurredAt: new Date().toISOString(),
+    });
+  }
+
+  async deletionCancelled(actor: Actor, event: { requestId: string }) {
+    const text = await this.messages(actor);
+    const now = new Date();
+    await this.options.notify(`security-deletion-cancelled-${event.requestId}`, {
+      v: 1,
+      userId: actor.userId,
+      kind: "security",
+      sourceRef: `security:deletion-cancelled:${event.requestId}`,
+      channels: ["email"],
+      subject: text.messages.securityDeletionCancelledSubject,
+      text: formatMessage(text.messages.securityDeletionCancelledBody, {
+        time: text.time(now),
+        timezone: text.timezone,
+        url: this.url(),
+      }),
+      url: SETTINGS_PATH,
+      occurredAt: now.toISOString(),
+    });
+  }
+
   /**
-   * Extension point for BL-114 (GDPR export, not implemented yet). Call when an
-   * export is requested; on an anomaly the caller must require a fresh step-up
-   * before the download and administrators receive one e-mail per account per day.
+   * GDPR export request (BL-114). On an anomaly the caller stores `step_up_after`, so the
+   * download needs a step-up made after this request; administrators receive one e-mail per
+   * account per day.
    */
   async exportRequested(
     actor: Actor,

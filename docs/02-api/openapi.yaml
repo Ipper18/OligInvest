@@ -752,6 +752,11 @@ paths:
     post:
       operationId: createDataExport
       summary: Zleć eksport wszystkich danych użytkownika (RODO, JSON + CSV w ZIP)
+      description: |
+        Wymaga sesji z 2FA i step-upu; bramka regulaminu nie blokuje praw z RODO. Jednocześnie trwa najwyżej
+        jeden eksport (`409 CONFLICT`), limit 10 zleceń na 24 h (`429 RATE_LIMITED`). Zlecenie przechodzi przez
+        regułę masowego eksportu (BL-110): przy anomalii pobranie wymaga step-upu wykonanego po zleceniu.
+        Gotowość ogłasza zdarzenie SSE `identity.export.ready` (BL-114, prywatnosc-rodo.md § 7.1).
       tags: [identity]
       x-step-up: true
       x-idempotency: required
@@ -759,7 +764,7 @@ paths:
       parameters:
         - {$ref: '#/components/parameters/IdempotencyKey'}
       responses:
-        '202': {description: 'Przyjęto; postęp zdarzeniem SSE lub odpytywaniem.', headers: {Location: {$ref: '#/components/headers/Location'}}, content: {application/json: {schema: {$ref: '#/components/schemas/DataExport'}}}}
+        '202': {description: 'Przyjęto; postęp zdarzeniem SSE lub odpytywaniem.', headers: {Location: {$ref: '#/components/headers/Location'}, Idempotent-Replayed: {$ref: '#/components/headers/IdempotentReplayed'}}, content: {application/json: {schema: {$ref: '#/components/schemas/DataExport'}}}}
         '401': {$ref: '#/components/responses/Unauthenticated'}
         '403': {$ref: '#/components/responses/Forbidden'}
         '409': {$ref: '#/components/responses/Conflict'}
@@ -780,6 +785,9 @@ paths:
     get:
       operationId: downloadDataExport
       summary: Pobierz archiwum eksportu (jednorazowo, w ciągu 24 h; step-up)
+      description: |
+        Jedno pobranie: ta sama transakcja usuwa archiwum i ustawia status `expired`; kolejna próba zwraca `404`.
+        Po anomalii masowego eksportu `403 STEP_UP_REQUIRED`, dopóki step-up nie zostanie wykonany po zleceniu.
       tags: [identity]
       x-step-up: true
       x-requirements: [FR-07.09]
@@ -810,6 +818,10 @@ paths:
     post:
       operationId: requestAccountDeletion
       summary: Zleć usunięcie konta i danych (14 dni na anulowanie)
+      description: |
+        Usunięcie wykonuje nocne zadanie `identity.erasure` po upływie karencji (≤ 15 dni od wniosku): kaskada po
+        wszystkich tabelach z `user_id`, audyt tylko z pseudonimem, UUID w `erasure_log` i w pliku poza bazą.
+        Aktywny wniosek → `409 CONFLICT`. E-mail bezpieczeństwa do właściciela konta.
       tags: [identity]
       x-step-up: true
       x-requirements: [FR-07.09]
@@ -3503,7 +3515,7 @@ components:
     ExportId:
       {name: exportId, in: path, required: true, schema: {$ref: '#/components/schemas/Uuid'}}
     QueueName:
-      {name: queueName, in: path, required: true, schema: {type: string, enum: [ingest, import, recompute, alerts, notify, analytics, analytics-results, events]}}
+      {name: queueName, in: path, required: true, schema: {type: string, enum: [ingest, import, recompute, alerts, notify, identity, analytics, analytics-results, events]}}
     JobId:
       {name: jobId, in: path, required: true, schema: {type: string, pattern: '^[A-Za-z0-9:_-]{1,128}$'}}
     ProviderId:

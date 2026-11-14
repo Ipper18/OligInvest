@@ -223,6 +223,11 @@ try {
   const { testM4Backend } = await import("../../../apps/api/integration/m4-backend.mjs");
   await testM4Backend({ host, port, database: migrated, passwords });
   console.log("M4 PAT replay, scopes, lifecycle, security mail and notification isolation: PASS");
+  const { testGdpr } = await import("../../../apps/api/integration/gdpr.mjs");
+  await testGdpr({ host, port, database: migrated, passwords });
+  console.log(
+    "BL-114 GDPR export (own data only, all user_id tables), erasure, file and restore: PASS",
+  );
   const { testMarketStorage } = await import("../../../apps/api/integration/market.mjs");
   await testMarketStorage({ host, port, database: migrated, passwords });
   console.log("Market API, Decimal OHLCV, cursor/ETag, quality hold and catalog latency: PASS");

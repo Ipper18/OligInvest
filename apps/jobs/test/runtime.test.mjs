@@ -26,6 +26,7 @@ test("queue catalog matches module contract without domain handlers or schedules
     ["recompute", 2],
     ["alerts", 2],
     ["notify", 4],
+    ["identity", 1],
     ["analytics", 1],
     ["analytics-results", 2],
     ["events", 4],

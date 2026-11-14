@@ -164,6 +164,16 @@ export function mountIdentity(api: OpenAPIHono<AppEnv>, dependencies: IdentityDe
             )
           ).rows[0],
       );
+      // BL-114: an active deletion request is shown on every screen until it is cancelled.
+      const deletion = await service.options.appDatabase.transaction(
+        subject,
+        async (tx) =>
+          (
+            await tx.execute(
+              sql`SELECT scheduled_for FROM identity.deletion_requests WHERE cancelled_at IS NULL AND completed_at IS NULL ORDER BY requested_at DESC LIMIT 1`,
+            )
+          ).rows[0],
+      );
       const verified = principal.mfa_verified_at;
       const validUntil = verified ? new Date(verified.getTime() + 900_000) : undefined;
       return context.json(
@@ -181,6 +191,11 @@ export function mountIdentity(api: OpenAPIHono<AppEnv>, dependencies: IdentityDe
               : {}),
           },
           legal: await service.legal(principal),
+          ...(deletion
+            ? {
+                deletionScheduledFor: z.coerce.date().parse(deletion.scheduled_for).toISOString(),
+              }
+            : {}),
           permissions: permissionsForRole(principal.role),
           features: await service.features.effective(subject),
           preferences: preferences ?? {

@@ -79,6 +79,9 @@ services:
       LEGAL_CONTROLLER_NAME: ${LEGAL_CONTROLLER_NAME:-}
       LEGAL_CONTACT_EMAIL: ${LEGAL_CONTACT_EMAIL:-}
       LEGAL_EFFECTIVE_DATE: ${LEGAL_EFFECTIVE_DATE:-}
+      # BL-114: identifiers of erased accounts outside the database (backup-dr.md § 7). The host
+      # override (infra/host/storage-compose.yaml) binds the file; without it erasure fails closed.
+      ERASURE_LOG_FILE: /var/lib/oliginvest/erasure-log.jsonl
     networks: [backend, egress]
     mem_limit: 384m
     cpus: 1

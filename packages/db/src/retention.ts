@@ -17,10 +17,16 @@ export const AUDIT_PARTITION_ROWS = 1_000_000;
 export type RetentionTargetId =
   | "import_files"
   | "data_exports"
+  | "data_export_metadata"
   | "notification_deliveries"
   | "role_quota_usage"
+  | "idempotency_keys"
   | "invitations"
-  | "web_vitals";
+  | "invitation_emails"
+  | "erasure_log"
+  | "web_vitals"
+  | "bars_intraday"
+  | "news_items";
 
 interface RetentionTarget {
   id: RetentionTargetId;
@@ -38,7 +44,7 @@ export const RETENTION_TARGETS: readonly RetentionTarget[] = Object.freeze([
       ORDER BY expires_at, batch_id LIMIT ${limit})`,
   },
   {
-    // 24 h or the first download: the ZIP goes, the metadata row stays (period: owner question).
+    // 24 h or the first download: the ZIP goes, the metadata row stays for 2 years.
     id: "data_exports",
     scope: "user",
     batch: (limit) => sql`UPDATE identity.data_exports
@@ -49,6 +55,15 @@ export const RETENTION_TARGETS: readonly RetentionTarget[] = Object.freeze([
                  OR coalesce(expires_at, created_at + interval '24 hours') <= now()))
            OR (status IN ('failed', 'expired') AND content IS NOT NULL)
         ORDER BY created_at, id LIMIT ${limit})`,
+  },
+  {
+    // Export metadata (who exported when): 2 years, owner decision 2026-11-14 (BL-114).
+    id: "data_export_metadata",
+    scope: "user",
+    batch: (limit) => sql`DELETE FROM identity.data_exports WHERE id IN (
+      SELECT id FROM identity.data_exports
+      WHERE created_at < now() - interval '2 years' AND status IN ('failed', 'expired')
+      ORDER BY created_at, id LIMIT ${limit})`,
   },
   {
     id: "notification_deliveries",
@@ -68,6 +83,14 @@ export const RETENTION_TARGETS: readonly RetentionTarget[] = Object.freeze([
       ORDER BY consumed_at, operation_id LIMIT ${limit})`,
   },
   {
+    // Replay records live 24 h (expires_at); afterwards the key may be reused.
+    id: "idempotency_keys",
+    scope: "user",
+    batch: (limit) => sql`DELETE FROM platform.idempotency_keys WHERE (user_id, key) IN (
+      SELECT user_id, key FROM platform.idempotency_keys WHERE expires_at <= now()
+      ORDER BY expires_at, key LIMIT ${limit})`,
+  },
+  {
     // Unused invitations: 30 days after expiry. The RLS policy limits `system` to these rows.
     id: "invitations",
     scope: "system",
@@ -77,11 +100,49 @@ export const RETENTION_TARGETS: readonly RetentionTarget[] = Object.freeze([
       ORDER BY expires_at, id LIMIT ${limit})`,
   },
   {
+    // E-mail of a used invitation: anonymized 30 days after use (owner decision 2026-11-14,
+    // BL-114). The RLS policy accepts only this exact replacement value.
+    id: "invitation_emails",
+    scope: "system",
+    batch: (limit) => sql`UPDATE identity.invitations
+      SET email = 'anonymized-' || id::text || '@example.invalid'
+      WHERE id IN (
+        SELECT id FROM identity.invitations
+        WHERE used_at IS NOT NULL AND used_at < now() - interval '30 days'
+          AND email <> 'anonymized-' || id::text || '@example.invalid'
+        ORDER BY used_at, id LIMIT ${limit})`,
+  },
+  {
+    // Erased account identifiers: 40 days, longer than the 35-day backup retention (backup-dr.md § 7).
+    id: "erasure_log",
+    scope: "system",
+    batch: (limit) => sql`DELETE FROM platform.erasure_log WHERE erased_user_id IN (
+      SELECT erased_user_id FROM platform.erasure_log WHERE purge_after <= now()
+      ORDER BY purge_after, erased_user_id LIMIT ${limit})`,
+  },
+  {
     id: "web_vitals",
     scope: "system",
     batch: (limit) => sql`DELETE FROM platform.web_vitals WHERE id IN (
       SELECT id FROM platform.web_vitals WHERE recorded_at < now() - interval '90 days'
       ORDER BY recorded_at, id LIMIT ${limit})`,
+  },
+  {
+    // Market data, no personal data: intraday bars 90 days (EOD bars are permanent).
+    id: "bars_intraday",
+    scope: "system",
+    batch: (limit) => sql`DELETE FROM market.bars_intraday
+      WHERE (instrument_id, interval, ts) IN (
+        SELECT instrument_id, interval, ts FROM market.bars_intraday
+        WHERE ts < now() - interval '90 days'
+        ORDER BY ts, instrument_id, interval LIMIT ${limit})`,
+  },
+  {
+    id: "news_items",
+    scope: "system",
+    batch: (limit) => sql`DELETE FROM market.news_items WHERE id IN (
+      SELECT id FROM market.news_items WHERE published_at < now() - interval '90 days'
+      ORDER BY published_at, id LIMIT ${limit})`,
   },
 ]);
 

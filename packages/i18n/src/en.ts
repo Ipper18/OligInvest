@@ -14,6 +14,7 @@ import marketMessages from "./en/market.json" with { type: "json" };
 import onboardingMessages from "./en/onboarding.json" with { type: "json" };
 import portfolioMessages from "./en/portfolio.json" with { type: "json" };
 import preferencesMessages from "./en/preferences.json" with { type: "json" };
+import privacyMessages from "./en/privacy.json" with { type: "json" };
 import pwaMessages from "./en/pwa.json" with { type: "json" };
 import quickMessages from "./en/quick.json" with { type: "json" };
 export const copies = {
@@ -21,6 +22,7 @@ export const copies = {
   commonMessages,
   marketMessages,
   pwaMessages,
+  privacyMessages,
   portfolioMessages,
   analyticsMessages,
   educationMessages,
