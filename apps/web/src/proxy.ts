@@ -4,8 +4,25 @@ import { appMessages } from "@oliginvest/i18n";
 import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { meSchema } from "./api/validation";
-import { gatePath, safeReturnTo } from "./auth/navigation";
+import { LOCALE_COOKIE, localeCookieOptions } from "./appearance/locale-cookie";
+import { authDestination, gatePath, safeReturnTo } from "./auth/navigation";
 import { uiModules } from "./ui-registry";
+
+/**
+ * Next answers every proxy redirect with the relative `Location` as its body (router-server
+ * `res.end(destination)`), so the response declares that plain-text body (ZAP 10019, BL-613).
+ */
+function redirectTo(destination: URL) {
+  return NextResponse.redirect(destination, {
+    headers: { "Content-Type": "text/plain; charset=utf-8" },
+  });
+}
+
+/** `returnTo` exactly as the page saw it in `searchParams`: a repeated parameter is an array. */
+function returnToParameter(request: NextRequest) {
+  const values = request.nextUrl.searchParams.getAll("returnTo");
+  return values.length > 1 ? values : values[0];
+}
 
 export async function proxy(request: NextRequest) {
   const nonce = randomBytes(16).toString("base64");
@@ -35,7 +52,11 @@ export async function proxy(request: NextRequest) {
   headers.set("x-oi-pathname", request.nextUrl.pathname);
   let response = NextResponse.next({ request: { headers } });
   const pathname = request.nextUrl.pathname;
+  // A signed-in visitor leaves the sign-in page here, with a minimal 307 instead of the page's
+  // `redirect()` and its ~40 KB error shell (ZAP 10044, BL-613). Same session check, no extra call.
+  const signIn = pathname === "/logowanie";
   if (
+    signIn ||
     pathname === "/" ||
     /^\/(portfel|rynek|analizy|alerty|nauka|ustawienia|admin)(\/|$)/u.test(pathname)
   ) {
@@ -57,15 +78,21 @@ export async function proxy(request: NextRequest) {
         else if (result.status !== 401 && result.status !== 403)
           throw new Error("SESSION_UNAVAILABLE");
       } catch {
-        response = new NextResponse(null, { status: 503 });
+        // The public sign-in form stays available; it reports API failures on submit.
+        if (!signIn) response = new NextResponse(null, { status: 503 });
       }
     }
     if (response.status !== 503) {
       const gate = gatePath(me);
-      if (gate) {
+      if (signIn) {
+        if (me)
+          response = redirectTo(
+            new URL(authDestination(gate, returnToParameter(request)), request.url),
+          );
+      } else if (gate) {
         const destination = new URL(gate, request.url);
         destination.searchParams.set("returnTo", safeReturnTo(pathname + request.nextUrl.search));
-        response = NextResponse.redirect(destination);
+        response = redirectTo(destination);
       } else if (me) {
         const module = uiModules.find((entry) =>
           entry.nav?.some((item) => pathname === item.href || pathname.startsWith(`${item.href}/`)),
@@ -86,12 +113,12 @@ export async function proxy(request: NextRequest) {
             },
           );
       }
-      if (me && request.cookies.get("oi-locale")?.value !== me.preferences.locale)
-        response.cookies.set("oi-locale", me.preferences.locale, {
-          secure: !development,
-          sameSite: "lax",
-          path: "/",
-        });
+      if (me && request.cookies.get(LOCALE_COOKIE)?.value !== me.preferences.locale)
+        response.cookies.set(
+          LOCALE_COOKIE,
+          me.preferences.locale,
+          localeCookieOptions(development),
+        );
     }
   }
   response.headers.set("Content-Security-Policy", csp);
