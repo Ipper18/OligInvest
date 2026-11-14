@@ -51,7 +51,6 @@
   "getAttribution",
   "getDecisionStats",
   "getDemoPortfolio",
-  "getDrawdown",
   "getJournalEntry",
   "getMacroSeries",
   "getMarketCalendar",

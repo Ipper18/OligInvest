@@ -50,6 +50,24 @@ describe("drawdowns on the TWR index (§ 7), vector C", () => {
     expect(result.recoveryIndex).toBe(readStatistic(C.recovery_index));
   });
 
+  test("an exact return to the peak survives TWR chaining without a tolerance", () => {
+    const index = twrIndex(
+      ["100", "75", "100", "90", "100"].map((value, i) => ({
+        date: d(`2025-01-0${i + 1}`),
+        value: pln(value),
+        flow: pln(i === 0 ? "100" : "0"),
+      })),
+    );
+    expect(index.map((p) => p.index.toFixed())).toEqual(["1", "0.75", "1", "0.9", "1"]);
+    expect(drawdowns(index.map((p) => p.index))).toEqual({
+      series: [0, -0.25, 0, -0.1, 0],
+      maxDrawdown: -0.25,
+      peakIndex: 0,
+      troughIndex: 1,
+      recoveryIndex: 2,
+    });
+  });
+
   test("no drawdown, not yet recovered, TWR index input", () => {
     const up = drawdowns(["1", "1.1", "1.2"].map((v) => toDecimal(v)));
     expect(up).toMatchObject({

@@ -6,6 +6,8 @@ import { useEffect, useRef, useState } from "react";
 import type uPlot from "uplot";
 import "uplot/dist/uPlot.min.css";
 
+export { UnderwaterChart } from "./underwater-chart.js";
+
 export type PercentileSeries = {
   months: number[];
   p5: number[];

@@ -9,6 +9,7 @@ import { notFound } from "next/navigation";
 import { z } from "zod";
 import { requireMe } from "../auth/session";
 import { createPerformanceSchema } from "../modules";
+import { DrawdownSection } from "./drawdown-section";
 import type { SearchParams } from "./page";
 import { PortfolioHeader } from "./page-header";
 import { DomainError, domainRequest, fetchResource } from "./resources";
@@ -16,6 +17,7 @@ import { DomainError, domainRequest, fetchResource } from "./resources";
 const querySchema = z
   .object({
     accountId: z.uuid().optional(),
+    drawdownPage: z.coerce.number().int().min(1).max(30).default(1),
     from: z.iso.date().optional(),
     to: z.iso.date().optional(),
     currency: z.enum(["base", "account"]).default("base"),
@@ -39,6 +41,7 @@ export async function PerformancePage({ searchParams }: { searchParams: SearchPa
   );
   if (!parsed.success) notFound();
   const {
+    drawdownPage,
     currency: requestedCurrency,
     view = me.preferences.plView,
     groupBy,
@@ -144,6 +147,15 @@ export async function PerformancePage({ searchParams }: { searchParams: SearchPa
           </tbody>
         </table>
       </section>
+      <DrawdownSection
+        filter={filter}
+        page={drawdownPage}
+        navigationQuery={new URLSearchParams({
+          ...Object.fromEntries(query),
+          view,
+          groupBy,
+        }).toString()}
+      />
       <Disclaimer disclaimerKey="general" version="2026-09" />
       <h2>{m.realized}</h2>
       <RealizedScreen userId={me.id} args={args} accounts={accounts.data} initial={realized} />

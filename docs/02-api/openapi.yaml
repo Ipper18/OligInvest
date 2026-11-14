@@ -1892,6 +1892,8 @@ paths:
         '200': {description: 'Obsunięcia.', content: {application/json: {schema: {$ref: '#/components/schemas/Drawdown'}}}}
         '401': {$ref: '#/components/responses/Unauthenticated'}
         '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '422': {$ref: '#/components/responses/ValidationFailed'}
   /portfolio/risk:
     get:
       operationId: getRiskMetrics
@@ -5671,31 +5673,29 @@ components:
               ratio: {type: number}
     Drawdown:
       type: object
-      required: [maxDrawdown, underwater, meta]
+      description: 'Obsunięcia indeksu TWR z pełnych wycen dziennych w PLN, przepływy na początku dnia. Zakres od from obejmuje poprzednie zamknięcie jako bazę, jeśli istnieje wcześniejsza historia. Czas trwania: szczyt–dołek; odrabianie: dołek–pierwszy powrót do szczytu. Brak lub luka wycen/przepływów daje null i pustą serię. BL-305: stopy jako ciągi dziesiętne; LTTB dopiero po obliczeniach, zachowuje daty maksimum obsunięcia.'
+      required: [currency, from, to, status, maxDrawdown, peakDate, troughDate, recoveryDate, durationDays, recoveryDays, underwater, decimated, meta]
       properties:
-        maxDrawdown: {type: number, maximum: 0, description: 'Ułamek ujemny (przykład C: -0.25).'}
-        peakDate: {$ref: '#/components/schemas/LocalDate'}
-        troughDate: {$ref: '#/components/schemas/LocalDate'}
+        currency: {type: string, enum: [PLN]}
+        from: {$ref: '#/components/schemas/LocalDate'}
+        to: {$ref: '#/components/schemas/LocalDate'}
+        status: {type: string, enum: [ok, no_data, incomplete]}
+        maxDrawdown: {type: [string, 'null'], pattern: '^-?\d+(\.\d+)?$', description: 'Ułamek niedodatni; przykład C: "-0.25". Brak wyniku: null.'}
+        peakDate: {oneOf: [{$ref: '#/components/schemas/LocalDate'}, {type: 'null'}]}
+        troughDate: {oneOf: [{$ref: '#/components/schemas/LocalDate'}, {type: 'null'}]}
         recoveryDate: {oneOf: [{$ref: '#/components/schemas/LocalDate'}, {type: 'null'}]}
-        durationDays: {type: integer}
-        recoveryDays: {type: [integer, 'null']}
-        episodes:
-          type: array
-          maxItems: 5
-          items:
-            type: object
-            required: [depth, peakDate, troughDate]
-            properties:
-              depth: {type: number}
-              peakDate: {$ref: '#/components/schemas/LocalDate'}
-              troughDate: {$ref: '#/components/schemas/LocalDate'}
-              recoveryDate: {oneOf: [{$ref: '#/components/schemas/LocalDate'}, {type: 'null'}]}
+        durationDays: {type: [integer, 'null'], minimum: 0}
+        recoveryDays: {type: [integer, 'null'], minimum: 0}
         underwater:
           type: object
           required: [t, drawdown]
           properties:
-            t: {$ref: '#/components/schemas/TimeAxis'}
-            drawdown: {$ref: '#/components/schemas/NumberSeries'}
+            t: {type: array, maxItems: 3000, items: {type: integer}}
+            drawdown:
+              type: array
+              maxItems: 3000
+              items: {type: string, pattern: '^-?\d+(\.\d+)?$'}
+        decimated: {type: boolean}
         meta: {$ref: '#/components/schemas/DataMeta'}
     RiskMetrics:
       type: object

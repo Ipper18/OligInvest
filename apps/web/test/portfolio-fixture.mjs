@@ -201,6 +201,37 @@ export async function portfolioFixture(request, response, key, preferences = {})
       data: [{ accountId, balance: money("1000"), balanceBase: money("1000"), asOf: "2026-10-13" }],
     });
   if (path === "/portfolio/lots") return send({ data: [], page: emptyPage, method: "fifo" });
+  if (path === "/portfolio/drawdown") {
+    const empty = url.searchParams.get("from") === "2025-12-15";
+    const gap = url.searchParams.get("from") === "2025-06-01";
+    const missing = empty || gap;
+    return send({
+      currency: "PLN",
+      from: url.searchParams.get("from") ?? "2025-01-01",
+      to: "2025-12-31",
+      status: empty ? "no_data" : gap ? "incomplete" : "ok",
+      maxDrawdown: missing ? null : "-0.25",
+      peakDate: missing ? null : "2025-01-04",
+      troughDate: missing ? null : "2025-01-05",
+      recoveryDate: missing ? null : "2025-01-07",
+      durationDays: missing ? null : 1,
+      recoveryDays: missing ? null : 2,
+      underwater: {
+        t: missing ? [] : Array.from({ length: 8 }, (_, i) => Date.UTC(2025, 0, i + 1) / 1000),
+        drawdown: missing
+          ? []
+          : ["0", "0", "-0.04545454545", "0", "-0.25", "-0.20833333333", "0", "-0.03846153846"],
+      },
+      decimated: false,
+      meta: {
+        source: "computed",
+        asOf: "2025-12-31T20:00:00Z",
+        delayMinutes: 0,
+        stale: missing,
+        staleReason: missing ? "no_data" : "eod_only",
+      },
+    });
+  }
   if (path === "/portfolio/performance") {
     const short = url.searchParams.get("from") === "2025-12-15";
     const gap = url.searchParams.get("from") === "2025-06-01";
