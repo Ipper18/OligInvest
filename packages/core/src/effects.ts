@@ -1,5 +1,5 @@
 import { CoreError } from "./errors.js";
-import { assertSameCurrency, type Money, money, subtractMoney } from "./money.js";
+import { assertSameCurrency, type Money, money, subtractMoney, sumMoney } from "./money.js";
 
 export interface PriceFxEffectInput {
   /** Cost in the account (reporting) currency, e.g. PLN. */
@@ -35,4 +35,21 @@ export function priceFxEffect(input: PriceFxEffectInput): PriceFxEffect {
     input.cost.currency,
   );
   return Object.freeze({ pl, priceEffect, fxEffect: subtractMoney(pl, priceEffect) });
+}
+
+/** Unrounded sum of effects in one reporting currency; the identity carries over to the total. */
+export function sumPriceFxEffects(
+  items: readonly PriceFxEffect[],
+  currency: string,
+): PriceFxEffect {
+  const total = (key: keyof PriceFxEffect) =>
+    sumMoney(
+      items.map((i) => i[key]),
+      currency,
+    );
+  return Object.freeze({
+    pl: total("pl"),
+    priceEffect: total("priceEffect"),
+    fxEffect: total("fxEffect"),
+  });
 }

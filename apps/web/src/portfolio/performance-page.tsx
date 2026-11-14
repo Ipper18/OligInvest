@@ -9,6 +9,7 @@ import { notFound } from "next/navigation";
 import { z } from "zod";
 import { requireMe } from "../auth/session";
 import { createPerformanceSchema } from "../modules";
+import { CurrencyExposureSection } from "./currency-exposure-section";
 import { DrawdownSection } from "./drawdown-section";
 import type { SearchParams } from "./page";
 import { PortfolioHeader } from "./page-header";
@@ -156,6 +157,7 @@ export async function PerformancePage({ searchParams }: { searchParams: SearchPa
           groupBy,
         }).toString()}
       />
+      <CurrencyExposureSection filter={filter} />
       <Disclaimer disclaimerKey="general" version="2026-09" />
       <h2>{m.realized}</h2>
       <RealizedScreen userId={me.id} args={args} accounts={accounts.data} initial={realized} />
