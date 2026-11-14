@@ -2,7 +2,7 @@
 
 **Cel:** zapisać wynik rozszerzenia ZAP baseline o anonimowe prawdziwe API oraz otwarte warunki odbioru.
 
-2026-11-14; gałąź `feat/bl-614-zap-api`, baza `origin/main` `6673585`; osobny worktree wskazany przez właściciela.
+2026-11-14; gałąź `feat/bl-614-zap-api`, baza `origin/main` `6673585`; osobny worktree wskazany przez właściciela; [draft PR #79](https://github.com/Ipper18/OligInvest/pull/79).
 
 ## Zrobione
 
@@ -22,7 +22,7 @@
 
 ## Otwarte i pominięte
 
-- Trzy informacyjne WARN opisane w [przeglądzie](../06-bezpieczenstwo/przeglady/2026-11-14-zap-api-baseline-bl-614.md); pytanie właściciela o pozostawienie WARN bez wyjątków. CI i przegląd kodu przez właściciela wymagane przed uznaniem DoD.
+- Trzy informacyjne WARN opisane w [przeglądzie](../06-bezpieczenstwo/przeglady/2026-11-14-zap-api-baseline-bl-614.md); właściciel zaakceptował je 2026-11-14: pozostają raportowane WARN bez wyjątków i zmiany progów. CI i przegląd kodu przez właściciela wymagane przed uznaniem DoD.
 - Sesja TOTP i wydane ciasteczka: BL-614b, zgodnie z decyzją właściciela. Nie zmieniano obszarów równoległego BL-306, core, i18n, manifestów ani lockfile.
 - Estymata BL-614: 1 d bez zmian; nakład i odchylenie niezmierzone. Nowy ADR niepotrzebny. R-56 pozostaje otwarte dla sesji TOTP; brak nowego ryzyka. M6 nie jest kończony.
 - Wymagany check: zachować istniejący `dast`, który obejmuje oba skany; nie potrzeba nowego wpisu rulesetu. Ewentualny podział joba w przyszłości wymaga osobnej decyzji właściciela.
