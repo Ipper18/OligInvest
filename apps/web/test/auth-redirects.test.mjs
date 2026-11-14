@@ -1,7 +1,12 @@
 import { beforeEach, expect, test, vi } from "vitest";
 
-const context = vi.hoisted(() => ({ me: null, challenge: false }));
-vi.mock("../src/auth/session", () => ({ getMe: async () => context.me }));
+const context = vi.hoisted(() => ({ me: null, challenge: false, reads: 0 }));
+vi.mock("../src/auth/session", () => ({
+  getMe: async () => {
+    context.reads += 1;
+    return context.me;
+  },
+}));
 vi.mock("../src/auth/form", () => ({ AuthForm: () => null }));
 vi.mock("../src/api/server", () => ({ getApiClient: vi.fn() }));
 vi.mock("next/headers", () => ({
@@ -25,10 +30,16 @@ beforeEach(() => {
     legal: { termsAcceptanceRequired: false },
   };
   context.challenge = false;
+  context.reads = 0;
+});
+
+test("the sign-in page renders the form without reading the session (proxy redirects, BL-613)", async () => {
+  expect((await signIn()).props.kind).toBe("signIn");
+  expect(context.reads).toBe(0);
 });
 
 test("completed auth pages retain the destination when rendered with a rotated session", async () => {
-  for (const page of [signIn, totp, legal])
+  for (const page of [totp, legal])
     await expect(page(props("/ustawienia?tab=security"))).rejects.toThrow(
       "redirect:/ustawienia?tab=security",
     );
@@ -36,14 +47,10 @@ test("completed auth pages retain the destination when rendered with a rotated s
 
 test("server gate transitions carry the original destination", async () => {
   context.me.legal.termsAcceptanceRequired = true;
-  for (const page of [signIn, totp])
-    await expect(page(props("/ustawienia"))).rejects.toThrow(
-      "redirect:/akceptacja-regulaminu?returnTo=%2Fustawienia",
-    );
-  context.me.mfa.sessionVerifiedAt = undefined;
-  await expect(signIn(props("/ustawienia"))).rejects.toThrow(
-    "redirect:/logowanie/2fa?returnTo=%2Fustawienia",
+  await expect(totp(props("/ustawienia"))).rejects.toThrow(
+    "redirect:/akceptacja-regulaminu?returnTo=%2Fustawienia",
   );
+  context.me.mfa.sessionVerifiedAt = undefined;
   context.me.mfa.enrolled = false;
   await expect(totp(props("/ustawienia"))).rejects.toThrow(
     "redirect:/konfiguracja-2fa?returnTo=%2Fustawienia",
