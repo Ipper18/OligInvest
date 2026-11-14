@@ -11,7 +11,9 @@ import {
   positionsResponse,
   realizedResponse,
 } from "../contracts.js";
+import { createPerformanceSchema } from "../performance-contracts.js";
 import { readPortfolioHistory } from "./history.js";
+import { readPerformance } from "./performance.js";
 import { readPortfolio } from "./read-service.js";
 import { validationError } from "./repository.js";
 import type { PortfolioDependencies } from "./routes.js";
@@ -106,6 +108,50 @@ function queryValues(url: string) {
   return values;
 }
 export function mountPortfolioReads(api: OpenAPIHono<AppEnv>, deps: PortfolioDependencies) {
+  const performanceSchema = createPerformanceSchema();
+  const performanceQuery = z
+    .object({
+      ...accounts,
+      from: z.iso.date().optional(),
+      to: z.iso.date().optional(),
+      currency: z.enum(["base", "account"]).default("base"),
+      instrumentId: z.uuid().optional(),
+      benchmarkId: z.uuid().optional(),
+    })
+    .strict();
+  const performance = createRoute({
+    method: "get",
+    path: "/portfolio/performance",
+    operationId: "getPerformance",
+    tags: ["portfolio"],
+    security: [{ sessionCookie: [] }],
+    request: { query: performanceQuery },
+    responses: {
+      200: {
+        description: "Wyniki.",
+        content: { "application/json": { schema: performanceSchema } },
+      },
+      401: marketError,
+      403: marketError,
+      404: marketError,
+      422: marketError,
+    },
+  });
+  api.openAPIRegistry.registerPath(performance);
+  api.get(performance.path, async (c) => {
+    try {
+      const principal = await deps.authorize(c.req.raw);
+      const response = await readPerformance(
+        await deps.repository(),
+        principal,
+        performanceQuery.parse(queryValues(c.req.url)),
+      );
+      c.header("Cache-Control", "no-store");
+      return c.json(response);
+    } catch (error) {
+      return validationError(error);
+    }
+  });
   const history = createRoute({
     method: "get",
     path: "/portfolio/history",

@@ -201,6 +201,34 @@ export async function portfolioFixture(request, response, key, preferences = {})
       data: [{ accountId, balance: money("1000"), balanceBase: money("1000"), asOf: "2026-10-13" }],
     });
   if (path === "/portfolio/lots") return send({ data: [], page: emptyPage, method: "fifo" });
+  if (path === "/portfolio/performance") {
+    const short = url.searchParams.get("from") === "2025-12-15";
+    const gap = url.searchParams.get("from") === "2025-06-01";
+    const total = {
+      twr: gap ? null : "0.10982739",
+      twrAnnualized: null,
+      xirr: short || gap ? null : "0.08658843",
+      xirrStatus: short ? "period_too_short" : gap ? "insufficient_flows" : "ok",
+    };
+    return send({
+      currency: "PLN",
+      from: url.searchParams.get("from") ?? "2025-01-01",
+      to: "2025-12-31",
+      total,
+      periods: ["1m", "3m", "6m", "ytd", "1y", "3y", "5y", "inception"].map((key) => ({
+        key,
+        ...total,
+      })),
+      assumptions: { flowTiming: "start_of_day", dayCount: "ACT/365" },
+      meta: {
+        source: "computed",
+        asOf: "2025-12-31T20:00:00Z",
+        delayMinutes: 0,
+        stale: gap,
+        staleReason: gap ? "no_data" : "eod_only",
+      },
+    });
+  }
   if (path === "/portfolio/realized")
     return send({
       view,

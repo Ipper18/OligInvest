@@ -42,3 +42,4 @@ export function pluralForm(count: number): Intl.LDMLPluralRule {
 }
 
 export * from "./formatters.js";
+export { getPerformanceCopy } from "./performance.js";

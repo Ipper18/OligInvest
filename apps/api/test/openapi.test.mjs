@@ -77,6 +77,7 @@ test("Zod document matches all implemented operations and pending is the exact r
     "getNotificationPreferences",
     "getOnboardingState",
     "getOpenApiDocument",
+    "getPerformance",
     "getPortfolioHistory",
     "getPortfolioSummary",
     "getPreferences",

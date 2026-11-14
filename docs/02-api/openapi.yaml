@@ -1800,6 +1800,7 @@ paths:
     get:
       operationId: getPerformance
       summary: TWR i XIRR dla okresu oraz porównanie z benchmarkiem (przykład B)
+      description: 'BL-303: portfel zbiorczy i rachunek. instrumentId (wynik pozycji) i benchmarkId (BL-304) są zarezerwowane i zwracają 422. Okres obejmuje przepływy od from włącznie; bazą jest zamknięcie poprzedniego dnia. Luki wyceny lub przepływu dają null, nigdy stopę 0. Decyzja właściciela 2026-11-13: wynik pozycji wymaga osobnej metodologii; stopy w tej operacji są ciągami dziesiętnymi.'
       tags: [portfolio]
       x-permission: portfolio:read
       x-requirements: [FR-03.06, FR-03.07]
@@ -1814,6 +1815,7 @@ paths:
         '200': {description: 'Wyniki.', content: {application/json: {schema: {$ref: '#/components/schemas/Performance'}}}}
         '401': {$ref: '#/components/responses/Unauthenticated'}
         '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
         '422': {$ref: '#/components/responses/ValidationFailed'}
   /portfolio/allocation:
     get:
@@ -5507,10 +5509,10 @@ components:
       type: object
       required: [twr]
       properties:
-        twr: {type: [number, 'null']}
-        twrAnnualized: {type: [number, 'null'], description: 'Tylko dla okresów ≥ 1 rok.'}
-        xirr: {type: [number, 'null'], description: '`null` = nie da się wyznaczyć (patrz `xirrStatus`).'}
-        xirrStatus: {type: string, enum: [ok, no_convergence, insufficient_flows]}
+        twr: {type: [string, 'null'], pattern: '^-?\d+(\.\d+)?$', description: 'Ułamek dziesiętny; null przy niepełnych wycenach lub przepływach.'}
+        twrAnnualized: {type: [string, 'null'], pattern: '^-?\d+(\.\d+)?$', description: 'Tylko dla okresów ≥ 1 rok.'}
+        xirr: {type: [string, 'null'], pattern: '^-?\d+(\.\d+)?$', description: '`null` = nie da się wyznaczyć (patrz `xirrStatus`).'}
+        xirrStatus: {type: string, enum: [ok, no_convergence, insufficient_flows, period_too_short], description: 'period_too_short: okres < 30 dni (§ 6.3); insufficient_flows obejmuje brakujące dane wejściowe.'}
     Performance:
       type: object
       required: [currency, from, to, total, periods, assumptions, meta]
@@ -5522,12 +5524,15 @@ components:
         periods:
           type: array
           items:
-            allOf:
-              - {$ref: '#/components/schemas/ReturnFigures'}
-              - type: object
-                required: [key]
-                properties:
-                  key: {type: string, enum: [1m, 3m, 6m, ytd, 1y, 3y, 5y, inception]}
+            type: object
+            additionalProperties: false
+            required: [key, twr]
+            properties:
+              key: {type: string, enum: [1m, 3m, 6m, ytd, 1y, 3y, 5y, inception]}
+              twr: {$ref: '#/components/schemas/ReturnFigures/properties/twr'}
+              twrAnnualized: {$ref: '#/components/schemas/ReturnFigures/properties/twrAnnualized'}
+              xirr: {$ref: '#/components/schemas/ReturnFigures/properties/xirr'}
+              xirrStatus: {$ref: '#/components/schemas/ReturnFigures/properties/xirrStatus'}
         benchmark:
           type: object
           properties:
