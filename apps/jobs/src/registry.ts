@@ -17,6 +17,7 @@ export function createQueueRegistry(evaluate: FlagEvaluator = () => false) {
     },
     { id: "alerts", queues: [{ name: "alerts", concurrency: 2 }] },
     { id: "notifications", queues: [{ name: "notify", concurrency: 4 }] },
+    { id: "identity", queues: [{ name: "identity", concurrency: 1 }] },
     {
       id: "analytics",
       queues: [

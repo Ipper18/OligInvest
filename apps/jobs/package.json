@@ -26,7 +26,8 @@
     "@oliginvest/db": "workspace:*",
     "drizzle-orm": "0.45.2",
     "@oliginvest/mod-portfolio": "workspace:*",
-    "@oliginvest/mod-notifications": "workspace:*"
+    "@oliginvest/mod-notifications": "workspace:*",
+    "@oliginvest/mod-identity": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "24.13.5",

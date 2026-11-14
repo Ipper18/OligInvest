@@ -1,5 +1,14 @@
 # Install outside the repository as /etc/oliginvest/storage-compose.yaml (root/0600).
 # Configure BEFORE the first deployment; existing volumes require owner migration.
+services:
+  jobs:
+    # BL-114: register of erased accounts on the backup disk (owner 10003:10003, mode 0600).
+    # Never created here: a missing file stops the deployment instead of starting an empty register.
+    volumes:
+      - type: bind
+        source: /srv/backup/erasure-log.jsonl
+        target: /var/lib/oliginvest/erasure-log.jsonl
+        bind: {create_host_path: false}
 volumes:
   backup-data:
     driver: local

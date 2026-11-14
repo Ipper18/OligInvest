@@ -268,6 +268,7 @@ export const identityDataExports = identitySchema.table(
       .default(sql`now()`),
     expiresAt: timestamp("expires_at", { withTimezone: true, mode: "string" }),
     downloadedAt: timestamp("downloaded_at", { withTimezone: true, mode: "string" }),
+    stepUpAfter: timestamp("step_up_after", { withTimezone: true, mode: "string" }),
   },
   (table) => [
     check(
@@ -310,7 +311,7 @@ export const identityInvitations = identitySchema.table(
     email: text("email").notNull(),
     role: text("role").notNull().default(sql`'user'::text`),
     tokenHash: text("token_hash").notNull(),
-    invitedBy: uuid("invited_by").notNull(),
+    invitedBy: uuid("invited_by"),
     expiresAt: timestamp("expires_at", { withTimezone: true, mode: "string" }).notNull(),
     usedAt: timestamp("used_at", { withTimezone: true, mode: "string" }),
     usedBy: uuid("used_by"),
@@ -325,7 +326,7 @@ export const identityInvitations = identitySchema.table(
       name: "invitations_invited_by_fkey",
       columns: [table.invitedBy],
       foreignColumns: [authUsers.id],
-    }).onDelete("no action"),
+    }).onDelete("set null"),
     check(
       "invitations_role_check",
       sql`((role = ANY (ARRAY['user'::text, 'pro'::text, 'admin'::text])))`,
@@ -335,7 +336,7 @@ export const identityInvitations = identitySchema.table(
       name: "invitations_used_by_fkey",
       columns: [table.usedBy],
       foreignColumns: [authUsers.id],
-    }).onDelete("no action"),
+    }).onDelete("set null"),
   ],
 );
 

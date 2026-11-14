@@ -143,9 +143,10 @@ Raz w roku (i po każdej rotacji) test, czy klucze z menedżera haseł otwieraj�
 ## 7. Usunięte konta a kopie zapasowe (RODO art. 17)
 
 - Kopie zapasowe nie są modyfikowane — dane usuniętego konta wygasają z nich najpóźniej po 35 dniach (retencja kopii).
-- Zadanie usuwania konta zapisuje UUID w `platform.erasure_log` **i** dopisuje linię `{"erased_user_id":"…","erased_at":"…"}` do pliku `erasure-log.jsonl` na dysku kopii, kopiowanego co godzinę poza dom. Plik zawiera wyłącznie identyfikatory i daty.
-- Po odtworzeniu z dowolnej kopii (także starszej niż samo usunięcie) procedura z § 6 usuwa ponownie konta z **najnowszej** wersji pliku — konto usunięte po punkcie odtworzenia nie „wraca”.
-- Wpisy starsze niż 40 dni są usuwane z tabeli i pliku (dłużej niż najdłuższa retencja kopii).
+- Zadanie usuwania konta (`identity.erasure` w kolejce `identity`, codziennie 03:30 Europe/Warsaw i przy każdym starcie jobs) zapisuje UUID w `platform.erasure_log` **i** dopisuje linię `{"erased_user_id":"…","erased_at":"…"}` do pliku `erasure-log.jsonl` na dysku kopii, kopiowanego co godzinę poza dom. Plik zawiera wyłącznie identyfikatory i daty. Jobs montuje go przez `infra/host/storage-compose.yaml` (`10003:10003`, 0600) i otwiera bez tworzenia: brak pliku = błąd `ERASURE_FILE_MISSING`, bez usuwania (BL-114).
+- Kolejność przebiegu: (1) dopisanie do pliku identyfikatorów z tabeli, których w nim brakuje; (2) ponowne usunięcie kont z pliku, które znów istnieją w bazie (wniosek z terminem „teraz”); (3) usunięcie kont po karencji; (4) ponowna synchronizacja pliku. Uszkodzone linie zostają w pliku bez zmian (metryka `erasure_file_invalid_lines`).
+- Po odtworzeniu z dowolnej kopii (także starszej niż samo usunięcie) procedura z § 6 przywraca **najnowszą** wersję pliku; pierwszy start jobs usuwa ponownie konta z tego pliku przed wpuszczeniem użytkowników — konto usunięte po punkcie odtworzenia nie „wraca”.
+- Wpisy starsze niż 40 dni są usuwane z tabeli (`retention.run`) i z pliku (przepisanie w miejscu tylko wtedy, gdy jest co usunąć) — dłużej niż najdłuższa retencja kopii.
 
 ## 8. Testy odtwarzania
 

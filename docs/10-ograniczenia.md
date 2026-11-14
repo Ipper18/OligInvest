@@ -75,6 +75,8 @@ Warunek utrzymania tej ścieżki (sprawdzany w przeglądzie PR): aplikacja nie z
 
 Konflikty wydajności z funkcjami i sposób ich rozstrzygnięcia opisuje [`04-frontend/wydajnosc.md`](04-frontend/wydajnosc.md) § 8 (CSP z nonce bez renderowania statycznego, framework zajmujący ~130 KB z budżetu 200 KB, wykresy 10-letnie, screener, heatmapa, onboarding, panel admina, offline). Po stronie serwera: ciężkie analizy (Monte Carlo, optymalizacja, backtest) mają limity parametrów i jedno zadanie naraz (Z-19, [ADR-003](09-decyzje/ADR-003-hybryda-obliczen-i-kolejki.md)), bo i5-4590 jest współdzielony z Immichem. Żaden z tych konfliktów nie wymaga pieniędzy — wymaga świadomego uproszczenia funkcji.
 
+Prawa z RODO (BL-114) też mają uproszczenia wynikające z jednego serwera: archiwum eksportu jest budowane w pamięci workera `jobs` (limit kontenera 384 MB) i trzymane w bazie do pobrania, więc ma limit **64 MiB** (większy eksport kończy się statusem `failed`, przy obecnych danych kilku osób nieosiągalny); usunięcie konta wykonuje zadanie nocne, więc dane znikają **≤ 15 dni** od wniosku (14 dni karencji + najbliższe uruchomienie), a z kopii zapasowych po kolejnych 35 dniach ([`07-wdrozenie/backup-dr.md`](07-wdrozenie/backup-dr.md) § 7).
+
 ## 8. Jeśli pojawi się budżet — kolejność zakupów
 
 | Kolejność | Zakup | Koszt | Co poprawia |

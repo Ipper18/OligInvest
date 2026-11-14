@@ -82,6 +82,17 @@ async function seed() {
     await insert("legacy", "ready", "25 hours", null, false);
     await insert("failed", "failed", "1 hour", null, false);
     await insert("queued", "queued", "30 hours", null, false);
+    await insert("ancient", "expired", "2 years 1 day", null, false);
+    await insert("ancientFailed", "failed", "2 years 1 day", null, false);
+    await insert("recentMetadata", "expired", "1 year 11 months", null, false);
+    ids.idempotency = { old: randomUUID(), kept: randomUUID() };
+    for (const [key, expires] of [
+      [ids.idempotency.old, "-1 minute"],
+      [ids.idempotency.kept, "1 hour"],
+    ])
+      await tx.execute(sql`INSERT INTO platform.idempotency_keys
+        (user_id, key, method, path, request_hash, expires_at)
+        VALUES (${owner}, ${key}, 'POST', '/api/v1/me/exports', 'synthetic', now() + ${expires}::interval)`);
   });
   ids.invitations = {};
   await app.transaction({ userId: admin, role: "admin" }, async (tx) => {
@@ -99,7 +110,30 @@ async function seed() {
       ).rows[0].id;
   });
   ids.vitals = {};
+  ids.erased = { old: randomUUID(), kept: randomUUID() };
+  ids.news = {};
+  ids.instrument = randomUUID();
   await app.transaction(SYSTEM, async (tx) => {
+    for (const [id, purge] of [
+      [ids.erased.old, "-1 minute"],
+      [ids.erased.kept, "39 days"],
+    ])
+      await tx.execute(sql`INSERT INTO platform.erasure_log (erased_user_id, erased_at, purge_after)
+        VALUES (${id}, now() - interval '1 day', now() + ${purge}::interval)`);
+    await tx.execute(sql`INSERT INTO market.instruments (id, mic, ticker, name, type, currency)
+      VALUES (${ids.instrument}, 'XWAR', ${`R${ids.instrument.slice(0, 8)}`}, 'Synthetic retention', 'stock', 'PLN')`);
+    for (const age of ["90 days 1 minute", "89 days 23 hours"])
+      await tx.execute(sql`INSERT INTO market.bars_intraday (instrument_id, interval, ts, close, source)
+        VALUES (${ids.instrument}, '5m', date_trunc('minute', now() - ${age}::interval), 1, 'synthetic')`);
+    for (const [key, age] of [
+      ["old", "90 days 1 minute"],
+      ["kept", "89 days 23 hours"],
+    ])
+      ids.news[key] = (
+        await tx.execute(sql`INSERT INTO market.news_items (instrument_id, published_at, title, url, source_domain)
+          VALUES (${ids.instrument}, now() - ${age}::interval, 'Synthetic headline',
+            ${`https://example.test/${randomUUID()}`}, 'example.test') RETURNING id::text`)
+      ).rows[0].id;
     for (const [key, age] of [
       ["old", "90 days 1 minute"],
       ["kept", "89 days 23 hours"],
@@ -133,9 +167,12 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  // invitations.invited_by/used_by have no ON DELETE action, so they go first.
+  // invited_by/used_by are SET NULL on account deletion (BL-114); remove the fixtures explicitly.
   await app?.transaction({ userId: admin, role: "admin" }, (tx) =>
     tx.execute(sql`DELETE FROM identity.invitations WHERE invited_by = ${admin}`),
+  );
+  await app?.transaction(SYSTEM, (tx) =>
+    tx.execute(sql`DELETE FROM market.instruments WHERE name = 'Synthetic retention'`),
   );
   await auth?.transaction((tx) =>
     tx.execute(sql`DELETE FROM auth.users WHERE id IN (${owner}, ${other}, ${admin})`),
@@ -199,12 +236,56 @@ test("retention deletes only rows past each documented period, in batches, under
   expect(exports.failed).toMatchObject({ status: "failed", has_content: false });
   expect(exports.fresh).toMatchObject({ status: "ready", has_content: true });
   expect(exports.queued).toMatchObject({ status: "queued", has_content: false });
+  // Export metadata: 2 years (owner decision 2026-11-14), then the row goes.
+  expect(exports.ancient).toBeUndefined();
+  expect(exports.ancientFailed).toBeUndefined();
+  expect(exports.recentMetadata).toMatchObject({ status: "expired" });
+  const keys = await remaining(
+    user(owner),
+    sql`SELECT key AS id FROM platform.idempotency_keys
+      WHERE key IN (${ids.idempotency.old}, ${ids.idempotency.kept})`,
+  );
+  expect(keys).toEqual([ids.idempotency.kept]);
 
   const invitations = await remaining(
     { userId: admin, role: "admin" },
     sql`SELECT id::text AS id FROM identity.invitations WHERE invited_by = ${admin}`,
   );
   expect(invitations.sort()).toEqual([ids.invitations.fresh, ids.invitations.used].sort());
+  const emails = Object.fromEntries(
+    (
+      await app.transaction(
+        { userId: admin, role: "admin" },
+        async (tx) =>
+          (
+            await tx.execute(
+              sql`SELECT id::text, email FROM identity.invitations WHERE invited_by = ${admin}`,
+            )
+          ).rows,
+      )
+    ).map((row) => [row.id, row.email]),
+  );
+  expect(emails[ids.invitations.used]).toBe(`anonymized-${ids.invitations.used}@example.invalid`);
+  expect(emails[ids.invitations.fresh]).toMatch(/^fresh-.*@example\.test$/u);
+  const erased = await remaining(
+    SYSTEM,
+    sql`SELECT erased_user_id::text AS id FROM platform.erasure_log
+      WHERE erased_user_id IN (${ids.erased.old}, ${ids.erased.kept})`,
+  );
+  expect(erased).toEqual([ids.erased.kept]);
+  const market = await app.transaction(SYSTEM, async (tx) => ({
+    bars: (
+      await tx.execute(
+        sql`SELECT count(*)::int AS n FROM market.bars_intraday WHERE instrument_id = ${ids.instrument}`,
+      )
+    ).rows[0].n,
+    news: (
+      await tx.execute(
+        sql`SELECT id::text AS id FROM market.news_items WHERE instrument_id = ${ids.instrument}`,
+      )
+    ).rows.map((row) => row.id),
+  }));
+  expect(market).toEqual({ bars: 1, news: [ids.news.kept] });
   const vitals = await remaining(
     SYSTEM,
     sql`SELECT id::text AS id FROM platform.web_vitals WHERE id IN (${ids.vitals.old}, ${ids.vitals.kept})`,

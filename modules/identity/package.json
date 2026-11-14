@@ -32,6 +32,11 @@
     }
   },
   "dependencies": {
-    "drizzle-orm": "0.45.2"
+    "drizzle-orm": "0.45.2",
+    "@oliginvest/db": "workspace:*",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "24.13.5"
   }
 }

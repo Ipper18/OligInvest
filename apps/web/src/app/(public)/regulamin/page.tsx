@@ -21,6 +21,7 @@ export default function Page() {
         <a href="/dokumenty/terms">{messages.app.download}</a>
         <PrintButton label={legalCopy.labels.print} />
       </div>
+      <p className="oi-legal-binding">{legalCopy.labels.binding}</p>
       <Document copy={legalCopy} />
     </article>
   );

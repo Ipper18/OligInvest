@@ -5,6 +5,7 @@ import { FeatureFlags, ProblemError, requirePermission } from "@oliginvest/platf
 import { generateRandomString, symmetricDecrypt, symmetricEncrypt } from "better-auth/crypto";
 import { sql } from "drizzle-orm";
 import { z } from "zod";
+import type { DataExportJob } from "../modules.js";
 import type { AuditWriter } from "./audit.js";
 import { matchesBackupCode } from "./backup-codes.js";
 import { approximateIp } from "./client-ip.js";
@@ -81,7 +82,17 @@ export interface AuthServiceOptions {
   audit: Pick<AuditWriter, "record" | "recordInTransaction">;
   securityEvent: (event: AuthSecurityEvent) => Promise<void>;
   /** BL-110 anomaly rules; runs after the response is decided (no timing signal). */
-  securityMonitor?: Pick<SecurityMonitor, "signInFailed" | "signedIn" | "twoFactorRecovery">;
+  securityMonitor?: Pick<
+    SecurityMonitor,
+    | "signInFailed"
+    | "signedIn"
+    | "twoFactorRecovery"
+    | "exportRequested"
+    | "deletionRequested"
+    | "deletionCancelled"
+  >;
+  /** BL-114: queues `identity.export` for the jobs worker; absent = exports unavailable. */
+  enqueueExport?: (job: DataExportJob) => Promise<void>;
   preferencesChanged?: (userId: string) => Promise<void>;
   sessionsChanged?: () => Promise<void>;
   pushPublicKey?: string | undefined;
@@ -181,6 +192,16 @@ export class AuthService {
     const principal = requireMfa(await this.principal(request));
     if ((await this.legal(principal)).termsAcceptanceRequired)
       throw new ProblemError("TERMS_ACCEPTANCE_REQUIRED");
+    if (stepUp) requireStepUp(principal);
+    return principal;
+  }
+  /**
+   * GDPR rights (BL-114): a cookie session with 2FA, optionally a fresh step-up, but no terms
+   * gate — export and deletion stay available without accepting a new document version.
+   */
+  async requireRights(request: Request, stepUp = false): Promise<Principal> {
+    if (request.headers.has("authorization")) throw new ProblemError("FORBIDDEN");
+    const principal = requireMfa(await this.principal(request));
     if (stepUp) requireStepUp(principal);
     return principal;
   }

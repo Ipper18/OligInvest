@@ -25,6 +25,7 @@ const valuesSchema = z.discriminatedUnion("command", [
           "recompute",
           "alerts",
           "notify",
+          "identity",
           "analytics",
           "analytics-results",
           "events",

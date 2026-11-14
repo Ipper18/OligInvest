@@ -10,6 +10,8 @@ const stateSchema = z
     role: z.enum(["user", "pro", "admin"]).optional(),
     status: z.enum(["pending", "paused", "running"]).optional(),
     expiresAt: z.string().datetime().optional(),
+    // GDPR account deletion (BL-114): end of the 14-day grace period.
+    scheduledFor: z.string().datetime().optional(),
     enabled: z.boolean().optional(),
     twoFactorEnabled: z.boolean().optional(),
     count: z.number().int().nonnegative().optional(),

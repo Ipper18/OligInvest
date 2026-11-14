@@ -3,6 +3,11 @@ export { mountEducation } from "@oliginvest/mod-education/server";
 // END OPTIONAL EDUCATION
 
 export {
+  type DataExportJob,
+  dataExportJobSchema,
+  GDPR_LIMITS,
+} from "@oliginvest/mod-identity/contracts";
+export {
   authAccounts,
   authApiKeys,
   authRateLimits,
