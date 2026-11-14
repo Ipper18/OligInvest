@@ -198,6 +198,7 @@
   },
   "labels": {
     "missing": "Dane instancji wymagają uzupełnienia przez administratora.",
-    "print": "Drukuj"
+    "print": "Drukuj",
+    "binding": "Wiążąca jest polska wersja tego dokumentu; tłumaczenia mają charakter pomocniczy."
   }
 }

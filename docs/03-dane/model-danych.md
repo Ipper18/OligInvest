@@ -248,24 +248,25 @@ erDiagram
 
 Zadania czyszczące z tej tabeli dla plików importu, eksportów, zaproszeń, dziennika doręczeń, RUM i
 `role_quota_usage` wykonuje `retention.run` (BL-115, `packages/db/src/retention.ts`) po nocnym
-`portfolio.recompute-all`. `erasure_log` należy do BL-114. Wiersze importu, `bars_intraday`, `news_items` i
-`idempotency_keys` nie są wymienione w żadnym zadaniu backlogu — przypisanie czeka na decyzję właściciela
-([raport BL-115](../08-plan/bl-115-session-report.md)).
+`portfolio.recompute-all`; od BL-114 także metadane eksportów (2 lata), e-mail w wykorzystanym zaproszeniu (30 dni),
+`erasure_log`, `idempotency_keys`, `bars_intraday` i `news_items` (decyzje właściciela 2026-11-14). Wiersze importu
+czekają na BL-161 (obszar `modules/portfolio`); wpisy audytu > 2 lata — kwartalna procedura BL-160.
 
 | Dane | Retencja | Mechanizm | Uwagi |
 |---|---|---|---|
 | Operacje, rachunki, dziennik, alokacje | do usunięcia konta | — | eksport RODO (FR-07.09) |
 | Dane pochodne portfela | odtwarzalne | zadanie `recompute` | w kopii fizycznej razem z resztą bazy (pgBackRest nie wyklucza tabel); po odtworzeniu i tak przeliczane nocą |
 | Pliki importu (`import_files`) | 90 dni | zadanie czyszczące (codziennie) | NFR-11.02 |
-| Wiersze importu (`import_rows`) | 1 rok po zatwierdzeniu | zadanie czyszczące | audyt importu |
-| `bars_intraday` | 90 dni | zadanie czyszczące | EOD trwałe |
-| `news_items` | 90 dni | zadanie czyszczące | |
+| Wiersze importu (`import_rows`) | 1 rok po zatwierdzeniu | zadanie czyszczące (BL-161, niewdrożone) | audyt importu |
+| `bars_intraday` | 90 dni | `retention.run` (BL-114/BL-161) | EOD trwałe |
+| `news_items` | 90 dni od `published_at` | `retention.run` (BL-114/BL-161) | |
 | `notification_deliveries` | 180 dni | zadanie czyszczące | |
-| `idempotency_keys` | 24 h | zadanie czyszczące | |
+| `idempotency_keys` | 24 h (`expires_at`) | `retention.run` w kontekście RLS właściciela (BL-114/BL-161) | |
 | `web_vitals` | 90 dni | zadanie czyszczące | bez danych osobowych |
-| `audit_log` | 2 lata ([`../06-bezpieczenstwo/prywatnosc-rodo.md`](../06-bezpieczenstwo/prywatnosc-rodo.md) § 6) | partycjonowanie miesięczne przy wzroście > 1 mln wierszy | pseudonim `actor_ref` po usunięciu konta (Z-21) |
-| Eksporty RODO (`data_exports`) | 24 h lub do pierwszego pobrania | zadanie czyszczące zeruje `content`, status `expired`; metadane zostają (okres — pytanie do właściciela) | pobranie wymaga sesji z 2FA i step-up |
-| Konto usunięte | 14 dni karencji, potem kasowanie kaskadowe | `deletion_requests` | audyt zostaje z pseudonimem; UUID trafia do `erasure_log` |
+| `audit_log` | 2 lata ([`../06-bezpieczenstwo/prywatnosc-rodo.md`](../06-bezpieczenstwo/prywatnosc-rodo.md) § 6) | kwartalnie przez rolę migracyjną (BL-160); partycjonowanie miesięczne przy wzroście > 1 mln wierszy | pseudonim `actor_ref` po usunięciu konta (Z-21); `ip`/`user_agent` usuniętego konta zerowane |
+| Eksporty RODO (`data_exports`) | archiwum 24 h lub do pierwszego pobrania; metadane 2 lata | zadanie czyszczące zeruje `content`, status `expired`; wiersze `expired`/`failed` starsze niż 2 lata usuwane | pobranie wymaga sesji z 2FA i step-up; kolumna `content` poza eksportem |
+| E-mail w wykorzystanym zaproszeniu | 30 dni po użyciu | `retention.run` zastępuje adres wartością `anonymized-<id>@example.invalid` | `invited_by`/`used_by` z `ON DELETE SET NULL` (migracja 0012) |
+| Konto usunięte | 14 dni karencji, potem kasowanie kaskadowe (zadanie nocne, ≤ 15 dni od wniosku) | `deletion_requests`, `identity.erasure` | audyt zostaje z pseudonimem; UUID trafia do `erasure_log` i pliku poza bazą; kolumny referencyjne (`*_by`) zerowane |
 | Zgody i akceptacje (`consent_events`) | do usunięcia konta | kasowanie kaskadowe | append-only — dowód akceptacji i zgody (art. 7 ust. 1 RODO) |
 | `erasure_log` | 40 dni (dłużej niż najdłuższa retencja kopii — 35 dni) | zadanie czyszczące po `purge_after` | ponowne usunięcie kont po odtworzeniu kopii ([`../07-wdrozenie/backup-dr.md`](../07-wdrozenie/backup-dr.md) § 7) |
 

@@ -129,7 +129,7 @@ Status: **tłumaczenie robocze BL-211, czeka na akceptację właściciela.** Wi�
 | `education` | Educational materials are general and do not take your circumstances into account. |
 | `demo` | Demo mode: a fictional portfolio using historical data. Transactions do not affect your data. |
 
-Dokumenty prawne (regulamin, informacja o prywatności, źródła danych) w wersji EN są generowane z tłumaczeń w `packages/i18n/src/en/legal.json` (`apps/web/scripts/generate-legal.mjs`) i również czekają na akceptację właściciela. Źródłem tłumaczenia jest wersja polska z [`12-dla-uzytkownika/`](12-dla-uzytkownika/); to, czy dokumenty EN mają wskazywać wersję polską jako rozstrzygającą, pozostaje decyzją właściciela (❓, nie rozstrzygamy w BL-211).
+Dokumenty prawne (regulamin, informacja o prywatności, źródła danych) w wersji EN są generowane z tłumaczeń w `packages/i18n/src/en/legal.json` (`apps/web/scripts/generate-legal.mjs`) i również czekają na akceptację właściciela. Źródłem tłumaczenia jest wersja polska z [`12-dla-uzytkownika/`](12-dla-uzytkownika/); decyzją właściciela z 2026-11-14 (BL-114) wiążąca jest wersja polska — każdy dokument EN zaczyna się zdaniem `labels.binding` (wymusza je generator), a strony `/regulamin`, `/prywatnosc` i `/zrodla-danych` pokazują je nad treścią.
 
 ## 5. Podatki — podstawy widoku podatkowego
 

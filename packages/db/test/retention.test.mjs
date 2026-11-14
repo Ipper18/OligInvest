@@ -47,6 +47,10 @@ test("every retention period matches the documented NFR-11.02 table", async () =
     "| Dziennik doręczeń powiadomień | 180 dni |",
     "| Pomiary RUM | 90 dni |",
     "| `platform.role_quota_usage` | wpisy starsze niż 7 × 24 h",
+    "| Metadane eksportu RODO | 2 lata |",
+    "| E-mail w wykorzystanym zaproszeniu | 30 dni po użyciu |",
+    "| `platform.erasure_log` | 40 dni (dłużej niż najdłuższa retencja kopii) |",
+    "| `platform.idempotency_keys` | 24 h |",
   ])
     expect(doc).toContain(row);
   const sqlOf = Object.fromEntries(RETENTION_TARGETS.map((t) => [t.id, text(t.batch(1))]));
@@ -59,6 +63,14 @@ test("every retention period matches the documented NFR-11.02 table", async () =
   expect(sqlOf.notification_deliveries).toContain("interval '180 days'");
   expect(sqlOf.web_vitals).toContain("interval '90 days'");
   expect(sqlOf.role_quota_usage).toContain("interval '168 hours'");
+  expect(sqlOf.data_export_metadata).toContain("created_at < now() - interval '2 years'");
+  expect(sqlOf.data_export_metadata).toContain("status IN ('failed', 'expired')");
+  expect(sqlOf.invitation_emails).toContain("used_at < now() - interval '30 days'");
+  expect(sqlOf.invitation_emails).toContain("'anonymized-' || id::text || '@example.invalid'");
+  expect(sqlOf.erasure_log).toContain("purge_after <= now()");
+  expect(sqlOf.idempotency_keys).toContain("expires_at <= now()");
+  expect(sqlOf.bars_intraday).toContain("ts < now() - interval '90 days'");
+  expect(sqlOf.news_items).toContain("published_at < now() - interval '90 days'");
   // Exports keep their metadata row; only the archive is cleared.
   expect(sqlOf.data_exports).toMatch(/^UPDATE identity\.data_exports SET content = NULL/u);
   for (const sql of Object.values(sqlOf)) expect(sql).toMatch(/LIMIT \$1\)$/u);
@@ -68,11 +80,25 @@ test("user rows run in each owner's RLS context, global rows in the system conte
   const database = fakeDatabase();
   await runRetention(database);
   const scopes = Object.groupBy(database.calls, (call) => call.target);
-  for (const id of ["import_files", "data_exports", "notification_deliveries", "role_quota_usage"])
+  for (const id of [
+    "import_files",
+    "data_exports",
+    "data_export_metadata",
+    "notification_deliveries",
+    "role_quota_usage",
+    "idempotency_keys",
+  ])
     expect(scopes[id].map((call) => call.context)).toEqual(
       users.map((userId) => ({ userId, role: "user" })),
     );
-  for (const id of ["invitations", "web_vitals"])
+  for (const id of [
+    "invitations",
+    "invitation_emails",
+    "erasure_log",
+    "web_vitals",
+    "bars_intraday",
+    "news_items",
+  ])
     expect(scopes[id].map((call) => call.context)).toEqual([{ userId: null, role: "system" }]);
   expect(scopes.role_quota_usage[1].lock).toBe(`retention:role_quota_usage:${users[1]}`);
 });

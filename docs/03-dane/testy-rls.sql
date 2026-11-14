@@ -154,7 +154,7 @@ SELECT identity.consume_invitation('hash-123', '0198a000-0000-7000-8000-00000000
 SELECT identity.consume_invitation('hash-123', '0198a000-0000-7000-8000-00000000000b') AS consumed_second_should_be_false;
 RESET ROLE;
 
-\echo '== invitation retention: system sees and deletes only unused invitations 30 days after expiry (BL-115) =='
+\echo '== invitation retention: system deletes unused invitations 30 days after expiry (BL-115) and anonymizes e-mails 30 days after use (BL-114) =='
 SET ROLE oliginvest_app;
 BEGIN; SET LOCAL app.user_id = '0198a000-0000-7000-8000-0000000000ad'; SET LOCAL app.role = 'admin';
 INSERT INTO identity.invitations (email, role, token_hash, invited_by, expires_at, used_at, used_by, revoked_at) VALUES
@@ -165,16 +165,28 @@ INSERT INTO identity.invitations (email, role, token_hash, invited_by, expires_a
 COMMIT;
 BEGIN; SET LOCAL app.user_id = ''; SET LOCAL app.role = 'system';
 DO $$ BEGIN
-  IF (SELECT count(*) FROM identity.invitations) <> 2 THEN RAISE EXCEPTION 'INVITATION RETENTION READ SCOPE'; END IF;
-  UPDATE identity.invitations SET used_at = now();
-  IF FOUND THEN RAISE EXCEPTION 'SYSTEM UPDATES INVITATIONS'; END IF;
+  IF (SELECT count(*) FROM identity.invitations) <> 3 THEN RAISE EXCEPTION 'INVITATION RETENTION READ SCOPE'; END IF;
+  UPDATE identity.invitations SET email = 'changed@example.test' WHERE used_at IS NULL;
+  IF FOUND THEN RAISE EXCEPTION 'SYSTEM UPDATES UNUSED INVITATIONS'; END IF;
+  BEGIN
+    UPDATE identity.invitations SET used_at = now() WHERE token_hash = 'retention-used';
+    RAISE EXCEPTION 'SYSTEM MOVES USE DATE';
+  EXCEPTION WHEN insufficient_privilege THEN RAISE NOTICE 'OK: system cannot change the use date'; END;
+  BEGIN
+    UPDATE identity.invitations SET email = 'other@example.test' WHERE token_hash = 'retention-used';
+    RAISE EXCEPTION 'SYSTEM WRITES ARBITRARY E-MAIL';
+  EXCEPTION WHEN insufficient_privilege THEN RAISE NOTICE 'OK: only the anonymized form is accepted'; END;
+  UPDATE identity.invitations SET email = 'anonymized-' || id::text || '@example.invalid' WHERE used_at IS NOT NULL;
+  IF NOT FOUND THEN RAISE EXCEPTION 'USED INVITATION NOT ANONYMIZED'; END IF;
   BEGIN
     INSERT INTO identity.invitations (email, role, token_hash, invited_by, expires_at)
       VALUES ('system@example.test', 'admin', 'retention-system', '0198a000-0000-7000-8000-0000000000ad', now());
     RAISE EXCEPTION 'SYSTEM CREATES INVITATIONS';
   EXCEPTION WHEN insufficient_privilege THEN RAISE NOTICE 'OK: system cannot create invitations'; END;
   DELETE FROM identity.invitations;
-  IF EXISTS (SELECT 1 FROM identity.invitations) THEN RAISE EXCEPTION 'INVITATION RETENTION DELETE'; END IF;
+  IF EXISTS (SELECT 1 FROM identity.invitations WHERE used_at IS NULL)
+     OR (SELECT count(*) FROM identity.invitations WHERE used_at IS NOT NULL) <> 1
+  THEN RAISE EXCEPTION 'INVITATION RETENTION DELETE'; END IF;
 END $$;
 COMMIT;
 BEGIN; SET LOCAL app.user_id = '0198a000-0000-7000-8000-00000000000b'; SET LOCAL app.role = 'user';
@@ -187,7 +199,10 @@ BEGIN; SET LOCAL app.user_id = '0198a000-0000-7000-8000-0000000000ad'; SET LOCAL
 DO $$ BEGIN
   IF (SELECT array_agg(token_hash ORDER BY token_hash) FROM identity.invitations WHERE token_hash LIKE 'retention-%')
      IS DISTINCT FROM ARRAY['retention-recent', 'retention-used'] THEN RAISE EXCEPTION 'INVITATION RETENTION BOUNDARY'; END IF;
-  RAISE NOTICE 'OK: invitation retention boundary, used invitations kept';
+  IF (SELECT email FROM identity.invitations WHERE token_hash = 'retention-used') NOT LIKE 'anonymized-%@example.invalid'
+     OR (SELECT email FROM identity.invitations WHERE token_hash = 'retention-recent') <> 'recent@example.test'
+  THEN RAISE EXCEPTION 'INVITATION ANONYMIZATION BOUNDARY'; END IF;
+  RAISE NOTICE 'OK: invitation retention boundary, used invitations kept with an anonymized e-mail';
 END $$;
 DELETE FROM identity.invitations WHERE token_hash LIKE 'retention-%';
 COMMIT;
@@ -306,6 +321,88 @@ DO $$ BEGIN
 END $$;
 COMMIT;
 RESET ROLE;
+
+\echo '== GDPR export of auth data: own account only, no secrets (BL-114) =='
+SET ROLE oliginvest_auth;
+INSERT INTO auth.sessions (token, user_id, expires_at, ip_address, mfa_verified_at, mfa_method)
+  VALUES ('synthetic-session-token-b', '0198a000-0000-7000-8000-00000000000b', now() + interval '1 day', '192.0.2.7', now(), 'totp');
+RESET ROLE;
+SET ROLE oliginvest_app;
+BEGIN; SET LOCAL app.user_id = '0198a000-0000-7000-8000-00000000000b'; SET LOCAL app.role = 'user';
+DO $$ DECLARE data jsonb := identity.export_auth_data(); BEGIN
+  IF jsonb_array_length(data->'users') <> 1 OR data->'users'->0->>'email' <> 'b@example.test'
+  THEN RAISE EXCEPTION 'AUTH EXPORT MISSES OWN ACCOUNT'; END IF;
+  IF jsonb_array_length(data->'sessions') <> 1 OR data->'sessions'->0 ? 'token'
+     OR strpos(data::text, 'synthetic-session-token-b') > 0
+  THEN RAISE EXCEPTION 'AUTH EXPORT SESSION SCOPE OR SECRET'; END IF;
+  IF strpos(data::text, 'a@example.test') > 0 OR strpos(data::text, 'argon2') > 0
+  THEN RAISE EXCEPTION 'AUTH EXPORT LEAK'; END IF;
+  RAISE NOTICE 'OK: auth export holds only own rows and no secrets';
+END $$;
+COMMIT;
+BEGIN; SET LOCAL app.role = 'system';
+DO $$ BEGIN IF identity.export_auth_data() IS NOT NULL THEN RAISE EXCEPTION 'AUTH EXPORT WITHOUT USER CONTEXT'; END IF; END $$;
+COMMIT;
+RESET ROLE;
+
+\echo '== account erasure: system only, due request only, audit pseudonymized, erasure_log written (BL-114) =='
+SET ROLE oliginvest_app;
+BEGIN; SET LOCAL app.user_id = '0198a000-0000-7000-8000-00000000000b'; SET LOCAL app.role = 'user';
+INSERT INTO platform.audit_log (actor_user_id, actor_ref, actor_type, action, resource_type, resource_id, ip, user_agent, after)
+  VALUES ('0198a000-0000-7000-8000-00000000000b', repeat('b', 64), 'user', 'auth.sign_in', 'user',
+          '0198a000-0000-7000-8000-00000000000b', '192.0.2.8', 'Synthetic agent', '{"users": ["0198a000-0000-7000-8000-00000000000b"]}');
+INSERT INTO identity.deletion_requests (user_id, scheduled_for)
+  VALUES ('0198a000-0000-7000-8000-00000000000b', now() + interval '14 days');
+DO $$ BEGIN
+  BEGIN
+    PERFORM identity.erase_account('0198a000-0000-7000-8000-00000000000b', repeat('c', 64));
+    RAISE EXCEPTION 'USER CONTEXT ERASES ACCOUNT';
+  EXCEPTION WHEN insufficient_privilege THEN RAISE NOTICE 'OK: erasure needs the system context'; END;
+END $$;
+COMMIT;
+BEGIN; SET LOCAL app.role = 'system';
+DO $$ BEGIN
+  BEGIN
+    PERFORM identity.erase_account('0198a000-0000-7000-8000-00000000000b', 'not-a-pseudonym');
+    RAISE EXCEPTION 'INVALID PSEUDONYM ACCEPTED';
+  EXCEPTION WHEN invalid_parameter_value THEN RAISE NOTICE 'OK: pseudonym must be HMAC-SHA-256 hex'; END;
+  IF identity.erase_account('0198a000-0000-7000-8000-00000000000b', repeat('c', 64)) THEN
+    RAISE EXCEPTION 'ERASURE BEFORE GRACE PERIOD';
+  END IF;
+END $$;
+COMMIT;
+RESET ROLE;
+UPDATE identity.deletion_requests SET scheduled_for = now() - interval '1 minute'
+  WHERE user_id = '0198a000-0000-7000-8000-00000000000b';
+SET ROLE oliginvest_app;
+BEGIN; SET LOCAL app.role = 'system';
+DO $$ BEGIN
+  IF NOT identity.erase_account('0198a000-0000-7000-8000-00000000000b', repeat('c', 64)) THEN
+    RAISE EXCEPTION 'DUE ERASURE NOT EXECUTED';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM platform.erasure_log WHERE erased_user_id = '0198a000-0000-7000-8000-00000000000b'
+                   AND purge_after > now() + interval '39 days')
+  THEN RAISE EXCEPTION 'ERASURE LOG MISSING'; END IF;
+END $$;
+COMMIT;
+RESET ROLE;
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM auth.users WHERE id = '0198a000-0000-7000-8000-00000000000b')
+     OR EXISTS (SELECT 1 FROM auth.sessions WHERE user_id = '0198a000-0000-7000-8000-00000000000b')
+     OR EXISTS (SELECT 1 FROM identity.deletion_requests WHERE user_id = '0198a000-0000-7000-8000-00000000000b')
+     OR EXISTS (SELECT 1 FROM analytics.analytics_runs WHERE user_id = '0198a000-0000-7000-8000-00000000000b')
+  THEN RAISE EXCEPTION 'ERASURE DID NOT CASCADE'; END IF;
+  IF EXISTS (SELECT 1 FROM platform.audit_log WHERE actor_user_id = '0198a000-0000-7000-8000-00000000000b'
+               OR resource_id = '0198a000-0000-7000-8000-00000000000b'
+               OR strpos(coalesce(after::text, ''), '0198a000-0000-7000-8000-00000000000b') > 0)
+     OR NOT EXISTS (SELECT 1 FROM platform.audit_log WHERE actor_ref = repeat('b', 64) AND actor_user_id IS NULL
+               AND ip IS NULL AND user_agent IS NULL AND resource_id = repeat('c', 64))
+  THEN RAISE EXCEPTION 'AUDIT NOT PSEUDONYMIZED'; END IF;
+  IF EXISTS (SELECT 1 FROM identity.invitations WHERE used_by = '0198a000-0000-7000-8000-00000000000b')
+     OR NOT EXISTS (SELECT 1 FROM identity.invitations WHERE token_hash = 'hash-123' AND used_by IS NULL)
+  THEN RAISE EXCEPTION 'USED INVITATION BLOCKS OR KEEPS ERASED ACCOUNT'; END IF;
+  RAISE NOTICE 'OK: erasure cascaded, audit keeps only the pseudonym, invitation reference cleared';
+END $$;
 
 \echo '== uuidv7 default works =='
 SELECT uuid_extract_version(id) AS uuid_version FROM portfolio.accounts LIMIT 1;

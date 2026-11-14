@@ -158,7 +158,7 @@ Brama A (**[A]**) — MVP właściciela; brama B (**[B]**) — funkcje wymagane 
 | BL-111 | **[A]** Polecenia administracyjne `pnpm admin:*` z audytem: zaproszenie, reset 2FA (break-glass), wylogowanie wszystkich, tryb serwisowy, wstrzymanie kolejek, flagi | FR-08.01 | IR, ADMIN | BL-109 | 2 | gotowe |
 | BL-112 | **[B]** Powłoka `/admin` (leniwa): użytkownicy bez danych finansowych, zaproszenia, role | FR-08.01 | [ADR-006](../09-decyzje/ADR-006-panel-administratora.md), EKR | BL-108, BL-121 | 2 | todo |
 | BL-113 | **[A]** Preferencje: motyw jasny/ciemny/systemowy, paleta dla daltonistów bez przeładowania, waluta bazowa | FR-07.08, NFR-06.02 | DS, API | BL-121 | 1,5 | gotowe (nakład niezmierzony) |
-| BL-114 | **[B]** RODO: eksport danych (JSON + CSV w ZIP, 24 h, step-up), usunięcie konta z 14-dniową karencją, `erasure_log` i plik poza bazą, test „wszystkie tabele z `user_id`”; przy zleceniu eksportu wywołać `SecurityMonitor.exportRequested()` (BL-110) i przy `requireStepUp` wymagać świeżego step-upu przed pobraniem | FR-07.09, NFR-11.02 | RODO, DR | BL-106, BL-109 | 3 | todo |
+| BL-114 | **[B]** RODO: eksport danych (JSON + CSV w ZIP, 24 h, step-up), usunięcie konta z 14-dniową karencją, `erasure_log` i plik poza bazą, test „wszystkie tabele z `user_id`”; przy zleceniu eksportu wywołać `SecurityMonitor.exportRequested()` (BL-110) i przy `requireStepUp` wymagać świeżego step-upu przed pobraniem | FR-07.09, NFR-11.02 | RODO, DR | BL-106, BL-109 | 3 | w toku — eksport (kolejka `identity`, ZIP przez `node:zlib`, jednorazowe pobranie, step-up po anomalii BL-110), usunięcie po 14 dniach, `erasure_log` + plik poza bazą, ponowne usunięcie po odtworzeniu, test katalogu „wszystkie tabele z `user_id`”, UI w `/ustawienia` (leniwie); decyzje właściciela 2026-11-14 wdrożone (BL-160, BL-161 wydzielone); do CI/DoD; estymata bez zmian, nakład niezmierzony ([raport](bl-114-session-report.md)) |
 | BL-115 | **[B]** Zadania retencji: pliki importu, zaproszenia, eksporty, dziennik doręczeń, RUM, partycje audytu; `platform.role_quota_usage` — usuwanie wpisów starszych niż 7 × 24 h w kontekście RLS użytkownika (decyzja R-52, 2026-11-05; bez nowego zadania) | NFR-11.02 | RODO | BL-114 | 1 | w toku — `retention.run` po nocnym `recompute-all`, migracja 0011, testy RLS/PostgreSQL/Valkey wykonane; audyt tylko punkt rozszerzenia; 5 pytań do właściciela; do CI/DoD; estymata bez zmian, nakład niezmierzony ([raport](bl-115-session-report.md)) |
 | BL-116 | **[A]** Strony `/regulamin`, `/prywatnosc`, `/zrodla-danych` (MDX, wersja `2026-09`, pola `LEGAL_*`), stopka z disclaimerem `general` | FR-07.12, NFR-07.03, NFR-07.04 | USR, LAW | BL-121 | 1 | w toku — czeka na odbiór właściciela: produkcyjne LEGAL_* i dokumenty prawne |
 | BL-117 | **[A]** Mechanizm flag: `feature_flags`, ocena z cache 30 s, `404` dla wyłączonych modułów, unieważnianie przez `flags.changed` | FR-08.04, NFR-02.02 | MOD | BL-006, BL-007 | 1,5 | gotowe |
@@ -195,7 +195,9 @@ Brama A (**[A]**) — MVP właściciela; brama B (**[B]**) — funkcje wymagane 
 | BL-157 | **[A]** Ekran karty instrumentu (M1-4, część wydzielona z BL-137): kurs, zmiana, wolumen, status i wiek danych, atrybucja, integracja z powłoką i SSE | FR-01.02, FR-01.15 | EKR, API, LAW | BL-121, BL-137 | 1 | w toku |
 | BL-158 | **[A]** UI wykresu (M1-4, część wydzielona z BL-138): leniwy wrapper Lightweight Charts, tabela alternatywna, atrybucja TradingView; konwersja ciągów OHLCV do liczb wyłącznie przy rysowaniu canvas, bez obliczeń na tych liczbach | FR-01.03, NFR-01.04, NFR-06.01 | API, [ADR-009](../09-decyzje/ADR-009-wykresy.md), PERF, LAW | BL-121, BL-138, BL-157 | 1,5 | w toku |
 | BL-159 | **[A]** Ocena zależności Yahoo po M1-2 (R-33): cienki własny adapter endpointów chart/quote na naszym transporcie albo wersja bez MCP SDK; porównanie obecnego i proponowanego grafu (liczba unikalnych pakietów produkcyjnych jobs, bez devDependencies), kosztu utrzymania (cookies/crumb, zmiany schematów, testy kontraktowe, retry/limity) i zgodności z warunkami Yahoo. Wynik: udokumentowana decyzja i zakres ewentualnej migracji; bez zmiany runtime w M1-2, bez obchodzenia blokad. 2026-10-12: własny adapter chart/search, `yahoo-finance2` usunięte ([ADR-016](../09-decyzje/ADR-016-cienki-adapter-yahoo.md), [raport](bl-159-session-report.md)) | NFR-02.04, NFR-03.05, NFR-05.02, NFR-07.04 | STACK, SRC, CACHE, LAW, RISK | BL-134 | 1 | w toku — czeka na odbiór właściciela: Yahoo na żywo |
-| | **Suma etapu** | | | | **102** | |
+| BL-160 | **[B]** Kwartalna procedura usuwania wpisów audytu starszych niż 2 lata przez rolę migracyjną (rola aplikacji bez `DELETE`, ADR-004): runbook, protokół, kontrola partycji; decyzja właściciela 2026-11-14 | NFR-11.02 | RODO, ADMIN | BL-115 | 0,5 | todo |
+| BL-161 | **[B]** Retencja pozostałych danych bez okresu: wiersze importu (1 rok po zatwierdzeniu, obszar `modules/portfolio`), `platform.idempotency_keys`, `market.bars_intraday`, `market.news_items`; decyzja właściciela 2026-11-14. Klucze idempotencji, bary intraday i newsy wdrożone w BL-114 | NFR-11.02 | RODO, MD | BL-115 | 0,5 | w toku — zostały wiersze importu |
+| | **Suma etapu** | | | | **105,5** | |
 
 ### 2.1 Postęp i odchylenia
 
@@ -378,14 +380,14 @@ Poza planem etapów; estymacja orientacyjna. Przed startem każde zadanie przech
 | Etap | Zadania | Suma (d) | Uwagi |
 |---|---|---|---|
 | M0 Szkielet i infrastruktura | 35 | 51 |  |
-| M1 MVP | 48 | 103 | brama A 86,5 d, brama B 16,5 d |
+| M1 MVP | 53 | 105,5 | brama A 86,5 d, brama B 19 d; z BL-160 i BL-161 (decyzje BL-114, 2026-11-14) |
 | M2 Dane rynkowe, wskaźniki, onboarding | 16 | 29,5 |  |
 | M3 Wyniki historyczne i scenariusze | 19 | 38,5 |  |
 | M4 Alerty, PWA i Skróty | 16 | 30,5 | z BL-413 (redesign, 2026-10-29), BL-414 (historia wartości na Starcie, 2026-11-04), BL-415 i BL-416 (wynik przeglądu PR #53, 2026-11-05) |
 | M5a Admin, edukacja, rynek | 15 | 27 |  |
 | M5b Analizy zaawansowane, OAuth, offline | 17 | 39,5 |  |
 | M6 Hardening i dostępność | 14 | 18,5 | z BL-613 i BL-614 (decyzje BL-602, 2026-11-10) |
-| **Razem M0–M6** | **180** | **337,5** |
+| **Razem M0–M6** | **185** | **340** |
 | Później | 8 | 18,5 | poza planem |
 
 **Pokrycie wymagań:** każde z 151 wymagań FR/NFR z [`../00-przeglad/wymagania.md`](../00-przeglad/wymagania.md) ma co najmniej jedno zadanie (sprawdzone skryptem 2026-09-19: brak wymagań bez zadania, brak zależności wstecz między etapami, M3 i M4 niezależne). Pełna macierz wymaganie → dokument → zadanie: [`../00-przeglad/macierz-pokrycia.md`](../00-przeglad/macierz-pokrycia.md).
@@ -398,3 +400,5 @@ M1-4a (2026-10-12): BL-121/122/113/116 lokalnie wykonane; poprawki wylogowania, 
 - **2026-10-12, BL-159:** `yahoo-finance2` zastąpione własnym adapterem chart v8/search v1 na `createProviderFetch` ([ADR-016](../09-decyzje/ADR-016-cienki-adapter-yahoo.md)); `apps/jobs` 172 → 68 pakietów produkcyjnych, R-33 zamknięte. Status `w toku` do zielonego CI i scalenia PR; estymacja 1 d bez zmian, nakład niezmierzony. [Raport](bl-159-session-report.md). Decyzja właściciela tego dnia: budżet Yahoo 12/min bez zmian; zadanie notowań co 1 min, ≤ 10 instrumentów na uruchomienie, cykl 5 min, maks. 50 instrumentów, próg „nieaktualne” 7 min.
 
 M1-4b (2026-10-19): naprawy PR #14 obejmują SSRF, licencje, import/SSE, układ WebKit, konfigurację images i prezentację kwot. BL-155: usunięta utrata returnTo przy ponownym renderowaniu po rotacji ciasteczka MFA; walidacja bez zmian. Błąd odtworzony w produkcyjnym WebKit (1/20 FAIL), po poprawce 20/20 PASS; shell-auth w trzech przeglądarkach 36/36, lokalne lint/typecheck/test 88/88 PASS. Statusy paczki nadal `w toku` do CI i DoD; nakład/odchylenie niezmierzone, brak nowych ryzyk/ADR. [Stan](m1-4b-session-report.md).
+
+- **2026-11-14, BL-114:** eksport RODO i usunięcie konta lokalnie wykonane ([raport](bl-114-session-report.md)); status `w toku` do zielonego CI i wspólnego DoD. Decyzje właściciela tego dnia wydzielają BL-160 (kwartalne usuwanie audytu > 2 lata, 0,5 d) i BL-161 (retencja danych bez okresu, 0,5 d; zostały wiersze importu). Przy dopisywaniu przeliczono sumę M1 z wierszy tabeli: 53 zadania, 105,5 d (wcześniej zapis 48 / 102–103 nie zgadzał się z tabelą: 51 wierszy, 104,5 d, brama B 18 d).

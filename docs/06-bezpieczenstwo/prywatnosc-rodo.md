@@ -44,7 +44,7 @@ Rejestr prowadzimy dobrowolnie — zwolnienie z art. 30 ust. 5 nie obejmuje prze
 | Bezpieczeństwo i audyt | ochrona usługi i kont, rozliczalność | adresy IP, identyfikator przeglądarki, zdarzenia bezpieczeństwa, pseudonim | art. 6 ust. 1 lit. f (bezpieczeństwo sieci — motyw 49) | OVHcloud (metadane połączeń na VPS) | logi 14–30 dni; audyt 2 lata |
 | Diagnostyka wydajności (RUM) | poprawa szybkości aplikacji | metryki wydajności, wzorzec trasy, klasa urządzenia (zapis bez identyfikatora osoby) | **zgoda** — art. 6 ust. 1 lit. a RODO i art. 399 Prawa komunikacji elektronicznej | brak | 90 dni |
 | Dokumenty i zgody | zawarcie umowy, wykazanie zgody | wersje dokumentów, zdarzenia akceptacji i zgód, czas | art. 6 ust. 1 lit. b (regulamin), lit. c w zw. z art. 7 ust. 1 i art. 5 ust. 2 (wykazanie zgody) | brak | do usunięcia konta |
-| Realizacja praw | eksport, usunięcie, sprostowanie | dane konta; archiwum eksportu; UUID usuniętego konta | art. 6 ust. 1 lit. c w zw. z art. 15–20 | brak | eksport 24 h; `erasure_log` 40 dni |
+| Realizacja praw | eksport, usunięcie, sprostowanie | dane konta; archiwum eksportu i jego metadane; UUID usuniętego konta | art. 6 ust. 1 lit. c w zw. z art. 15–20 | brak | archiwum 24 h, metadane eksportu 2 lata; `erasure_log` i plik poza bazą 40 dni |
 | Kopie zapasowe | ciągłość działania, odtworzenie po awarii | wszystkie powyższe (zaszyfrowane) | jak dla danych źródłowych + art. 6 ust. 1 lit. f | OVHcloud (zaszyfrowane kopie, bez kluczy) | 35 dni |
 
 **Profilowanie i decyzje automatyczne (art. 22):** brak. Analizy (Monte Carlo, optymalizacja, backtest) liczy się na żądanie użytkownika i są materiałem informacyjnym — nie wywołują skutków prawnych ani podobnie istotnych.
@@ -83,17 +83,21 @@ Zasady (art. 7 RODO): zgoda nie jest warunkiem korzystania z aplikacji; jest odd
 |---|---|---|
 | Konto, portfel, dziennik, analizy, alerty, preferencje, zgody | do usunięcia konta (14 dni karencji po wniosku) | usunięcie kaskadowe |
 | Pliki importu | 90 dni | zadanie codzienne (`retention.run`, BL-115) |
-| Wiersze importu | 1 rok po zatwierdzeniu | zadanie codzienne |
-| Archiwa eksportu RODO | 24 h lub do pierwszego pobrania | zadanie codzienne czyści archiwum (`content`), wiersz z metadanymi zostaje ze statusem `expired` — okres przechowywania metadanych do decyzji właściciela (BL-115) |
+| Wiersze importu | 1 rok po zatwierdzeniu | zadanie codzienne — do wdrożenia (BL-161) |
+| Archiwa eksportu RODO | 24 h lub do pierwszego pobrania | zadanie codzienne czyści archiwum (`content`), wiersz z metadanymi zostaje ze statusem `expired` (BL-115) |
+| Metadane eksportu RODO | 2 lata | zadanie codzienne usuwa wiersze `failed`/`expired` starsze niż 2 lata — decyzja właściciela 2026-11-14 (BL-114) |
 | Sesje | do wygaśnięcia (maks. 30 dni) lub wylogowania | Better Auth + zadanie czyszczące |
 | Zaproszenia niewykorzystane | 30 dni po wygaśnięciu | zadanie codzienne w kontekście `system`; polityka RLS `retention_*` dopuszcza tylko te wiersze (BL-115) |
+| E-mail w wykorzystanym zaproszeniu | 30 dni po użyciu | zadanie codzienne zastępuje adres wartością `anonymized-<id>@example.invalid`; polityka RLS `retention_anonymize` przyjmuje wyłącznie tę wartość — decyzja właściciela 2026-11-14 (BL-114). Po usunięciu konta `invited_by`/`used_by` = `NULL` |
 | Dziennik doręczeń powiadomień | 180 dni | zadanie codzienne (BL-115) |
 | Pomiary RUM | 90 dni | zadanie codzienne (BL-115) |
 | Logi aplikacji, Caddy, PostgreSQL | 14 dni | rotacja logów |
 | Logi VPS (nginx `stream`) | 14 dni | logrotate |
 | Logi SSH i systemu, alerty CrowdSec | 30 dni | journald, konfiguracja CrowdSec |
-| **Audyt (`platform.audit_log`)** | **2 lata** — rozliczalność działań administracyjnych i wyjaśnianie incydentów; po usunięciu konta tylko pseudonim (Z-21) | partycjonowanie i usuwanie najstarszych miesięcy — migracją roli migracji, nie rolą aplikacji (brak `DELETE`, ADR-004); do tego czasu BL-115 tylko raportuje przekroczenie 1 mln wierszy |
-| `platform.erasure_log` | 40 dni (dłużej niż najdłuższa retencja kopii) | zadanie po `purge_after` |
+| **Audyt (`platform.audit_log`)** | **2 lata** — rozliczalność działań administracyjnych i wyjaśnianie incydentów; po usunięciu konta tylko pseudonim (Z-21) | usuwanie wpisów starszych niż 2 lata — kwartalna procedura migracją roli migracji, nie rolą aplikacji (brak `DELETE`, ADR-004; decyzja właściciela 2026-11-14, BL-160); partycjonowanie miesięczne przy > 1 mln wierszy (BL-115 raportuje przekroczenie) |
+| `platform.erasure_log` | 40 dni (dłużej niż najdłuższa retencja kopii) | zadanie codzienne po `purge_after` (BL-114); plik `erasure-log.jsonl` poza bazą — ten sam okres, porządkowany przez zadanie `identity.erasure` |
+| `platform.idempotency_keys` | 24 h | zadanie codzienne po `expires_at` pod RLS użytkownika (BL-114, BL-161) |
+| Dane rynkowe śródsesyjne i wiadomości (`bars_intraday`, `news_items`) | 90 dni | zadanie codzienne w kontekście `system` (BL-114, BL-161); bez danych osobowych |
 | `platform.role_quota_usage` | wpisy starsze niż 7 × 24 h mogą być usuwane; usunięcie analizy nie zwraca kwoty (R-52, 2026-11-05) | sprzątanie w BL-115 pod RLS użytkownika; kaskada przy usunięciu konta |
 | Kopie zapasowe | 35 dni (lokalnie i poza domem) | [`../07-wdrozenie/backup-dr.md`](../07-wdrozenie/backup-dr.md) |
 | Dane u Brevo (logi wysyłki i podglądy e-maili) | domyślnie bezterminowo; ustawiamy **1 miesiąc** — minimum dopuszczane przez Brevo ([pomoc Brevo](https://help.brevo.com/hc/en-us/articles/4415743225746-Configure-a-custom-retention-period-for-your-transactional-logs-and-email-previews), sprawdzone 2026-09-19) | ustawienie w panelu Brevo przed M1 |
@@ -102,14 +106,29 @@ Zasady (art. 7 RODO): zgoda nie jest warunkiem korzystania z aplikacji; jest odd
 
 | Prawo | Realizacja | Termin |
 |---|---|---|
-| Dostęp i przenoszenie (art. 15, 20) | eksport wszystkich danych (JSON + CSV w ZIP) z ustawień — obejmuje każdą tabelę z `user_id`, w tym historię zgód; jednorazowe pobranie w ciągu 24 h po step-upie | natychmiast (w tle, minuty) |
+| Dostęp i przenoszenie (art. 15, 20) | eksport wszystkich danych (JSON + CSV w ZIP) z ustawień — obejmuje każdą tabelę z `user_id` (lista z katalogu bazy w chwili eksportu), dane konta z `auth` bez sekretów, własne wpisy audytu i przesłane pliki; jednorazowe pobranie w ciągu 24 h po step-upie (§ 7.1) | natychmiast (w tle, minuty) |
 | Sprostowanie (art. 16) | edycja danych w aplikacji; adres e-mail zmienia administrator na prośbę | do 7 dni |
-| Usunięcie (art. 17) | wniosek w ustawieniach (step-up) → 14 dni na anulowanie → usunięcie kaskadowe, tokeny i sesje unieważnione; UUID trafia do `erasure_log` i do pliku poza bazą, a po każdym odtworzeniu kopii procedura ponownie usuwa konto ([`../07-wdrozenie/backup-dr.md`](../07-wdrozenie/backup-dr.md) § 7); kopie wygasają po 35 dniach; audyt zachowuje tylko pseudonim | do 14 dni (w granicach miesiąca z art. 12 ust. 3) |
+| Usunięcie (art. 17) | wniosek w ustawieniach (step-up) → 14 dni na anulowanie → usunięcie kaskadowe, tokeny i sesje unieważnione; UUID trafia do `erasure_log` i do pliku poza bazą, a po każdym odtworzeniu kopii procedura ponownie usuwa konto ([`../07-wdrozenie/backup-dr.md`](../07-wdrozenie/backup-dr.md) § 7); kopie wygasają po 35 dniach; audyt zachowuje tylko pseudonim (§ 7.2) | 14 dni karencji + najbliższy nocny przebieg (03:30), łącznie ≤ 15 dni (w granicach miesiąca z art. 12 ust. 3) |
 | Ograniczenie i sprzeciw (art. 18, 21) | wniosek e-mailem do administratora; sprzeciw wobec przetwarzania w celach bezpieczeństwa rozpatrywany indywidualnie | do miesiąca |
 | Wycofanie zgody (art. 7 ust. 3) | przełącznik w `/ustawienia/prywatnosc` | natychmiast |
 | Skarga | do Prezesa Urzędu Ochrony Danych Osobowych | — |
 
 Tożsamość wnioskodawcy: wnioski z aplikacji — sesja z 2FA i step-up; wnioski e-mailem — tylko z adresu konta, z potwierdzeniem w aplikacji. Każdy wniosek i jego realizacja trafia do audytu.
+Bramka regulaminu (§ 5.1) nie blokuje eksportu ani usunięcia konta: te trasy sprawdzają sesję z 2FA i step-up, ale nie akceptację bieżącej wersji dokumentów.
+
+### 7.1 Eksport danych (BL-114, FR-07.09)
+
+- **Zlecenie:** `POST /api/v1/me/exports` (sesja z 2FA, step-up TOTP ≤ 15 min, nagłówek `Idempotency-Key`). Jednocześnie trwa najwyżej jeden eksport (`409`); twardy limit 10 zleceń na 24 h (`429`). Każde zlecenie przechodzi przez regułę masowego eksportu z BL-110 (`SecurityMonitor.exportRequested`): powyżej 3 eksportów na dobę lub w połączeniu z innymi sygnałami administratorzy dostają alert, a pobranie tego eksportu wymaga **nowego** step-upu wykonanego po zleceniu (`step_up_after`).
+- **Przygotowanie:** zadanie `identity.export` w kolejce `identity` (jobs) czyta dane w kontekście RLS właściciela — inne konta są niewidoczne niezależnie od zapytania; lista tabel to wszystkie tabele z kolumną `user_id` w schematach aplikacji, odczytana z katalogu bazy w chwili eksportu, więc nowa tabela nie wypadnie z eksportu. Dane konta (`auth.users`, sesje, powiązania logowania, stan TOTP, metadane PAT) zwraca funkcja `identity.export_auth_data()` z listą dozwolonych kolumn — **bez** skrótów haseł, sekretów TOTP, kodów zapasowych, tokenów sesji i skrótów kluczy API. Dochodzą własne wpisy audytu (`actor_user_id` = użytkownik) i przesłane pliki (np. oryginalne pliki importu w katalogu `files/`).
+- **Format:** ZIP z `README.txt` (PL lub EN wg języka konta), `data.json` (jeden dokument, format `oliginvest-gdpr-export` v1) i `csv/<schemat.tabela>.csv` (UTF-8 z BOM, przecinek, CRLF). Kwoty i ilości są tekstem dziesiętnym bez zaokrągleń, waluta w osobnej kolumnie (ADR-014), czas w UTC. Komórki CSV zaczynające się od `=`, `+`, `-`, `@`, tabulatora lub CR dostają prefiks `'` (ochrona przed wstrzyknięciem formuł), z wyjątkiem zwykłych liczb (np. `-1204.20`). Archiwum ma limit 64 MiB ([`../10-ograniczenia.md`](../10-ograniczenia.md)); ZIP powstaje bez nowej zależności (`node:zlib`).
+- **Pobranie:** `GET /api/v1/me/exports/{id}/download` — step-up ≤ 15 min; jedno pobranie: ta sama transakcja zeruje archiwum i ustawia status `expired`. Wpis audytu `identity.export_downloaded`. Gotowość ogłasza zdarzenie SSE `identity.export.ready`.
+- **Przechowywanie:** archiwum 24 h lub do pobrania; metadane (kto i kiedy eksportował) 2 lata (§ 6).
+
+### 7.2 Usunięcie konta (BL-114)
+
+- **Wniosek:** `POST /api/v1/me/deletion-request` (step-up) tworzy wniosek z `scheduled_for` = teraz + 14 dni, wpis audytu i e-mail bezpieczeństwa; `DELETE` w karencji anuluje wniosek.
+- **Wykonanie:** zadanie `identity.erasure` codziennie o 03:30 (Europe/Warsaw) oraz po każdym starcie usługi jobs. Funkcja `identity.erase_account()` działa wyłącznie w kontekście `system` i tylko dla wniosku po terminie: w audycie zastępuje identyfikator pseudonimem `actor_ref` (HMAC-SHA-256 z `AUDIT_PSEUDONYM_KEY`) również w `resource_id` i w treści `before`/`after`, zeruje IP i User-Agent wpisów konta, usuwa `auth.users` (kaskada obejmuje każdą tabelę z `user_id` — test katalogu w `apps/api/integration/gdpr.mjs`), a UUID zapisuje w `platform.erasure_log`. Kolumny konfiguracji globalnej wskazujące autora zmian (np. `updated_by`) dostają `NULL`.
+- **Plik poza bazą:** `erasure-log.jsonl` na dysku kopii (montowany do kontenera jobs); zadanie dopisuje brakujące identyfikatory i usuwa starsze niż 40 dni. Brak pliku = zadanie kończy się błędem **przed** usunięciem czegokolwiek. Identyfikator obecny w pliku, a nieobecny w `erasure_log` (stan po odtworzeniu kopii), oznacza konto do ponownego usunięcia w tym samym przebiegu ([`../07-wdrozenie/backup-dr.md`](../07-wdrozenie/backup-dr.md) § 7).
 
 ## 8. Odbiorcy i przekazywanie poza EOG (NFR-11.03)
 
@@ -166,6 +185,7 @@ Art. 8 ust. 3 ustawy o świadczeniu usług drogą elektroniczną: rodzaje i zakr
 - [ ] Zaakceptowana umowa powierzenia w panelu Brevo, retencja logów Brevo ustawiona na 1 miesiąc, wersja DPA OVHcloud zapisana; daty i wersje w notatkach właściciela.
 - [ ] Rejestracja zapisuje akceptację i potwierdzenie; bramka regulaminu działa (test e2e).
 - [ ] Bez zgody przeglądarka nie wysyła pomiarów RUM (test e2e).
-- [ ] Eksport obejmuje wszystkie tabele z `user_id` (test porównujący z bazą).
-- [ ] Usunięcie konta: kaskada, `erasure_log`, ponowne usunięcie po odtworzeniu kopii (test w ramach testu odtwarzania).
+- [x] Eksport obejmuje wszystkie tabele z `user_id` (test porównujący z katalogiem bazy — `apps/api/integration/gdpr.mjs`, BL-114).
+- [x] Usunięcie konta: kaskada, `erasure_log`, plik poza bazą (BL-114). Ponowne usunięcie po odtworzeniu kopii — sprawdzić w ramach testu odtwarzania (BL-153).
+- [ ] Plik `/srv/backup/erasure-log.jsonl` istnieje, właściciel uid 10003 (jobs), tryb 0600 ([`../07-wdrozenie/m0-3-backup-monitoring-runbook.md`](../07-wdrozenie/m0-3-backup-monitoring-runbook.md)).
 - [ ] Rejestr naruszeń i procedura z [`plan-reagowania.md`](plan-reagowania.md) znane właścicielowi.

@@ -1,3 +1,4 @@
+export * as identityJobs from "@oliginvest/mod-identity/jobs";
 export { createMarketJobs, marketSchedules } from "@oliginvest/mod-market/jobs";
 export {
   createPushSender,

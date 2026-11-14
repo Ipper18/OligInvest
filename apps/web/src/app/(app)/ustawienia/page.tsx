@@ -5,6 +5,7 @@ import { getApiClient } from "../../../api/server";
 import { Settings } from "../../../appearance/settings";
 import { requireMe } from "../../../auth/session";
 import { SignOutButton } from "../../../auth/sign-out-button";
+import { GdprSection } from "../../../privacy/gdpr-section";
 import { PushSettings } from "../../../pwa/push-settings";
 export async function generateMetadata() {
   const messages =
@@ -27,6 +28,7 @@ export default async function Page() {
       <h1>{messages.nav.settings}</h1>
       <Settings preferences={me.preferences} userId={me.id} />
       <PushSettings publicKey={publicKey} />
+      <GdprSection />
       <section aria-labelledby="account-heading" className="oi-form">
         <h2 id="account-heading">{messages.app.accountSection}</h2>
         <div>

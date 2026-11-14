@@ -92,6 +92,7 @@ export async function startJobs(
     | Awaited<ReturnType<typeof import("./alerts-runtime.js").startAlertsWorker>>
     | undefined;
   let analyticsWorker: { close(): Promise<void> } | undefined;
+  let identityWorker: { close(): Promise<void> } | undefined;
   let portfolioWorker:
     | {
         close(): Promise<void>;
@@ -130,6 +131,7 @@ export async function startJobs(
       await portfolioWorker?.close();
       await marketWorker?.close();
       await analyticsWorker?.close();
+      await identityWorker?.close();
       await monitoring?.close();
       mailer?.close();
       await flagRuntime.close();
@@ -196,6 +198,17 @@ export async function startJobs(
       cache: flagRuntime.cache,
       connection: runtime.connection,
       logger,
+      observe,
+    });
+    const { erasureFilePath, startIdentityWorker } = await import("./identity-runtime.js");
+    identityWorker = await startIdentityWorker({
+      database: flagRuntime.database,
+      cache: flagRuntime.cache,
+      connection: runtime.connection,
+      logger,
+      metrics: activeMonitoring.metrics,
+      pseudonymKey: runtime.config.AUDIT_PSEUDONYM_KEY,
+      erasureFile: erasureFilePath(env),
       observe,
     });
     const { startMarketWorker } = await import("./market-runtime.js");
@@ -304,6 +317,8 @@ export async function startJobs(
     await portfolioWorker?.close();
     await mailWorker?.close();
     await marketWorker?.close();
+    await analyticsWorker?.close();
+    await identityWorker?.close();
     await monitoring?.close();
     flagRuntime.cache.disconnect();
     mailer?.close();

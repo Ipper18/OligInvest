@@ -93,7 +93,7 @@ def acl(values, cache=False):
             commands = "+ping +get +set +del +expire +pexpire +ttl +pttl +eval +evalsha +script|load +publish +subscribe +unsubscribe +client|setname +client|setinfo"
             commands += " +info +xadd +xrange +xrevrange +xtrim +zadd +zrem +zcard +zrangebyscore +zremrangebyscore"
         else:
-            queues = ["analytics", "analytics-results"] if service == "analytics" else ["ingest", "import", "recompute", "alerts", "notify", "analytics", "analytics-results", "events"]
+            queues = ["analytics", "analytics-results"] if service == "analytics" else ["ingest", "import", "recompute", "alerts", "notify", "identity", "analytics", "analytics-results", "events"]
             keys = " ".join(f"~bull:{queue}:*" for queue in queues) + f" ~health:{service}:*"
             if service == "api":
                 keys += " ~auth:*"

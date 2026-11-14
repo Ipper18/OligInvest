@@ -340,7 +340,7 @@ Kolumna „Dokumenty” pokazuje do trzech dokumentów projektowych, które najc
 | ID | Wymaganie (skrót) | P | Dokumenty | Zadania | Etap | Status |
 |---|---|---|---|---|---|---|
 | NFR-11.01 | Minimalizacja danych; brak zewnętrznych trackerów i analityki stron trzecich. | P0 | [prywatnosc-rodo](../06-bezpieczenstwo/prywatnosc-rodo.md), [kontrole-bezpieczenstwa](../06-bezpieczenstwo/kontrole-bezpieczenstwa.md), [10-ograniczenia](../10-ograniczenia.md) | BL-011, BL-124 | M0, M1 | ✅ |
-| NFR-11.02 | Polityka retencji (logi, audyt, pliki importu, dane usuniętych kont) i … | P1 | [prywatnosc-rodo](../06-bezpieczenstwo/prywatnosc-rodo.md), [przeplywy-danych](../01-architektura/przeplywy-danych.md), [openapi.yaml](../02-api/openapi.yaml) (+3) | BL-114, BL-115 | M1 | ✅ |
+| NFR-11.02 | Polityka retencji (logi, audyt, pliki importu, dane usuniętych kont) i … | P1 | [prywatnosc-rodo](../06-bezpieczenstwo/prywatnosc-rodo.md), [przeplywy-danych](../01-architektura/przeplywy-danych.md), [openapi.yaml](../02-api/openapi.yaml) (+3) | BL-114, BL-115, BL-160, BL-161 | M1 | ✅ |
 | NFR-11.03 | Dane przechowywane w Polsce (serwer domowy); przekazywanie podmiotom trzecim … | P1 | [prywatnosc-rodo](../06-bezpieczenstwo/prywatnosc-rodo.md), [ADR-010](../09-decyzje/ADR-010-kanaly-powiadomien.md) | BL-107, BL-118 | M1 | ✅ |
 
 ## 3. Podsumowanie pokrycia

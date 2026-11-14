@@ -155,7 +155,7 @@ Rejestr jobs pomija wyłączone moduły przed wywołaniem handlera, subskrypcji 
 | **Odpowiedzialność** | Konta, zaproszenia, sesje, 2FA, role, tokeny PAT, preferencje, RODO (eksport/usunięcie) | Subskrypcje Web Push, preferencje kanałów, wysyłka i dziennik doręczeń | Katalog instrumentów, notowania, historia EOD, FX, indeksy, sektory, kalendarz, newsy, watchlisty, screener, status dostawców | Rachunki, operacje, import, partie FIFO, pozycje, gotówka, wyceny, wyniki (TWR/XIRR), dywidendy, dziennik transakcji, alokacja docelowa, rebalancing |
 | **Tabele (własność)** | tabele Better Auth (`user`, `session`, `account`, `verification`, `twoFactor`, `apikey`), `invitations`, `user_preferences`, `deletion_requests` | `push_subscriptions`, `notification_preferences`, `notification_deliveries` | `instruments`, `instrument_provider_symbols`, `bars_daily`, `bars_intraday`, `quotes_latest`, `fx_rates`, `corporate_actions`, `trading_calendar`, `sector_memberships`, `calendar_events`, `news_items`, `macro_series`, `data_quality_issues`, `watchlists`, `watchlist_items`, `screener_presets` | `accounts`, `transactions`, `import_batches`, `import_files`, `import_rows`, `lots`, `lot_consumptions`, `positions_daily`, `valuations_daily`, `cash_balances_daily`, `journal_entries`, `journal_postmortems`, `target_allocations` |
 | **API** | `/api/auth/*` (Better Auth), `/api/v1/me/*` | `/api/v1/notifications/*` | `/api/v1/market/*` | `/api/v1/portfolio/*` |
-| **Kolejki** | — | `notify` | `ingest` | `import`, `recompute` |
+| **Kolejki** | `identity` (BL-114) | `notify` | `ingest` | `import`, `recompute` |
 | **Zdarzenia publikowane** | `identity.user.registered`, `identity.user.deletion_requested`, `identity.user.deleted`, `identity.export.ready` | `notifications.delivery.failed` | `market.quotes.updated`, `market.bars.eod_ingested`, `market.fx.published`, `market.corporate_action.detected`, `market.provider.status_changed` | `portfolio.import.parsed`, `portfolio.transactions.changed`, `portfolio.valuation.updated` |
 | **Subskrypcje** | — | — | — | `market.bars.eod_ingested`, `market.fx.published`, `market.corporate_action.detected`, `market.quotes.updated` (tylko wycena dla podłączonych) |
 | **Uprawnienia** | `self:*`, `admin:users` | `self:notifications` | `market:read`, `watchlists:write`, `admin:market` | `portfolio:read`, `portfolio:write`, `transactions:write` |
@@ -215,6 +215,7 @@ odnowienia w Europe/Warsaw i `Retry-After`: [konwencje API § 7.1](../02-api/kon
 | `recompute` | valkey-queue | `jobs` | 2 | deduplikacja per rachunek (`jobId` = `recompute:{accountId}:{fromDate}`) |
 | `alerts` | valkey-queue | `jobs` | 2 | ewaluacja po `market.quotes.updated` i EOD |
 | `notify` | valkey-queue | `jobs` | 4 | limit per kanał (e-mail: ≤ 300/dobę — Brevo) |
+| `identity` | valkey-queue | `jobs` | 1 | BL-114: `identity.export` (`jobId` = `export-{id}`, 2 próby) i `identity.erasure` (harmonogram 03:30 Europe/Warsaw + przebieg przy starcie z deduplikacją); archiwum ≤ 64 MiB |
 | `analytics` | valkey-queue | `analytics` (Python) | 1 | limit czasu per typ zadania; kolejność FIFO z priorytetem dla analiz lekkich |
 | `analytics-results` | valkey-queue | `jobs` | 2 | zapis wyników w kontekście RLS właściciela |
 | `events` | valkey-queue | `jobs` | 4 | fan-out zdarzeń do kolejek subskrybentów |

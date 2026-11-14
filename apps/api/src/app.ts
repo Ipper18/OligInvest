@@ -10,6 +10,7 @@ import {
 import { bodyLimit } from "hono/body-limit";
 import { mountAdminStress } from "./admin-stress-routes.js";
 import { mountAlerts } from "./alert-routes.js";
+import { mountGdpr } from "./auth/gdpr-routes.js";
 import { type IdentityDependencies, mountIdentity } from "./auth/identity-routes.js";
 import { mountPats } from "./auth/pat-routes.js";
 import { mountPreferences } from "./auth/preferences-routes.js";
@@ -256,6 +257,7 @@ export function createApp(
   mountNotifications(api, authDependencies);
   mountAlerts(api, authDependencies);
   mountPats(api, authDependencies);
+  mountGdpr(api, authDependencies);
   mountQuick(api, authDependencies, options.portfolio);
   mountEducation(
     api,

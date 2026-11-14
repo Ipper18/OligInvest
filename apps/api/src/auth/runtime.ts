@@ -12,7 +12,11 @@ import { type PlatformLogger, subscribeFeatureFlags } from "@oliginvest/platform
 import { Queue } from "bullmq";
 import { sql } from "drizzle-orm";
 import { Redis } from "ioredis";
-import { enqueuePortfolioRecompute, notificationJobSchema } from "../modules.js";
+import {
+  dataExportJobSchema,
+  enqueuePortfolioRecompute,
+  notificationJobSchema,
+} from "../modules.js";
 import { userLocale } from "../user-locale.js";
 import { Administration } from "./administration.js";
 import { AuditWriter } from "./audit.js";
@@ -167,6 +171,16 @@ export function createAuthRuntime(
         });
       },
     }),
+    enqueueExport: async (job) => {
+      // jobId = export id: a replayed request cannot queue the same export twice.
+      await queue("identity").add("identity.export", dataExportJobSchema.parse(job), {
+        jobId: `export-${job.exportId}`,
+        attempts: 2,
+        backoff: { type: "exponential", delay: 5000 },
+        removeOnComplete: true,
+        removeOnFail: { age: 86400 },
+      });
+    },
     securityEvent: async (event) => {
       await queue("events").add(event.kind, authSecurityEventSchema.parse(event), {
         removeOnComplete: true,
@@ -291,6 +305,7 @@ export function createAuthRuntime(
           "recompute",
           "alerts",
           "notify",
+          "identity",
           "analytics",
           "analytics-results",
           "events",

@@ -43,7 +43,11 @@ export function generateLegal() {
       englishSource =
         englishSource.slice(0, edit.start) + edit.translation + englishSource.slice(edit.end);
     }
-    english[id].source = englishSource;
+    // Owner decision 2026-11-14 (BL-114): the Polish text is binding; translations say so first.
+    if (typeof english.labels?.binding !== "string") throw new Error("Missing binding notice");
+    english[id].source = `> ${english.labels.binding}
+
+${englishSource}`;
     for (const edit of edits.sort((a, b) => b.start - a.start))
       mdx = mdx.slice(0, edit.start) + edit.value + mdx.slice(edit.end);
     files[`apps/web/src/legal/${id}.mdx`] = `import { legalText } from './configuration'\n\n${mdx}`;
@@ -52,6 +56,7 @@ export function generateLegal() {
   catalog.labels = {
     missing: "Dane instancji wymagają uzupełnienia przez administratora.",
     print: "Drukuj",
+    binding: "Wiążąca jest polska wersja tego dokumentu; tłumaczenia mają charakter pomocniczy.",
   };
   files["packages/i18n/src/pl/legal.json"] = JSON.stringify(catalog, null, 2) + "\n";
   files["packages/i18n/src/en/legal.json"] = JSON.stringify(english, null, 2) + "\n";

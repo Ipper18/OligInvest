@@ -17,5 +17,9 @@
   "securityMassExportBody": "Eksport danych konta {account} spełnił regułę nietypowego eksportu: {reason}.\n\nCzas: {time} ({timezone})\n\nPobranie tego eksportu wymaga ponownego potwierdzenia kodem TOTP. Szczegóły zdarzenia są w dzienniku audytu.",
   "securityMassExportReasonVolume": "więcej niż 3 eksporty w ciągu 24 godzin",
   "securityMassExportReasonCombination": "eksport, nowy token PAT i logowanie z nowego urządzenia w ciągu 1 godziny",
+  "securityDeletionRequestedSubject": "OligInvest — zaplanowano usunięcie konta",
+  "securityDeletionRequestedBody": "Złożono wniosek o usunięcie Twojego konta OligInvest. Konto i wszystkie dane zostaną trwale usunięte {time} ({timezone}).\n\nDo tego czasu możesz anulować wniosek w ustawieniach: {url}\n\nJeżeli to nie Ty, anuluj wniosek, zmień hasło i zakończ pozostałe sesje.",
+  "securityDeletionCancelledSubject": "OligInvest — anulowano usunięcie konta",
+  "securityDeletionCancelledBody": "Wniosek o usunięcie Twojego konta OligInvest anulowano: {time} ({timezone}). Konto pozostaje aktywne.\n\nJeżeli to nie Ty, zmień hasło i przejrzyj aktywne sesje: {url}",
   "securityUnknown": "nieznana"
 }

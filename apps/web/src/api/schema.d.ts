@@ -595,7 +595,13 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Zleć eksport wszystkich danych użytkownika (RODO, JSON + CSV w ZIP) */
+        /**
+         * Zleć eksport wszystkich danych użytkownika (RODO, JSON + CSV w ZIP)
+         * @description Wymaga sesji z 2FA i step-upu; bramka regulaminu nie blokuje praw z RODO. Jednocześnie trwa najwyżej
+         *     jeden eksport (`409 CONFLICT`), limit 10 zleceń na 24 h (`429 RATE_LIMITED`). Zlecenie przechodzi przez
+         *     regułę masowego eksportu (BL-110): przy anomalii pobranie wymaga step-upu wykonanego po zleceniu.
+         *     Gotowość ogłasza zdarzenie SSE `identity.export.ready` (BL-114, prywatnosc-rodo.md § 7.1).
+         */
         post: operations["createDataExport"];
         delete?: never;
         options?: never;
@@ -627,7 +633,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Pobierz archiwum eksportu (jednorazowo, w ciągu 24 h; step-up) */
+        /**
+         * Pobierz archiwum eksportu (jednorazowo, w ciągu 24 h; step-up)
+         * @description Jedno pobranie: ta sama transakcja usuwa archiwum i ustawia status `expired`; kolejna próba zwraca `404`.
+         *     Po anomalii masowego eksportu `403 STEP_UP_REQUIRED`, dopóki step-up nie zostanie wykonany po zleceniu.
+         */
         get: operations["downloadDataExport"];
         put?: never;
         post?: never;
@@ -647,7 +657,12 @@ export interface paths {
         /** Stan wniosku o usunięcie konta */
         get: operations["getDeletionRequest"];
         put?: never;
-        /** Zleć usunięcie konta i danych (14 dni na anulowanie) */
+        /**
+         * Zleć usunięcie konta i danych (14 dni na anulowanie)
+         * @description Usunięcie wykonuje nocne zadanie `identity.erasure` po upływie karencji (≤ 15 dni od wniosku): kaskada po
+         *     wszystkich tabelach z `user_id`, audyt tylko z pseudonimem, UUID w `erasure_log` i w pliku poza bazą.
+         *     Aktywny wniosek → `409 CONFLICT`. E-mail bezpieczeństwa do właściciela konta.
+         */
         post: operations["requestAccountDeletion"];
         /** Anuluj zaplanowane usunięcie konta */
         delete: operations["cancelAccountDeletion"];
@@ -5892,7 +5907,7 @@ export interface components {
         StrategyId: components["schemas"]["Uuid"];
         UserId: components["schemas"]["Uuid"];
         ExportId: components["schemas"]["Uuid"];
-        QueueName: "ingest" | "import" | "recompute" | "alerts" | "notify" | "analytics" | "analytics-results" | "events";
+        QueueName: "ingest" | "import" | "recompute" | "alerts" | "notify" | "identity" | "analytics" | "analytics-results" | "events";
         JobId: string;
         ProviderId: components["schemas"]["ProviderKey"];
     };
@@ -6835,6 +6850,7 @@ export interface operations {
             202: {
                 headers: {
                     Location: components["headers"]["Location"];
+                    "Idempotent-Replayed": components["headers"]["IdempotentReplayed"];
                     [name: string]: unknown;
                 };
                 content: {

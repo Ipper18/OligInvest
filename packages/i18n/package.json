@@ -18,6 +18,10 @@
       "types": "./dist/allocation.d.ts",
       "import": "./dist/allocation.js"
     },
+    "./privacy": {
+      "types": "./dist/privacy.d.ts",
+      "import": "./dist/privacy.js"
+    },
     "./education": {
       "types": "./dist/education.d.ts",
       "import": "./dist/education.js"
