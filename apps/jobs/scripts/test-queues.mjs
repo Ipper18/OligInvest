@@ -30,7 +30,7 @@ try {
   await testFeatureFlags(env);
   await testProviderLimits(env);
   jobs = await startJobs(env);
-  assert.equal(jobs.queues.length, 8);
+  assert.equal(jobs.queues.length, 9);
   const ingest = jobs.queues.find((q) => q.name === "ingest");
   const before = await ingest.getJobSchedulers();
   assert.equal(before.length, marketSchedules.length);

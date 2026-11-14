@@ -1,7 +1,5 @@
-import privacy from "./pl/privacy.json" with { type: "json" };
 import pwa from "./pl/pwa.json" with { type: "json" };
 export const pwaMessages = pwa;
-export const privacyMessages = privacy;
 
 import alerts from "./pl/alerts.json" with { type: "json" };
 import app from "./pl/app.json" with { type: "json" };

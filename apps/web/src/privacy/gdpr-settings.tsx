@@ -1,5 +1,6 @@
 "use client";
-import { privacyMessages as defaultT, formatMessage } from "@oliginvest/i18n";
+import { formatMessage } from "@oliginvest/i18n";
+import { privacyMessages as defaultT } from "@oliginvest/i18n/privacy";
 import { Button, TextField } from "@oliginvest/ui";
 import { useCopy, useFormatters } from "@oliginvest/ui/localization";
 import { useEffect, useRef, useState } from "react";
