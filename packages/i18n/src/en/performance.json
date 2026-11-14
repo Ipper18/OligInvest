@@ -57,7 +57,7 @@
     "title": "Currency exposure",
     "assumptions": "EOD closes, NBP table A mid rates, economic view, FIFO",
     "explanation": "Positions are grouped by their quote currency and cash by the currency of the balance. Values in PLN use the latest NBP table A mid rate published on or before the valuation date. The quote currency of an ETF is not the currency of its underlying assets. The weight is the share of the portfolio value in PLN; negative cash lowers it.",
-    "decompositionExplanation": "For open positions in currencies other than PLN, unrealized P/L in PLN is split into a price effect and a currency effect. Price effect = (value in the instrument currency − cost in that currency) × effective purchase rate; currency effect = P/L in PLN − price effect, so both add up to the P/L. Positions in an account kept in the instrument currency stay in the exposure but are left out of the split: their PLN cost is not recorded.",
+    "decompositionExplanation": "For open positions in currencies other than PLN, unrealized P/L in PLN is split into a price effect and a currency effect. Price effect = (value in the instrument currency − cost in that currency) × effective purchase rate; currency effect = P/L in PLN − price effect, so both add up to the P/L. Positions in an account kept in the instrument currency stay in the exposure but are left out of the split: their PLN cost is not recorded, so no currency effect is calculated for them. A missing result does not mean a currency effect of 0.",
     "date": "Valuation date: {date}",
     "exposureTable": "Holdings by currency",
     "decompositionTable": "Price and currency effect",
@@ -84,6 +84,8 @@
     "empty": "No positions or cash on the valuation date. Exposure was not calculated.",
     "incomplete": "A missing price or exchange rate prevents the PLN total and weights from being calculated. An unavailable value does not mean zero.",
     "noForeign": "No open positions in currencies other than PLN with a known cost.",
+    "notSplit": "{currency}: {count} positions in the exposure, left out of the price and currency effect split — no PLN cost (account kept in the instrument currency). The currency effect is not calculated; it is not 0.",
+    "noSplitRows": "No position is included in the split.",
     "decompositionIncomplete": "Some rows are unavailable because a price or exchange rate is missing. The total covers complete rows only.",
     "statuses": {
       "ok": "Complete",
@@ -96,7 +98,7 @@
       "missing_cost": "unknown acquisition cost",
       "missing_price": "no closing price",
       "missing_fx": "no NBP rate",
-      "account_currency": "account kept in the instrument currency"
+      "missing_cost_pln": "no PLN cost (account kept in the instrument currency)"
     },
     "reasonCount": "{reason}: {count}"
   }

@@ -57,7 +57,7 @@
     "title": "Ekspozycja walutowa",
     "assumptions": "Zamknięcia EOD, kursy średnie NBP (tabela A), widok ekonomiczny, FIFO",
     "explanation": "Pozycje grupujemy według waluty notowania, a gotówkę według waluty salda. Wartości w PLN liczymy ostatnim kursem średnim NBP z tabeli A opublikowanym w dniu wyceny lub wcześniej. Waluta notowania ETF nie jest walutą jego aktywów bazowych. Udział to część wartości portfela w PLN; ujemna gotówka go obniża.",
-    "decompositionExplanation": "Dla otwartych pozycji w walutach innych niż PLN niezrealizowany P/L w PLN dzielimy na efekt ceny i efekt kursu. Efekt ceny = (wartość w walucie instrumentu − koszt w tej walucie) × efektywny kurs nabycia; efekt kursu = P/L w PLN − efekt ceny, więc oba efekty sumują się do P/L. Pozycje na rachunku prowadzonym w walucie instrumentu zostają w ekspozycji, ale nie w rozbiciu: ich koszt w PLN nie jest zapisywany.",
+    "decompositionExplanation": "Dla otwartych pozycji w walutach innych niż PLN niezrealizowany P/L w PLN dzielimy na efekt ceny i efekt kursu. Efekt ceny = (wartość w walucie instrumentu − koszt w tej walucie) × efektywny kurs nabycia; efekt kursu = P/L w PLN − efekt ceny, więc oba efekty sumują się do P/L. Pozycje na rachunku prowadzonym w walucie instrumentu zostają w ekspozycji, ale nie w rozbiciu: ich koszt w PLN nie jest zapisywany, więc efektu kursu dla nich nie liczymy. Brak wyniku nie oznacza efektu kursu równego 0.",
     "date": "Dzień wyceny: {date}",
     "exposureTable": "Aktywa według walut",
     "decompositionTable": "Efekt ceny i efekt kursu",
@@ -84,6 +84,8 @@
     "empty": "Brak pozycji i gotówki w dniu wyceny. Ekspozycja nie została obliczona.",
     "incomplete": "Brak ceny lub kursu uniemożliwia obliczenie sumy w PLN i udziałów. Brak wyniku nie oznacza zera.",
     "noForeign": "Brak otwartych pozycji w walutach innych niż PLN ze znanym kosztem.",
+    "notSplit": "{currency}: {count} poz. w ekspozycji, poza rozbiciem na efekt ceny i kursu — brak kosztu w PLN (rachunek w walucie instrumentu). Efekt kursu nie jest liczony; to nie jest 0.",
+    "noSplitRows": "Żadna pozycja nie jest objęta rozbiciem.",
     "decompositionIncomplete": "Część wierszy jest niedostępna z powodu braku ceny lub kursu. Suma obejmuje tylko wiersze kompletne.",
     "statuses": {
       "ok": "Kompletny",
@@ -96,7 +98,7 @@
       "missing_cost": "nieznany koszt nabycia",
       "missing_price": "brak ceny zamknięcia",
       "missing_fx": "brak kursu NBP",
-      "account_currency": "rachunek w walucie instrumentu"
+      "missing_cost_pln": "brak kosztu w PLN (rachunek w walucie instrumentu)"
     },
     "reasonCount": "{reason}: {count}"
   }

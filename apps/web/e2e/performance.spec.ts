@@ -140,6 +140,18 @@ test("currency exposure shows NBP rate and table, effects adding up to P/L and g
   await expect(missing).toContainText("Brak wyniku");
   await gap.locator("summary").filter({ hasText: "Efekt ceny i efekt kursu" }).click();
   await expect(gap.getByText(/brak kursu NBP: 1/)).toBeVisible();
+  // Owner decision Z-29: an account in the instrument currency is annotated, never a zero effect.
+  await page.goto("/portfel/wyniki?to=2025-09-30");
+  const unsplit = page.getByRole("region", { name: "Ekspozycja walutowa", exact: true });
+  await expect(unsplit.getByRole("note")).toHaveText(
+    /^USD: 1 poz\. w ekspozycji, poza rozbiciem .* brak kosztu w PLN .* to nie jest 0\.$/,
+  );
+  await unsplit.locator("summary").filter({ hasText: "Efekt ceny i efekt kursu" }).click();
+  await expect(unsplit.getByText("Żadna pozycja nie jest objęta rozbiciem.")).toBeVisible();
+  await expect(
+    unsplit.getByText("brak kosztu w PLN (rachunek w walucie instrumentu): 1"),
+  ).toBeVisible();
+  await expect(unsplit.getByRole("table", { name: "Efekt ceny i efekt kursu" })).toHaveCount(0);
   await page.goto("/portfel/wyniki?to=2025-01-02");
   await expect(page.getByText(/Brak pozycji i gotówki w dniu wyceny/)).toBeVisible();
 });

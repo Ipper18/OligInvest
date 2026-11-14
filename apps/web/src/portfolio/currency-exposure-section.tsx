@@ -47,13 +47,20 @@ export async function CurrencyExposureSection({
       : formatMessage(copy.rateNoTable, values);
     return slice.fxRate.source === "nbp" ? text : `${text} (${copy[slice.fxRate.source]})`;
   };
-  const { rows, total, exclusions } = result.decomposition;
+  const { rows, total, exclusions, notSplit } = result.decomposition;
   const counts = new Map<keyof typeof copy.reasons, number>();
   for (const e of exclusions) counts.set(e.reason, (counts.get(e.reason) ?? 0) + 1);
   const reasons = [...counts].map(([reason, count]) =>
     formatMessage(copy.reasonCount, {
       reason: copy.reasons[reason],
       count: formatQuantity(String(count)),
+    }),
+  );
+  // Z-29: visible without expanding the tables, so a missing split is never read as a zero effect.
+  const notes = notSplit.map((n) =>
+    formatMessage(copy.notSplit, {
+      currency: n.currency,
+      count: formatQuantity(String(n.positions)),
     }),
   );
   return (
@@ -135,11 +142,16 @@ export async function CurrencyExposureSection({
           </section>
         </details>
       )}
+      {notes.map((text) => (
+        <p className="oi-partial" role="note" key={text}>
+          {text}
+        </p>
+      ))}
       {result.status !== "no_data" && (
         <details>
           <summary>{copy.decompositionTable}</summary>
           {rows.length === 0 ? (
-            <p role="status">{copy.noForeign}</p>
+            <p role="status">{notSplit.length ? copy.noSplitRows : copy.noForeign}</p>
           ) : (
             <section
               className="oi-table-scroll"

@@ -222,9 +222,12 @@ Rozbicie wyniku (§ 4.2) sumujemy per waluta instrumentu ≠ PLN w widoku ekonom
 pośrednich — tożsamość efekt ceny + efekt kursu = P/L obowiązuje także dla sum. Wyłączenia z listą par
 rachunek–instrument: brak ceny lub kursu (`missing_price`, `missing_fx`) — kwoty segmentu są `null`, a suma
 ogólna obejmuje segmenty kompletne; brak kosztu (`missing_cost`) — pozycja poza sumami bez zerowania segmentu,
-jak w sumach pozycji (decyzja 2026-10-08); oraz `account_currency` — rachunek prowadzony w
+jak w sumach pozycji (decyzja 2026-10-08); oraz `missing_cost_pln` — rachunek prowadzony w
 walucie instrumentu: koszt jest w tej walucie, a jej koszt w PLN nie jest zapisywany, więc efekt kursu
-względem PLN nie jest wyznaczalny (pozycja zostaje w ekspozycji, segment nie staje się `null`; zastrzeżenie Z-29 w `wymagania.md`). Funkcje:
+względem PLN nie jest wyznaczalny. Decyzja właściciela Z-29 (2026-11-14): pozycja zostaje w ekspozycji, ale
+poza rozbiciem, z jawną adnotacją per waluta (`decomposition.notSplit`) i na ekranie; efekt kursu nigdy nie
+jest raportowany jako 0 — bez wiersza kompletnego suma rozbicia ma kwoty `null`. Koszt w PLN z kursu NBP
+z ostatniego dnia roboczego przed transakcją (jak w widoku podatkowym, § 2.2) i włączenie do rozbicia — BL-306b. Funkcje:
 `core.currencyExposure`, `core.priceFxEffectsByCurrency`; test na pozostałości wektora A.
 
 ### 4.3 Dywidendy i podatek u źródła (FR-02.08) — przykład G (wektor `G_dividend`)

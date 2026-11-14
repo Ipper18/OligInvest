@@ -5633,8 +5633,8 @@ components:
                   - {type: 'null'}
         decomposition:
           type: object
-          description: 'Niezrealizowany P/L pozycji w walutach innych niż PLN: efekt ceny + efekt kursu = P/L (§ 4.2). Segment z brakiem ceny lub kursu ma kwoty null, a total obejmuje segmenty kompletne; pozycja bez kosztu (missing_cost) jest poza sumami jak w sumach pozycji. account_currency — rachunek w walucie instrumentu, efekt kursu względem PLN niewyznaczalny.'
-          required: [rows, total, isComplete, exclusions]
+          description: 'Niezrealizowany P/L pozycji w walutach innych niż PLN: efekt ceny + efekt kursu = P/L (§ 4.2). Segment z brakiem ceny lub kursu ma kwoty null, a total obejmuje segmenty kompletne; pozycja bez kosztu (missing_cost) jest poza sumami jak w sumach pozycji. Bez wiersza kompletnego total ma kwoty null (nigdy 0). missing_cost_pln — pozycja na rachunku w walucie instrumentu: zostaje w ekspozycji, ale jest poza rozbiciem, bo jej koszt w PLN nie jest zapisywany (decyzja Z-29; efekt kursu nie jest liczony i nigdy nie jest raportowany jako 0; BL-306b).'
+          required: [rows, total, isComplete, notSplit, exclusions]
           properties:
             rows:
               type: array
@@ -5653,10 +5653,21 @@ components:
               type: object
               required: [unrealizedPl, priceEffect, fxEffect]
               properties:
-                unrealizedPl: {$ref: '#/components/schemas/Money'}
-                priceEffect: {$ref: '#/components/schemas/Money'}
-                fxEffect: {$ref: '#/components/schemas/Money'}
+                unrealizedPl: {oneOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}]}
+                priceEffect: {oneOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}]}
+                fxEffect: {oneOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}]}
             isComplete: {type: boolean}
+            notSplit:
+              type: array
+              description: 'Jawna adnotacja dla waluty, której pozycje są poza rozbiciem z powodu braku kosztu w PLN (Z-29).'
+              maxItems: 50
+              items:
+                type: object
+                required: [currency, positions, reason]
+                properties:
+                  currency: {$ref: '#/components/schemas/CurrencyCode'}
+                  positions: {type: integer, minimum: 1}
+                  reason: {type: string, enum: [missing_cost_pln]}
             exclusions:
               type: array
               maxItems: 1000
@@ -5667,7 +5678,7 @@ components:
                   accountId: {$ref: '#/components/schemas/Uuid'}
                   instrumentId: {$ref: '#/components/schemas/Uuid'}
                   currency: {$ref: '#/components/schemas/CurrencyCode'}
-                  reason: {type: string, enum: [missing_cost, missing_price, missing_fx, account_currency]}
+                  reason: {type: string, enum: [missing_cost, missing_price, missing_fx, missing_cost_pln]}
         assumptions:
           type: object
           required: [grouping, prices, fxRates, view, costBasisMethod]

@@ -4113,7 +4113,7 @@ export interface components {
                     tableNo: string | null;
                 } | null;
             }[];
-            /** @description Niezrealizowany P/L pozycji w walutach innych niż PLN: efekt ceny + efekt kursu = P/L (§ 4.2). Segment z brakiem ceny lub kursu ma kwoty null, a total obejmuje segmenty kompletne; pozycja bez kosztu (missing_cost) jest poza sumami jak w sumach pozycji. account_currency — rachunek w walucie instrumentu, efekt kursu względem PLN niewyznaczalny. */
+            /** @description Niezrealizowany P/L pozycji w walutach innych niż PLN: efekt ceny + efekt kursu = P/L (§ 4.2). Segment z brakiem ceny lub kursu ma kwoty null, a total obejmuje segmenty kompletne; pozycja bez kosztu (missing_cost) jest poza sumami jak w sumach pozycji. Bez wiersza kompletnego total ma kwoty null (nigdy 0). missing_cost_pln — pozycja na rachunku w walucie instrumentu: zostaje w ekspozycji, ale jest poza rozbiciem, bo jej koszt w PLN nie jest zapisywany (decyzja Z-29; efekt kursu nie jest liczony i nigdy nie jest raportowany jako 0; BL-306b). */
             decomposition: {
                 rows: {
                     currency: components["schemas"]["CurrencyCode"];
@@ -4125,17 +4125,24 @@ export interface components {
                     fxEffect: components["schemas"]["Money"] | null;
                 }[];
                 total: {
-                    unrealizedPl: components["schemas"]["Money"];
-                    priceEffect: components["schemas"]["Money"];
-                    fxEffect: components["schemas"]["Money"];
+                    unrealizedPl: components["schemas"]["Money"] | null;
+                    priceEffect: components["schemas"]["Money"] | null;
+                    fxEffect: components["schemas"]["Money"] | null;
                 };
                 isComplete: boolean;
+                /** @description Jawna adnotacja dla waluty, której pozycje są poza rozbiciem z powodu braku kosztu w PLN (Z-29). */
+                notSplit: {
+                    currency: components["schemas"]["CurrencyCode"];
+                    positions: number;
+                    /** @enum {string} */
+                    reason: "missing_cost_pln";
+                }[];
                 exclusions: {
                     accountId: components["schemas"]["Uuid"];
                     instrumentId: components["schemas"]["Uuid"];
                     currency: components["schemas"]["CurrencyCode"];
                     /** @enum {string} */
-                    reason: "missing_cost" | "missing_price" | "missing_fx" | "account_currency";
+                    reason: "missing_cost" | "missing_price" | "missing_fx" | "missing_cost_pln";
                 }[];
             };
             assumptions: {

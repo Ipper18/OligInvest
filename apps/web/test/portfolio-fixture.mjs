@@ -205,7 +205,9 @@ export async function portfolioFixture(request, response, key, preferences = {})
     // Vector A remainder (§ 3.7) valued at a synthetic close of 210 USD and rate 4.0000.
     const asOf = url.searchParams.get("asOf");
     const empty = asOf === "2025-01-02",
-      gap = asOf === "2025-06-30";
+      gap = asOf === "2025-06-30",
+      // Z-29: the only USD position sits in a USD account, so it is not split.
+      unsplit = asOf === "2025-09-30";
     const usdRate = gap
       ? null
       : { rate: "4", rateDate: "2025-09-30", source: "nbp", tableNo: "190/A/NBP/2025" };
@@ -239,34 +241,45 @@ export async function portfolioFixture(request, response, key, preferences = {})
             },
           ],
       decomposition: {
-        rows: empty
-          ? []
-          : [
-              {
-                currency: "USD",
-                status: gap ? "incomplete" : "ok",
-                positions: gap ? 0 : 1,
-                unrealizedPl: gap ? null : money("258.75"),
-                priceEffect: gap ? null : money("113.0625"),
-                fxEffect: gap ? null : money("145.6875"),
-              },
-            ],
+        rows:
+          empty || unsplit
+            ? []
+            : [
+                {
+                  currency: "USD",
+                  status: gap ? "incomplete" : "ok",
+                  positions: gap ? 0 : 1,
+                  unrealizedPl: gap ? null : money("258.75"),
+                  priceEffect: gap ? null : money("113.0625"),
+                  fxEffect: gap ? null : money("145.6875"),
+                },
+              ],
         total: {
-          unrealizedPl: money(gap ? "0" : "258.75"),
-          priceEffect: money(gap ? "0" : "113.0625"),
-          fxEffect: money(gap ? "0" : "145.6875"),
+          unrealizedPl: gap || empty || unsplit ? null : money("258.75"),
+          priceEffect: gap || empty || unsplit ? null : money("113.0625"),
+          fxEffect: gap || empty || unsplit ? null : money("145.6875"),
         },
         isComplete: !gap,
-        exclusions: gap
+        notSplit: unsplit ? [{ currency: "USD", positions: 1, reason: "missing_cost_pln" }] : [],
+        exclusions: unsplit
           ? [
               {
                 accountId,
                 instrumentId: "01900000-0000-7000-8000-000000000201",
                 currency: "USD",
-                reason: "missing_fx",
+                reason: "missing_cost_pln",
               },
             ]
-          : [],
+          : gap
+            ? [
+                {
+                  accountId,
+                  instrumentId: "01900000-0000-7000-8000-000000000201",
+                  currency: "USD",
+                  reason: "missing_fx",
+                },
+              ]
+            : [],
       },
       assumptions: {
         grouping: "holding_currency",

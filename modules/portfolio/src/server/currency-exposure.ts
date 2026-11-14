@@ -30,7 +30,7 @@ const ATTRIBUTION: Record<string, string> = {
   nbp: "Kursy: NBP",
   ecb: "Kursy: EBC (Frankfurter)",
 };
-type Reason = "missing_cost" | "missing_price" | "missing_fx" | "account_currency";
+type Reason = "missing_cost" | "missing_price" | "missing_fx" | "missing_cost_pln";
 export type CurrencyExposureInput = {
   accounts: Parameters<typeof valuePortfolio>[0]["accounts"];
   ledger: Pick<Ledger, "positions" | "cash">;
@@ -92,8 +92,9 @@ export function projectCurrencyExposure(input: CurrencyExposureInput, now: Date)
         currency: code,
         reason,
       });
+    // Z-29: the PLN cost of the account currency is not recorded (BL-306b), so no split.
     if (account.currency === code) {
-      exclude("account_currency");
+      exclude("missing_cost_pln");
       continue;
     }
     const original = input.ledger.positions.find(
@@ -123,10 +124,19 @@ export function projectCurrencyExposure(input: CurrencyExposureInput, now: Date)
       fxEffect: jsonMoney(sum?.fxEffect ?? null),
     };
   });
-  const total = sumPriceFxEffects(
-    effects.filter((e) => !incomplete.has(e.currency)).map((e) => e.effect),
-    "PLN",
-  );
+  const complete = effects.filter((e) => !incomplete.has(e.currency)).map((e) => e.effect);
+  const total = complete.length ? sumPriceFxEffects(complete, "PLN") : null;
+  const unsplit = new Map<string, number>();
+  for (const e of exclusions)
+    if (e.reason === "missing_cost_pln")
+      unsplit.set(e.currency, (unsplit.get(e.currency) ?? 0) + 1);
+  const notSplit = [...unsplit]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([code, positions]) => ({
+      currency: code,
+      positions,
+      reason: "missing_cost_pln" as const,
+    }));
   const rate = (r: FxRate | null) =>
     r && {
       rate: r.rate.toDecimalPlaces(10).toFixed(),
@@ -161,11 +171,12 @@ export function projectCurrencyExposure(input: CurrencyExposureInput, now: Date)
     decomposition: {
       rows,
       total: {
-        unrealizedPl: jsonMoney(total.pl),
-        priceEffect: jsonMoney(total.priceEffect),
-        fxEffect: jsonMoney(total.fxEffect),
+        unrealizedPl: jsonMoney(total?.pl ?? null),
+        priceEffect: jsonMoney(total?.priceEffect ?? null),
+        fxEffect: jsonMoney(total?.fxEffect ?? null),
       },
       isComplete: incomplete.size === 0,
+      notSplit,
       exclusions,
     },
     assumptions: {

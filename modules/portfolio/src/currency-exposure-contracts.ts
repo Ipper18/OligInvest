@@ -1,6 +1,6 @@
 import { z } from "@hono/zod-openapi";
 import { metaSchema } from "@oliginvest/mod-market/contracts";
-import { currency, decimal, moneySchema, nullableMoney, object } from "./contracts.js";
+import { currency, decimal, nullableMoney, object } from "./contracts.js";
 
 // Construct only on the API and the results route, never in the portfolio shell.
 export function createCurrencyExposureSchema() {
@@ -43,15 +43,30 @@ export function createCurrencyExposureSchema() {
           }),
         )
         .max(50),
-      total: object({ unrealizedPl: moneySchema, priceEffect: moneySchema, fxEffect: moneySchema }),
+      // Null when no complete row exists: an empty sum is never shown as a zero effect.
+      total: object({
+        unrealizedPl: nullableMoney,
+        priceEffect: nullableMoney,
+        fxEffect: nullableMoney,
+      }),
       isComplete: z.boolean(),
+      // Owner decision Z-29: kept in the exposure, left out of the split, never an FX effect of 0.
+      notSplit: z
+        .array(
+          object({
+            currency,
+            positions: z.number().int().min(1),
+            reason: z.enum(["missing_cost_pln"]),
+          }),
+        )
+        .max(50),
       exclusions: z
         .array(
           object({
             accountId: z.uuid(),
             instrumentId: z.uuid(),
             currency,
-            reason: z.enum(["missing_cost", "missing_price", "missing_fx", "account_currency"]),
+            reason: z.enum(["missing_cost", "missing_price", "missing_fx", "missing_cost_pln"]),
           }),
         )
         .max(1000),

@@ -78,6 +78,7 @@ export async function testCurrencyExposure({ request, database, owner }) {
   assert.equal(row.priceEffect.amount, "76.00000000");
   assert.equal(row.fxEffect.amount, "44.00000000");
   assert.equal(result.meta.attribution, "Dane: Yahoo Finance · Kursy: NBP");
+  assert.deepEqual(result.decomposition.notSplit, []);
   // Before the first NBP table the USD slice is known only in USD: null with a reason.
   const gap = await get("asOf=2024-03-06");
   assert.equal(gap.status, "incomplete");
@@ -87,6 +88,42 @@ export async function testCurrencyExposure({ request, database, owner }) {
   assert.equal(gap.slices[1].valueInCurrency.amount, "210.00000000");
   assert.equal(gap.decomposition.exclusions[0].reason, "missing_fx");
   assert.equal(gap.decomposition.rows[0].fxEffect, null);
+  assert.equal(gap.decomposition.total.fxEffect, null, "no complete row: null, never 0");
+  // Owner decision Z-29: a USD account holding a USD stock stays in the exposure, out of the split.
+  const usdAccount = await post("accounts", {
+    name: "Synthetic USD account",
+    accountType: "regular",
+    broker: "other",
+    currency: "USD",
+  });
+  await post("transactions", {
+    accountId: usdAccount.id,
+    type: "DEPOSIT",
+    tradeDate: "2024-03-01",
+    amount: { amount: "500", currency: "USD" },
+  });
+  await post("transactions", {
+    accountId: usdAccount.id,
+    type: "BUY",
+    tradeDate: "2024-03-04",
+    settleDate: "2024-03-05",
+    instrumentId,
+    quantity: "1",
+    price: "100",
+    priceCurrency: "USD",
+  });
+  const both = await get(`accountId=${usdAccount.id}&asOf=2024-03-08`);
+  // 220 + 110 (positions) + 400 cash = 730 USD at 4.
+  assert.equal(both.slices[1].value.amount, "2920.00000000");
+  assert.equal(both.decomposition.rows[0].positions, 1);
+  assert.equal(both.decomposition.rows[0].fxEffect.amount, "44.00000000");
+  assert.deepEqual(both.decomposition.notSplit, [
+    { currency: "USD", positions: 1, reason: "missing_cost_pln" },
+  ]);
+  assert.deepEqual(
+    both.decomposition.exclusions.map((e) => [e.accountId, e.reason]),
+    [[usdAccount.id, "missing_cost_pln"]],
+  );
   const before = await get("asOf=2024-03-02");
   assert.equal(before.slices.length, 1, "only the deposit exists before the purchase");
   const foreign = await request(`currency-exposure?accountId=${account.id}`, "GET", undefined, {

@@ -132,7 +132,11 @@ test("vector A remainder: slices, NBP rate with date and table, price/FX effect 
   expect(result.decomposition.isComplete).toBe(true);
   // The USD account's own-currency position stays in the exposure but not in the FX effect.
   expect(result.decomposition.exclusions).toEqual([
-    { accountId: USD_ACCOUNT, instrumentId: MSFT, currency: "USD", reason: "account_currency" },
+    { accountId: USD_ACCOUNT, instrumentId: MSFT, currency: "USD", reason: "missing_cost_pln" },
+  ]);
+  // Owner decision Z-29: an explicit annotation, never a currency effect of 0.
+  expect(result.decomposition.notSplit).toEqual([
+    { currency: "USD", positions: 1, reason: "missing_cost_pln" },
   ]);
   expect(result.assumptions).toEqual({
     grouping: "holding_currency",
@@ -190,7 +194,26 @@ test("missing FX rate: USD value stays in USD, PLN amounts and effects are null"
     currency: "USD",
     reason: "missing_fx",
   });
-  expect(result.decomposition.total.unrealizedPl.amount).toBe("0.00000000");
+  // No complete row: the total is null, never a zero effect.
+  expect(result.decomposition.total).toEqual({
+    unrealizedPl: null,
+    priceEffect: null,
+    fxEffect: null,
+  });
+});
+
+test("Z-29: positions only in an instrument-currency account are annotated, total is null", () => {
+  const transactions = base.filter((t) => t.accountId === USD_ACCOUNT);
+  const result = projectCurrencyExposure(input({ transactions }), now);
+  const usd = result.slices.find((s) => s.currency === "USD");
+  // 220 (MSFT) + 800 cash in USD at 4.0000.
+  expect(usd.value).toEqual({ amount: "4080.00000000", currency: "PLN" });
+  expect(result.decomposition.rows).toEqual([]);
+  expect(result.decomposition.notSplit).toEqual([
+    { currency: "USD", positions: 1, reason: "missing_cost_pln" },
+  ]);
+  expect(result.decomposition.total.fxEffect).toBeNull();
+  expect(result.decomposition.isComplete).toBe(true);
 });
 
 test("missing cost and an empty portfolio", () => {
@@ -214,8 +237,8 @@ test("missing cost and an empty portfolio", () => {
   expect(mixed.decomposition.rows[0]).toMatchObject({ status: "ok", positions: 1 });
   expect(mixed.decomposition.rows[0].unrealizedPl.amount).toBe("258.75000000");
   expect(mixed.decomposition.exclusions.map((e) => e.reason).sort()).toEqual([
-    "account_currency",
     "missing_cost",
+    "missing_cost_pln",
   ]);
   const empty = projectCurrencyExposure(input({ transactions: [], quotes: [] }), now);
   expect(empty).toMatchObject({ status: "no_data", total: null, slices: [] });
