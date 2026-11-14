@@ -30,9 +30,15 @@
 
 Test integracyjny: 12 równoległych porażek → jeden e-mail; cooldown; porażki poza oknem; izolacja RLS (cudze zdarzenia niewidoczne i nieliczone); linia bazowa, nowa sieć, nowa przeglądarka, aktualizacja wersji; eksport (wolumen, kombinacja, e-mail tylko do administratorów raz na dobę); deduplikacja e-maili odzyskania; pełny przepływ przez fasadę (hasło, TOTP, nieznane konto bez śladu).
 
-## 4. Pytania do właściciela
+## 4. Pytania do właściciela i decyzje (2026-11-14)
 
 1. **Definicja „nowego urządzenia”:** para (rodzina przeglądarki + systemu, prefiks /24 lub /48) nieobecna w 90 dniach. Nowa sieć przy tej samej przeglądarce też wysyła e-mail (ochrona przed pośrednikiem phishingu) — kosztem fałszywych alarmów w sieciach komórkowych (R-57). Akceptujesz, czy wolisz „nowa przeglądarka **i** nowa sieć”?
 2. **Odbiorcy alertu masowego eksportu:** wszyscy aktywni administratorzy, identyfikacja konta przez UUID (bez e-maila w treści). Wystarczy?
 3. **Reguły poza zakresem** (wiele kont z jednego IP, seria nieudanych step-upów, zmiany administracyjne, naruszenie RLS) — osobne zadania czy dopisać do BL-110?
 4. **Link w e-mailach** prowadzi do `/ustawienia`; sekcja sesji powstanie w BL-123. Zmienić adres, gdy BL-123 doda kotwicę?
+
+**Decyzje właściciela (2026-11-14):** 1 — definicja zostaje, przegląd po 2 tygodniach w R-57 (ewentualnie „nowa przeglądarka oraz nowa sieć”); 2 — wszyscy aktywni administratorzy, konto po UUID; 3 — osobne zadanie BL-110b w backlogu; 4 — link do kotwicy sesji dopisany do BL-123. Zapisane w SEC § 5.3, R-57 i backlogu.
+
+## 5. CI
+
+`dast` na PR #74 czerwony z powodu spoza BL-110: ZAP 10010 na ciasteczku `oi-locale` (`apps/web/src/proxy.ts`, obszar BL-613); ten sam błąd na PR #73. Naprawę niesie PR #67 — gałąź zostanie zaktualizowana z `main` po scaleniu #67 i #73.
