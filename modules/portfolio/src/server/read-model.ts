@@ -10,6 +10,7 @@ import {
   type Money,
   moneyFromJson,
   moneyToJson,
+  type PriceFxEffect,
   priceFxEffect,
   type Quote,
   subtractMoney,
@@ -38,6 +39,27 @@ export function baseMoney(value: Money | null, fx: FxRateTable, date: IsoDate) {
   if (!value) return null;
   const rate = fx.onOrBefore(value.currency, "PLN", date);
   return rate ? convertMoney(value, rate) : null;
+}
+type ValuedPosition = ReturnType<typeof valuePortfolio>["accounts"][number]["positions"][number];
+/** Economic FIFO effect of one position (§ 4.2), or why it cannot be computed. */
+export function positionEffect(
+  p: ValuedPosition,
+  original: Ledger["positions"][number],
+  fx: FxRateTable,
+  date: IsoDate,
+): PriceFxEffect | "missing_cost" | "missing_price" | "missing_fx" {
+  if (!p.cost || !original.costInstrument || original.costInstrument.amount.isZero())
+    return "missing_cost";
+  if (!p.price) return "missing_price";
+  const cost = baseMoney(p.cost, fx, date),
+    value = baseMoney(p.marketValue, fx, date);
+  if (!cost || !value) return "missing_fx";
+  return priceFxEffect({
+    cost,
+    costInstrument: original.costInstrument,
+    value,
+    valueInstrument: grossValue(p.price, p.quantity),
+  });
 }
 export function readMeta(quotes: ReadQuote[], complete = true): z.infer<typeof metaSchema> {
   const oldest = quotes.toSorted((a, b) => a.asOf.localeCompare(b.asOf))[0];
@@ -85,21 +107,9 @@ export function projectPortfolio(input: ReadInput) {
       const pl = value && cost ? subtractMoney(value, cost) : null;
       if (!cost) exclusions.push({ accountId: p.accountId, instrumentId: p.instrumentId });
       const market = p.price ? grossValue(p.price, p.quantity) : null;
-      const effects =
-        !average &&
-        input.view === "economic" &&
-        cost &&
-        value &&
-        market &&
-        original.costInstrument &&
-        !original.costInstrument.amount.isZero()
-          ? priceFxEffect({
-              cost,
-              costInstrument: original.costInstrument,
-              value,
-              valueInstrument: market,
-            })
-          : null;
+      const effect =
+        !average && input.view === "economic" ? positionEffect(p, original, fx, date) : null;
+      const effects = typeof effect === "string" ? null : effect;
       const meta = readMeta(
         input.quotes.filter((q) => q.instrumentId === p.instrumentId),
         value !== null,
