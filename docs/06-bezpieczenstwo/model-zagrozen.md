@@ -238,7 +238,7 @@ Podsumowanie: 65 zagrożeń; po kontrolach 1 wysokie, 31 średnich, 33 niskich; 
 | T-ID-12 / T-QA-01 tokeny PAT | domyślnie tokeny tylko do odczytu; zapis osobnym tokenem; instrukcje w [`../05-mobile/ios-integracje.md`](../05-mobile/ios-integracje.md) § 6 | M4 |
 | T-MK-01 dane rynkowe | bramki jakości przed zapisem; porównanie źródeł dla instrumentów z pozycji | M2 |
 | T-INF-05 dostępność | kopie i test odtworzenia ([`../07-wdrozenie/backup-dr.md`](../07-wdrozenie/backup-dr.md)); UPS jako koszt w [`../10-ograniczenia.md`](../10-ograniczenia.md) | M1 i M6 |
-| T-ID-02, T-ID-03 phishing i sesje | e-mail o nowym urządzeniu (M1), passkeys (P3) | M1, później |
+| T-ID-02, T-ID-03 phishing i sesje | e-mail o nowym urządzeniu — wdrożony w BL-110 (nowa sieć przy tej samej przeglądarce też się liczy, bo pośrednik phishingu przekazuje User-Agent ofiary); passkeys (P3) | M1, później |
 | T-EDGE-03, T-INF-02 ruch boczny | reguły zapory po stronie domu i Proxmoxa przed udostępnieniem aplikacji | M0 |
 | T-AD-02 dostęp administratora | jawna informacja w [`prywatnosc-rodo.md`](prywatnosc-rodo.md) § 3; brak narzędzi UI do podglądu danych | M1 |
 

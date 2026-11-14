@@ -78,7 +78,7 @@ Po pierwszej konfiguracji TOTP ekran pozostawia jednorazowo wydane kody zapasowe
 | Adres IP | limiter Better Auth na trasach logowania, resetu i 2FA | 5 / min i 20 / h na IP (konwencje API § 7) |
 | Konto | narastające opóźnienie odpowiedzi po nieudanych próbach na to samo konto (niezależnie od IP) | 0 s, 1 s, 2 s, 4 s… do 30 s; zerowane po udanym logowaniu |
 | Drugi czynnik | licznik nieudanych kodów TOTP i blokada czasowa (Better Auth `failedVerificationCount`, `lockedUntil`) | 5 błędnych kodów → 15 min |
-| Powiadomienie | e-mail do właściciela konta po serii nieudanych prób | ≥ 5 w 15 min, maks. 1 e-mail na godzinę |
+| Powiadomienie | e-mail do właściciela konta po serii nieudanych prób (hasło i drugi czynnik przy logowaniu liczone razem; BL-110, [`kontrole-bezpieczenstwa.md`](kontrole-bezpieczenstwa.md) § 5.3) | ≥ 5 w 15 min, maks. 1 e-mail na godzinę |
 
 **Brak trwałej blokady konta:** atakujący znający e-mail nie może zablokować właściciela na stałe — opóźnienia i blokady są czasowe, a hasło bez TOTP i tak nic nie daje. **Jednolite odpowiedzi:** logowanie, reset hasła i podgląd zaproszenia zwracają tę samą treść i porównywalny czas odpowiedzi niezależnie od istnienia konta (weryfikacja hasła wykonywana także dla nieistniejącego konta na stałym skrócie). CAPTCHA nie jest używana — wymagałaby usługi zewnętrznej, a obowiązkowe TOTP odbiera stuffingowi sens.
 
@@ -150,7 +150,7 @@ NIST SP 800-63B-4 (wersja finalna z 2025 r.) zaleca dla AAL2 czas życia sesji n
 
 Mechanizm: `POST /api/v1/me/step-up` z kodem TOTP → `auth.sessions.mfa_verified_at = now()`, `mfa_method = 'totp'` i **rotacja tokenu sesji** (nowe ciasteczko, stary token unieważniony). Brak świeżej weryfikacji TOTP → `403 STEP_UP_REQUIRED`; UI pokazuje okno z kodem i ponawia żądanie. Kod użyty do step-upu podlega tej samej ochronie przed powtórką i blokadzie co logowanie. Logowanie kodem zapasowym ustawia `mfa_method = 'backup'` i przechodzi bramkę MFA do zwykłych danych; nie spełnia ogólnego step-upu.
 
-**Ograniczone odzyskanie urządzenia (decyzja właściciela 2026-10-04):** po atomowym zużyciu kodu zapasowego jego sesja ma przez **10 minut** jednorazowe uprawnienie wyłącznie do `two-factor/enable`, razem z poprawnym hasłem. Rozpoczęcie wymiany zeruje `mfa_verified_at`, zużywając uprawnienie; pozostawia `mfa_method = 'backup'` jako znacznik niedokończonego odzyskania. Ponowne `enable` odmawia. Konto pozostaje z obowiązkowym 2FA przez całą wymianę (logowanie samym hasłem nie otwiera nowej konfiguracji). Po poprawnym kodzie nowego TOTP: rotacja sesji, `mfa_method = 'totp'`, usunięcie wszystkich innych sesji, wygenerowanie i zaszyfrowanie nowego kompletu kodów, pokazanie ich raz w odpowiedzi weryfikacji. Kody wydane podczas rozpoczęcia wymiany są wtedy nieważne. Rozpoczęcie i ukończenie odzyskania mają audyt oraz zdarzenie bezpieczeństwa; e-mail obsłuży BL-110. Testy zabraniają sesji `backup` eksportu, zmiany hasła, zarządzania PAT i dostępu admina.
+**Ograniczone odzyskanie urządzenia (decyzja właściciela 2026-10-04):** po atomowym zużyciu kodu zapasowego jego sesja ma przez **10 minut** jednorazowe uprawnienie wyłącznie do `two-factor/enable`, razem z poprawnym hasłem. Rozpoczęcie wymiany zeruje `mfa_verified_at`, zużywając uprawnienie; pozostawia `mfa_method = 'backup'` jako znacznik niedokończonego odzyskania. Ponowne `enable` odmawia. Konto pozostaje z obowiązkowym 2FA przez całą wymianę (logowanie samym hasłem nie otwiera nowej konfiguracji). Po poprawnym kodzie nowego TOTP: rotacja sesji, `mfa_method = 'totp'`, usunięcie wszystkich innych sesji, wygenerowanie i zaszyfrowanie nowego kompletu kodów, pokazanie ich raz w odpowiedzi weryfikacji. Kody wydane podczas rozpoczęcia wymiany są wtedy nieważne. Rozpoczęcie i ukończenie odzyskania mają audyt oraz zdarzenie bezpieczeństwa; od BL-110 każde z nich wysyła też e-mail do właściciela konta. Testy zabraniają sesji `backup` eksportu, zmiany hasła, zarządzania PAT i dostępu admina.
 
 ## 7. Tokeny PAT (FR-07.07, Z-17)
 
@@ -252,7 +252,8 @@ flowchart LR
 | Każda trasa z OpenAPI wymaga uwierzytelnienia i uprawnienia albo jest na liście publicznych | kontraktowy | 100 % operacji |
 | Sesja bez MFA / bez akceptacji regulaminu | integracyjny | `403` z właściwym kodem na każdej trasie poza wyjątkami |
 | Zablokowane trasy Better Auth | integracyjny | `403` dla każdej z listy § 1 |
-| Seria nieudanych logowań | integracyjny | rosnące opóźnienie, blokada TOTP po 5 kodach, e-mail do właściciela |
+| Seria nieudanych logowań | integracyjny | rosnące opóźnienie, blokada TOTP po 5 kodach, e-mail do właściciela (jeden na serię i godzinę, także przy próbach równoległych — `apps/api/integration/security-events.mjs`) |
+| Logowanie z nowego urządzenia | integracyjny | linia bazowa bez e-maila; ta sama przeglądarka z nowej sieci i nowa przeglądarka → e-mail; aktualizacja wersji przeglądarki i ta sama sieć /24 → bez e-maila; zdarzenia innego konta niewidoczne (RLS) |
 | Powtórzony kod TOTP | integracyjny | drugie użycie odrzucone |
 | Hasło z listy popularnych, ze słowem kontekstowym, z wycieku | jednostkowy/integracyjny | odrzucone z komunikatem |
 | Atrybuty ciasteczek | e2e | `__Host-`, `Secure`, `HttpOnly`, `SameSite=Lax`, bez `Domain` |
