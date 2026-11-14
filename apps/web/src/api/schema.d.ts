@@ -1485,6 +1485,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/portfolio/currency-exposure": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Ekspozycja walutowa (PLN/USD/EUR) i suma efektu ceny i efektu kursu niezrealizowanego P/L
+         * @description BL-306 (obliczenia-finansowe.md § 4.2.1): pozycje według waluty notowania i gotówka według waluty salda, zamknięcia EOD i kurs średni NBP (tabela A) z dnia wyceny lub wcześniejszy — z datą i numerem tabeli. Brak ceny lub kursu daje null z powodem w statusie segmentu, nigdy 0. Rozbicie: widok ekonomiczny, FIFO, waluty instrumentów inne niż PLN; wyłączenia z powodem. Cudzy rachunek — 404.
+         */
+        get: operations["getCurrencyExposure"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/portfolio/realized": {
         parameters: {
             query?: never;
@@ -4062,6 +4082,74 @@ export interface components {
                 /** @description Klasyfikacja nadpisana przez użytkownika. */
                 overridden?: boolean;
             }[];
+            meta: components["schemas"]["DataMeta"];
+        };
+        /** @description Kwoty w PLN jako ciągi, bez zaokrągleń pośrednich; udziały i kursy jako ciągi dziesiętne. status=incomplete — brak ceny lub kursu: total i wszystkie udziały null; no_data — brak pozycji i gotówki. */
+        CurrencyExposure: {
+            /** @enum {string} */
+            currency: "PLN";
+            date: components["schemas"]["LocalDate"];
+            /** @enum {string} */
+            status: "ok" | "incomplete" | "no_data";
+            total: components["schemas"]["Money"] | null;
+            slices: {
+                currency: components["schemas"]["CurrencyCode"];
+                /** @enum {string} */
+                status: "ok" | "missing_price" | "missing_fx";
+                /** @description Pozycje i gotówka w walucie segmentu; null przy braku ceny. */
+                valueInCurrency: components["schemas"]["Money"] | null;
+                securities: components["schemas"]["Money"] | null;
+                cash: components["schemas"]["Money"] | null;
+                value: components["schemas"]["Money"] | null;
+                /** @description Ułamek wartości portfela; null, gdy suma nieznana. */
+                weight: string | null;
+                /** @description Kurs waluty segmentu do PLN; null dla PLN lub przy braku kursu. */
+                fxRate: {
+                    rate: components["schemas"]["DecimalString"];
+                    rateDate: components["schemas"]["LocalDate"];
+                    /** @enum {string} */
+                    source: "nbp" | "ecb" | "derived";
+                    /** @example 190/A/NBP/2026 */
+                    tableNo: string | null;
+                } | null;
+            }[];
+            /** @description Niezrealizowany P/L pozycji w walutach innych niż PLN: efekt ceny + efekt kursu = P/L (§ 4.2). Segment z brakiem ceny lub kursu ma kwoty null, a total obejmuje segmenty kompletne; pozycja bez kosztu (missing_cost) jest poza sumami jak w sumach pozycji. account_currency — rachunek w walucie instrumentu, efekt kursu względem PLN niewyznaczalny. */
+            decomposition: {
+                rows: {
+                    currency: components["schemas"]["CurrencyCode"];
+                    /** @enum {string} */
+                    status: "ok" | "incomplete";
+                    positions: number;
+                    unrealizedPl: components["schemas"]["Money"] | null;
+                    priceEffect: components["schemas"]["Money"] | null;
+                    fxEffect: components["schemas"]["Money"] | null;
+                }[];
+                total: {
+                    unrealizedPl: components["schemas"]["Money"];
+                    priceEffect: components["schemas"]["Money"];
+                    fxEffect: components["schemas"]["Money"];
+                };
+                isComplete: boolean;
+                exclusions: {
+                    accountId: components["schemas"]["Uuid"];
+                    instrumentId: components["schemas"]["Uuid"];
+                    currency: components["schemas"]["CurrencyCode"];
+                    /** @enum {string} */
+                    reason: "missing_cost" | "missing_price" | "missing_fx" | "account_currency";
+                }[];
+            };
+            assumptions: {
+                /** @enum {string} */
+                grouping: "holding_currency";
+                /** @enum {string} */
+                prices: "eod_close";
+                /** @enum {string} */
+                fxRates: "nbp_table_a_mid";
+                /** @enum {string} */
+                view: "economic";
+                /** @enum {string} */
+                costBasisMethod: "fifo";
+            };
             meta: components["schemas"]["DataMeta"];
         };
         RealizedPl: {
@@ -8708,6 +8796,35 @@ export interface operations {
             };
             401: components["responses"]["Unauthenticated"];
             403: components["responses"]["Forbidden"];
+        };
+    };
+    getCurrencyExposure: {
+        parameters: {
+            query?: {
+                /** @description Powtarzalny; brak = wszystkie rachunki (bez rachunku demo). */
+                accountId?: components["parameters"]["AccountIds"];
+                /** @description Stan na koniec dnia (brak = bieżący). */
+                asOf?: components["parameters"]["AsOf"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Ekspozycja walutowa. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CurrencyExposure"];
+                };
+            };
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["ValidationFailed"];
         };
     };
     getRealizedPl: {

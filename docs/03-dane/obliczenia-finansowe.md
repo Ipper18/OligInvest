@@ -207,6 +207,26 @@ $$\text{efekt ceny} = (\text{wartość}_{CCY_i} - K_i)\cdot r_0 \qquad \text{efe
 
 Suma obu efektów = P/L w PLN (tożsamość; test).
 
+### 4.2.1 Ekspozycja walutowa i suma efektów (BL-306, FR-02.06)
+
+Ekspozycja to wartość aktywów pogrupowana według **ich własnej waluty**: pozycja — waluta notowania
+(`q·cena`), gotówka — waluta salda (rachunek może trzymać kilka walut). Wartość segmentu w PLN =
+`Σ wartość_CCY · kurs_{CCY→PLN}(t)`, kurs: ostatnia tabela A NBP z dnia wyceny lub wcześniejsza (jak w § 5);
+odpowiedź podaje kurs, datę i numer tabeli. Udział = wartość segmentu / suma segmentów (ułamek dziesiętny;
+ujemna gotówka obniża udział). Zerowe saldo gotówki nie tworzy segmentu. Ceny: zamknięcia EOD (bez notowań
+opóźnionych), jak w wycenie dziennej. Waluta notowania ETF nie jest walutą jego aktywów bazowych — założenie
+widoczne na ekranie. Brak ceny albo kursu: wartość segmentu w PLN, suma i wszystkie udziały są `null` (nigdy 0,
+zasada z 2026-10-08); wartość w walucie segmentu zostaje, jeśli ceny są znane.
+
+Rozbicie wyniku (§ 4.2) sumujemy per waluta instrumentu ≠ PLN w widoku ekonomicznym, FIFO, bez zaokrągleń
+pośrednich — tożsamość efekt ceny + efekt kursu = P/L obowiązuje także dla sum. Wyłączenia z listą par
+rachunek–instrument: brak ceny lub kursu (`missing_price`, `missing_fx`) — kwoty segmentu są `null`, a suma
+ogólna obejmuje segmenty kompletne; brak kosztu (`missing_cost`) — pozycja poza sumami bez zerowania segmentu,
+jak w sumach pozycji (decyzja 2026-10-08); oraz `account_currency` — rachunek prowadzony w
+walucie instrumentu: koszt jest w tej walucie, a jej koszt w PLN nie jest zapisywany, więc efekt kursu
+względem PLN nie jest wyznaczalny (pozycja zostaje w ekspozycji, segment nie staje się `null`; zastrzeżenie Z-29 w `wymagania.md`). Funkcje:
+`core.currencyExposure`, `core.priceFxEffectsByCurrency`; test na pozostałości wektora A.
+
 ### 4.3 Dywidendy i podatek u źródła (FR-02.08) — przykład G (wektor `G_dividend`)
 
 100 akcji × 0,25 USD brutto; podatek u źródła 15 %; rachunek PLN (kurs brokera 3,68 × (1 − 0,5 %)); NBP D-1 = 3,6900.

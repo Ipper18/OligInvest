@@ -23,6 +23,13 @@ test("English performance labels and decimal formatting follow preferences", asy
   ).toBeVisible();
   await expect(page.getByRole("row", { name: /Selected period/ })).toContainText("10.98");
   await expect(page.getByRole("heading", { name: /Portfolio drawdowns/ })).toBeVisible();
+  const exposure = page.getByRole("region", { name: "Currency exposure", exact: true });
+  await exposure.locator("summary").filter({ hasText: "Price and currency effect" }).click();
+  await expect(
+    exposure.getByRole("table", { name: "Price and currency effect" }).getByRole("row", {
+      name: /^USD/,
+    }),
+  ).toContainText("145.69");
   await page.goto("/portfel/wyniki?from=2025-12-15");
   await expect(page.getByRole("row", { name: /Selected period/ })).toContainText(
     "Period shorter than 30 days",
@@ -98,4 +105,41 @@ test("drawdown uses vector C, lazy canvas, accessible data and missing-state exp
   await expect(
     page.getByText(/Niepełne wyceny lub przepływy uniemożliwiają obliczenie obsunięcia/),
   ).toBeVisible();
+});
+
+test("currency exposure shows NBP rate and table, effects adding up to P/L and gaps without zero", async ({
+  page,
+}) => {
+  await page.goto("/portfel/wyniki");
+  const section = page.getByRole("region", { name: "Ekspozycja walutowa", exact: true });
+  await expect(section.getByText(/Pozycje grupujemy według waluty notowania/)).toBeVisible();
+  await expect(section.locator('[data-freshness-source="computed"]')).toContainText("Kursy: NBP");
+  // Collapsed by default: server-rendered tables, no client JavaScript.
+  const exposure = section.getByRole("table", { name: "Aktywa według walut", exact: true });
+  await expect(exposure).toBeHidden();
+  await section.locator("summary").filter({ hasText: "Aktywa według walut" }).click();
+  const usd = exposure.getByRole("row", { name: /^USD/ });
+  await expect(usd).toContainText("30,50");
+  await expect(usd).toContainText("4,0000");
+  await expect(usd).toContainText("190/A/NBP/2025");
+  await expect(exposure.getByRole("row", { name: /^PLN/ })).toContainText("waluta bazowa");
+  await section.locator("summary").filter({ hasText: "Efekt ceny i efekt kursu" }).click();
+  const effects = section.getByRole("table", { name: "Efekt ceny i efekt kursu", exact: true });
+  const row = effects.getByRole("row", { name: /^USD/ });
+  for (const value of ["258,75", "113,06", "145,69"]) await expect(row).toContainText(value);
+  expect(
+    (await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze())
+      .violations,
+  ).toEqual([]);
+  await page.goto("/portfel/wyniki?to=2025-06-30");
+  const gap = page.getByRole("region", { name: "Ekspozycja walutowa", exact: true });
+  await expect(gap.getByText(/Brak ceny lub kursu uniemożliwia obliczenie sumy/)).toBeVisible();
+  await gap.locator("summary").filter({ hasText: "Aktywa według walut" }).click();
+  const missing = gap.getByRole("row", { name: /^USD/ });
+  await expect(missing).toContainText("Brak kursu NBP");
+  await expect(missing).toContainText("Brak wyniku");
+  await gap.locator("summary").filter({ hasText: "Efekt ceny i efekt kursu" }).click();
+  await expect(gap.getByText(/brak kursu NBP: 1/)).toBeVisible();
+  await page.goto("/portfel/wyniki?to=2025-01-02");
+  await expect(page.getByText(/Brak pozycji i gotówki w dniu wyceny/)).toBeVisible();
 });

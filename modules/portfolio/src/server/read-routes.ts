@@ -11,8 +11,10 @@ import {
   positionsResponse,
   realizedResponse,
 } from "../contracts.js";
+import { createCurrencyExposureSchema } from "../currency-exposure-contracts.js";
 import { createDrawdownSchema } from "../drawdown-contracts.js";
 import { createPerformanceSchema } from "../performance-contracts.js";
+import { readCurrencyExposure } from "./currency-exposure.js";
 import { readDrawdown } from "./drawdown.js";
 import { readPortfolioHistory } from "./history.js";
 import { readPerformance } from "./performance.js";
@@ -137,6 +139,40 @@ export function mountPortfolioReads(api: OpenAPIHono<AppEnv>, deps: PortfolioDep
         await deps.repository(),
         principal,
         drawdownQuery.parse(queryValues(c.req.url)),
+      );
+      c.header("Cache-Control", "no-store");
+      return c.json(response);
+    } catch (error) {
+      return validationError(error);
+    }
+  });
+  const exposureQuery = z.object({ ...accounts, asOf: z.iso.date().optional() }).strict();
+  const exposure = createRoute({
+    method: "get",
+    path: "/portfolio/currency-exposure",
+    operationId: "getCurrencyExposure",
+    tags: ["portfolio"],
+    security: [{ sessionCookie: [] }],
+    request: { query: exposureQuery },
+    responses: {
+      200: {
+        description: "Ekspozycja walutowa.",
+        content: { "application/json": { schema: createCurrencyExposureSchema() } },
+      },
+      401: marketError,
+      403: marketError,
+      404: marketError,
+      422: marketError,
+    },
+  });
+  api.openAPIRegistry.registerPath(exposure);
+  api.get(exposure.path, async (c) => {
+    try {
+      const principal = await deps.authorize(c.req.raw);
+      const response = await readCurrencyExposure(
+        await deps.repository(),
+        principal,
+        exposureQuery.parse(queryValues(c.req.url)),
       );
       c.header("Cache-Control", "no-store");
       return c.json(response);
