@@ -7,6 +7,7 @@ export * from "./dividends.js";
 export * from "./drawdown.js";
 export * from "./effects.js";
 export * from "./errors.js";
+export * from "./exposure.js";
 export * from "./format.js";
 export * from "./fx.js";
 export * from "./history.js";

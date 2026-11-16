@@ -23,6 +23,7 @@ export {
   accountPatch,
   accountSchema,
   cashBalanceSchema,
+  createCurrencyExposureSchema,
   createDrawdownSchema,
   createPerformanceSchema,
   dayChangeResponse,

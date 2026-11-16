@@ -1843,6 +1843,23 @@ paths:
         '200': {description: 'Alokacja.', content: {application/json: {schema: {$ref: '#/components/schemas/Allocation'}}}}
         '401': {$ref: '#/components/responses/Unauthenticated'}
         '403': {$ref: '#/components/responses/Forbidden'}
+  /portfolio/currency-exposure:
+    get:
+      operationId: getCurrencyExposure
+      summary: Ekspozycja walutowa (PLN/USD/EUR) i suma efektu ceny i efektu kursu niezrealizowanego P/L
+      description: 'BL-306 (obliczenia-finansowe.md § 4.2.1): pozycje według waluty notowania i gotówka według waluty salda, zamknięcia EOD i kurs średni NBP (tabela A) z dnia wyceny lub wcześniejszy — z datą i numerem tabeli. Brak ceny lub kursu daje null z powodem w statusie segmentu, nigdy 0. Rozbicie: widok ekonomiczny, FIFO, waluty instrumentów inne niż PLN; wyłączenia z powodem. Cudzy rachunek — 404.'
+      tags: [portfolio]
+      x-permission: portfolio:read
+      x-requirements: [FR-02.06, FR-01.14]
+      parameters:
+        - {$ref: '#/components/parameters/AccountIds'}
+        - {$ref: '#/components/parameters/AsOf'}
+      responses:
+        '200': {description: 'Ekspozycja walutowa.', content: {application/json: {schema: {$ref: '#/components/schemas/CurrencyExposure'}}}}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '422': {$ref: '#/components/responses/ValidationFailed'}
   /portfolio/realized:
     get:
       operationId: getRealizedPl
@@ -5579,6 +5596,98 @@ components:
               value: {$ref: '#/components/schemas/Money'}
               weight: {type: number}
               overridden: {type: boolean, description: 'Klasyfikacja nadpisana przez użytkownika.'}
+        meta: {$ref: '#/components/schemas/DataMeta'}
+    CurrencyExposure:
+      type: object
+      description: 'Kwoty w PLN jako ciągi, bez zaokrągleń pośrednich; udziały i kursy jako ciągi dziesiętne. status=incomplete — brak ceny lub kursu: total i wszystkie udziały null; no_data — brak pozycji i gotówki.'
+      required: [currency, date, status, total, slices, decomposition, assumptions, meta]
+      properties:
+        currency: {type: string, enum: [PLN]}
+        date: {$ref: '#/components/schemas/LocalDate'}
+        status: {type: string, enum: [ok, incomplete, no_data]}
+        total: {oneOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}]}
+        slices:
+          type: array
+          maxItems: 50
+          items:
+            type: object
+            required: [currency, status, valueInCurrency, securities, cash, value, weight, fxRate]
+            properties:
+              currency: {$ref: '#/components/schemas/CurrencyCode'}
+              status: {type: string, enum: [ok, missing_price, missing_fx]}
+              valueInCurrency: {oneOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}], description: 'Pozycje i gotówka w walucie segmentu; null przy braku ceny.'}
+              securities: {oneOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}]}
+              cash: {oneOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}]}
+              value: {oneOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}]}
+              weight: {type: [string, 'null'], pattern: '^-?\d{1,14}(\.\d{1,10})?$', description: 'Ułamek wartości portfela; null, gdy suma nieznana.'}
+              fxRate:
+                description: 'Kurs waluty segmentu do PLN; null dla PLN lub przy braku kursu.'
+                oneOf:
+                  - type: object
+                    required: [rate, rateDate, source, tableNo]
+                    properties:
+                      rate: {$ref: '#/components/schemas/DecimalString'}
+                      rateDate: {$ref: '#/components/schemas/LocalDate'}
+                      source: {type: string, enum: [nbp, ecb, derived]}
+                      tableNo: {type: [string, 'null'], maxLength: 40, example: 190/A/NBP/2026}
+                  - {type: 'null'}
+        decomposition:
+          type: object
+          description: 'Niezrealizowany P/L pozycji w walutach innych niż PLN: efekt ceny + efekt kursu = P/L (§ 4.2). Segment z brakiem ceny lub kursu ma kwoty null, a total obejmuje segmenty kompletne; pozycja bez kosztu (missing_cost) jest poza sumami jak w sumach pozycji. Bez wiersza kompletnego total ma kwoty null (nigdy 0). missing_cost_pln — pozycja na rachunku w walucie instrumentu: zostaje w ekspozycji, ale jest poza rozbiciem, bo jej koszt w PLN nie jest zapisywany (decyzja Z-29; efekt kursu nie jest liczony i nigdy nie jest raportowany jako 0; BL-306b).'
+          required: [rows, total, isComplete, notSplit, exclusions]
+          properties:
+            rows:
+              type: array
+              maxItems: 50
+              items:
+                type: object
+                required: [currency, status, positions, unrealizedPl, priceEffect, fxEffect]
+                properties:
+                  currency: {$ref: '#/components/schemas/CurrencyCode'}
+                  status: {type: string, enum: [ok, incomplete]}
+                  positions: {type: integer, minimum: 0}
+                  unrealizedPl: {oneOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}]}
+                  priceEffect: {oneOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}]}
+                  fxEffect: {oneOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}]}
+            total:
+              type: object
+              required: [unrealizedPl, priceEffect, fxEffect]
+              properties:
+                unrealizedPl: {oneOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}]}
+                priceEffect: {oneOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}]}
+                fxEffect: {oneOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}]}
+            isComplete: {type: boolean}
+            notSplit:
+              type: array
+              description: 'Jawna adnotacja dla waluty, której pozycje są poza rozbiciem z powodu braku kosztu w PLN (Z-29).'
+              maxItems: 50
+              items:
+                type: object
+                required: [currency, positions, reason]
+                properties:
+                  currency: {$ref: '#/components/schemas/CurrencyCode'}
+                  positions: {type: integer, minimum: 1}
+                  reason: {type: string, enum: [missing_cost_pln]}
+            exclusions:
+              type: array
+              maxItems: 1000
+              items:
+                type: object
+                required: [accountId, instrumentId, currency, reason]
+                properties:
+                  accountId: {$ref: '#/components/schemas/Uuid'}
+                  instrumentId: {$ref: '#/components/schemas/Uuid'}
+                  currency: {$ref: '#/components/schemas/CurrencyCode'}
+                  reason: {type: string, enum: [missing_cost, missing_price, missing_fx, missing_cost_pln]}
+        assumptions:
+          type: object
+          required: [grouping, prices, fxRates, view, costBasisMethod]
+          properties:
+            grouping: {type: string, enum: [holding_currency]}
+            prices: {type: string, enum: [eod_close]}
+            fxRates: {type: string, enum: [nbp_table_a_mid]}
+            view: {type: string, enum: [economic]}
+            costBasisMethod: {type: string, enum: [fifo]}
         meta: {$ref: '#/components/schemas/DataMeta'}
     RealizedPl:
       type: object

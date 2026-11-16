@@ -201,6 +201,103 @@ export async function portfolioFixture(request, response, key, preferences = {})
       data: [{ accountId, balance: money("1000"), balanceBase: money("1000"), asOf: "2026-10-13" }],
     });
   if (path === "/portfolio/lots") return send({ data: [], page: emptyPage, method: "fifo" });
+  if (path === "/portfolio/currency-exposure") {
+    // Vector A remainder (§ 3.7) valued at a synthetic close of 210 USD and rate 4.0000.
+    const asOf = url.searchParams.get("asOf");
+    const empty = asOf === "2025-01-02",
+      gap = asOf === "2025-06-30",
+      // Z-29: the only USD position sits in a USD account, so it is not split.
+      unsplit = asOf === "2025-09-30";
+    const usdRate = gap
+      ? null
+      : { rate: "4", rateDate: "2025-09-30", source: "nbp", tableNo: "190/A/NBP/2025" };
+    return send({
+      currency: "PLN",
+      date: asOf ?? "2025-10-02",
+      status: empty ? "no_data" : gap ? "incomplete" : "ok",
+      total: empty || gap ? null : money("9575.12"),
+      slices: empty
+        ? []
+        : [
+            {
+              currency: "PLN",
+              status: "ok",
+              valueInCurrency: money("6655.12"),
+              securities: money("0"),
+              cash: money("6655.12"),
+              value: money("6655.12"),
+              weight: gap ? null : "0.6950429864",
+              fxRate: null,
+            },
+            {
+              currency: "USD",
+              status: gap ? "missing_fx" : "ok",
+              valueInCurrency: money("730", "USD"),
+              securities: gap ? null : money("2520"),
+              cash: gap ? null : money("400"),
+              value: gap ? null : money("2920"),
+              weight: gap ? null : "0.3049570136",
+              fxRate: usdRate,
+            },
+          ],
+      decomposition: {
+        rows:
+          empty || unsplit
+            ? []
+            : [
+                {
+                  currency: "USD",
+                  status: gap ? "incomplete" : "ok",
+                  positions: gap ? 0 : 1,
+                  unrealizedPl: gap ? null : money("258.75"),
+                  priceEffect: gap ? null : money("113.0625"),
+                  fxEffect: gap ? null : money("145.6875"),
+                },
+              ],
+        total: {
+          unrealizedPl: gap || empty || unsplit ? null : money("258.75"),
+          priceEffect: gap || empty || unsplit ? null : money("113.0625"),
+          fxEffect: gap || empty || unsplit ? null : money("145.6875"),
+        },
+        isComplete: !gap,
+        notSplit: unsplit ? [{ currency: "USD", positions: 1, reason: "missing_cost_pln" }] : [],
+        exclusions: unsplit
+          ? [
+              {
+                accountId,
+                instrumentId: "01900000-0000-7000-8000-000000000201",
+                currency: "USD",
+                reason: "missing_cost_pln",
+              },
+            ]
+          : gap
+            ? [
+                {
+                  accountId,
+                  instrumentId: "01900000-0000-7000-8000-000000000201",
+                  currency: "USD",
+                  reason: "missing_fx",
+                },
+              ]
+            : [],
+      },
+      assumptions: {
+        grouping: "holding_currency",
+        prices: "eod_close",
+        fxRates: "nbp_table_a_mid",
+        view: "economic",
+        costBasisMethod: "fifo",
+      },
+      meta: {
+        source: "computed",
+        asOf: empty ? "2025-01-02T12:00:00.000Z" : "2025-10-01T00:00:00.000Z",
+        delayMinutes: 0,
+        stale: empty || gap,
+        staleReason: empty || gap ? "no_data" : "eod_only",
+        ...(empty ? {} : { attribution: "Dane: Yahoo Finance · Kursy: NBP" }),
+      },
+    });
+  }
   if (path === "/portfolio/drawdown") {
     const empty = url.searchParams.get("from") === "2025-12-15";
     const gap = url.searchParams.get("from") === "2025-06-01";
