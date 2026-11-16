@@ -1529,7 +1529,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Dywidendy — brutto, podatek u źródła, netto, w PLN, szacowana dopłata w PL (przykład G) */
+        /**
+         * Dywidendy — brutto, podatek u źródła, netto, w walucie i w PLN, stopa od kosztu, szacowana dopłata (przykład G)
+         * @description BL-307 (obliczenia-finansowe.md § 4.3): dzień przychodu = dzień wypłaty; kwoty w PLN kursem średnim NBP (tabela A) z ostatniego dnia roboczego przed wypłatą — z datą i numerem tabeli, na każdym typie rachunku. Szacowana dopłata = 19 % brutto minus podatek u źródła zaliczony najwyżej do 19 % — informacyjnie, nie jest doradztwem podatkowym (disclaimer tax_view); IKE/IKZE — nie dotyczy. Brak kursu lub niezapisany podatek u źródła daje null z powodem, nigdy 0. Stopa od kosztu: brutto w PLN z 12 miesięcy do `to` / koszt FIFO otwartej pozycji w PLN (rachunek PLN). Cudzy rachunek — 404.
+         */
         get: operations["listDividends"];
         put?: never;
         post?: never;
@@ -4206,28 +4209,124 @@ export interface components {
             /** @description Informacja, że widok tax nie jest zeznaniem PIT-38. */
             taxNote?: string;
         };
+        /** @description Kwoty w PLN jako ciągi, bez zaokrągleń pośrednich; stopa jako ciąg dziesiętny. Suma z jakimkolwiek nieznanym składnikiem jest null (nigdy 0); gaps podaje liczbę wypłat z brakiem kursu (missing_fx) lub niezapisanym podatkiem u źródła (missing_withholding). estimatedTopUpPln — tylko wypłaty opodatkowane; null, gdy któraś nie ma danych albo żadna nie podlega dopłacie (IKE/IKZE). */
         Dividends: {
+            /** @enum {string} */
+            currency: "PLN";
+            /**
+             * Format: date
+             * @description Początek zakresu; null — od pierwszej wypłaty.
+             */
+            from: string | null;
+            to: components["schemas"]["LocalDate"];
+            /** @enum {string} */
+            status: "ok" | "incomplete" | "no_data";
             rows: {
                 transactionId: components["schemas"]["Uuid"];
+                accountId: components["schemas"]["Uuid"];
                 instrument: components["schemas"]["InstrumentSummary"];
                 payDate: components["schemas"]["LocalDate"];
                 gross: components["schemas"]["Money"];
-                withholdingTax: components["schemas"]["Money"];
-                net: components["schemas"]["Money"];
-                netBase: components["schemas"]["Money"];
-                /** @description Szacowana dopłata do 19 % w PL (informacyjnie, przykład G: 3,69 PLN). */
-                estimatedPlTopUp?: components["schemas"]["Money"];
+                /** @description W walucie wypłaty; null, gdy podatek u źródła nie jest zapisany. */
+                withholdingTax: components["schemas"]["Money"] | null;
+                net: components["schemas"]["Money"] | null;
+                /** @description Wpływ na rachunek w walucie rachunku — widok ekonomiczny (przykład G: 77,81 PLN). */
+                credited: components["schemas"]["Money"];
+                grossPln: components["schemas"]["Money"] | null;
+                withholdingTaxPln: components["schemas"]["Money"] | null;
+                netPln: components["schemas"]["Money"] | null;
+                /** @description Kurs NBP z ostatniego dnia roboczego przed wypłatą; null dla PLN lub przy braku kursu. */
+                fxRate: {
+                    rate: components["schemas"]["DecimalString"];
+                    rateDate: components["schemas"]["LocalDate"];
+                    /** @enum {string} */
+                    source: "nbp";
+                    /** @example 155/A/NBP/2025 */
+                    tableNo: string | null;
+                } | null;
+                /** @description Szacunek informacyjny (przykład G: 3,69 PLN): 19 % brutto w PLN minus podatek u źródła zaliczony najwyżej do tej kwoty. */
+                tax: {
+                    /** @enum {string} */
+                    status: "computed" | "not_applicable" | "missing_fx" | "missing_withholding";
+                    taxDuePln: components["schemas"]["Money"] | null;
+                    withholdingCreditPln: components["schemas"]["Money"] | null;
+                    estimatedTopUpPln: components["schemas"]["Money"] | null;
+                };
+                gaps: ("missing_fx" | "missing_withholding")[];
+            }[];
+            byYear: {
+                year: number;
+                totals: {
+                    payments: number;
+                    grossPln: components["schemas"]["Money"] | null;
+                    withholdingTaxPln: components["schemas"]["Money"] | null;
+                    netPln: components["schemas"]["Money"] | null;
+                    estimatedTopUpPln: components["schemas"]["Money"] | null;
+                    taxablePayments: number;
+                    taxExemptPayments: number;
+                    isComplete: boolean;
+                };
+            }[];
+            byInstrument: {
+                instrument: components["schemas"]["InstrumentSummary"];
+                totals: {
+                    payments: number;
+                    grossPln: components["schemas"]["Money"] | null;
+                    withholdingTaxPln: components["schemas"]["Money"] | null;
+                    netPln: components["schemas"]["Money"] | null;
+                    estimatedTopUpPln: components["schemas"]["Money"] | null;
+                    taxablePayments: number;
+                    taxExemptPayments: number;
+                    isComplete: boolean;
+                };
+                /** @description Brutto w PLN z 12 miesięcy do asOf / koszt FIFO otwartej pozycji w PLN. reason: no_open_position, missing_cost, missing_cost_pln (rachunek w walucie instrumentu, Z-29), missing_fx — wtedy ratio null. */
+                yieldOnCost: {
+                    ratio: string | null;
+                    trailingGrossPln: components["schemas"]["Money"] | null;
+                    costPln: components["schemas"]["Money"] | null;
+                    asOf: components["schemas"]["LocalDate"];
+                    /** @enum {string|null} */
+                    reason: "no_open_position" | "missing_cost" | "missing_cost_pln" | "missing_fx" | null;
+                };
             }[];
             totals: {
-                grossBase: components["schemas"]["Money"];
-                withholdingBase: components["schemas"]["Money"];
-                netBase: components["schemas"]["Money"];
-                estimatedPlTopUp?: components["schemas"]["Money"];
+                payments: number;
+                grossPln: components["schemas"]["Money"] | null;
+                withholdingTaxPln: components["schemas"]["Money"] | null;
+                netPln: components["schemas"]["Money"] | null;
+                estimatedTopUpPln: components["schemas"]["Money"] | null;
+                taxablePayments: number;
+                taxExemptPayments: number;
+                isComplete: boolean;
             };
-            yieldOnCost?: {
-                instrumentId: components["schemas"]["Uuid"];
-                ratio: number;
+            totalsByCurrency: {
+                currency: components["schemas"]["CurrencyCode"];
+                payments: number;
+                gross: components["schemas"]["Money"];
+                withholdingTax: components["schemas"]["Money"] | null;
+                net: components["schemas"]["Money"] | null;
             }[];
+            gaps: {
+                /** @enum {string} */
+                reason: "missing_fx" | "missing_withholding";
+                payments: number;
+            }[];
+            assumptions: {
+                /** @enum {string} */
+                incomeDate: "payment_date";
+                /** @enum {string} */
+                fxRates: "nbp_table_a_mid_previous_business_day";
+                plTaxRate: components["schemas"]["DecimalString"];
+                /** @enum {string} */
+                withholdingCredit: "capped_at_pl_rate";
+                /** @enum {string} */
+                topUp: "estimate";
+                /** @enum {string} */
+                yieldOnCost: "trailing_12m_gross_pln_over_open_cost_pln";
+                /** @enum {string} */
+                costBasisMethod: "fifo";
+            };
+            meta: components["schemas"]["DataMeta"];
         };
         /** @description Obsunięcia indeksu TWR z pełnych wycen dziennych w PLN, przepływy na początku dnia. Zakres od from obejmuje poprzednie zamknięcie jako bazę, jeśli istnieje wcześniejsza historia. Czas trwania: szczyt–dołek; odrabianie: dołek–pierwszy powrót do szczytu. Brak lub luka wycen/przepływów daje null i pustą serię. BL-305: stopy jako ciągi dziesiętne; LTTB dopiero po obliczeniach, zachowuje daty maksimum obsunięcia. */
         Drawdown: {
@@ -8894,6 +8993,8 @@ export interface operations {
             };
             401: components["responses"]["Unauthenticated"];
             403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["ValidationFailed"];
         };
     };
     getDrawdown: {

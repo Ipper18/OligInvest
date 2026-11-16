@@ -78,9 +78,14 @@ export function trailingDividends(
  * currency chosen by the caller; null when the cost is not positive.
  */
 export function yieldOnCost(grossDividends: Money, cost: Money): number | null {
+  return yieldOnCostRatio(grossDividends, cost)?.toNumber() ?? null;
+}
+
+/** As `yieldOnCost`, unrounded, for decimal-string API fields (BL-307). */
+export function yieldOnCostRatio(grossDividends: Money, cost: Money): Decimal | null {
   assertSameCurrency(cost.currency, grossDividends.currency);
   if (!cost.amount.isPositive() || cost.amount.isZero()) return null;
-  return grossDividends.amount.div(cost.amount).toNumber();
+  return grossDividends.amount.div(cost.amount);
 }
 
 /**
@@ -98,4 +103,101 @@ export function yieldOnCostPln(records: readonly DividendRecord[], costPln: Mone
     ),
     costPln,
   );
+}
+
+/** Why a PLN amount of a dividend is unknown (BL-307); the amount is then null, never 0. */
+export type DividendGap = "missing_fx" | "missing_withholding";
+export type DividendTaxEstimateStatus =
+  | "computed"
+  | "not_applicable"
+  | "missing_fx"
+  | "missing_withholding";
+
+/** One dividend in PLN at NBP D-1 (§ 4.3) with the informational top-up estimate; unrounded. */
+export interface DividendPlnView {
+  readonly grossPln: Money | null;
+  readonly withholdingTaxPln: Money | null;
+  readonly netPln: Money | null;
+  readonly taxStatus: DividendTaxEstimateStatus;
+  /** 19 % of the gross in PLN, the withholding credited up to it, and the estimated top-up. */
+  readonly taxDuePln: Money | null;
+  readonly withholdingCreditPln: Money | null;
+  readonly topUpPln: Money | null;
+  readonly gaps: readonly DividendGap[];
+}
+
+/**
+ * PLN view of a ledger dividend (BL-307, FR-02.08). Gross, withholding and net use the same NBP
+ * rate as the tax view on any account type. A withholding tax that is not recorded leaves the
+ * withholding, net and top-up unknown — an assumed 0 would overstate the estimated top-up.
+ * IKE/IKZE: the top-up does not apply (status `not_applicable`, amounts null).
+ */
+export function dividendPlnView(record: DividendRecord): DividendPlnView {
+  const factor =
+    record.gross.currency === PLN
+      ? new Decimal(1)
+      : record.grossPln
+        ? record.rate?.rate
+        : undefined;
+  const gaps: DividendGap[] = [];
+  if (factor === undefined) gaps.push("missing_fx");
+  if (!record.withholdingRecorded) gaps.push("missing_withholding");
+  const grossPln = factor === undefined ? null : money(record.gross.amount.times(factor), PLN);
+  const withholdingTaxPln =
+    factor === undefined || !record.withholdingRecorded
+      ? null
+      : money(record.withholdingTax.amount.times(factor), PLN);
+  const netPln =
+    grossPln && withholdingTaxPln
+      ? money(grossPln.amount.minus(withholdingTaxPln.amount), PLN)
+      : null;
+  const taxStatus: DividendTaxEstimateStatus =
+    record.taxStatus === "not_applicable"
+      ? "not_applicable"
+      : (gaps[0] ?? (record.tax ? "computed" : "missing_fx"));
+  const tax = taxStatus === "computed" ? record.tax : null;
+  return Object.freeze({
+    grossPln,
+    withholdingTaxPln,
+    netPln,
+    taxStatus,
+    taxDuePln: tax?.taxDuePln ?? null,
+    withholdingCreditPln: tax?.withholdingCreditPln ?? null,
+    topUpPln: tax?.topUpPln ?? null,
+    gaps: Object.freeze(gaps),
+  });
+}
+
+export interface DividendPlnTotals {
+  readonly payments: number;
+  readonly grossPln: Money | null;
+  readonly withholdingTaxPln: Money | null;
+  readonly netPln: Money | null;
+  /** Σ top-up of taxable payments; null when one is unknown or none is taxable. */
+  readonly topUpPln: Money | null;
+  readonly taxablePayments: number;
+  readonly taxExemptPayments: number;
+  readonly isComplete: boolean;
+}
+
+/** Sums PLN views without intermediate rounding; any unknown addend makes the sum null. */
+export function sumDividendPlnViews(views: readonly DividendPlnView[]): DividendPlnTotals {
+  const sum = (values: readonly (Money | null)[]) =>
+    values.includes(null)
+      ? null
+      : money(
+          (values as Money[]).reduce((total, m) => total.plus(m.amount), new Decimal(0)),
+          PLN,
+        );
+  const taxable = views.filter((v) => v.taxStatus !== "not_applicable");
+  return Object.freeze({
+    payments: views.length,
+    grossPln: sum(views.map((v) => v.grossPln)),
+    withholdingTaxPln: sum(views.map((v) => v.withholdingTaxPln)),
+    netPln: sum(views.map((v) => v.netPln)),
+    topUpPln: taxable.length ? sum(taxable.map((v) => v.topUpPln)) : null,
+    taxablePayments: taxable.length,
+    taxExemptPayments: views.length - taxable.length,
+    isComplete: views.every((v) => v.gaps.length === 0),
+  });
 }

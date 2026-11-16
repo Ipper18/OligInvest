@@ -58,7 +58,6 @@
   "getSectorHeatmap",
   "getStrategy",
   "getVolumeProfile",
-  "listDividends",
   "listImportTemplates",
   "listJournalEntries",
   "listLearningProgress",
