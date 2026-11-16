@@ -271,6 +271,11 @@ transakcja kupna).
   rachunku w walucie instrumentu — `null` z powodem `missing_cost_pln` (jak Z-29, BL-306b). Inne powody:
   `no_open_position`, `missing_cost`, `missing_fx`. Brak wypłat w 12 miesiącach przy otwartej pozycji daje znane 0.
 
+**Decyzja właściciela Z-30 (2026-11-16):** zgodność z wyciągiem brokera sprawdzamy na sumach w walucie wypłaty
+(`totalsByCurrency`, zakres roku), nie na kwotach w PLN; brak wiersza podatku u źródła w imporcie XTB to „brak
+danych” z ręcznym uzupełnieniem, bez zgadywania stawki; `missing_cost_pln` zostaje do BL-306b
+([`wymagania.md`](../00-przeglad/wymagania.md) Z-30).
+
 Funkcje: `core.dividendPlnView`, `core.sumDividendPlnViews`, `core.yieldOnCostRatio` (obok `dividendTaxView`,
 `trailingDividends`); test na wektorze G.
 

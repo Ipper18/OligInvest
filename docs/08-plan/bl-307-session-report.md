@@ -14,7 +14,7 @@ Na main był rdzeń § 4.3 (`dividendTaxView`, `trailingDividends`, `yieldOnCost
 - **Brak danych = `null` z powodem, nigdy 0:** brak kursu NBP → kwoty w PLN `null` (`missing_fx`); niezapisany podatek u źródła (brak pola `tax` i powiązanego wiersza `TAX`/`FEE`) → podatek, netto i dopłata `null` (`missing_withholding`) — przyjęcie 0 zawyżyłoby dopłatę; jawne 0 jest znaną wartością. IKE/IKZE → dopłata „nie dotyczy”, nie 0.
 - **Stopa od kosztu:** brutto w PLN (NBP D-1) z 12 miesięcy do `to` / koszt FIFO otwartej pozycji w PLN; koszt w PLN tylko na rachunku w PLN, na rachunku w walucie instrumentu `missing_cost_pln` (spójnie z Z-29/BL-306b). Opis: [`obliczenia-finansowe.md`](../03-dane/obliczenia-finansowe.md) § 4.3.1.
 - **Poprawka znaleziona przy okazji:** `valuationState` nadawał operacjom z instrumentem bez `settle_date` datę rozliczenia T+1/T+2 — także dywidendom, co przesuwało dzień przychodu i kurs NBP D-1 (§ 4.3: dzień wypłaty). Dywidendy są teraz wyłączone z cyklu rozliczeń; test PostgreSQL to sprawdza (kurs z 2024-04-15 byłby użyty przy przesunięciu).
-- Zastrzeżenie **Z-30** w [`wymagania.md`](../00-przeglad/wymagania.md) § 3 (kryterium „suma roczna zgodna z wyciągiem”).
+- Zastrzeżenie **Z-30** w [`wymagania.md`](../00-przeglad/wymagania.md) § 3 (kryterium „suma roczna zgodna z wyciągiem”) — rozstrzygnięte decyzją właściciela 2026-11-16 (niżej).
 
 ## Dowody lokalne
 
@@ -27,13 +27,15 @@ Na main był rdzeń § 4.3 (`dividendTaxView`, `trailingDividends`, `yieldOnCost
 - Budżety PASS i bez pogorszenia: `/` **158,76/190 KiB**, `/portfel` **168,51/195** (jak po BL-306), `/portfel/wyniki` **170,18/195** (+0,01 KiB, sekcja tylko na serwerze); size-limit powłoki **20,06/30,72 kB**.
 - Grep sekretów przed commitem: tylko 4 znane syntetyczne trafienia.
 
-## Pytania do właściciela (rekomendacje)
+## Decyzje właściciela Z-30 (2026-11-16)
 
-1. **Z-30 — „suma roczna zgodna z wyciągiem”.** Rekomendacja: zgodność sprawdzać na sumach w walucie wypłaty (`totalsByCurrency`, zakres roku), a kwoty w PLN traktować jako przeliczenie NBP (widok podatkowy), nie jako kwoty z wyciągu.
-2. **Koszt w stopie od kosztu dla rachunku w walucie instrumentu.** Teraz `null` (`missing_cost_pln`), jak w Z-29. Rekomendacja: zostawić do BL-306b i wtedy użyć kosztu w PLN z kursu NBP D-1 transakcji — bez osobnej decyzji dla dywidend.
-3. **Osobna trasa `/portfel/dywidendy`** z mapy ekranów. Rekomendacja: zostać przy sekcji na `/portfel/wyniki` (brak nowej trasy i budżetu JS); osobną trasę dodać dopiero, gdy lista wypłat przekroczy kilkaset pozycji (dziś do 5 000 wierszy w odpowiedzi, bez stronicowania).
-4. **Brak wiersza podatku u źródła w imporcie XTB.** Rekomendacja: zostawić `missing_withholding` (nie 0) i pozwolić uzupełnić podatek ręcznie (edycja operacji), zamiast zgadywać stawkę z umowy o unikaniu podwójnego opodatkowania.
+Właściciel przyjął wszystkie cztery rekomendacje; zapisane w [`wymagania.md`](../00-przeglad/wymagania.md) § 3 (Z-30), [`obliczenia-finansowe.md`](../03-dane/obliczenia-finansowe.md) § 4.3.1, mapie ekranów i wierszu BL-307. Kod nie wymagał zmian — zachowanie PR #80 już odpowiada decyzjom.
+
+1. **„Suma roczna zgodna z wyciągiem”:** zgodność sprawdzamy na sumach w walucie wypłaty (`totalsByCurrency`, zakres roku przez `from`/`to`); kwoty w PLN to przeliczenie NBP (jak widok podatkowy), nie kwoty z wyciągu.
+2. **Stopa od kosztu na rachunku w walucie instrumentu:** „brak kosztu w PLN” (`missing_cost_pln`) do BL-306b; potem koszt w PLN z kursu NBP D-1 transakcji — bez osobnej decyzji dla dywidend.
+3. **Trasa `/portfel/dywidendy`:** nie powstaje; sekcja `#dividends` zostaje na `/portfel/wyniki` (bez nowej trasy i budżetu JS).
+4. **Import XTB bez wiersza podatku u źródła:** „brak danych” (`missing_withholding`, nie 0) i ręczne uzupełnienie podatku w edycji operacji; bez zgadywania stawki z umowy o unikaniu podwójnego opodatkowania.
 
 ## Pozostałe
 
-Draft PR do main; CI sprawdzane na końcu. Bez zmian w identity, migracjach db, jobs, manifestach i lockfile; bez nowych bibliotek, retry, timeoutów i obniżania progów. Przegląd metodologiczny § 7 nie dotyczy (dane historyczne, bez prognoz i backtestu). R-53: sekcja tylko na serwerze, nic nie dochodzi do pierwszego ładowania `/` i `/portfel`. Estymata 1,5 d bez zmian, nakład i odchylenie niezmierzone.
+PR #80 do main; CI PASS (24 kontrole, 1 pominięta) przed zapisem decyzji, nie scalony. Bez zmian w identity, migracjach db, jobs, manifestach i lockfile; bez nowych bibliotek, retry, timeoutów i obniżania progów. Przegląd metodologiczny § 7 nie dotyczy (dane historyczne, bez prognoz i backtestu). R-53: sekcja tylko na serwerze, nic nie dochodzi do pierwszego ładowania `/` i `/portfel`. Estymata 1,5 d bez zmian, nakład i odchylenie niezmierzone.
