@@ -6,6 +6,20 @@ import { type ActionName, actionSchemas, problemSchema } from "../api/validation
 import { LOCALE_COOKIE, localeCookieOptions } from "../appearance/locale-cookie";
 import type { ActionResult } from "./actions";
 
+const SESSION_COOKIE_ATTRIBUTES = {
+  httpOnly: true,
+  secure: true,
+  sameSite: "lax",
+  path: "/",
+} as const;
+
+// A deletion must be unambiguous in every browser: `Max-Age=0` makes the expiry equal to "now"
+// (second granularity), and Firefox can then keep an empty, not-yet-purged cookie for that second.
+// `delete` sends only `Expires=Thu, 01 Jan 1970 00:00:00 GMT` (no Max-Age, which would override it).
+function expireCookie(jar: Awaited<ReturnType<typeof cookies>>, name: string) {
+  jar.delete({ name, ...SESSION_COOKIE_ATTRIBUTES });
+}
+
 // Runs inside the /auth/action route handler, not a Server Action: cookie writes here must not
 // re-render the current route, because the caller follows success with a document navigation.
 export async function relayAction(name: ActionName, input: unknown): Promise<ActionResult> {
@@ -69,13 +83,23 @@ export async function relayAction(name: ActionName, input: unknown): Promise<Act
           return [k!.toLowerCase(), v.join("=")];
         }),
       );
+      const maxAgeAttribute = attr.get("max-age");
+      const expiresAttribute = attr.get("expires");
+      const maxAge = maxAgeAttribute === undefined ? undefined : Number(maxAgeAttribute);
+      const expires = expiresAttribute === undefined ? undefined : new Date(expiresAttribute);
+      // Max-Age wins over Expires (RFC 6265 § 5.3), so only a missing Max-Age defers to Expires.
+      if (
+        maxAge !== undefined
+          ? maxAge <= 0
+          : (expires?.getTime() ?? Number.POSITIVE_INFINITY) <= Date.now()
+      ) {
+        expireCookie(jar, key);
+        continue;
+      }
       jar.set(key, decodeURIComponent(pair.slice(at + 1)), {
-        httpOnly: true,
-        secure: true,
-        sameSite: "lax",
-        path: "/",
-        ...(attr.has("max-age") ? { maxAge: Number(attr.get("max-age")) } : {}),
-        ...(attr.has("expires") ? { expires: new Date(attr.get("expires")!) } : {}),
+        ...SESSION_COOKIE_ATTRIBUTES,
+        ...(maxAge !== undefined ? { maxAge } : {}),
+        ...(expires ? { expires } : {}),
       });
     }
     if (name === "preferences" && (data.locale === "pl-PL" || data.locale === "en-US"))
@@ -97,14 +121,7 @@ export async function relayAction(name: ActionName, input: unknown): Promise<Act
     if (name === "signOut") {
       const jar = await cookies();
       for (const cookie of jar.getAll()) {
-        if (cookie.name.startsWith("__Host-oliginvest."))
-          jar.set(cookie.name, "", {
-            httpOnly: true,
-            secure: true,
-            sameSite: "lax",
-            path: "/",
-            maxAge: 0,
-          });
+        if (cookie.name.startsWith("__Host-oliginvest.")) expireCookie(jar, cookie.name);
       }
     }
   }
