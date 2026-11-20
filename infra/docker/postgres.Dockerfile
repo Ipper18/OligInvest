@@ -1,4 +1,6 @@
-FROM postgres:18.6-trixie@sha256:86c951e05bf56c93d95d397747fb8820ac76cc3bedb78f43abd83eedbe3666ae
+# Rebuild of postgres:18.6-trixie pushed 2026-11-06T19:08Z (outside the 72-hour window): ships xz-utils/liblzma5
+# 5.8.1-1+deb13u2 (DSA-6549-1) and apt 3.0.4; PostgreSQL stays 18.6-1.pgdg13+2.
+FROM postgres:18.6-trixie@sha256:e3d24f6906d0760bf4da0dae872415391ededefad23fd471c47dc53b0ddf3c42
 # apt 3.0.4 (DSA-6607-1, CVE-2026-109518: package verification bypass on retried downloads) was published
 # 2026-11-04T12:03Z; the owner accepted it inside the 72-hour window (2026-11-04). Retries stay off while the
 # vulnerable apt fetches the fix.
