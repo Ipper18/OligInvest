@@ -16,7 +16,9 @@ FROM node:24.21.0-trixie-slim@sha256:8ec5d7557396cfe32d21c3f9c13072355ceab22b584
 # apt 3.0.4 (DSA-6607-1, CVE-2026-109518: package verification bypass on retried downloads) was published
 # 2026-11-04T12:03Z; the owner accepted it inside the 72-hour window (2026-11-04). Retries stay off while the
 # vulnerable apt fetches the fix.
+# liblzma5 5.8.1-1+deb13u2 (DSA-6549-1, debian-security since 2026-10-07T21:15Z, outside the 72-hour window).
 RUN apt-get -o Acquire::Retries=0 update -qq && apt-get -o Acquire::Retries=0 install -y --no-install-recommends apt=3.0.4 libapt-pkg7.0=3.0.4 \
+    liblzma5=5.8.1-1+deb13u2 \
     && rm -rf /var/lib/apt/lists/*
 
 FROM runtime AS web

@@ -12,7 +12,10 @@ FROM python:3.13.13-slim-trixie@sha256:aa938a849bcb82dce8f49480f056ab82bf5c1c3eb
 # apt 3.0.4 (DSA-6607-1, CVE-2026-109518: package verification bypass on retried downloads) was published
 # 2026-11-04T12:03Z; the owner accepted it inside the 72-hour window (2026-11-04). Retries stay off while the
 # vulnerable apt fetches the fix.
+# liblzma5 5.8.1-1+deb13u2 (DSA-6549-1, debian-security since 2026-10-07T21:15Z) and ca-certificates
+# 20250419+deb13u1 (DSA-6572-1, since 2026-10-20T20:56Z), both outside the 72-hour window.
 RUN apt-get -o Acquire::Retries=0 update -qq && apt-get -o Acquire::Retries=0 install -y --no-install-recommends \
+    liblzma5=5.8.1-1+deb13u2 ca-certificates=20250419+deb13u1 \
     util-linux=2.41.5-0+deb13u1 mount=2.41.5-0+deb13u1 \
     libblkid1=2.41.5-0+deb13u1 libmount1=2.41.5-0+deb13u1 \
     libsmartcols1=2.41.5-0+deb13u1 libuuid1=2.41.5-0+deb13u1 \
