@@ -221,6 +221,8 @@ Oba moduły ładowane dynamicznie; atrybucja TradingView widoczna na wykresie i 
 
 2026-11-13: Hono 4.13.16 ([npm](https://www.npmjs.com/package/hono/v/4.13.16), opublikowane 2026-11-01T03:04Z) i `@hono/node-server` 2.1.6 (2026-11-02T10:22Z), odczyt 2026-11-13 — poza karencją 72 h. Hono 4.13.16 naprawia GHSA-46wx-v44x-9hh2, GHSA-4m76-xfj5-7975, GHSA-h7mg-cq63-vhpq, GHSA-4h7h-rv7c-7m2v (średnie) i GHSA-3gg2-335m-rxc6 (niska); jeden PR zamiast pięciu PR-ów Dependabota (#68–#72).
 
+2026-11-20: Next.js i `@next/mdx` **16.4.5** zastępują 16.4.2 ([npm](https://www.npmjs.com/package/next/v/16.4.5), `next` opublikowane 2026-11-03T17:52Z, `@next/mdx` 2026-11-03T18:01Z), odczyt 2026-11-20 — poza karencją 72 h; nowsze 16.4.6 nie jest wymagane do zamknięcia alertów. 16.4.5 naprawia GHSA-vvgp-ww4w-46vf, GHSA-vc7v-qv4w-wrv8 i GHSA-mfr8-8qww-v76h (średnie; zatrucie i wyciek cache Cache Components/`use cache`). OligInvest nie używa `use cache`, `cacheComponents` ani `unstable_cache`, jednak próg audytu obowiązuje niezależnie od osiągalności. Ta sama linia, bez overrides i wyjątków OSV; lockfile z pnpm 12.4.2 przy niezmienionych `minimumReleaseAge` i `trustPolicy`. Jeden PR zamiast PR-ów Dependabota #82 i #83.
+
 BL-116: narzędzia budowania i kontroli stron prawnych: `@mdx-js/mdx` 3.1.1 i `remark-gfm` 4.0.1 (MIT). Parser działa wyłącznie podczas generowania/testu; do przeglądarki trafia HTML, bez kompilatora Markdown.
 
 BL-121: `postcss` 8.5.28 (MIT), już używany przez Tailwind, jest jawną zależnością narzędziową web do kompilacji wspólnego CSS przed osadzeniem z nonce CSP. Brak kodu PostCSS w przeglądarce.
