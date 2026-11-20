@@ -74,9 +74,8 @@ export async function startJobs(
   // application skeleton stays cheap (test/smoke.test.mjs).
   const bullmq = await import("bullmq");
   const { sql } = await import("drizzle-orm");
-  const { createPushSender, dispatchNotification, notificationJobSchema } = await import(
-    "./modules.js"
-  );
+  const { createPushSender, dispatchNotification, notificationJobSchema, identityJobs } =
+    await import("./modules.js");
   const { observeWorker, startMonitoring } = await import("./monitoring.js");
   const { jobFeatureFlags } = await import("./feature-flags.js");
   const flagRuntime = jobFeatureFlags(env, runtime.config, logger);
@@ -84,6 +83,15 @@ export async function startJobs(
     flagRuntime.flags.enabled(key, subject),
   );
   const queues = definitions.map(({ name }) => openQueue(bullmq, name, runtime, logger));
+  const notifyQueue = queues.find((queue) => queue.name === "notify");
+  if (!notifyQueue) throw new Error("Missing notification queue");
+  const { monitorJobDatabase } = await import("./security-monitor.js");
+  const monitoredDatabase = monitorJobDatabase(
+    flagRuntime.database,
+    runtime.config.AUDIT_PSEUDONYM_KEY,
+    notifyQueue,
+    logger,
+  );
   let monitoring: Awaited<ReturnType<typeof startMonitoring>> | undefined;
   let mailer: ReturnType<typeof createAuthMailer> | undefined;
   let mailWorker: Worker | undefined;
@@ -162,7 +170,7 @@ export async function startJobs(
       cache: flagRuntime.cache,
       connection: runtime.connection,
       queues,
-      database: flagRuntime.database,
+      database: monitoredDatabase,
       logger,
       host: z
         .string()
@@ -184,7 +192,7 @@ export async function startJobs(
       observeWorker(worker, activeMonitoring.metrics, activeMonitoring.record, logger);
     const { startPortfolioWorker } = await import("./portfolio-runtime.js");
     portfolioWorker = await startPortfolioWorker({
-      database: flagRuntime.database,
+      database: monitoredDatabase,
       cache: flagRuntime.cache,
       queues,
       connection: runtime.connection,
@@ -194,7 +202,7 @@ export async function startJobs(
     });
     const { startAnalyticsWorker } = await import("./analytics-runtime.js");
     analyticsWorker = await startAnalyticsWorker({
-      database: flagRuntime.database,
+      database: monitoredDatabase,
       cache: flagRuntime.cache,
       connection: runtime.connection,
       logger,
@@ -202,7 +210,7 @@ export async function startJobs(
     });
     const { erasureFilePath, startIdentityWorker } = await import("./identity-runtime.js");
     identityWorker = await startIdentityWorker({
-      database: flagRuntime.database,
+      database: monitoredDatabase,
       cache: flagRuntime.cache,
       connection: runtime.connection,
       logger,
@@ -214,7 +222,7 @@ export async function startJobs(
     const { startMarketWorker } = await import("./market-runtime.js");
     const { startAlertsWorker } = await import("./alerts-runtime.js");
     alertsWorker = await startAlertsWorker({
-      database: flagRuntime.database,
+      database: monitoredDatabase,
       flags: flagRuntime.flags,
       cache: flagRuntime.cache,
       queues,
@@ -229,7 +237,7 @@ export async function startJobs(
       updated: async (reason, fromDate) => portfolioWorker?.enqueueAll(reason, fromDate),
       observeProvider: (provider, result) =>
         monitoring?.metrics.add("provider_requests_total", { provider, result }),
-      database: flagRuntime.database,
+      database: monitoredDatabase,
       cache: flagRuntime.cache,
       queue: healthQueue,
       connection: runtime.connection,
@@ -249,7 +257,7 @@ export async function startJobs(
               const payload = notificationJobSchema.parse(job.data);
               let alertEnabled = true;
               if (payload.kind === "alert") {
-                const role = await flagRuntime.database.transaction(
+                const role = await monitoredDatabase.transaction(
                   { userId: payload.userId, role: "user" },
                   async (tx) =>
                     (
@@ -266,7 +274,8 @@ export async function startJobs(
                   }));
               }
               const result = await dispatchNotification(
-                flagRuntime.database,
+                // Do not enqueue alerts about failures of the alert delivery itself.
+                payload.kind === "security" ? flagRuntime.database : monitoredDatabase,
                 payload,
                 mailer?.sendNotification ??
                   (async () => {
@@ -294,6 +303,8 @@ export async function startJobs(
             }
           } catch (error) {
             if (error instanceof bullmq.DelayedError) throw error;
+            if (identityJobs.isRlsViolation(error))
+              logger.error({ event: "security.rls_violation", code: "SEV1" });
             if (error instanceof MailQuotaExceeded) {
               await job.moveToDelayed(error.retryAt, token);
               throw new bullmq.DelayedError();

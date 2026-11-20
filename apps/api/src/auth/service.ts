@@ -90,6 +90,9 @@ export interface AuthServiceOptions {
     | "exportRequested"
     | "deletionRequested"
     | "deletionCancelled"
+    | "stepUpFailed"
+    | "stepUpVerified"
+    | "administrativeChanged"
   >;
   /** BL-114: queues `identity.export` for the jobs worker; absent = exports unavailable. */
   enqueueExport?: (job: DataExportJob) => Promise<void>;
@@ -115,9 +118,7 @@ export class AuthService {
       ),
     );
   }
-  private monitor(
-    run: (monitor: NonNullable<AuthServiceOptions["securityMonitor"]>) => Promise<void>,
-  ) {
+  monitor(run: (monitor: NonNullable<AuthServiceOptions["securityMonitor"]>) => Promise<void>) {
     const monitor = this.options.securityMonitor;
     if (!monitor) return;
     const task: Promise<void> = run(monitor)
@@ -727,7 +728,7 @@ export class AuthService {
     principal: Principal | null,
     code: string,
     backup: boolean,
-    attempt: { actor?: { userId: string; role: Role } } = {},
+    attempt: { actor?: { userId: string; role: Role }; checked?: boolean } = {},
   ): Promise<string | ProblemError> {
     let userId = principal?.user_id;
     if (principal) attempt.actor = { userId: principal.user_id, role: principal.role };
@@ -778,6 +779,7 @@ export class AuthService {
       const step = acceptedTotpStep(secret, code);
       valid = step !== null && (await this.options.state.consumeStep(userId, step));
     }
+    attempt.checked = true;
     if (!valid) {
       await tx.execute(sql`UPDATE auth.two_factors SET failed_verification_count=COALESCE(failed_verification_count,0)+1,
         locked_until=CASE WHEN COALESCE(failed_verification_count,0)+1>=5 THEN now()+interval '15 minutes' ELSE NULL END
@@ -815,8 +817,19 @@ export class AuthService {
       const current = await findSession(tx, principal.token);
       if (!current) throw new ProblemError("UNAUTHENTICATED");
       const auth = createAuth(tx, this.options.configuration);
-      const verification = await this.checkSecondFactor(tx, auth, request, current, code, false);
-      if (verification instanceof ProblemError) return { failure: verification };
+      const attempt: { checked?: boolean } = {};
+      const verification = await this.checkSecondFactor(
+        tx,
+        auth,
+        request,
+        current,
+        code,
+        false,
+        attempt,
+      );
+      const actor = { userId: current.user_id, role: current.role };
+      if (verification instanceof ProblemError)
+        return { failure: verification, actor, checked: attempt.checked };
       const token = randomBytes(32).toString("base64url");
       const at = new Date();
       await tx.execute(
@@ -841,7 +854,13 @@ export class AuthService {
         ),
       };
     });
-    if (result.failure) throw result.failure;
+    if (result.failure) {
+      if (result.checked) this.monitor((monitor) => monitor.stepUpFailed(result.actor));
+      throw result.failure;
+    }
+    this.monitor((monitor) =>
+      monitor.stepUpVerified({ userId: principal.user_id, role: principal.role }),
+    );
     if (!result.response) throw new Error("Missing step-up response");
     return result.response;
   }

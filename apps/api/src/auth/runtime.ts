@@ -8,21 +8,25 @@ import {
   twoFactorResetMailSchema,
 } from "@oliginvest/contracts";
 import { createAppDatabase, createAuthDatabase } from "@oliginvest/db";
+import { authMailMessages, formatMessage } from "@oliginvest/i18n";
+import { copies as englishCopies } from "@oliginvest/i18n/en";
 import { type PlatformLogger, subscribeFeatureFlags } from "@oliginvest/platform";
 import { Queue } from "bullmq";
 import { sql } from "drizzle-orm";
 import { Redis } from "ioredis";
 import {
+  createSecurityIncidentReporter,
   dataExportJobSchema,
   enqueuePortfolioRecompute,
   notificationJobSchema,
+  observeRlsViolations,
 } from "../modules.js";
 import { userLocale } from "../user-locale.js";
 import { Administration } from "./administration.js";
 import { AuditWriter } from "./audit.js";
 import { defaultPasswordChecks } from "./password.js";
 import { PatService } from "./pat-service.js";
-import { SecurityMonitor } from "./security-monitor.js";
+import { SecurityMonitor, type SecurityNotify } from "./security-monitor.js";
 import { AuthService } from "./service.js";
 import { RedisAuthState } from "./state.js";
 
@@ -49,7 +53,7 @@ export function createAuthRuntime(
     ssl: settings.DB_SSL === "true",
   };
   const database = createAuthDatabase({ ...databaseOptions, password: config.DB_AUTH_PASSWORD });
-  const appDatabase = createAppDatabase({ ...databaseOptions, password: config.DB_APP_PASSWORD });
+  const rawDatabase = createAppDatabase({ ...databaseOptions, password: config.DB_APP_PASSWORD });
   const connection = {
     host: settings.VALKEY_QUEUE_HOST,
     port: settings.VALKEY_QUEUE_PORT,
@@ -84,6 +88,32 @@ export function createAuthRuntime(
     }
     return value;
   };
+  const notify: SecurityNotify = async (id, payload) => {
+    await queue("notify").add("notifications.deliver", notificationJobSchema.parse(payload), {
+      jobId: id,
+      attempts: 3,
+      backoff: { type: "exponential", delay: 1000 },
+      removeOnComplete: { age: 86400 },
+      removeOnFail: { age: 604800 },
+    });
+  };
+  const reportIncident = createSecurityIncidentReporter(rawDatabase, config.AUDIT_PSEUDONYM_KEY, {
+    messages: { "pl-PL": authMailMessages, "en-US": englishCopies.authMailMessages },
+    formatMessage,
+    notify,
+  });
+  const securityMonitor = new SecurityMonitor({
+    appDatabase: rawDatabase,
+    audit: new AuditWriter(rawDatabase, config.AUDIT_PSEUDONYM_KEY),
+    origin: new URL(config.PUBLIC_BASE_URL).origin,
+    notify,
+    reportIncident,
+  });
+  const appDatabase = observeRlsViolations(
+    rawDatabase,
+    (actor) => securityMonitor.rlsViolation(actor),
+    () => logger.error({ event: "security.rls_reporting_failed" }),
+  );
   const mailLocale = async (email: string) => {
     const user = await database.transaction(
       async (tx) =>
@@ -157,20 +187,7 @@ export function createAuthRuntime(
     },
     passwordChecks: defaultPasswordChecks(() => logger.warn({ event: "auth.hibp_unavailable" })),
     audit,
-    securityMonitor: new SecurityMonitor({
-      appDatabase,
-      audit,
-      origin: new URL(config.PUBLIC_BASE_URL).origin,
-      notify: async (id, payload) => {
-        await queue("notify").add("notifications.deliver", notificationJobSchema.parse(payload), {
-          jobId: id,
-          attempts: 3,
-          backoff: { type: "exponential", delay: 1000 },
-          removeOnComplete: { age: 86400 },
-          removeOnFail: { age: 604800 },
-        });
-      },
-    }),
+    securityMonitor,
     enqueueExport: async (job) => {
       // jobId = export id: a replayed request cannot queue the same export twice.
       await queue("identity").add("identity.export", dataExportJobSchema.parse(job), {

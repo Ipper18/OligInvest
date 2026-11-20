@@ -254,6 +254,10 @@ export async function executeAdminCommand(
         );
       }
     });
+    if (data.command === "flag" || data.command === "reset-2fa") {
+      const kind = data.command;
+      admin.service.monitor((monitor) => monitor.administrativeChanged(system, kind));
+    }
     if (data.command === "queues") {
       resourceType = "queue";
       resourceId = data.queue ?? "all";
