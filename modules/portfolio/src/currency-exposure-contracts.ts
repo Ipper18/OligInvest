@@ -78,8 +78,23 @@ export function createCurrencyExposureSchema() {
       fxRates: z.literal("nbp_table_a_mid"),
       view: z.literal("economic"),
       costBasisMethod: z.literal("fifo"),
-      // BL-306b: PLN cost on a non-PLN account at NBP of the last business day before the cost day.
-      costFxRates: z.literal("nbp_table_a_mid_previous_business_day"),
+      // BL-306b: PLN cost on a non-PLN account at NBP of the last business day before the cost
+      // day; the tables used and their age are shown, never hidden (owner decision 2026-11-20).
+      costFxRates: object({
+        method: z.literal("nbp_table_a_mid_previous_business_day"),
+        stale: z.boolean(),
+        tables: z
+          .array(
+            object({
+              currency,
+              rateDate: date,
+              expectedDate: date,
+              stale: z.boolean(),
+              tableNo: z.string().max(40).nullable(),
+            }),
+          )
+          .max(1000),
+      }),
     }),
     meta: metaSchema,
   }).openapi("CurrencyExposure");

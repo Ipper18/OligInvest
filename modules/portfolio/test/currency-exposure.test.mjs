@@ -144,7 +144,8 @@ test("vector A remainder: slices, NBP rate with date and table, price/FX effect 
     fxRates: "nbp_table_a_mid",
     view: "economic",
     costBasisMethod: "fifo",
-    costFxRates: "nbp_table_a_mid_previous_business_day",
+    // Only the PLN account is in the split: no PLN-cost tables to show.
+    costFxRates: { method: "nbp_table_a_mid_previous_business_day", stale: false, tables: [] },
   });
   expect(result.meta).toMatchObject({
     source: "computed",
@@ -226,6 +227,52 @@ test("BL-306b: a USD-account position joins the split at its PLN cost (NBP befor
   expect(result.decomposition.exclusions).toEqual([]);
   // The exposure itself does not change.
   expect(result.total.amount).toBe("13255.12000000");
+  // The table behind the PLN cost is shown with its date; it is the expected one.
+  expect(result.assumptions.costFxRates).toEqual({
+    method: "nbp_table_a_mid_previous_business_day",
+    stale: false,
+    tables: [
+      {
+        currency: "USD",
+        rateDate: "2025-04-04",
+        expectedDate: "2025-04-04",
+        stale: false,
+        tableNo: null,
+      },
+    ],
+  });
+  // Gap in NBP data (no table of Friday 04-04): the older table is used and flagged, not hidden.
+  const gapRates = createFxRateTable([
+    fxRate({ base: "USD", quote: "PLN", rate: "3.8000", date: "2025-04-03", source: "nbp" }),
+    fxRate({ base: "USD", quote: "PLN", rate: "4.0000", date: "2025-09-30", source: "nbp" }),
+  ]);
+  const gapLedger = buildLedger({ accounts, transactions: settled, taxRates: gapRates });
+  const gap = projectCurrencyExposure(
+    input({
+      ledger: { positions: gapLedger.positions, cash: gapLedger.cash },
+      fx: gapRates,
+      // Synthetic table number for the test only.
+      tables: new Map([
+        ["USD:PLN:2025-09-30:nbp", "190/A/NBP/2025"],
+        ["USD:PLN:2025-04-03:nbp", "065/A/NBP/2025"],
+      ]),
+    }),
+    now,
+  );
+  expect(gap.decomposition.rows[0].positions).toBe(2);
+  expect(gap.assumptions.costFxRates).toEqual({
+    method: "nbp_table_a_mid_previous_business_day",
+    stale: true,
+    tables: [
+      {
+        currency: "USD",
+        rateDate: "2025-04-03",
+        expectedDate: "2025-04-04",
+        stale: true,
+        tableNo: "065/A/NBP/2025",
+      },
+    ],
+  });
 });
 
 test("Z-29: positions only in an instrument-currency account are annotated, total is null", () => {

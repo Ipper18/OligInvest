@@ -4159,11 +4159,20 @@ export interface components {
                 view: "economic";
                 /** @enum {string} */
                 costBasisMethod: "fifo";
-                /**
-                 * @description Kurs kosztu w PLN na rachunku w walucie innej niż PLN (BL-306b).
-                 * @enum {string}
-                 */
-                costFxRates: "nbp_table_a_mid_previous_business_day";
+                /** @description Kurs kosztu w PLN na rachunku w walucie innej niż PLN (BL-306b): ostatnia tabela NBP przed dniem kosztu. tables — użyte tabele pozycji objętych rozbiciem z datą, oczekiwaną datą (ostatni dzień roboczy NBP przed dniem kosztu: pon.–pt. bez świąt ustawowych) i numerem; stale=true, gdy użyto tabeli starszej niż oczekiwana (luka w danych NBP) — wynik zostaje, a wiek danych jest pokazany (decyzja właściciela 2026-11-20). */
+                costFxRates: {
+                    /** @enum {string} */
+                    method: "nbp_table_a_mid_previous_business_day";
+                    stale: boolean;
+                    tables: {
+                        currency: components["schemas"]["CurrencyCode"];
+                        rateDate: components["schemas"]["LocalDate"];
+                        expectedDate: components["schemas"]["LocalDate"];
+                        stale: boolean;
+                        /** @example 065/A/NBP/2025 */
+                        tableNo: string | null;
+                    }[];
+                };
             };
             meta: components["schemas"]["DataMeta"];
         };

@@ -143,7 +143,20 @@ export async function testCurrencyExposure({ request, database, owner }) {
   assert.equal(split.decomposition.total.fxEffect.amount, "55.00000000");
   assert.deepEqual(split.decomposition.notSplit, []);
   assert.deepEqual(split.decomposition.exclusions, []);
-  assert.equal(split.assumptions.costFxRates, "nbp_table_a_mid_previous_business_day");
+  // The table behind the PLN cost, with its number from the database; the expected one.
+  assert.deepEqual(split.assumptions.costFxRates, {
+    method: "nbp_table_a_mid_previous_business_day",
+    stale: false,
+    tables: [
+      {
+        currency: "USD",
+        rateDate: "2024-03-04",
+        expectedDate: "2024-03-04",
+        stale: false,
+        tableNo: "044/A/NBP/2024",
+      },
+    ],
+  });
   const before = await get("asOf=2024-03-02");
   assert.equal(before.slices.length, 1, "only the deposit exists before the purchase");
   const foreign = await request(`currency-exposure?accountId=${account.id}`, "GET", undefined, {

@@ -109,7 +109,7 @@ $$\text{koszt}_{\text{PLN}}^{\text{pod}} = q\cdot p \cdot \text{nbp}(\text{prev\
 $$\text{przychód}_{\text{PLN}}^{\text{pod}} = q\cdot p \cdot \text{nbp}(\text{prev\_bd}(d_{\text{sprzedaży}})) - \text{prowizja}\cdot \text{nbp}(\text{prev\_bd}(d_{\text{sprzedaży}}))$$
 
 - Dzień przychodu i kosztu (`d_kupna`, `d_sprzedaży` we wzorach) = **dzień rozliczenia transakcji** (`settle_date`, przeniesienie własności — art. 17 ust. 1ab pkt 1 ustawy o PIT; interpretacja Dyrektora KIS z 29.03.2024, sygn. 0114-KDIP3-1.4011.1149.2023.1.AK; tak samo liczy XTB — [`../11-zgodnosc-prawna.md`](../11-zgodnosc-prawna.md) § 5). Gdy import nie podaje daty rozliczenia, wyliczamy ją z `trade_date` i kalendarza rynku: USA — T+1 (od 28.05.2024, wcześniej T+2); GPW i pozostałe rynki UE — T+2, od 11.10.2027 T+1 (rozporządzenie (UE) 2025/2075). Mapowanie rynków w rdzeniu (przegląd C-21): USA — XNYS, XNAS, ARCX, BATS, XASE; UE — XWAR, XETR, XFRA, XAMS, XPAR, XBRU, XLIS, XDUB, XMIL, XMAD, XWBO, XHEL, XSTO, XCSE. XLON i SIX (poza UE) — cykl do ustalenia; do tego czasu import podaje datę rozliczenia jawnie. ❓ Dni, w których giełda działa, a system rozliczeń nie (np. niektóre święta federalne w USA), wymagają kalendarza rozliczeń — w MVP wpisy admina w `market.trading_calendar` (`notes`), weryfikacja przed M1. Parametr `tax_date_basis = settlement|trade` (domyślnie `settlement`; `trade` tylko do porównań).
-- Kurs musi pochodzić z **ostatniego dnia roboczego NBP** przed dniem przychodu/kosztu: gdy użyty kurs jest starszy (luka w danych), wynik zostaje, ale z ostrzeżeniem `stale_tax_rate`; data użytej tabeli jest częścią wyniku (partia, sprzedaż, dywidenda). Kalendarz dni roboczych NBP podaje wywołujący (domyślnie pon.–pt.) (przegląd C-06).
+- Kurs musi pochodzić z **ostatniego dnia roboczego NBP** przed dniem przychodu/kosztu: gdy użyty kurs jest starszy (luka w danych), wynik zostaje, ale z ostrzeżeniem `stale_tax_rate`; data użytej tabeli jest częścią wyniku (partia, sprzedaż, dywidenda). Kalendarz dni roboczych NBP podaje wywołujący (przegląd C-06); domyślnie (od BL-306b) `core.isNbpBusinessDay`: pon.–pt. bez świąt ustawowych — 1.01, 6.01 (od 2011), poniedziałek wielkanocny, 1.05, 3.05, Boże Ciało, 15.08, 1.11, 11.11, 24.12 (od 2025), 25.12, 26.12 (ustawa o dniach wolnych od pracy, t.j. Dz.U. 2025 poz. 296; lista za [Wikipedią](https://pl.wikipedia.org/wiki/Dni_wolne_od_pracy_w_Polsce), sprawdzona 2026-11-20 — tekst ustawy w ISAP i publikacja tabel NBP w dni robocze: **NIEZWERYFIKOWANE**, strony niedostępne dla automatu). Wcześniej domyślne pon.–pt. dawało fałszywe `stale_tax_rate` po święcie w dzień powszedni.
 - **Koszt przewalutowania brokera w widoku podatkowym** (decyzja właściciela 2026-09-19): marży brokera nie dodajemy do kosztu podatkowego — widok pokazuje ją jako **osobny koszt** (`fxCosts` = część kosztów przewalutowania partii zużytych przy sprzedaży + koszt przewalutowania przy sprzedaży). Ustawienie użytkownika `tax_include_fx_fee` (domyślnie `false`) wlicza ją do kosztu; zmiana przelicza wyłącznie widok podatkowy (dane pochodne), a widok ekonomiczny zawsze zawiera ten koszt. Brak jednolitej praktyki — [`../11-zgodnosc-prawna.md`](../11-zgodnosc-prawna.md) § 5.3.
 - Rachunki IKE/IKZE: widok podatkowy pokazuje „nie dotyczy” (brak rozliczenia bieżącego).
 
@@ -233,11 +233,14 @@ kosztu dają kurs z poprzedniego dnia, w którym NBP opublikował tabelę. Inacz
 liczymy go na każdym typie rachunku (także IKE/IKZE) i od kosztu ekonomicznego (z prowizją i ewentualną marżą
 przewalutowania). Nigdy nie używamy kursu bieżącego — dałby fałszywy efekt kursu równy 0. Partia przeniesiona
 na rachunek PLN przyjmuje koszt ekonomiczny po przeliczeniu (§ 3.5); z rachunku PLN na walutowy zachowuje
-pierwotny koszt w PLN; zakup częściowo sprzedany zachowuje proporcjonalną część (FIFO). Brak tego kursu NBP
+pierwotny koszt w PLN; zakup częściowo sprzedany zachowuje proporcjonalną część (FIFO). Gdy w danych brakuje tabeli z oczekiwanego dnia (luka), używamy
+starszej tabeli jak w widoku podatkowym, ale **nie ukrywamy wieku danych** (decyzja właściciela 2026-11-20):
+partia ma `costPlnRateStale`, a odpowiedź `assumptions.costFxRates` podaje użyte tabele (waluta, data, oczekiwana
+data, numer, `stale`) i flagę ogólną, widoczne w bloku założeń rozbicia. Brak tego kursu NBP
 albo dnia kosztu (np. brak `settle_date`): koszt w PLN jest nieznany — `missing_cost_pln`; pozycja zostaje w
 ekspozycji, ale poza rozbiciem, z jawną adnotacją per waluta (`decomposition.notSplit`) i na ekranie; efekt
 kursu nigdy nie jest raportowany jako 0 — bez wiersza kompletnego suma rozbicia ma kwoty `null`. Założenie w
-odpowiedzi: `assumptions.costFxRates = nbp_table_a_mid_previous_business_day`. Przykład A′ (wektor
+odpowiedzi: `assumptions.costFxRates.method = nbp_table_a_mid_previous_business_day`. Przykład A′ (wektor
 `A_fifo_fx.instrument_currency_account`, kursy fikcyjne): operacje jak w przykładzie A na rachunku USD —
 T1 rozliczony w poniedziałek 2025-03-10 → kurs z piątku 2025-03-07, 2 400 USD × 3,8500 = 9 240,00 PLN;
 T2 rozliczony 2025-11-12 po święcie 11.11 → kurs z 2025-11-10, 1 001 USD × 3,7000 = 3 703,70 PLN; po

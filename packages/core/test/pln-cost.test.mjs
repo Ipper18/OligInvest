@@ -3,7 +3,9 @@ import {
   createFxRateTable,
   fxRate,
   grossValue,
+  isNbpBusinessDay,
   isoDate,
+  isPolishPublicHoliday,
   money,
   price,
   priceFxEffect,
@@ -63,6 +65,8 @@ describe("PLN cost on an instrument-currency account (BL-306b) — vector A′",
     expect(lot.costPlnRate).toMatchObject({ date: L1.nbp_rate_date, source: "nbp" });
     expect(lot.costPln).toEqual(money(readDecimalText(L1.cost_pln), "PLN"));
     expect(lot.costPlnRemaining).toEqual(lot.costPln);
+    expect(lot.costPlnRateExpected).toBe(L1.nbp_rate_date);
+    expect(lot.costPlnRateStale).toBe(false);
   });
 
   test("holiday: the day before settlement (11.11) has no table → NBP of 10.11", () => {
@@ -70,6 +74,55 @@ describe("PLN cost on an instrument-currency account (BL-306b) — vector A′",
     expect(lot.cost).toEqual(usd(readDecimalText(L2.cost_usd)));
     expect(lot.costPlnRate.date).toBe(L2.nbp_rate_date);
     expect(text(lot.costPln)).toBe(readDecimalText(L2.cost_pln).replace(/0+$/, ""));
+    // 11.11 is not an NBP business day: the table of 10.11 is the expected one, not stale.
+    expect(lot.costPlnRateExpected).toBe(L2.nbp_rate_date);
+    expect(lot.costPlnRateStale).toBe(false);
+  });
+
+  test("gap in NBP data: the older table is used and marked stale with both dates", () => {
+    // Settled Thursday 2025-11-13: the table of Wednesday 2025-11-12 is expected; drop it.
+    const gapRates = createFxRateTable(
+      V.nbp_rates
+        .filter((r) => r.date !== "2025-11-12")
+        .map((r) =>
+          fxRate({ base: "USD", quote: "PLN", rate: r.rate, date: r.date, source: "nbp" }),
+        ),
+    );
+    const late = { ...buy(L2), settleDate: d("2025-11-13") };
+    const [lot] = buildLedger({ accounts, transactions: [late], taxRates: gapRates }).lots;
+    expect(lot.costPlnRate.date).toBe("2025-11-10");
+    expect(lot.costPlnRateExpected).toBe("2025-11-12");
+    expect(lot.costPlnRateStale).toBe(true);
+    // The value stays (as in the tax view), the age of the data is not hidden.
+    expect(text(lot.costPln)).toBe("3703.7");
+  });
+
+  test("NBP business days: weekends and Polish public holidays (movable and fixed)", () => {
+    for (const day of [
+      "2025-01-01",
+      "2025-01-06",
+      "2025-04-21",
+      "2025-05-01",
+      "2025-05-03",
+      "2025-06-19",
+      "2025-08-15",
+      "2025-11-01",
+      "2025-11-11",
+      "2025-12-24",
+      "2025-12-25",
+      "2025-12-26",
+      "2024-04-01",
+      "2024-05-30",
+      "2026-04-06",
+      "2026-06-04",
+    ])
+      expect(isPolishPublicHoliday(day), day).toBe(true);
+    // 24.12 only since 2025, 6.01 only since 2011; Good Friday and 31.12 are business days.
+    for (const day of ["2024-12-24", "2010-01-06", "2025-04-18", "2025-12-31", "2025-11-10"])
+      expect(isPolishPublicHoliday(day), day).toBe(false);
+    expect(isNbpBusinessDay("2025-11-10")).toBe(true);
+    expect(isNbpBusinessDay("2025-11-11")).toBe(false);
+    expect(isNbpBusinessDay("2025-03-08")).toBe(false);
   });
 
   test("FIFO sale keeps the PLN cost of the remainder proportional", () => {
@@ -112,6 +165,8 @@ describe("PLN cost on an instrument-currency account (BL-306b) — vector A′",
     expect(lot.costPln).toBeNull();
     expect(lot.costPlnRemaining).toBeNull();
     expect(lot.costPlnRate).toBeNull();
+    expect(lot.costPlnRateExpected).toBeNull();
+    expect(lot.costPlnRateStale).toBe(false);
     expect(ledger.positions[0].costPln).toBeNull();
     const noRates = buildLedger({ accounts, transactions: [buy(L1)] });
     expect(noRates.positions[0].costPln).toBeNull();

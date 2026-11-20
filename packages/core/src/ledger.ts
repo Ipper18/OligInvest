@@ -1,5 +1,5 @@
 import { type CurrencyCode, PLN } from "./currency.js";
-import { addDays, type IsoDate, isWeekday } from "./dates.js";
+import { addDays, type IsoDate, isNbpBusinessDay as polishBusinessDay } from "./dates.js";
 import { Decimal } from "./decimal.js";
 import { type DividendTaxView, dividendTaxView } from "./dividends.js";
 import { CoreError } from "./errors.js";
@@ -34,8 +34,9 @@ export interface LedgerInput {
   /** NBP table A; only `before(currency, 'PLN', taxDate)` is used (§ 2.2). */
   readonly taxRates?: FxRateTable | undefined;
   /**
-   * NBP publication calendar (Polish business days); default Monday–Friday. A tax rate older than
-   * the business day before the tax day raises `stale_tax_rate` (C-06).
+   * NBP publication calendar; default Polish business days (Monday–Friday without public
+   * holidays). A tax rate older than the business day before the tax day raises `stale_tax_rate`
+   * (C-06); the same check marks a stale PLN-cost rate (`Lot.costPlnRateStale`, BL-306b).
    */
   readonly isNbpBusinessDay?: ((date: IsoDate) => boolean) | undefined;
 }
@@ -105,6 +106,10 @@ export interface Lot {
   readonly costPlnRemaining: Money | null;
   /** NBP rate used for `costPln` (null on a PLN account or when missing). */
   readonly costPlnRate: FxRate | null;
+  /** Expected table date: the last NBP business day before the cost day (null without a rate). */
+  readonly costPlnRateExpected: IsoDate | null;
+  /** True when `costPlnRate` is older than expected (gap in NBP data); shown, never hidden. */
+  readonly costPlnRateStale: boolean;
   readonly closedOn: IsoDate | null;
 }
 
@@ -250,6 +255,7 @@ interface WorkingLot {
   costPln: Decimal | null;
   costPlnRemaining: Decimal | null;
   costPlnRate: FxRate | null;
+  costPlnRateExpected: IsoDate | null;
   closedOn: IsoDate | null;
 }
 
@@ -349,6 +355,15 @@ function freezeLot(lot: WorkingLot, usedRateDates: ReadonlyMap<string, IsoDate>)
     costPln: pln(lot.costPln),
     costPlnRemaining: pln(lot.costPlnRemaining),
     costPlnRate: lot.costKnown && lot.costPln !== null ? lot.costPlnRate : null,
+    costPlnRateExpected:
+      lot.costKnown && lot.costPln !== null && lot.costPlnRate ? lot.costPlnRateExpected : null,
+    costPlnRateStale: Boolean(
+      lot.costKnown &&
+        lot.costPln !== null &&
+        lot.costPlnRate &&
+        lot.costPlnRateExpected &&
+        lot.costPlnRate.date < lot.costPlnRateExpected,
+    ),
     closedOn: lot.closedOn,
   });
 }
@@ -421,21 +436,31 @@ export function buildLedger(input: LedgerInput): Ledger {
    * the last business day before `date`. An unknown day or rate gives null, never 0.
    */
   function plnCost(cost: Decimal, currency: CurrencyCode, date: IsoDate | null) {
-    if (currency === PLN) return { costPln: cost, costPlnRate: null };
+    const none = { costPln: null, costPlnRate: null, costPlnRateExpected: null };
+    if (currency === PLN) return { ...none, costPln: cost };
     const rate = date === null ? undefined : rateBefore(currency, date);
-    return rate
-      ? { costPln: cost.times(rate.rate), costPlnRate: rate }
-      : { costPln: null, costPlnRate: null };
+    return rate && date !== null
+      ? {
+          costPln: cost.times(rate.rate),
+          costPlnRate: rate,
+          costPlnRateExpected: expectedRateDate(date),
+        }
+      : none;
   }
 
-  const isNbpBusinessDay = input.isNbpBusinessDay ?? isWeekday;
+  const isNbpBusinessDay = input.isNbpBusinessDay ?? polishBusinessDay;
   const usedRateDate = new Map<string, IsoDate>();
+
+  /** The last NBP business day before `date` (§ 2.2, C-06). */
+  function expectedRateDate(date: IsoDate): IsoDate {
+    let expected = addDays(date, -1);
+    for (let i = 0; i < 31 && !isNbpBusinessDay(expected); i += 1) expected = addDays(expected, -1);
+    return expected;
+  }
 
   /** The rate must come from the last NBP business day before `date` (§ 2.2, C-06). */
   function checkFresh(rate: FxRate, date: IsoDate, txId: string) {
-    let expected = addDays(date, -1);
-    for (let i = 0; i < 31 && !isNbpBusinessDay(expected); i += 1) expected = addDays(expected, -1);
-    if (rate.date < expected) {
+    if (rate.date < expectedRateDate(date)) {
       report({ code: "stale_tax_rate", transactionId: txId, currency: rate.base, date: rate.date });
     }
   }
@@ -554,6 +579,7 @@ export function buildLedger(input: LedgerInput): Ledger {
       costPln: pln.costPln,
       costPlnRemaining: pln.costPln,
       costPlnRate: pln.costPlnRate,
+      costPlnRateExpected: pln.costPlnRateExpected,
       closedOn: null,
     });
   }
@@ -814,6 +840,7 @@ export function buildLedger(input: LedgerInput): Ledger {
       lot.costPln = lot.cost;
       lot.costPlnRemaining = lot.costRemaining;
       lot.costPlnRate = null;
+      lot.costPlnRateExpected = null;
     }
   }
 
@@ -859,6 +886,7 @@ export function buildLedger(input: LedgerInput): Ledger {
       costPln: pln.costPln,
       costPlnRemaining: pln.costPln,
       costPlnRate: pln.costPlnRate,
+      costPlnRateExpected: pln.costPlnRateExpected,
       closedOn: null,
     });
   }

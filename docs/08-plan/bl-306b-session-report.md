@@ -28,10 +28,10 @@
 - Budżety PASS i bez pogorszenia: `/` **158,60/190 KiB**, `/portfel` **168,35/195**, `/portfel/wyniki` **170,03/195**; size-limit powłoki **20,45/30,72 kB**. R-53 bez zmian.
 - Grep sekretów przed commitem: tylko 4 znane syntetyczne trafienia.
 
-## Pytania do właściciela
+## Decyzje właściciela (2026-11-20)
 
-1. **`listPositions` na rachunku walutowym** (poza zakresem BL-306b, bez zmian w tym PR): kolumny efektu ceny i kursu w `/portfel` dla pozycji na rachunku USD liczą koszt kursem bieżącym, więc efekt kursu wychodzi 0, a `costBasis`/P/L w PLN są kosztem po kursie bieżącym. Propozycja: osobne zadanie — te same `Position.costPln` w `listPositions` (koszt w PLN i P/L w PLN z kursu NBP przed dniem kosztu), co zmienia wynik w PLN widoku portfela dla rachunków walutowych; albo do decyzji `null` z powodem zamiast 0.
-2. **Kurs nieświeży:** jak widok podatkowy przyjmujemy ostatnią tabelę przed dniem kosztu także przy luce w danych NBP; widok podatkowy ostrzega `stale_tax_rate`, rozbicie nie pokazuje tego ostrzeżenia (kalendarz dni roboczych NBP nie jest przekazywany — domyślnie pon.–pt., więc święta dawałyby fałszywe ostrzeżenia).
+1. **`listPositions`** — osobne zadanie **BL-306c** w backlogu (zależność BL-306b, 1 d, `todo`); `/portfel` bez zmian w tym PR.
+2. **Kurs nieświeży** — reguła zostaje (ostatnia tabela NBP przed dniem kosztu), ale wiek danych jest jawny: `Lot.costPlnRateExpected`/`costPlnRateStale` w rdzeniu, `assumptions.costFxRates` jako obiekt (`method`, `stale`, `tables`: waluta, data tabeli, oczekiwana data, numer, `stale`), w bloku założeń rozbicia PL/EN lista tabel i komunikat `role="status"` przy luce. Oczekiwana data liczy się nowym domyślnym kalendarzem `core.isNbpBusinessDay` (pon.–pt. bez świąt ustawowych, § 2.2) — bez niego święto w dzień powszedni (np. 11.11) dawało fałszywe „nieaktualne”. Ta sama zmiana usuwa fałszywe `stale_tax_rate` w widoku podatkowym; test C-06 zaktualizowany (kalendarz pon.–pt. przekazany jawnie nadal daje ostrzeżenie). Źródło listy świąt: Wikipedia (2026-11-20), tekst ustawy w ISAP — NIEZWERYFIKOWANE (strona niedostępna dla automatu).
 
 ## Pozostałe
 

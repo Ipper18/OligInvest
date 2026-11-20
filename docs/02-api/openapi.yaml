@@ -5691,7 +5691,25 @@ components:
             fxRates: {type: string, enum: [nbp_table_a_mid]}
             view: {type: string, enum: [economic]}
             costBasisMethod: {type: string, enum: [fifo]}
-            costFxRates: {type: string, enum: [nbp_table_a_mid_previous_business_day], description: 'Kurs kosztu w PLN na rachunku w walucie innej niż PLN (BL-306b).'}
+            costFxRates:
+              type: object
+              description: 'Kurs kosztu w PLN na rachunku w walucie innej niż PLN (BL-306b): ostatnia tabela NBP przed dniem kosztu. tables — użyte tabele pozycji objętych rozbiciem z datą, oczekiwaną datą (ostatni dzień roboczy NBP przed dniem kosztu: pon.–pt. bez świąt ustawowych) i numerem; stale=true, gdy użyto tabeli starszej niż oczekiwana (luka w danych NBP) — wynik zostaje, a wiek danych jest pokazany (decyzja właściciela 2026-11-20).'
+              required: [method, stale, tables]
+              properties:
+                method: {type: string, enum: [nbp_table_a_mid_previous_business_day]}
+                stale: {type: boolean}
+                tables:
+                  type: array
+                  maxItems: 1000
+                  items:
+                    type: object
+                    required: [currency, rateDate, expectedDate, stale, tableNo]
+                    properties:
+                      currency: {$ref: '#/components/schemas/CurrencyCode'}
+                      rateDate: {$ref: '#/components/schemas/LocalDate'}
+                      expectedDate: {$ref: '#/components/schemas/LocalDate'}
+                      stale: {type: boolean}
+                      tableNo: {type: [string, 'null'], maxLength: 40, example: 065/A/NBP/2025}
         meta: {$ref: '#/components/schemas/DataMeta'}
     RealizedPl:
       type: object

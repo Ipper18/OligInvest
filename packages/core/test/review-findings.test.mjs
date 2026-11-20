@@ -12,6 +12,7 @@ import {
   investorCashflows,
   isCoreError,
   isoDate,
+  isWeekday,
   money,
   parametricVar,
   periodReturn,
@@ -397,7 +398,15 @@ describe("ledger, transfers and the tax view", () => {
     });
     expect(ledger.issues).toEqual([]);
     expect(ledger.lots[0].taxRateDate).toBe("2025-11-10");
-    const weekdays = buildLedger({ accounts: regular, transactions: [buy], taxRates });
+    // BL-306b: the default calendar is now Polish business days, so 11.11 is not stale either.
+    expect(buildLedger({ accounts: regular, transactions: [buy], taxRates }).issues).toEqual([]);
+    // A Monday–Friday calendar (the former default) still flags the holiday as a gap.
+    const weekdays = buildLedger({
+      accounts: regular,
+      transactions: [buy],
+      taxRates,
+      isNbpBusinessDay: isWeekday,
+    });
     expect(weekdays.issues).toEqual([
       { code: "stale_tax_rate", transactionId: "B", currency: "USD", date: "2025-11-10" },
     ]);

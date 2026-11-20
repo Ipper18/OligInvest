@@ -30,6 +30,9 @@ test("English performance labels and decimal formatting follow preferences", asy
       name: /^USD/,
     }),
   ).toContainText("145.69");
+  await expect(exposure.getByText(/^NBP tables used for the PLN cost:/)).toContainText(
+    /— stale: the table of .*2025 was expected \(gap in NBP data\)/,
+  );
   const dividends = page.getByRole("region", { name: "Dividends", exact: true });
   await dividends.locator("summary").filter({ hasText: "Dividend payments" }).click();
   const paid = dividends.getByRole("table", { name: "Dividend payments" }).getByRole("row", {
@@ -127,6 +130,13 @@ test("currency exposure shows NBP rate and table, effects adding up to P/L and g
   await expect(
     section.getByText(/kursem średnim NBP z ostatniego dnia roboczego przed dniem rozliczenia/),
   ).toBeVisible();
+  // Owner decision 2026-11-20: the tables behind the PLN cost and a stale one are shown.
+  const costRates = section.getByText(/^Tabele NBP użyte do kosztu w PLN:/);
+  await expect(costRates).toContainText("047/A/NBP/2025");
+  await expect(costRates).toContainText(
+    /tabela z 30\.05\.2025, brak numeru tabeli — nieaktualna: oczekiwana tabela z 0?2\.06\.2025/,
+  );
+  await expect(section.getByRole("status").filter({ hasText: /starszą tabelą NBP/ })).toBeVisible();
   await expect(section.locator('[data-freshness-source="computed"]')).toContainText("Kursy: NBP");
   // Collapsed by default: server-rendered tables, no client JavaScript.
   const exposure = section.getByRole("table", { name: "Aktywa według walut", exact: true });
