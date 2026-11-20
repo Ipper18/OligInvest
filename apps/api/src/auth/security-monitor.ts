@@ -11,9 +11,11 @@ import {
   deviceFamily,
   deviceKey,
   failedSignInAlertDue,
+  failedStepUpAlertDue,
   type MassExportReason,
   massExportAnomaly,
   SECURITY_RULES,
+  type SecurityIncidentReporter,
 } from "../modules.js";
 import { userLocale } from "../user-locale.js";
 import type { AuditWriter } from "./audit.js";
@@ -58,8 +60,23 @@ export class SecurityMonitor {
       audit: Pick<AuditWriter, "recordInTransaction">;
       notify: SecurityNotify;
       origin: string;
+      reportIncident?: SecurityIncidentReporter;
     },
   ) {}
+
+  async rlsViolation(actor: DatabaseContext) {
+    if (!this.options.reportIncident) throw new Error("SECURITY_INCIDENT_REPORTER_UNAVAILABLE");
+    await this.options.reportIncident(actor, "rls");
+  }
+
+  /** Call only after a successful commit; one event per change, including CLI operations. */
+  async administrativeChanged(
+    actor: DatabaseContext,
+    kind: "role" | "flag" | "limits" | "reset-2fa",
+  ) {
+    if (!this.options.reportIncident) throw new Error("SECURITY_INCIDENT_REPORTER_UNAVAILABLE");
+    await this.options.reportIncident(actor, kind);
+  }
 
   /** Serialises rule evaluation per account so concurrent attempts cannot double-alert. */
   private async locked<T>(actor: Actor, run: (tx: DatabaseTransaction) => Promise<T>) {
@@ -138,6 +155,66 @@ export class SecurityMonitor {
         url: SETTINGS_PATH,
         occurredAt: now.toISOString(),
       });
+    });
+  }
+
+  /** Audit the confirmation only after its session rotation committed. */
+  async stepUpVerified(actor: Actor) {
+    await this.options.appDatabase.transaction(actor, (tx) =>
+      this.options.audit.recordInTransaction(tx, actor, {
+        action: "auth.step_up",
+        outcome: "success",
+        resourceType: "user",
+        resourceId: actor.userId,
+      }),
+    );
+  }
+
+  async stepUpFailed(actor: Actor) {
+    const rule = SECURITY_RULES.failedStepUp;
+    const result = await this.locked(actor, async (tx) => {
+      await this.options.audit.recordInTransaction(tx, actor, {
+        action: "auth.step_up_failed",
+        outcome: "denied",
+        resourceType: "user",
+        resourceId: actor.userId,
+      });
+      const row = (
+        await tx.execute(sql`SELECT clock_timestamp() AS now,
+        count(*) FILTER (WHERE action='auth.step_up_failed'
+          AND occurred_at > clock_timestamp() - make_interval(mins => ${rule.windowMinutes}))::int AS failures,
+        max(occurred_at) FILTER (WHERE action='security.failed_step_up_series') AS last_alert
+        FROM platform.audit_log WHERE actor_user_id=${actor.userId}::uuid
+          AND occurred_at > clock_timestamp() - make_interval(mins => ${rule.windowMinutes})`)
+      ).rows[0];
+      const now = rowTime(row?.now);
+      const failures = z.number().int().nonnegative().parse(row?.failures);
+      const lastAlertAt = row?.last_alert ? rowTime(row.last_alert) : null;
+      if (!failedStepUpAlertDue({ failures, lastAlertAt, now })) return null;
+      return {
+        now,
+        failures,
+        id: await this.alert(tx, actor, "security.failed_step_up_series", { count: failures }),
+      };
+    });
+    if (!result) return;
+    const text = await this.messages(actor);
+    await this.options.notify(`security-failed-step-up-${result.id}`, {
+      v: 1,
+      userId: actor.userId,
+      kind: "security",
+      sourceRef: `security:failed-step-up:${result.id}`,
+      channels: ["email"],
+      subject: text.messages.securityFailedStepUpSubject,
+      text: formatMessage(text.messages.securityFailedStepUpBody, {
+        minutes: String(rule.windowMinutes),
+        count: String(result.failures),
+        time: text.time(result.now),
+        timezone: text.timezone,
+        url: this.url(),
+      }),
+      url: SETTINGS_PATH,
+      occurredAt: result.now.toISOString(),
     });
   }
 
@@ -349,7 +426,11 @@ export class SecurityMonitor {
   private async alert(
     tx: DatabaseTransaction,
     actor: Actor,
-    action: "security.failed_sign_in_series" | "session.new_device" | "security.mass_export",
+    action:
+      | "security.failed_sign_in_series"
+      | "security.failed_step_up_series"
+      | "session.new_device"
+      | "security.mass_export",
     after: { count?: number },
     client?: Client,
   ): Promise<string> {

@@ -21,5 +21,15 @@
   "securityDeletionRequestedBody": "A request to delete your OligInvest account was made. The account and all data will be permanently deleted on {time} ({timezone}).\n\nUntil then you can cancel the request in settings: {url}\n\nIf this was not you, cancel the request, change your password and end other sessions.",
   "securityDeletionCancelledSubject": "OligInvest — account deletion cancelled",
   "securityDeletionCancelledBody": "The request to delete your OligInvest account was cancelled: {time} ({timezone}). The account stays active.\n\nIf this was not you, change your password and review active sessions: {url}",
-  "securityUnknown": "unknown"
+  "securityUnknown": "unknown",
+  "securityFailedStepUpSubject": "OligInvest — repeated failed TOTP confirmations",
+  "securityFailedStepUpBody": "Repeated failed TOTP confirmations of sensitive operations were recorded.\n\nAttempts in the last {minutes} min: {count}\nTime: {time} ({timezone})\n\nAfter 5 incorrect codes, verification is blocked for 15 minutes. You can review active sessions in settings: {url}",
+  "securityRlsSubject": "OligInvest — SEV1: RLS violation",
+  "securityRlsBody": "A write violating row-level security was rejected. This SEV1 incident requires immediate investigation under the incident response plan.\n\nAudit event: {id}\nTime: {time} ({timezone})\n\nThe write was rolled back. This message contains no query text or row data.",
+  "securityAdminChangeSubject": "OligInvest — administrative change",
+  "securityAdminChangeBody": "An administrative change was committed: {change}.\n\nAudit event: {id}\nTime: {time} ({timezone})\n\nOperation details are available in the audit log.",
+  "securityChangeRole": "account role",
+  "securityChangeFlag": "feature flag",
+  "securityChangeLimits": "role limits",
+  "securityChangeResetTwoFactor": "two-factor authentication reset"
 }

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { Queue } from "bullmq";
+import { sql } from "drizzle-orm";
 import { prepareDevelopment } from "../../../packages/db/scripts/prepare-development.mjs";
 import {
   applicationEnvironment,
@@ -10,8 +11,10 @@ import {
 import { createAuthMailer } from "../dist/auth-mail.js";
 import { jobFeatureFlags } from "../dist/feature-flags.js";
 import { reserveMail } from "../dist/mail-quota.js";
+import { dispatchNotification, identityJobs } from "../dist/modules.js";
 import { reportDay, startMonitoring } from "../dist/monitoring.js";
 import { readRuntime } from "../dist/runtime.js";
+import { monitorJobDatabase } from "../dist/security-monitor.js";
 
 const dev = await isolatedEnvironment();
 const env = applicationEnvironment(dev);
@@ -93,6 +96,53 @@ try {
   await monitor.handle(job);
   assert.equal(delivered.length, 1);
   const origin = `http://127.0.0.1:${monitor.address.port}`;
+
+  // BL-110b: a real worker-side RLS violation creates one audit event and a BullMQ mail.
+  const administrator = await flags.database.transaction(
+    { userId: null, role: "system" },
+    async (tx) =>
+      (
+        await tx.execute(
+          sql`SELECT id::text FROM identity.user_directory WHERE role='admin' AND NOT banned`,
+        )
+      ).rows[0],
+  );
+  assert.ok(administrator);
+  const actor = { userId: administrator.id, role: "admin" };
+  const observed = monitorJobDatabase(
+    flags.database,
+    runtime.config.AUDIT_PSEUDONYM_KEY,
+    queue,
+    logger,
+  );
+  await assert.rejects(
+    () =>
+      observed.transaction(actor, (tx) =>
+        tx.execute(sql`
+    INSERT INTO identity.user_preferences(user_id) VALUES(${randomUUID()}::uuid)`),
+      ),
+    identityJobs.isRlsViolation,
+  );
+  const incidents = await flags.database.transaction(
+    actor,
+    async (tx) =>
+      (
+        await tx.execute(
+          sql`SELECT id::text FROM platform.audit_log WHERE action='security.rls_violation'`,
+        )
+      ).rows,
+  );
+  assert.equal(incidents.length, 1);
+  const incidentJob = await queue.getJob(`security-incident-${incidents[0].id}-${actor.userId}`);
+  assert.equal(incidentJob.name, "notifications.deliver");
+  assert.equal(incidentJob.data.kind, "security");
+  assert.match(incidentJob.data.subject, /SEV1/u);
+  assert.doesNotMatch(incidentJob.data.text, /INSERT|user_preferences|PLN|USD|EUR/u);
+  // Security mail bypasses the exhausted ordinary quota; repeat delivery is deduplicated.
+  await dispatchNotification(flags.database, incidentJob.data, mailer.sendNotification);
+  await dispatchNotification(flags.database, incidentJob.data, mailer.sendNotification);
+  assert.equal(Number(await quotaClient.runCommand("get", [`quota:mail:total:${quotaDay}`])), 2);
+
   const metrics = await fetch(`${origin}/internal/metrics`);
   assert.equal(metrics.status, 200);
   const text = await metrics.text();
