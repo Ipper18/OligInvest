@@ -12,6 +12,8 @@ FROM python:3.13.13-slim-trixie@sha256:aa938a849bcb82dce8f49480f056ab82bf5c1c3eb
 # apt 3.0.4 (DSA-6607-1, CVE-2026-109518: package verification bypass on retried downloads) was published
 # 2026-11-04T12:03Z; the owner accepted it inside the 72-hour window (2026-11-04). Retries stay off while the
 # vulnerable apt fetches the fix.
+# liblzma5 5.8.1-1+deb13u2 (DSA-6549-1, xz-utils; debian-security since 2026-10-07T21:15Z) and ca-certificates
+# 20250419+deb13u1 (DSA-6572-1; since 2026-10-20T20:56Z): the pinned Python base (last push 2026-05-22) has neither.
 RUN apt-get -o Acquire::Retries=0 update -qq && apt-get -o Acquire::Retries=0 install -y --no-install-recommends \
     util-linux=2.41.5-0+deb13u1 mount=2.41.5-0+deb13u1 \
     libblkid1=2.41.5-0+deb13u1 libmount1=2.41.5-0+deb13u1 \
@@ -20,6 +22,7 @@ RUN apt-get -o Acquire::Retries=0 update -qq && apt-get -o Acquire::Retries=0 in
     libc6=2.41-12+deb13u4 libc-bin=2.41-12+deb13u4 perl-base=5.40.1-6+deb13u1 \
     openssl=3.5.7-1~deb13u3 libssl3t64=3.5.7-1~deb13u3 openssl-provider-legacy=3.5.7-1~deb13u3 \
     apt=3.0.4 libapt-pkg7.0=3.0.4 \
+    liblzma5=5.8.1-1+deb13u2 ca-certificates=20250419+deb13u1 \
     && rm -rf /var/lib/apt/lists/*
 ENV NODE_ENV=production PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PATH=/app/.venv/bin:$PATH
 WORKDIR /app
