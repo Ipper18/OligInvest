@@ -471,6 +471,7 @@ export async function portfolioFixture(request, response, key, preferences = {})
         fxRates: "nbp_table_a_mid",
         view: "economic",
         costBasisMethod: "fifo",
+        costFxRates: "nbp_table_a_mid_previous_business_day",
       },
       meta: {
         source: "computed",

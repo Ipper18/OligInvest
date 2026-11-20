@@ -57,7 +57,7 @@
     "title": "Currency exposure",
     "assumptions": "EOD closes, NBP table A mid rates, economic view, FIFO",
     "explanation": "Positions are grouped by their quote currency and cash by the currency of the balance. Values in PLN use the latest NBP table A mid rate published on or before the valuation date. The quote currency of an ETF is not the currency of its underlying assets. The weight is the share of the portfolio value in PLN; negative cash lowers it.",
-    "decompositionExplanation": "For open positions in currencies other than PLN, unrealized P/L in PLN is split into a price effect and a currency effect. Price effect = (value in the instrument currency − cost in that currency) × effective purchase rate; currency effect = P/L in PLN − price effect, so both add up to the P/L. Positions in an account kept in the instrument currency stay in the exposure but are left out of the split: their PLN cost is not recorded, so no currency effect is calculated for them. A missing result does not mean a currency effect of 0.",
+    "decompositionExplanation": "For open positions in currencies other than PLN, unrealized P/L in PLN is split into a price effect and a currency effect. Price effect = (value in the instrument currency − cost in that currency) × effective purchase rate; currency effect = P/L in PLN − price effect, so both add up to the P/L. In an account kept in a currency other than PLN, the PLN cost is the cost in the account currency converted at the NBP mid rate of the last business day before the purchase settlement day (as in the tax view), not at the current rate. A position without that rate stays in the exposure but is left out of the split. A missing result does not mean a currency effect of 0.",
     "date": "Valuation date: {date}",
     "exposureTable": "Holdings by currency",
     "decompositionTable": "Price and currency effect",
@@ -84,7 +84,7 @@
     "empty": "No positions or cash on the valuation date. Exposure was not calculated.",
     "incomplete": "A missing price or exchange rate prevents the PLN total and weights from being calculated. An unavailable value does not mean zero.",
     "noForeign": "No open positions in currencies other than PLN with a known cost.",
-    "notSplit": "{currency}: {count} positions in the exposure, left out of the price and currency effect split — no PLN cost (account kept in the instrument currency). The currency effect is not calculated; it is not 0.",
+    "notSplit": "{currency}: {count} positions in the exposure, left out of the price and currency effect split — no PLN cost (no NBP rate for the business day before the cost day). The currency effect is not calculated; it is not 0.",
     "noSplitRows": "No position is included in the split.",
     "decompositionIncomplete": "Some rows are unavailable because a price or exchange rate is missing. The total covers complete rows only.",
     "statuses": {
@@ -98,7 +98,7 @@
       "missing_cost": "unknown acquisition cost",
       "missing_price": "no closing price",
       "missing_fx": "no NBP rate",
-      "missing_cost_pln": "no PLN cost (account kept in the instrument currency)"
+      "missing_cost_pln": "no PLN cost (no NBP rate for the business day before the cost day)"
     },
     "reasonCount": "{reason}: {count}"
   },
@@ -107,7 +107,7 @@
     "assumptions": "Payment date, NBP table A mid rates from the last business day before payment, 19% rate, FIFO",
     "explanation": "The income date is the payment date. PLN amounts use the NBP table A mid rate from the last business day before the payment — the same on every account type. Credited to account is the amount booked by the broker in the account currency (economic view).",
     "topUpExplanation": "Estimated top-up = 19% of the gross amount in PLN minus the withholding tax in PLN, credited up to 19% of the gross, so the top-up is never negative. It is an informational estimate under this rule, not a calculation of a tax liability and not tax advice. On IKE and IKZE accounts the top-up does not apply.",
-    "yieldExplanation": "Yield on cost = gross dividends in PLN over the 12 months up to {date} / acquisition cost of the open position in PLN (FIFO, economic view). The PLN cost is known only on an account kept in PLN. It is a historical result, not a future dividend yield.",
+    "yieldExplanation": "Yield on cost = gross dividends in PLN over the 12 months up to {date} / acquisition cost of the open position in PLN (FIFO, economic view). In an account kept in another currency, the PLN cost uses the NBP mid rate of the last business day before the cost day. It is a historical result, not a future dividend yield.",
     "range": "Range: {from} – {to}",
     "rangeAll": "Range: all payments up to {to}",
     "summaryTable": "Dividends in PLN — total",
@@ -155,7 +155,7 @@
     "yieldReasons": {
       "no_open_position": "no open position",
       "missing_cost": "unknown acquisition cost",
-      "missing_cost_pln": "no PLN cost (account in the instrument currency)",
+      "missing_cost_pln": "no PLN cost (no NBP rate for the business day before the cost day)",
       "missing_fx": "no NBP rate for some payments"
     },
     "taxExempt": "Payments on IKE/IKZE: {count} — the top-up does not apply."

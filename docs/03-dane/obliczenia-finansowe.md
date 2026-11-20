@@ -222,13 +222,30 @@ Rozbicie wyniku (§ 4.2) sumujemy per waluta instrumentu ≠ PLN w widoku ekonom
 pośrednich — tożsamość efekt ceny + efekt kursu = P/L obowiązuje także dla sum. Wyłączenia z listą par
 rachunek–instrument: brak ceny lub kursu (`missing_price`, `missing_fx`) — kwoty segmentu są `null`, a suma
 ogólna obejmuje segmenty kompletne; brak kosztu (`missing_cost`) — pozycja poza sumami bez zerowania segmentu,
-jak w sumach pozycji (decyzja 2026-10-08); oraz `missing_cost_pln` — rachunek prowadzony w
-walucie instrumentu: koszt jest w tej walucie, a jej koszt w PLN nie jest zapisywany, więc efekt kursu
-względem PLN nie jest wyznaczalny. Decyzja właściciela Z-29 (2026-11-14): pozycja zostaje w ekspozycji, ale
-poza rozbiciem, z jawną adnotacją per waluta (`decomposition.notSplit`) i na ekranie; efekt kursu nigdy nie
-jest raportowany jako 0 — bez wiersza kompletnego suma rozbicia ma kwoty `null`. Koszt w PLN z kursu NBP
-z ostatniego dnia roboczego przed transakcją (jak w widoku podatkowym, § 2.2) i włączenie do rozbicia — BL-306b. Funkcje:
-`core.currencyExposure`, `core.priceFxEffectsByCurrency`; test na pozostałości wektora A.
+jak w sumach pozycji (decyzja 2026-10-08); oraz `missing_cost_pln` — brak kosztu w PLN (niżej).
+
+**Koszt w PLN na rachunku w walucie innej niż PLN (BL-306b, decyzja właściciela Z-29 z 2026-11-14).** Koszt
+partii jest zapisany w walucie rachunku (np. USD na rachunku USD), więc `koszt_PLN` we wzorze `r_0` z § 4.2
+to koszt w walucie rachunku × `nbp(prev_bd(d))` — kurs średni NBP (tabela A) z ostatniego dnia roboczego
+**przed** dniem kosztu, tą samą regułą co widok podatkowy (§ 2.2): dzień kosztu = dzień rozliczenia
+(`settle_date`), a przy ustawieniu `tax_date_basis = trade` — dzień zawarcia; weekend i święto przed dniem
+kosztu dają kurs z poprzedniego dnia, w którym NBP opublikował tabelę. Inaczej niż w widoku podatkowym
+liczymy go na każdym typie rachunku (także IKE/IKZE) i od kosztu ekonomicznego (z prowizją i ewentualną marżą
+przewalutowania). Nigdy nie używamy kursu bieżącego — dałby fałszywy efekt kursu równy 0. Partia przeniesiona
+na rachunek PLN przyjmuje koszt ekonomiczny po przeliczeniu (§ 3.5); z rachunku PLN na walutowy zachowuje
+pierwotny koszt w PLN; zakup częściowo sprzedany zachowuje proporcjonalną część (FIFO). Brak tego kursu NBP
+albo dnia kosztu (np. brak `settle_date`): koszt w PLN jest nieznany — `missing_cost_pln`; pozycja zostaje w
+ekspozycji, ale poza rozbiciem, z jawną adnotacją per waluta (`decomposition.notSplit`) i na ekranie; efekt
+kursu nigdy nie jest raportowany jako 0 — bez wiersza kompletnego suma rozbicia ma kwoty `null`. Założenie w
+odpowiedzi: `assumptions.costFxRates = nbp_table_a_mid_previous_business_day`. Przykład A′ (wektor
+`A_fifo_fx.instrument_currency_account`, kursy fikcyjne): operacje jak w przykładzie A na rachunku USD —
+T1 rozliczony w poniedziałek 2025-03-10 → kurs z piątku 2025-03-07, 2 400 USD × 3,8500 = 9 240,00 PLN;
+T2 rozliczony 2025-11-12 po święcie 11.11 → kurs z 2025-11-10, 1 001 USD × 3,7000 = 3 703,70 PLN; po
+sprzedaży 12 szt. zostają 3 szt. z T2: 600,60 USD / 2 222,22 PLN; wycena 210 USD × 3,6000 = 2 268,00 PLN, P/L
+45,78 PLN = efekt ceny 108,78 + efekt kursu −63,00 (`r_0` = 3,7).
+
+Funkcje: `core.currencyExposure`, `core.priceFxEffectsByCurrency`, koszt w PLN partii i pozycji w
+`core.buildLedger` (`Lot.costPln`, `Position.costPln`); testy na pozostałości wektora A i na wektorze A′.
 
 ### 4.3 Dywidendy i podatek u źródła (FR-02.08) — przykład G (wektor `G_dividend`)
 
@@ -267,13 +284,14 @@ transakcja kupna).
   daje sumę `null`. Suma dopłat obejmuje tylko wypłaty opodatkowane; gdy żadna nie jest opodatkowana — `null`
   („nie dotyczy”). Sumy w walutach wypłat — osobno per waluta.
 - **Stopa od kosztu:** brutto w PLN z 12 miesięcy do `to` (niezależnie od `from`) / koszt FIFO otwartych pozycji
-  instrumentu w PLN z wybranych rachunków (widok ekonomiczny). Koszt w PLN jest znany tylko na rachunku w PLN; na
-  rachunku w walucie instrumentu — `null` z powodem `missing_cost_pln` (jak Z-29, BL-306b). Inne powody:
+  instrumentu w PLN z wybranych rachunków (widok ekonomiczny). Na rachunku w PLN to koszt ekonomiczny; na
+  rachunku w innej walucie — koszt w PLN z kursu NBP z ostatniego dnia roboczego przed dniem kosztu jak w § 4.2.1
+  (BL-306b, Z-29/Z-30); bez tego kursu `null` z powodem `missing_cost_pln`. Inne powody:
   `no_open_position`, `missing_cost`, `missing_fx`. Brak wypłat w 12 miesiącach przy otwartej pozycji daje znane 0.
 
 **Decyzja właściciela Z-30 (2026-11-16):** zgodność z wyciągiem brokera sprawdzamy na sumach w walucie wypłaty
 (`totalsByCurrency`, zakres roku), nie na kwotach w PLN; brak wiersza podatku u źródła w imporcie XTB to „brak
-danych” z ręcznym uzupełnieniem, bez zgadywania stawki; `missing_cost_pln` zostaje do BL-306b
+danych” z ręcznym uzupełnieniem, bez zgadywania stawki; `missing_cost_pln` po BL-306b tylko przy braku kursu NBP
 ([`wymagania.md`](../00-przeglad/wymagania.md) Z-30).
 
 Funkcje: `core.dividendPlnView`, `core.sumDividendPlnViews`, `core.yieldOnCostRatio` (obok `dividendTaxView`,

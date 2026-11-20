@@ -1494,7 +1494,7 @@ export interface paths {
         };
         /**
          * Ekspozycja walutowa (PLN/USD/EUR) i suma efektu ceny i efektu kursu niezrealizowanego P/L
-         * @description BL-306 (obliczenia-finansowe.md § 4.2.1): pozycje według waluty notowania i gotówka według waluty salda, zamknięcia EOD i kurs średni NBP (tabela A) z dnia wyceny lub wcześniejszy — z datą i numerem tabeli. Brak ceny lub kursu daje null z powodem w statusie segmentu, nigdy 0. Rozbicie: widok ekonomiczny, FIFO, waluty instrumentów inne niż PLN; wyłączenia z powodem. Cudzy rachunek — 404.
+         * @description BL-306 (obliczenia-finansowe.md § 4.2.1): pozycje według waluty notowania i gotówka według waluty salda, zamknięcia EOD i kurs średni NBP (tabela A) z dnia wyceny lub wcześniejszy — z datą i numerem tabeli. Brak ceny lub kursu daje null z powodem w statusie segmentu, nigdy 0. Rozbicie: widok ekonomiczny, FIFO, waluty instrumentów inne niż PLN; koszt w PLN na rachunku w walucie innej niż PLN — kurs średni NBP z ostatniego dnia roboczego przed dniem kosztu (BL-306b, jak widok podatkowy § 2.2); wyłączenia z powodem. Cudzy rachunek — 404.
          */
         get: operations["getCurrencyExposure"];
         put?: never;
@@ -4116,7 +4116,7 @@ export interface components {
                     tableNo: string | null;
                 } | null;
             }[];
-            /** @description Niezrealizowany P/L pozycji w walutach innych niż PLN: efekt ceny + efekt kursu = P/L (§ 4.2). Segment z brakiem ceny lub kursu ma kwoty null, a total obejmuje segmenty kompletne; pozycja bez kosztu (missing_cost) jest poza sumami jak w sumach pozycji. Bez wiersza kompletnego total ma kwoty null (nigdy 0). missing_cost_pln — pozycja na rachunku w walucie instrumentu: zostaje w ekspozycji, ale jest poza rozbiciem, bo jej koszt w PLN nie jest zapisywany (decyzja Z-29; efekt kursu nie jest liczony i nigdy nie jest raportowany jako 0; BL-306b). */
+            /** @description Niezrealizowany P/L pozycji w walutach innych niż PLN: efekt ceny + efekt kursu = P/L (§ 4.2). Segment z brakiem ceny lub kursu ma kwoty null, a total obejmuje segmenty kompletne; pozycja bez kosztu (missing_cost) jest poza sumami jak w sumach pozycji. Bez wiersza kompletnego total ma kwoty null (nigdy 0). Kurs nabycia r0 = koszt w PLN / koszt w walucie instrumentu; na rachunku w walucie innej niż PLN koszt w PLN = koszt w walucie rachunku × kurs średni NBP z ostatniego dnia roboczego przed dniem kosztu (dzień rozliczenia, przy tax_date_basis=trade dzień zawarcia; BL-306b, Z-29), nigdy kurs bieżący. missing_cost_pln — brak tego kursu NBP (albo dnia kosztu): pozycja zostaje w ekspozycji, ale jest poza rozbiciem; efekt kursu nie jest liczony i nigdy nie jest raportowany jako 0. */
             decomposition: {
                 rows: {
                     currency: components["schemas"]["CurrencyCode"];
@@ -4133,7 +4133,7 @@ export interface components {
                     fxEffect: components["schemas"]["Money"] | null;
                 };
                 isComplete: boolean;
-                /** @description Jawna adnotacja dla waluty, której pozycje są poza rozbiciem z powodu braku kosztu w PLN (Z-29). */
+                /** @description Jawna adnotacja dla waluty, której pozycje są poza rozbiciem z powodu braku kosztu w PLN — brak kursu NBP z ostatniego dnia roboczego przed dniem kosztu (Z-29, BL-306b). */
                 notSplit: {
                     currency: components["schemas"]["CurrencyCode"];
                     positions: number;
@@ -4159,6 +4159,11 @@ export interface components {
                 view: "economic";
                 /** @enum {string} */
                 costBasisMethod: "fifo";
+                /**
+                 * @description Kurs kosztu w PLN na rachunku w walucie innej niż PLN (BL-306b).
+                 * @enum {string}
+                 */
+                costFxRates: "nbp_table_a_mid_previous_business_day";
             };
             meta: components["schemas"]["DataMeta"];
         };
@@ -4279,7 +4284,7 @@ export interface components {
                     taxExemptPayments: number;
                     isComplete: boolean;
                 };
-                /** @description Brutto w PLN z 12 miesięcy do asOf / koszt FIFO otwartej pozycji w PLN. reason: no_open_position, missing_cost, missing_cost_pln (rachunek w walucie instrumentu, Z-29), missing_fx — wtedy ratio null. */
+                /** @description Brutto w PLN z 12 miesięcy do asOf / koszt FIFO otwartej pozycji w PLN. Na rachunku w walucie innej niż PLN koszt w PLN z kursu średniego NBP z ostatniego dnia roboczego przed dniem kosztu (BL-306b, Z-29/Z-30). reason: no_open_position, missing_cost, missing_cost_pln (brak tego kursu NBP), missing_fx — wtedy ratio null. */
                 yieldOnCost: {
                     ratio: string | null;
                     trailingGrossPln: components["schemas"]["Money"] | null;

@@ -123,6 +123,10 @@ test("currency exposure shows NBP rate and table, effects adding up to P/L and g
   await page.goto("/portfel/wyniki");
   const section = page.getByRole("region", { name: "Ekspozycja walutowa", exact: true });
   await expect(section.getByText(/Pozycje grupujemy według waluty notowania/)).toBeVisible();
+  // BL-306b: the PLN cost on a non-PLN account uses NBP of the business day before the cost day.
+  await expect(
+    section.getByText(/kursem średnim NBP z ostatniego dnia roboczego przed dniem rozliczenia/),
+  ).toBeVisible();
   await expect(section.locator('[data-freshness-source="computed"]')).toContainText("Kursy: NBP");
   // Collapsed by default: server-rendered tables, no client JavaScript.
   const exposure = section.getByRole("table", { name: "Aktywa według walut", exact: true });
@@ -150,7 +154,7 @@ test("currency exposure shows NBP rate and table, effects adding up to P/L and g
   await expect(missing).toContainText("Brak wyniku");
   await gap.locator("summary").filter({ hasText: "Efekt ceny i efekt kursu" }).click();
   await expect(gap.getByText(/brak kursu NBP: 1/)).toBeVisible();
-  // Owner decision Z-29: an account in the instrument currency is annotated, never a zero effect.
+  // Z-29/BL-306b: without the NBP rate before the cost day the position is annotated, never 0.
   await page.goto("/portfel/wyniki?to=2025-09-30");
   const unsplit = page.getByRole("region", { name: "Ekspozycja walutowa", exact: true });
   await expect(unsplit.getByRole("note")).toHaveText(
@@ -159,7 +163,7 @@ test("currency exposure shows NBP rate and table, effects adding up to P/L and g
   await unsplit.locator("summary").filter({ hasText: "Efekt ceny i efekt kursu" }).click();
   await expect(unsplit.getByText("Żadna pozycja nie jest objęta rozbiciem.")).toBeVisible();
   await expect(
-    unsplit.getByText("brak kosztu w PLN (rachunek w walucie instrumentu): 1"),
+    unsplit.getByText("brak kosztu w PLN (brak kursu NBP z dnia roboczego przed dniem kosztu): 1"),
   ).toBeVisible();
   await expect(unsplit.getByRole("table", { name: "Efekt ceny i efekt kursu" })).toHaveCount(0);
   await page.goto("/portfel/wyniki?to=2025-01-02");

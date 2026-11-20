@@ -84,7 +84,6 @@ export function projectCurrencyExposure(input: CurrencyExposureInput, now: Date)
   for (const p of positions) {
     const code = currencyOf(p);
     if (code === "PLN") continue;
-    const account = input.accounts.find((a) => a.id === p.accountId)!;
     const exclude = (reason: Reason) =>
       exclusions.push({
         accountId: p.accountId,
@@ -92,15 +91,17 @@ export function projectCurrencyExposure(input: CurrencyExposureInput, now: Date)
         currency: code,
         reason,
       });
-    // Z-29: the PLN cost of the account currency is not recorded (BL-306b), so no split.
-    if (account.currency === code) {
-      exclude("missing_cost_pln");
-      continue;
-    }
     const original = input.ledger.positions.find(
       (o) => o.accountId === p.accountId && o.instrumentId === p.instrumentId,
     )!;
-    const effect = positionEffect(p, original, fx, date);
+    // BL-306b (Z-29): r0 uses the PLN cost of the lots — on an account in another currency the
+    // cost × NBP of the last business day before the cost day, never today's rate. Without that
+    // rate the position stays in the exposure but out of the split, never an FX effect of 0.
+    if (original.cost && !original.costPln) {
+      exclude("missing_cost_pln");
+      continue;
+    }
+    const effect = positionEffect(p, original, fx, date, original.costPln ?? undefined);
     // Unknown cost leaves the sums like in positions totals (decision 2026-10-08); a valuation
     // gap (price or rate) makes the whole currency row null.
     if (typeof effect === "string") exclude(effect);
@@ -185,6 +186,7 @@ export function projectCurrencyExposure(input: CurrencyExposureInput, now: Date)
       fxRates: "nbp_table_a_mid",
       view: "economic",
       costBasisMethod: "fifo",
+      costFxRates: "nbp_table_a_mid_previous_business_day",
     },
     meta: {
       source: "computed",

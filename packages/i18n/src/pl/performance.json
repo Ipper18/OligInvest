@@ -57,7 +57,7 @@
     "title": "Ekspozycja walutowa",
     "assumptions": "Zamknięcia EOD, kursy średnie NBP (tabela A), widok ekonomiczny, FIFO",
     "explanation": "Pozycje grupujemy według waluty notowania, a gotówkę według waluty salda. Wartości w PLN liczymy ostatnim kursem średnim NBP z tabeli A opublikowanym w dniu wyceny lub wcześniej. Waluta notowania ETF nie jest walutą jego aktywów bazowych. Udział to część wartości portfela w PLN; ujemna gotówka go obniża.",
-    "decompositionExplanation": "Dla otwartych pozycji w walutach innych niż PLN niezrealizowany P/L w PLN dzielimy na efekt ceny i efekt kursu. Efekt ceny = (wartość w walucie instrumentu − koszt w tej walucie) × efektywny kurs nabycia; efekt kursu = P/L w PLN − efekt ceny, więc oba efekty sumują się do P/L. Pozycje na rachunku prowadzonym w walucie instrumentu zostają w ekspozycji, ale nie w rozbiciu: ich koszt w PLN nie jest zapisywany, więc efektu kursu dla nich nie liczymy. Brak wyniku nie oznacza efektu kursu równego 0.",
+    "decompositionExplanation": "Dla otwartych pozycji w walutach innych niż PLN niezrealizowany P/L w PLN dzielimy na efekt ceny i efekt kursu. Efekt ceny = (wartość w walucie instrumentu − koszt w tej walucie) × efektywny kurs nabycia; efekt kursu = P/L w PLN − efekt ceny, więc oba efekty sumują się do P/L. Na rachunku prowadzonym w walucie innej niż PLN koszt w PLN to koszt w walucie rachunku przeliczony kursem średnim NBP z ostatniego dnia roboczego przed dniem rozliczenia zakupu (jak w widoku podatkowym), nie kursem bieżącym. Pozycja bez tego kursu zostaje w ekspozycji, ale nie w rozbiciu. Brak wyniku nie oznacza efektu kursu równego 0.",
     "date": "Dzień wyceny: {date}",
     "exposureTable": "Aktywa według walut",
     "decompositionTable": "Efekt ceny i efekt kursu",
@@ -84,7 +84,7 @@
     "empty": "Brak pozycji i gotówki w dniu wyceny. Ekspozycja nie została obliczona.",
     "incomplete": "Brak ceny lub kursu uniemożliwia obliczenie sumy w PLN i udziałów. Brak wyniku nie oznacza zera.",
     "noForeign": "Brak otwartych pozycji w walutach innych niż PLN ze znanym kosztem.",
-    "notSplit": "{currency}: {count} poz. w ekspozycji, poza rozbiciem na efekt ceny i kursu — brak kosztu w PLN (rachunek w walucie instrumentu). Efekt kursu nie jest liczony; to nie jest 0.",
+    "notSplit": "{currency}: {count} poz. w ekspozycji, poza rozbiciem na efekt ceny i kursu — brak kosztu w PLN (brak kursu NBP z dnia roboczego przed dniem kosztu). Efekt kursu nie jest liczony; to nie jest 0.",
     "noSplitRows": "Żadna pozycja nie jest objęta rozbiciem.",
     "decompositionIncomplete": "Część wierszy jest niedostępna z powodu braku ceny lub kursu. Suma obejmuje tylko wiersze kompletne.",
     "statuses": {
@@ -98,7 +98,7 @@
       "missing_cost": "nieznany koszt nabycia",
       "missing_price": "brak ceny zamknięcia",
       "missing_fx": "brak kursu NBP",
-      "missing_cost_pln": "brak kosztu w PLN (rachunek w walucie instrumentu)"
+      "missing_cost_pln": "brak kosztu w PLN (brak kursu NBP z dnia roboczego przed dniem kosztu)"
     },
     "reasonCount": "{reason}: {count}"
   },
@@ -107,7 +107,7 @@
     "assumptions": "Dzień wypłaty, kursy średnie NBP (tabela A) z ostatniego dnia roboczego przed wypłatą, stawka 19 %, FIFO",
     "explanation": "Dzień przychodu to dzień wypłaty. Kwoty w PLN liczymy kursem średnim NBP z tabeli A z ostatniego dnia roboczego przed wypłatą — tak samo na każdym typie rachunku. Wpływ na rachunek to kwota zaksięgowana przez brokera w walucie rachunku (widok ekonomiczny).",
     "topUpExplanation": "Szacowana dopłata = 19 % kwoty brutto w PLN minus podatek u źródła w PLN, zaliczony najwyżej do wysokości 19 % brutto, więc dopłata nie jest ujemna. To szacunek informacyjny według tej reguły, a nie wyliczenie zobowiązania podatkowego ani doradztwo podatkowe. Na IKE i IKZE dopłata nie dotyczy.",
-    "yieldExplanation": "Stopa od kosztu = suma dywidend brutto w PLN z 12 miesięcy do dnia {date} / koszt nabycia otwartej pozycji w PLN (FIFO, widok ekonomiczny). Koszt w PLN jest znany tylko na rachunku prowadzonym w PLN. To wynik historyczny, nie przyszła stopa dywidendy.",
+    "yieldExplanation": "Stopa od kosztu = suma dywidend brutto w PLN z 12 miesięcy do dnia {date} / koszt nabycia otwartej pozycji w PLN (FIFO, widok ekonomiczny). Na rachunku prowadzonym w innej walucie koszt w PLN liczymy kursem średnim NBP z ostatniego dnia roboczego przed dniem kosztu. To wynik historyczny, nie przyszła stopa dywidendy.",
     "range": "Zakres: {from} – {to}",
     "rangeAll": "Zakres: wszystkie wypłaty do {to}",
     "summaryTable": "Dywidendy w PLN — razem",
@@ -155,7 +155,7 @@
     "yieldReasons": {
       "no_open_position": "brak otwartej pozycji",
       "missing_cost": "nieznany koszt nabycia",
-      "missing_cost_pln": "brak kosztu w PLN (rachunek w walucie instrumentu)",
+      "missing_cost_pln": "brak kosztu w PLN (brak kursu NBP z dnia roboczego przed dniem kosztu)",
       "missing_fx": "brak kursu NBP dla części wypłat"
     },
     "taxExempt": "Wypłaty na IKE/IKZE: {count} — dopłata nie dotyczy."
