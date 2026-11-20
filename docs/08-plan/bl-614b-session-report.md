@@ -2,7 +2,7 @@
 
 **Cel:** zapisać wynik rozszerzenia ZAP baseline API o zalogowaną sesję po TOTP oraz otwarte warunki odbioru.
 
-2026-11-20; gałąź `feat/bl-614b-zap-auth`, baza `origin/main` `66a3e39`; osobny worktree wskazany przez właściciela; PR — w opisie zmiany.
+2026-11-20; gałąź `feat/bl-614b-zap-auth`, baza `origin/main` `66a3e39`; osobny worktree wskazany przez właściciela; [draft PR #89](https://github.com/Ipper18/OligInvest/pull/89).
 
 ## Zrobione
 
