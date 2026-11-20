@@ -60,9 +60,9 @@ const input = () => ({
 });
 test("average changes economic cost but leaves the FIFO tax view unchanged", () => {
   const trades = [
-    ["BUY", "10", "10"],
-    ["BUY", "10", "20"],
-    ["SELL", "10", "30"],
+    ["BUY", "1.5", "10"],
+    ["BUY", "0.5", "30"],
+    ["SELL", "0.5", "40"],
   ].map(([type, units, px], index) => ({
     id: `0198a000-0000-7000-8000-00000000001${index}`,
     accountId: a,
@@ -72,22 +72,27 @@ test("average changes economic cost but leaves the FIFO tax view unchanged", () 
     settleDate: isoDate(`2026-10-0${index + 1}`),
     quantity: quantity(units),
     price: price(px, "PLN"),
-    amount: money(["-100", "-200", "300"][index], "PLN"),
+    amount: money(["-15", "-15", "20"][index], "PLN"),
   }));
   const args = { accounts, transactions: trades };
   const ledger = buildLedger(args);
   const average = buildAverageCostView(args);
   const fifo = projectPortfolio({ ...input(), ledger });
   const analytical = projectPortfolio({ ...input(), ledger, average });
-  expect(fifo.data[0].costBasis.amount).toBe("200.00000000");
-  expect(analytical.data[0].costBasis.amount).toBe("150.00000000");
+  expect(fifo.data[0].costBasis).toEqual({ amount: "25.00000000", currency: "PLN" });
+  expect(analytical.data[0].costBasis).toEqual({ amount: "22.50000000", currency: "PLN" });
+  expect(projectPortfolio({ ...input(), ledger })).toEqual(fifo);
   expect(analytical.costBasisContext).toEqual({ method: "average", analytical: true });
   expect(projectPortfolio({ ...input(), ledger, average, view: "tax" })).toEqual(
     projectPortfolio({ ...input(), ledger, view: "tax" }),
   );
   const state = { fx: input().fx, transactions: trades };
   const realized = projectRealized(ledger.sales, state, {}, "economic", average);
-  expect(realized.totals.realizedPl.amount).toBe("150.00000000");
+  expect(realized.totals.realizedPl).toEqual({ amount: "12.50000000", currency: "PLN" });
+  expect(projectRealized(ledger.sales, state, {}, "economic").totals.realizedPl).toEqual({
+    amount: "15.00000000",
+    currency: "PLN",
+  });
   expect(projectRealized(ledger.sales, state, {}, "tax", average)).toEqual(
     projectRealized(ledger.sales, state, {}, "tax"),
   );

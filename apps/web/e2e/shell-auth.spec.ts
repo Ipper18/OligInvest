@@ -82,6 +82,35 @@ test("preferences persist without document reload and system follows OS", async 
   await expect(page.locator("body")).toHaveCSS("background-color", "rgb(241, 240, 235)");
 });
 
+test("the economic cost method switches from FIFO to weighted average and back", async ({
+  page,
+  context,
+}) => {
+  await session(context, "cost-method");
+  const analytical = page.getByText(
+    "Widok analityczny — średnia ważona. Nie jest widokiem podatkowym.",
+    { exact: true },
+  );
+  for (const [previous, method] of [
+    ["fifo", "average"],
+    ["average", "fifo"],
+  ] as const) {
+    await page.goto("/ustawienia");
+    const select = page.getByLabel("Metoda kosztu", { exact: true });
+    await expect(select).toHaveValue(previous);
+    await select.selectOption(method);
+    await page.getByRole("button", { name: "Zapisz", exact: true }).click();
+    await expect(
+      page.getByRole("status").filter({ hasText: "Zapisano preferencje." }),
+    ).toBeVisible();
+    await liveShell(page);
+    await page.goto("/portfel");
+    await expect(page.getByRole("table", { name: "Pozycje", exact: true })).toBeVisible();
+    await expect(analytical).toHaveCount(method === "average" ? 1 : 0);
+    await liveShell(page);
+  }
+});
+
 test("BL-211 persists analysis preferences, translates navigation and synchronizes devices", async ({
   page,
   context,

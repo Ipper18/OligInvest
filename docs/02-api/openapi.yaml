@@ -1762,7 +1762,7 @@ paths:
   /portfolio/lots:
     get:
       operationId: listLots
-      summary: Partie (FIFO lub średnia) z historią zużycia
+      summary: Partie FIFO z historią zużycia
       tags: [portfolio]
       x-permission: portfolio:read
       x-requirements: [FR-03.05]
