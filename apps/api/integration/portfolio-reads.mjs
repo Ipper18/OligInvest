@@ -146,6 +146,28 @@ export async function testPortfolioReads({ request, database, owner, instrumentI
   assert.equal(position.marketValueBase, null);
   assert.equal(position.costBasis, null);
   assert.equal(position.weight, null);
+  const methodAccount = await post("accounts", {
+    name: "Fractional purchases",
+    accountType: "regular",
+    broker: "xtb",
+    currency: "PLN",
+  });
+  for (const [type, tradeDate, quantity, price] of [
+    ["BUY", "2026-10-09", "1.5", "10"],
+    ["BUY", "2026-10-12", "0.5", "30"],
+    ["SELL", "2026-10-13", "0.5", "40"],
+  ]) {
+    await post("transactions", {
+      accountId: methodAccount.id,
+      instrumentId,
+      type,
+      tradeDate,
+      settleDate: "2026-10-15",
+      quantity,
+      price,
+      priceCurrency: "PLN",
+    });
+  }
   // BL-302: history reads stored daily valuations; a missing rate or flow value stays null.
   await recomputePortfolio(
     repository,
@@ -153,6 +175,46 @@ export async function testPortfolioReads({ request, database, owner, instrumentI
     async () => {},
     () => new Date("2026-10-13T12:00:00Z"),
   );
+  const methodAccountQuery = `accountId=${methodAccount.id}`;
+  const taxPositions = await get(`positions?${methodAccountQuery}&view=tax`);
+  const taxSales = await get(`realized?${methodAccountQuery}&view=tax`);
+  assert.deepEqual(taxPositions.costBasisContext, { method: "fifo", analytical: false });
+  assert.deepEqual(taxPositions.data[0].costBasis, { amount: "25.00000000", currency: "PLN" });
+  assert.deepEqual(taxSales.totals.realizedPl, { amount: "15.00000000", currency: "PLN" });
+  const lots = await get(`lots?${methodAccountQuery}&status=all`);
+  assert.equal(lots.method, "fifo");
+  assert.equal(lots.data.length, 2);
+  assert.deepEqual(
+    lots.data.flatMap((lot) => lot.consumptions.map((row) => row.costEconomic)),
+    [{ amount: "5.00000000", currency: "PLN" }],
+  );
+  for (const [method, cost, profit] of [
+    ["fifo", "25.00000000", "15.00000000"],
+    ["average", "22.50000000", "12.50000000"],
+    ["fifo", "25.00000000", "15.00000000"],
+  ]) {
+    await database.transaction(owner, (tx) =>
+      tx.execute(
+        sql`INSERT INTO identity.user_preferences(user_id,cost_basis_method) VALUES(${owner.userId}::uuid,${method})
+          ON CONFLICT (user_id) DO UPDATE SET cost_basis_method=excluded.cost_basis_method`,
+      ),
+    );
+    const positions = await get(`positions?${methodAccountQuery}`);
+    assert.deepEqual(positions.costBasisContext, { method, analytical: method === "average" });
+    assert.deepEqual(positions.data[0].costBasis, { amount: cost, currency: "PLN" });
+    const sales = await get(`realized?${methodAccountQuery}`);
+    assert.deepEqual(sales.totals.realizedPl, { amount: profit, currency: "PLN" });
+    assert.deepEqual(await get(`positions?${methodAccountQuery}&view=tax`), taxPositions);
+    assert.deepEqual(await get(`realized?${methodAccountQuery}&view=tax`), taxSales);
+    assert.deepEqual(await get(`lots?${methodAccountQuery}&status=all`), lots);
+    const response = await request(`positions?${methodAccountQuery}`, "GET", undefined, {
+      "x-owner": "b",
+    });
+    assert.equal(response.status, 200);
+    const other = await response.json();
+    assert.deepEqual(other.costBasisContext, { method: "fifo", analytical: false });
+    assert.deepEqual(other.data, []);
+  }
   const ike = await get(`history?accountId=${accounts[2].id}&from=2026-10-12`);
   assert.deepEqual(ike.t, [Date.parse("2026-10-12") / 1000, Date.parse("2026-10-13") / 1000]);
   assert.deepEqual(ike.value, [14, 15]);
