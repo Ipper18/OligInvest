@@ -148,6 +148,12 @@ Każdy playbook: **sygnały → pierwsze kroki (ograniczenie) → usunięcie prz
 
 ### P14. Alert naruszenia RLS lub wyciek między użytkownikami (SEV1; T-PF-01)
 
+- **BL-110b:** e-mail SEV1 trafia do wszystkich aktywnych administratorów
+  (decyzja właściciela 2026-11-16). Zawiera identyfikator wpisu
+  `security.rls_violation` i czas, bez zapytania ani danych wiersza. W audycie
+  administrator ustala kontekst aktora; nie ma potrzeby odczytu cudzego portfela.
+  Log `security.rls_reporting_failed` lub `auth.security_monitor_failed` wymaga
+  sprawdzenia audytu, kolejki `notify` i SMTP — brak e-maila nie oznacza braku zdarzeń.
 - Błąd `42501` przy zapisie oznacza zablokowaną próbę — RLS zadziałało, ale kod ma błąd: wyłączenie modułu flagą, poprawka, test regresji w `testy-rls.sql`.
 - Podejrzenie wycieku poza bazą (cache, SSE, eksport, logi): tryb serwisowy lub wyłączenie funkcji, analiza logów `request_id`, ustalenie, czyje dane komu pokazano → ocena naruszenia (§ 7) i informacja dla obu stron.
 

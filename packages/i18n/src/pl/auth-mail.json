@@ -21,5 +21,15 @@
   "securityDeletionRequestedBody": "Złożono wniosek o usunięcie Twojego konta OligInvest. Konto i wszystkie dane zostaną trwale usunięte {time} ({timezone}).\n\nDo tego czasu możesz anulować wniosek w ustawieniach: {url}\n\nJeżeli to nie Ty, anuluj wniosek, zmień hasło i zakończ pozostałe sesje.",
   "securityDeletionCancelledSubject": "OligInvest — anulowano usunięcie konta",
   "securityDeletionCancelledBody": "Wniosek o usunięcie Twojego konta OligInvest anulowano: {time} ({timezone}). Konto pozostaje aktywne.\n\nJeżeli to nie Ty, zmień hasło i przejrzyj aktywne sesje: {url}",
-  "securityUnknown": "nieznana"
+  "securityUnknown": "nieznana",
+  "securityFailedStepUpSubject": "OligInvest — seria nieudanych potwierdzeń TOTP",
+  "securityFailedStepUpBody": "Odnotowano serię nieudanych potwierdzeń operacji kodem TOTP.\n\nLiczba prób w ostatnich {minutes} min: {count}\nCzas: {time} ({timezone})\n\nPo 5 błędnych kodach weryfikacja jest blokowana na 15 minut. Aktywne sesje możesz przejrzeć w ustawieniach: {url}",
+  "securityRlsSubject": "OligInvest — SEV1: naruszenie RLS",
+  "securityRlsBody": "Odrzucono zapis naruszający politykę izolacji wierszy RLS. Incydent SEV1 wymaga natychmiastowej analizy zgodnie z planem reagowania.\n\nZdarzenie audytu: {id}\nCzas: {time} ({timezone})\n\nZapis został wycofany. Wiadomość nie zawiera treści zapytania ani danych wiersza.",
+  "securityAdminChangeSubject": "OligInvest — zmiana administracyjna",
+  "securityAdminChangeBody": "Zatwierdzono zmianę administracyjną: {change}.\n\nZdarzenie audytu: {id}\nCzas: {time} ({timezone})\n\nSzczegóły operacji są w dzienniku audytu.",
+  "securityChangeRole": "rola konta",
+  "securityChangeFlag": "flaga funkcji",
+  "securityChangeLimits": "limity roli",
+  "securityChangeResetTwoFactor": "reset uwierzytelniania dwuskładnikowego"
 }

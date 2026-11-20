@@ -259,6 +259,44 @@ E-maile bezpieczeństwa idą kolejką `notify` jako zadania `notifications.deliv
 
 **Decyzje właściciela (2026-11-14, PR #74):** (1) definicja nowego urządzenia zostaje — sama nowa sieć przy tej samej przeglądarce też wysyła e-mail (T-ID-02); przegląd po 2 tygodniach używania w R-57, przy uciążliwych e-mailach z sieci komórkowych zmiana na „nowa przeglądarka **oraz** nowa sieć”; (2) alert o masowym eksporcie trafia do wszystkich aktywnych administratorów, konto wskazane przez UUID; (3) pozostałe reguły tej tabeli realizuje osobne zadanie BL-110b; (4) link w e-mailach prowadzi do `/ustawienia`, a po BL-123 do kotwicy sekcji sesji.
 
+**Zakres BL-110b (decyzja właściciela 2026-11-16):** część aplikacyjna rozszerza
+istniejący `SecurityMonitor` w `apps/api` i reguły w `modules/identity`.
+Blokada wielu kont z jednego adresu (≥ 10 kont / 15 min) i skanowanie API
+(≥ 30 odpowiedzi 404/401 / 5 min) pozostają otwarte do BL-151: potrzebują
+agenta CrowdSec, LAPI i bouncera na VPS oraz odbioru blokady ≤ 60 s.
+Nie zastępujemy tych reakcji lokalną blokadą aplikacji. Integracja BL-151 musi
+korzystać z zaufanego adresu klienta za PROXY protocol; korelacja wielu kont
+nie może poszerzać widoczności audytu w kontekście zwykłego użytkownika.
+
+Step-up: `auth.step_up_failed` dotyczy faktycznie sprawdzonego, niepoprawnego
+kodu, a `auth.step_up` poprawnego potwierdzenia. Odrzucenie w czasie aktywnej
+blokady nie jest kolejną próbą kodu. Piąta porażka w ruchomym oknie 15 min
+tworzy `security.failed_step_up_series` i e-mail; równoległe próby nie tworzą
+duplikatów. Alert ponownie dopuszczamy po 15 min (okres istniejącej blokady).
+Zdarzenia i powiadomienie powstają po zatwierdzeniu transakcji weryfikacji;
+licznik TOTP, blokada i rotacja tokenu sesji pozostają egzekwowane przez BL-106.
+
+**Odbiorcy (decyzja właściciela 2026-11-16):** alerty RLS i zmian administracyjnych
+trafiają do wszystkich aktywnych administratorów (`role = admin`, `banned = false`),
+tak jak alert masowego eksportu. Zastępuje to niejednoznaczne wskazanie
+„właściciela instancji” w tabeli powyżej; nie wybieramy konta po dacie utworzenia.
+Każda zatwierdzona zmiana generuje osobny alert, bez cooldownu. CLI `flag` i
+`reset-2fa` korzystają z tego mechanizmu; operacje HTTP zmiany roli, flag i limitów
+pozostają w `openapi-pending.json` i przy wdrożeniu muszą wywołać
+`SecurityMonitor.administrativeChanged()` po zatwierdzeniu zmiany.
+
+Naruszenie RLS w transakcji roli aplikacyjnej (`api` lub `jobs`) tworzy
+`security.rls_violation` po rollbacku, w osobnej transakcji, i od razu zleca
+e-mail SEV1. Rozpoznajemy `42501` z komunikatem sterownika wskazującym RLS
+(także wewnątrz `cause` Drizzle); zwykły brak uprawnień SQL nie jest naruszeniem
+polityki wierszy. Do audytu i kolejki nie trafia komunikat wyjątku, SQL ani
+wartości wiersza. Błąd pierwotny nadal jest zwracany; niedostępność raportowania
+daje zredagowane zdarzenie operacyjne, bez rekurencji. Doręczenie nadal zależy
+od PostgreSQL, Valkey, SMTP oraz limitu 300 wiadomości/dobę z ADR-010.
+Wyjątek antyrekurencyjny: naruszenie RLS podczas samego doręczania e-maila
+bezpieczeństwa zapisuje bezpieczny log `security.rls_violation` / `SEV1` i kończy
+zadanie błędem; nie produkuje kolejnego e-maila o błędzie tej samej ścieżki.
+
 ### 5.4 Redakcja danych w logach (ASVS V16.2.5)
 
 Nigdy nie logujemy: haseł, kodów TOTP i zapasowych, tokenów (sesji, PAT, zaproszeń, resetu), nagłówków `Cookie` i `Authorization`, treści plików importu, kwot, ilości i cen z portfela użytkownika, treści notatek i dziennika. Maskujemy: adres e-mail (`a***@d***.pl`) w logach aplikacji (pełny adres tylko w audycie), token sesji — wyłącznie jako skrót SHA-256. Logger ma listę ścieżek do redakcji (pino `redact`) i test, który sprawdza, że przykładowe żądania nie zostawiają tych wartości w logu.

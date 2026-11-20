@@ -4,6 +4,7 @@ import {
   deviceFamily,
   deviceKey,
   failedSignInAlertDue,
+  failedStepUpAlertDue,
   massExportAnomaly,
   SECURITY_RULES,
 } from "../src/domain/security-rules.js";
@@ -39,6 +40,20 @@ test("device family ignores versions and recognises Chromium forks and iOS brows
   expect(deviceFamily("curl/8.0")).toEqual({ browser: "other", system: "other" });
   expect(deviceKey(agents.chromeWindows, "192.0.2.0/24")).toBe(
     deviceKey(agents.chromeWindowsUpdated, "192.0.2.0/24"),
+  );
+});
+
+test("step-up threshold and cooldown boundaries mirror SEC 5.3", () => {
+  const now = new Date("2026-11-16T10:00:00Z");
+  expect(SECURITY_RULES.failedStepUp).toEqual({ threshold: 5, windowMinutes: 15 });
+  for (const failures of [0, 4, 5, 6]) {
+    expect(failedStepUpAlertDue({ failures, lastAlertAt: null, now })).toBe(failures >= 5);
+  }
+  expect(failedStepUpAlertDue({ failures: 5, lastAlertAt: new Date(+now - 899999), now })).toBe(
+    false,
+  );
+  expect(failedStepUpAlertDue({ failures: 5, lastAlertAt: new Date(+now - 900000), now })).toBe(
+    true,
   );
 });
 

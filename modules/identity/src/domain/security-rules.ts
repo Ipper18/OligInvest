@@ -4,6 +4,7 @@
  * docs/06-bezpieczenstwo/kontrole-bezpieczenstwa.md § 5.3; change both together.
  */
 export const SECURITY_RULES = Object.freeze({
+  failedStepUp: Object.freeze({ threshold: 5, windowMinutes: 15 }),
   failedSignIn: Object.freeze({
     threshold: 5,
     windowMinutes: 15,
@@ -90,6 +91,20 @@ export function failedSignInAlertDue(input: {
 }
 
 export type MassExportReason = "volume" | "combination";
+
+/** One alert during the existing 15-minute step-up lock; blocked requests are not attempts. */
+export function failedStepUpAlertDue(input: {
+  failures: number;
+  lastAlertAt: Date | null;
+  now: Date;
+}): boolean {
+  return (
+    input.failures >= SECURITY_RULES.failedStepUp.threshold &&
+    (input.lastAlertAt === null ||
+      input.now.getTime() - input.lastAlertAt.getTime() >=
+        SECURITY_RULES.failedStepUp.windowMinutes * 60_000)
+  );
+}
 /**
  * Extension point for BL-114 (GDPR export). `exportsLastDay` includes the current
  * request; the combination is export + new PAT + new device within one hour.
