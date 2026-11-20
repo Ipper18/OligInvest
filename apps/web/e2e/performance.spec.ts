@@ -31,7 +31,7 @@ test("English performance labels and decimal formatting follow preferences", asy
     }),
   ).toContainText("145.69");
   await expect(exposure.getByText(/^NBP tables used for the PLN cost:/)).toContainText(
-    /— stale: the table of .*2025 was expected \(gap in NBP data\)/,
+    /table of 5\/30\/25, table number unavailable — stale: the table of 6\/2\/25 was expected \(gap in NBP data\)/,
   );
   const dividends = page.getByRole("region", { name: "Dividends", exact: true });
   await dividends.locator("summary").filter({ hasText: "Dividend payments" }).click();
