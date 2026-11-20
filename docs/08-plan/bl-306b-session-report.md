@@ -2,7 +2,7 @@
 
 **Cel:** przekazać stan kosztu w PLN pozycji na rachunku w walucie innej niż PLN (FR-02.06, Z-29), decyzje projektowe, dowody weryfikacji i pytania do właściciela.
 
-**2026-11-20**, gałąź `feat/bl-306b-pln-cost`, worktree `OligInvest-wt/bl-306b`, baza: `main` po PR #78 (BL-306), #80 (BL-307) i #85. Status `w toku` do CI i przeglądu właściciela; M3 pozostaje otwarty.
+**2026-11-20**, gałąź `feat/bl-306b-pln-cost`, worktree `OligInvest-wt/bl-306b`, baza: `main` po PR #78 (BL-306), #80 (BL-307) i #85; draft PR #88. Status `w toku` do CI i przeglądu właściciela; M3 pozostaje otwarty.
 
 ## Zakres i decyzje
 
