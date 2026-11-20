@@ -1404,7 +1404,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Partie (FIFO lub średnia) z historią zużycia */
+        /** Partie FIFO z historią zużycia */
         get: operations["listLots"];
         put?: never;
         post?: never;
