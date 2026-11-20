@@ -183,12 +183,19 @@ export interface DividendRecord {
   readonly paymentDate: IsoDate;
   readonly gross: Money;
   readonly withholdingTax: Money;
+  /**
+   * False when neither the operation nor a linked TAX/FEE row records the withholding tax: the
+   * amount above is then an assumed 0, and dependent amounts are unknown (BL-307), never 0.
+   */
+  readonly withholdingRecorded: boolean;
   /** Gross − withholding tax, in the payout currency. */
   readonly net: Money;
   /** Amount credited to the account (economic view). */
   readonly credited: Money;
   /** Gross in PLN at NBP D-1 (as in the tax view) on any account type; basis of the yield on cost. */
   readonly grossPln: Money | null;
+  /** NBP rate of the last business day before the payment date; null for PLN or when missing. */
+  readonly rate: FxRate | null;
   readonly taxStatus: TaxStatus;
   readonly tax: DividendTaxView | null;
 }
@@ -845,9 +852,11 @@ export function buildLedger(input: LedgerInput): Ledger {
         paymentDate: taxDate,
         gross: tx.gross,
         withholdingTax,
+        withholdingRecorded: tx.withholdingTax !== undefined || charges(tx.id).length > 0,
         net: money(tx.gross.amount.minus(withholdingTax.amount), tx.gross.currency),
         credited: tx.amount,
         grossPln,
+        rate: rate ?? null,
         taxStatus: !applies ? "not_applicable" : tax ? "computed" : "missing_data",
         tax,
       }),

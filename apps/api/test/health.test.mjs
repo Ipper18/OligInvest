@@ -205,6 +205,7 @@ test("public OpenAPI 3.1 is generated from registered Zod routes", async () => {
     "/portfolio/cash",
     "/portfolio/currency-exposure",
     "/portfolio/day-change",
+    "/portfolio/dividends",
     "/portfolio/drawdown",
     "/portfolio/history",
     "/portfolio/imports",

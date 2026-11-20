@@ -1880,7 +1880,8 @@ paths:
   /portfolio/dividends:
     get:
       operationId: listDividends
-      summary: Dywidendy — brutto, podatek u źródła, netto, w PLN, szacowana dopłata w PL (przykład G)
+      summary: Dywidendy — brutto, podatek u źródła, netto, w walucie i w PLN, stopa od kosztu, szacowana dopłata (przykład G)
+      description: 'BL-307 (obliczenia-finansowe.md § 4.3): dzień przychodu = dzień wypłaty; kwoty w PLN kursem średnim NBP (tabela A) z ostatniego dnia roboczego przed wypłatą — z datą i numerem tabeli, na każdym typie rachunku. Szacowana dopłata = 19 % brutto minus podatek u źródła zaliczony najwyżej do 19 % — informacyjnie, nie jest doradztwem podatkowym (disclaimer tax_view); IKE/IKZE — nie dotyczy. Brak kursu lub niezapisany podatek u źródła daje null z powodem, nigdy 0. Stopa od kosztu: brutto w PLN z 12 miesięcy do `to` / koszt FIFO otwartej pozycji w PLN (rachunek PLN). Cudzy rachunek — 404.'
       tags: [portfolio]
       x-permission: portfolio:read
       x-requirements: [FR-02.08]
@@ -1893,6 +1894,8 @@ paths:
         '200': {description: 'Dywidendy i sumy.', content: {application/json: {schema: {$ref: '#/components/schemas/Dividends'}}}}
         '401': {$ref: '#/components/responses/Unauthenticated'}
         '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '422': {$ref: '#/components/responses/ValidationFailed'}
   /portfolio/drawdown:
     get:
       operationId: getDrawdown
@@ -5748,38 +5751,150 @@ components:
         taxNote: {type: string, description: 'Informacja, że widok tax nie jest zeznaniem PIT-38.'}
     Dividends:
       type: object
-      required: [rows, totals]
+      description: 'Kwoty w PLN jako ciągi, bez zaokrągleń pośrednich; stopa jako ciąg dziesiętny. Suma z jakimkolwiek nieznanym składnikiem jest null (nigdy 0); gaps podaje liczbę wypłat z brakiem kursu (missing_fx) lub niezapisanym podatkiem u źródła (missing_withholding). estimatedTopUpPln — tylko wypłaty opodatkowane; null, gdy któraś nie ma danych albo żadna nie podlega dopłacie (IKE/IKZE).'
+      required: [currency, from, to, status, rows, byYear, byInstrument, totals, totalsByCurrency, gaps, assumptions, meta]
       properties:
+        currency: {type: string, enum: [PLN]}
+        from: {type: [string, 'null'], format: date, description: 'Początek zakresu; null — od pierwszej wypłaty.'}
+        to: {$ref: '#/components/schemas/LocalDate'}
+        status: {type: string, enum: [ok, incomplete, no_data]}
         rows:
           type: array
+          maxItems: 5000
           items:
             type: object
-            required: [transactionId, instrument, payDate, gross, withholdingTax, net, netBase]
+            required: [transactionId, accountId, instrument, payDate, gross, withholdingTax, net, credited, grossPln, withholdingTaxPln, netPln, fxRate, tax, gaps]
             properties:
               transactionId: {$ref: '#/components/schemas/Uuid'}
+              accountId: {$ref: '#/components/schemas/Uuid'}
               instrument: {$ref: '#/components/schemas/InstrumentSummary'}
               payDate: {$ref: '#/components/schemas/LocalDate'}
               gross: {$ref: '#/components/schemas/Money'}
-              withholdingTax: {$ref: '#/components/schemas/Money'}
-              net: {$ref: '#/components/schemas/Money'}
-              netBase: {$ref: '#/components/schemas/Money'}
-              estimatedPlTopUp: {$ref: '#/components/schemas/Money', description: 'Szacowana dopłata do 19 % w PL (informacyjnie, przykład G: 3,69 PLN).'}
-        totals:
-          type: object
-          required: [grossBase, withholdingBase, netBase]
-          properties:
-            grossBase: {$ref: '#/components/schemas/Money'}
-            withholdingBase: {$ref: '#/components/schemas/Money'}
-            netBase: {$ref: '#/components/schemas/Money'}
-            estimatedPlTopUp: {$ref: '#/components/schemas/Money'}
-        yieldOnCost:
+              withholdingTax: {oneOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}], description: 'W walucie wypłaty; null, gdy podatek u źródła nie jest zapisany.'}
+              net: {oneOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}]}
+              credited: {$ref: '#/components/schemas/Money', description: 'Wpływ na rachunek w walucie rachunku — widok ekonomiczny (przykład G: 77,81 PLN).'}
+              grossPln: {oneOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}]}
+              withholdingTaxPln: {oneOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}]}
+              netPln: {oneOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}]}
+              fxRate:
+                description: 'Kurs NBP z ostatniego dnia roboczego przed wypłatą; null dla PLN lub przy braku kursu.'
+                oneOf:
+                  - type: object
+                    required: [rate, rateDate, source, tableNo]
+                    properties:
+                      rate: {$ref: '#/components/schemas/DecimalString'}
+                      rateDate: {$ref: '#/components/schemas/LocalDate'}
+                      source: {type: string, enum: [nbp]}
+                      tableNo: {type: [string, 'null'], maxLength: 40, example: 155/A/NBP/2025}
+                  - {type: 'null'}
+              tax:
+                type: object
+                description: 'Szacunek informacyjny (przykład G: 3,69 PLN): 19 % brutto w PLN minus podatek u źródła zaliczony najwyżej do tej kwoty.'
+                required: [status, taxDuePln, withholdingCreditPln, estimatedTopUpPln]
+                properties:
+                  status: {type: string, enum: [computed, not_applicable, missing_fx, missing_withholding]}
+                  taxDuePln: {oneOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}]}
+                  withholdingCreditPln: {oneOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}]}
+                  estimatedTopUpPln: {oneOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}]}
+              gaps:
+                type: array
+                maxItems: 2
+                items: {type: string, enum: [missing_fx, missing_withholding]}
+        byYear:
           type: array
+          maxItems: 200
           items:
             type: object
-            required: [instrumentId, ratio]
+            required: [year, totals]
             properties:
-              instrumentId: {$ref: '#/components/schemas/Uuid'}
-              ratio: {type: number}
+              year: {type: integer, minimum: 1900, maximum: 2999}
+              totals:
+                type: object
+                required: [payments, grossPln, withholdingTaxPln, netPln, estimatedTopUpPln, taxablePayments, taxExemptPayments, isComplete]
+                properties:
+                  payments: {type: integer, minimum: 0}
+                  grossPln: {oneOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}]}
+                  withholdingTaxPln: {oneOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}]}
+                  netPln: {oneOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}]}
+                  estimatedTopUpPln: {oneOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}]}
+                  taxablePayments: {type: integer, minimum: 0}
+                  taxExemptPayments: {type: integer, minimum: 0}
+                  isComplete: {type: boolean}
+        byInstrument:
+          type: array
+          maxItems: 1000
+          items:
+            type: object
+            required: [instrument, totals, yieldOnCost]
+            properties:
+              instrument: {$ref: '#/components/schemas/InstrumentSummary'}
+              totals:
+                type: object
+                required: [payments, grossPln, withholdingTaxPln, netPln, estimatedTopUpPln, taxablePayments, taxExemptPayments, isComplete]
+                properties:
+                  payments: {type: integer, minimum: 0}
+                  grossPln: {oneOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}]}
+                  withholdingTaxPln: {oneOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}]}
+                  netPln: {oneOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}]}
+                  estimatedTopUpPln: {oneOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}]}
+                  taxablePayments: {type: integer, minimum: 0}
+                  taxExemptPayments: {type: integer, minimum: 0}
+                  isComplete: {type: boolean}
+              yieldOnCost:
+                type: object
+                description: 'Brutto w PLN z 12 miesięcy do asOf / koszt FIFO otwartej pozycji w PLN. reason: no_open_position, missing_cost, missing_cost_pln (rachunek w walucie instrumentu, Z-29), missing_fx — wtedy ratio null.'
+                required: [ratio, trailingGrossPln, costPln, asOf, reason]
+                properties:
+                  ratio: {type: [string, 'null'], pattern: '^-?\d{1,14}(\.\d{1,10})?$'}
+                  trailingGrossPln: {oneOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}]}
+                  costPln: {oneOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}]}
+                  asOf: {$ref: '#/components/schemas/LocalDate'}
+                  reason: {type: [string, 'null'], enum: [no_open_position, missing_cost, missing_cost_pln, missing_fx, null]}
+        totals:
+          type: object
+          required: [payments, grossPln, withholdingTaxPln, netPln, estimatedTopUpPln, taxablePayments, taxExemptPayments, isComplete]
+          properties:
+            payments: {type: integer, minimum: 0}
+            grossPln: {oneOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}]}
+            withholdingTaxPln: {oneOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}]}
+            netPln: {oneOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}]}
+            estimatedTopUpPln: {oneOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}]}
+            taxablePayments: {type: integer, minimum: 0}
+            taxExemptPayments: {type: integer, minimum: 0}
+            isComplete: {type: boolean}
+        totalsByCurrency:
+          type: array
+          maxItems: 50
+          items:
+            type: object
+            required: [currency, payments, gross, withholdingTax, net]
+            properties:
+              currency: {$ref: '#/components/schemas/CurrencyCode'}
+              payments: {type: integer, minimum: 1}
+              gross: {$ref: '#/components/schemas/Money'}
+              withholdingTax: {oneOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}]}
+              net: {oneOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}]}
+        gaps:
+          type: array
+          maxItems: 2
+          items:
+            type: object
+            required: [reason, payments]
+            properties:
+              reason: {type: string, enum: [missing_fx, missing_withholding]}
+              payments: {type: integer, minimum: 1}
+        assumptions:
+          type: object
+          required: [incomeDate, fxRates, plTaxRate, withholdingCredit, topUp, yieldOnCost, costBasisMethod]
+          properties:
+            incomeDate: {type: string, enum: [payment_date]}
+            fxRates: {type: string, enum: [nbp_table_a_mid_previous_business_day]}
+            plTaxRate: {$ref: '#/components/schemas/DecimalString'}
+            withholdingCredit: {type: string, enum: [capped_at_pl_rate]}
+            topUp: {type: string, enum: [estimate]}
+            yieldOnCost: {type: string, enum: [trailing_12m_gross_pln_over_open_cost_pln]}
+            costBasisMethod: {type: string, enum: [fifo]}
+        meta: {$ref: '#/components/schemas/DataMeta'}
     Drawdown:
       type: object
       description: 'Obsunięcia indeksu TWR z pełnych wycen dziennych w PLN, przepływy na początku dnia. Zakres od from obejmuje poprzednie zamknięcie jako bazę, jeśli istnieje wcześniejsza historia. Czas trwania: szczyt–dołek; odrabianie: dołek–pierwszy powrót do szczytu. Brak lub luka wycen/przepływów daje null i pustą serię. BL-305: stopy jako ciągi dziesiętne; LTTB dopiero po obliczeniach, zachowuje daty maksimum obsunięcia.'

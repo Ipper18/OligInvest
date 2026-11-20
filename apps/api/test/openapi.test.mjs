@@ -98,6 +98,7 @@ test("Zod document matches all implemented operations and pending is the exact r
     "listAlertRules",
     "listAnalyticsRuns",
     "listBenchmarks",
+    "listDividends",
     "listImportRows",
     "listImports",
     "listLots",

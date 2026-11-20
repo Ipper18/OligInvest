@@ -101,5 +101,63 @@
       "missing_cost_pln": "no PLN cost (account kept in the instrument currency)"
     },
     "reasonCount": "{reason}: {count}"
+  },
+  "dividends": {
+    "title": "Dividends",
+    "assumptions": "Payment date, NBP table A mid rates from the last business day before payment, 19% rate, FIFO",
+    "explanation": "The income date is the payment date. PLN amounts use the NBP table A mid rate from the last business day before the payment — the same on every account type. Credited to account is the amount booked by the broker in the account currency (economic view).",
+    "topUpExplanation": "Estimated top-up = 19% of the gross amount in PLN minus the withholding tax in PLN, credited up to 19% of the gross, so the top-up is never negative. It is an informational estimate under this rule, not a calculation of a tax liability and not tax advice. On IKE and IKZE accounts the top-up does not apply.",
+    "yieldExplanation": "Yield on cost = gross dividends in PLN over the 12 months up to {date} / acquisition cost of the open position in PLN (FIFO, economic view). The PLN cost is known only on an account kept in PLN. It is a historical result, not a future dividend yield.",
+    "range": "Range: {from} – {to}",
+    "rangeAll": "Range: all payments up to {to}",
+    "summaryTable": "Dividends in PLN — total",
+    "yearTable": "Dividends by year",
+    "instrumentTable": "Dividends by position and yield on cost",
+    "paymentsTable": "Dividend payments",
+    "currencyTable": "Totals in payout currencies",
+    "year": "Year",
+    "instrument": "Position",
+    "payDate": "Payment date",
+    "payments": "Payments",
+    "currency": "Currency",
+    "gross": "Gross",
+    "withholding": "Withholding tax",
+    "net": "Net",
+    "credited": "Credited to account",
+    "grossPln": "Gross (PLN)",
+    "withholdingPln": "Withholding tax (PLN)",
+    "netPln": "Net (PLN)",
+    "topUp": "Estimated top-up (PLN)",
+    "rate": "NBP rate",
+    "yieldOnCost": "Yield on cost",
+    "trailingGross": "Gross, 12 months (PLN)",
+    "cost": "Position cost (PLN)",
+    "status": "Status",
+    "rateDetails": "{rate} PLN, {date}, table {table}",
+    "rateNoTable": "{rate} PLN, {date}, no table number",
+    "base": "base currency",
+    "total": "Total",
+    "unavailable": "No result",
+    "empty": "No dividend payments in the selected range.",
+    "incomplete": "Some payments have no NBP rate or no recorded withholding tax. A total with a missing addend is not shown; a missing result does not mean zero.",
+    "gapsTitle": "Payments with missing data",
+    "gapCount": "{reason}: {count}",
+    "gaps": {
+      "missing_fx": "no NBP rate",
+      "missing_withholding": "withholding tax not recorded"
+    },
+    "taxStatuses": {
+      "computed": "Estimate",
+      "not_applicable": "Not applicable (IKE/IKZE)",
+      "missing_fx": "No NBP rate",
+      "missing_withholding": "No withholding tax data"
+    },
+    "yieldReasons": {
+      "no_open_position": "no open position",
+      "missing_cost": "unknown acquisition cost",
+      "missing_cost_pln": "no PLN cost (account in the instrument currency)",
+      "missing_fx": "no NBP rate for some payments"
+    },
+    "taxExempt": "Payments on IKE/IKZE: {count} — the top-up does not apply."
   }
 }

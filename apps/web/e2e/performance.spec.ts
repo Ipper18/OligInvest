@@ -30,6 +30,16 @@ test("English performance labels and decimal formatting follow preferences", asy
       name: /^USD/,
     }),
   ).toContainText("145.69");
+  const dividends = page.getByRole("region", { name: "Dividends", exact: true });
+  await dividends.locator("summary").filter({ hasText: "Dividend payments" }).click();
+  const paid = dividends.getByRole("table", { name: "Dividend payments" }).getByRole("row", {
+    name: /^KO/,
+  });
+  for (const value of ["3.6900", "155/A/NBP/2025", "92.25", "3.69", "Estimate"])
+    await expect(paid).toContainText(value);
+  await expect(
+    dividends.getByText(/It is an informational estimate under this rule/),
+  ).toBeVisible();
   await page.goto("/portfel/wyniki?from=2025-12-15");
   await expect(page.getByRole("row", { name: /Selected period/ })).toContainText(
     "Period shorter than 30 days",
@@ -154,4 +164,68 @@ test("currency exposure shows NBP rate and table, effects adding up to P/L and g
   await expect(unsplit.getByRole("table", { name: "Efekt ceny i efekt kursu" })).toHaveCount(0);
   await page.goto("/portfel/wyniki?to=2025-01-02");
   await expect(page.getByText(/Brak pozycji i gotówki w dniu wyceny/)).toBeVisible();
+});
+
+test("dividends show vector G in USD and PLN, NBP table, estimated top-up and gaps without zero", async ({
+  page,
+}) => {
+  await page.goto("/portfel/wyniki");
+  const section = page.getByRole("region", { name: "Dywidendy", exact: true });
+  await expect(section.getByText(/Szacowana dopłata = 19 % kwoty brutto w PLN/)).toBeVisible();
+  await expect(section.getByText(/nie wyliczenie zobowiązania podatkowego/)).toBeVisible();
+  await expect(section.locator('[data-freshness-source="computed"]')).toContainText("Kursy: NBP");
+  await expect(section.locator('[data-disclaimer-key="tax_view"]')).toBeVisible();
+  // Collapsed by default: server-rendered tables, no client JavaScript.
+  const payments = section.getByRole("table", { name: "Wypłaty dywidend", exact: true });
+  await expect(payments).toBeHidden();
+  await section.locator("summary").filter({ hasText: "Wypłaty dywidend" }).click();
+  const ko = payments.getByRole("row", { name: /^KO/ });
+  for (const value of [
+    "25,00",
+    "3,75",
+    "21,25",
+    "77,81",
+    "3,6900",
+    "155/A/NBP/2025",
+    "92,25",
+    "3,69",
+  ])
+    await expect(ko).toContainText(value);
+  await expect(payments.getByRole("row", { name: /^TEST/ })).toContainText("waluta bazowa");
+  await section.locator("summary").filter({ hasText: "Dywidendy według pozycji" }).click();
+  const positions = section.getByRole("table", { name: /Dywidendy według pozycji/ });
+  await expect(positions.getByRole("row", { name: /^KO/ })).toContainText("0,38");
+  await expect(positions.getByRole("row", { name: /^TEST/ })).toContainText(
+    "Brak wyniku (brak otwartej pozycji)",
+  );
+  await section.locator("summary").filter({ hasText: "Dywidendy w PLN — razem" }).click();
+  await expect(
+    section.getByRole("table", { name: "Dywidendy w PLN — razem" }).getByRole("row", {
+      name: /^Razem/,
+    }),
+  ).toContainText("592,25");
+  expect(
+    (await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze())
+      .violations,
+  ).toEqual([]);
+  await page.goto("/portfel/wyniki?to=2025-03-31");
+  const gap = page.getByRole("region", { name: "Dywidendy", exact: true });
+  await expect(
+    gap.getByText(/Część wypłat nie ma kursu NBP albo zapisanego podatku/),
+  ).toBeVisible();
+  await expect(gap.getByText("niezapisany podatek u źródła: 1")).toBeVisible();
+  await gap.locator("summary").filter({ hasText: "Wypłaty dywidend" }).click();
+  const missing = gap.getByRole("table", { name: "Wypłaty dywidend" }).getByRole("row", {
+    name: /^KO/,
+  });
+  await expect(missing).toContainText("Brak danych o podatku u źródła");
+  await expect(missing).toContainText("Brak wyniku");
+  await gap.locator("summary").filter({ hasText: "Dywidendy w PLN — razem" }).click();
+  const total = gap.getByRole("table", { name: "Dywidendy w PLN — razem" }).getByRole("row", {
+    name: /^Razem/,
+  });
+  await expect(total).toContainText("Brak wyniku");
+  await expect(total).not.toContainText("0,00");
+  await page.goto("/portfel/wyniki?to=2025-01-02");
+  await expect(page.getByText("Brak wypłat dywidend w wybranym zakresie.")).toBeVisible();
 });
