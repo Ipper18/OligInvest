@@ -225,14 +225,25 @@ export async function testSecurityEvents(settings) {
       ).rows[0].count,
   );
   assert.equal(committed, 0, "The offending insert was rolled back");
-  for (const kind of ["role", "flag", "limits", "reset-2fa"])
+  for (const kind of ["role", "flag", "limits", "reset-2fa", "email"])
     await monitor.administrativeChanged(admin, kind);
   assert.equal(
     jobsFor(admin.userId, "incident").length,
-    5,
+    6,
     "Each administrative change sends an alert",
   );
-  assert.equal(jobsFor(englishAdmin.userId, "incident").length, 5);
+  assert.equal(jobsFor(englishAdmin.userId, "incident").length, 6);
+  // BL-509: an administrator's e-mail change names the change in each recipient's language.
+  assert.ok(
+    jobsFor(englishAdmin.userId, "incident").some((job) =>
+      job.text.includes(copies.authMailMessages.securityChangeEmail),
+    ),
+  );
+  assert.ok(
+    jobsFor(admin.userId, "incident").some((job) =>
+      job.text.includes(authMailMessages.securityChangeEmail),
+    ),
+  );
   assert.equal(jobsFor(bannedAdmin.userId, "incident").length, 0);
   const deliveredTo = [];
   await assert.rejects(
@@ -518,6 +529,8 @@ async function testFacadeWiring({ database, appDatabase, audit }) {
   assert.equal((await actions()).filter((action) => action === "auth.step_up").length, 1);
   const administration = new Administration(service, {
     resetMail: async () => {},
+    emailChangedMail: async () => {},
+    blockedMail: async () => {},
     inviteMail: async () => {},
     flagsChanged: async () => {},
     queues: async () => {},

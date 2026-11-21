@@ -26,6 +26,10 @@
       "types": "./dist/privacy.d.ts",
       "import": "./dist/privacy.js"
     },
+    "./admin": {
+      "types": "./dist/admin.d.ts",
+      "import": "./dist/admin.js"
+    },
     "./education": {
       "types": "./dist/education.d.ts",
       "import": "./dist/education.js"

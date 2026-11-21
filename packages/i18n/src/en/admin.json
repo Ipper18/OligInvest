@@ -1,0 +1,130 @@
+{
+  "title": "Administration",
+  "intro": "Manage accounts, invitations and sessions. Every action goes to the audit log, and changes need a fresh code from your authenticator app.",
+  "noFinancialData": "This panel shows only account, security and activity data — never users' portfolios, transactions, analyses or alerts.",
+  "sections": {
+    "overview": "Overview",
+    "users": "Users",
+    "invitations": "Invitations",
+    "sessions": "Sessions"
+  },
+  "sectionsLabel": "Administration sections",
+  "usersIntro": "Accounts with role, 2FA state, block and scheduled deletion.",
+  "invitationsIntro": "One-time sign-up links. A link is shown only once, when it is issued.",
+  "sessionsIntro": "Active sessions of all accounts: time, IP address and device.",
+  "search": "Search (e-mail or name)",
+  "roleFilter": "Role",
+  "statusFilter": "Status",
+  "any": "All",
+  "filter": "Filter",
+  "next": "Next page",
+  "first": "First page",
+  "empty": "No results.",
+  "columns": {
+    "email": "E-mail",
+    "name": "Name",
+    "role": "Role",
+    "twoFactor": "2FA",
+    "status": "State",
+    "lastActive": "Last active",
+    "sessions": "Sessions",
+    "createdAt": "Created",
+    "expiresAt": "Expires",
+    "ip": "IP address",
+    "device": "Device",
+    "mfaVerifiedAt": "2FA confirmed",
+    "usedAt": "Used",
+    "actions": "Actions"
+  },
+  "roles": {
+    "user": "User",
+    "pro": "Pro",
+    "admin": "Administrator"
+  },
+  "invitationStatus": {
+    "pending": "Pending",
+    "used": "Used",
+    "expired": "Expired",
+    "revoked": "Revoked"
+  },
+  "state": {
+    "active": "Active",
+    "blocked": "Blocked",
+    "blockedUntil": "Blocked until {date}",
+    "deletion": "Deletion {date}",
+    "byUser": "user's request",
+    "byAdmin": "requested by an administrator"
+  },
+  "yes": "Yes",
+  "no": "No",
+  "none": "—",
+  "back": "Back to users",
+  "account": "Account",
+  "security": "Security and activity",
+  "emailVerified": "E-mail verified",
+  "banReason": "Block reason",
+  "deletionBy": "Deletion requested by",
+  "actionsHeading": "Actions",
+  "actions": {
+    "role": "Change role",
+    "email": "Change e-mail",
+    "block": "Block account",
+    "unblock": "Unblock account",
+    "reset2fa": "Reset 2FA",
+    "revokeSessions": "End all sessions",
+    "delete": "Schedule account deletion (14 days)",
+    "cancelDeletion": "Cancel deletion requested by an administrator",
+    "revokeSession": "End session",
+    "revokeInvitation": "Revoke invitation",
+    "createInvitation": "Issue invitation"
+  },
+  "fields": {
+    "role": "New role",
+    "email": "New e-mail address",
+    "blockReason": "Block reason (5–500 characters)",
+    "blockUntil": "Blocked until (optional, local time)",
+    "resetReason": "Reason for the reset (5–500 characters)",
+    "inviteEmail": "E-mail address of the invitee",
+    "inviteRole": "Role after sign-up",
+    "inviteHours": "Link validity (hours, 1–168)",
+    "inviteSend": "Send the link by e-mail"
+  },
+  "help": {
+    "reset2fa": "Only after verifying the person's identity outside the system. The TOTP secret and backup codes are removed.",
+    "delete": "The same process as a GDPR request: the account and its data are deleted after 14 days. The user cannot cancel an administrator's request — only an administrator can.",
+    "self": "This is your account: e-mail change, block, 2FA reset and deletion are not available here."
+  },
+  "confirm": {
+    "title": "Confirm action",
+    "role": "Change the role of {email} to “{role}”? All sessions of this account end and administrators receive a security alert.",
+    "email": "Change {email} to {newEmail}? Both addresses are notified, sessions end and administrators receive an alert.",
+    "block": "Block the account {email}? All sessions end.",
+    "unblock": "Unblock the account {email}?",
+    "reset2fa": "Reset 2FA for {email}? Sessions end and the account sets up a new code at the next sign-in.",
+    "revokeSessions": "End all sessions of {email}?",
+    "delete": "Schedule deletion of {email}? After 14 days the account and all data are permanently deleted.",
+    "cancelDeletion": "Cancel the deletion of {email}? The user receives an e-mail.",
+    "revokeSession": "End this session of {email}?",
+    "revokeInvitation": "Revoke the invitation for {email}?",
+    "accept": "Confirm",
+    "dismiss": "Cancel",
+    "createInvitation": "Issue an invitation for {email} with the role “{role}”?"
+  },
+  "stepUp": {
+    "intro": "This action needs a fresh confirmation with a code from your authenticator app (valid for 15 minutes).",
+    "label": "Code from the app (6 digits)",
+    "submit": "Confirm with code",
+    "invalid": "Invalid code. Try again."
+  },
+  "result": {
+    "done": "Saved.",
+    "pending": "Saving…",
+    "conflict": "This cannot be done: own account, last administrator, address in use or an active request.",
+    "validation": "Check the form fields.",
+    "notFound": "Not found — the data may have changed.",
+    "forbidden": "Not permitted.",
+    "error": "Something went wrong. Try again.",
+    "inviteCreated": "Invitation issued. Copy the link now — it will not be shown again:"
+  },
+  "pagingLabel": "Pagination"
+}

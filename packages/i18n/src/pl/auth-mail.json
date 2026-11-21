@@ -31,5 +31,17 @@
   "securityChangeRole": "rola konta",
   "securityChangeFlag": "flaga funkcji",
   "securityChangeLimits": "limity roli",
-  "securityChangeResetTwoFactor": "reset uwierzytelniania dwuskładnikowego"
+  "securityChangeResetTwoFactor": "reset uwierzytelniania dwuskładnikowego",
+  "securityChangeEmail": "adres e-mail konta",
+  "securityDeletionAdminSubject": "OligInvest — administrator zaplanował usunięcie konta",
+  "securityDeletionAdminBody": "Administrator OligInvest zaplanował usunięcie Twojego konta. Konto i wszystkie dane zostaną trwale usunięte {time} ({timezone}).\n\nWniosek złożony przez administratora może anulować wyłącznie administrator. Jeżeli to pomyłka, skontaktuj się z administratorem przed tym terminem. Szczegóły: {url}",
+  "emailChangedPreviousSubject": "OligInvest — zmieniono adres e-mail konta",
+  "emailChangedPreviousBody": "Administrator OligInvest zmienił adres e-mail Twojego konta na {other} ({issuedAt}). Ten adres nie służy już do logowania, a wszystkie sesje zostały zakończone.\n\nJeżeli to pomyłka, skontaktuj się z administratorem.",
+  "emailChangedCurrentSubject": "OligInvest — nowy adres e-mail konta",
+  "emailChangedCurrentBody": "Administrator OligInvest ustawił ten adres jako adres logowania Twojego konta (poprzedni: {other}, {issuedAt}). Wszystkie sesje zostały zakończone; zaloguj się ponownie tym adresem, dotychczasowym hasłem i kodem z aplikacji.\n\nJeżeli nie masz konta OligInvest, zignoruj tę wiadomość i powiadom administratora.",
+  "accountBlockedSubject": "OligInvest — konto zablokowane",
+  "accountBlockedBody": "Administrator OligInvest zablokował Twoje konto ({issuedAt}) na podstawie regulaminu § 4 ust. 4. Wszystkie sesje zostały zakończone, a logowanie i tokeny dostępu nie działają do odwołania blokady.\n\nJeżeli uważasz, że to pomyłka, odpowiedz administratorowi. Regulamin: {termsUrl}",
+  "accountBlockedUntilBody": "Administrator OligInvest zablokował Twoje konto ({issuedAt}) do {until} (UTC) na podstawie regulaminu § 4 ust. 4. Wszystkie sesje zostały zakończone, a logowanie i tokeny dostępu nie działają do tego czasu.\n\nJeżeli uważasz, że to pomyłka, odpowiedz administratorowi. Regulamin: {termsUrl}",
+  "accountUnblockedSubject": "OligInvest — blokada konta zdjęta",
+  "accountUnblockedBody": "Administrator OligInvest zdjął blokadę Twojego konta ({issuedAt}). Możesz znów logować się dotychczasowym hasłem i kodem z aplikacji."
 }

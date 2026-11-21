@@ -31,5 +31,17 @@
   "securityChangeRole": "account role",
   "securityChangeFlag": "feature flag",
   "securityChangeLimits": "role limits",
-  "securityChangeResetTwoFactor": "two-factor authentication reset"
+  "securityChangeResetTwoFactor": "two-factor authentication reset",
+  "securityChangeEmail": "account e-mail address",
+  "securityDeletionAdminSubject": "OligInvest — an administrator scheduled your account deletion",
+  "securityDeletionAdminBody": "An OligInvest administrator scheduled the deletion of your account. The account and all data will be permanently deleted on {time} ({timezone}).\n\nOnly an administrator can cancel a request made by an administrator. If this is a mistake, contact the administrator before that date. Details: {url}",
+  "emailChangedPreviousSubject": "OligInvest — your account e-mail address was changed",
+  "emailChangedPreviousBody": "An OligInvest administrator changed your account e-mail address to {other} ({issuedAt}). This address no longer signs you in, and all sessions were ended.\n\nIf this is a mistake, contact the administrator.",
+  "emailChangedCurrentSubject": "OligInvest — new account e-mail address",
+  "emailChangedCurrentBody": "An OligInvest administrator set this address as the sign-in address of your account (previous: {other}, {issuedAt}). All sessions were ended; sign in again with this address, your current password and the code from your app.\n\nIf you do not have an OligInvest account, ignore this message and tell the administrator.",
+  "accountBlockedSubject": "OligInvest — account blocked",
+  "accountBlockedBody": "An OligInvest administrator blocked your account ({issuedAt}) under § 4(4) of the terms. All sessions were ended; sign-in and access tokens stop working until the block is lifted.\n\nIf you think this is a mistake, reply to the administrator. Terms: {termsUrl}",
+  "accountBlockedUntilBody": "An OligInvest administrator blocked your account ({issuedAt}) until {until} (UTC) under § 4(4) of the terms. All sessions were ended; sign-in and access tokens stop working until then.\n\nIf you think this is a mistake, reply to the administrator. Terms: {termsUrl}",
+  "accountUnblockedSubject": "OligInvest — account block lifted",
+  "accountUnblockedBody": "An OligInvest administrator lifted the block on your account ({issuedAt}). You can sign in again with your current password and the code from your app."
 }

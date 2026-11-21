@@ -72,7 +72,7 @@ export class SecurityMonitor {
   /** Call only after a successful commit; one event per change, including CLI operations. */
   async administrativeChanged(
     actor: DatabaseContext,
-    kind: "role" | "flag" | "limits" | "reset-2fa",
+    kind: "role" | "flag" | "limits" | "reset-2fa" | "email",
   ) {
     if (!this.options.reportIncident) throw new Error("SECURITY_INCIDENT_REPORTER_UNAVAILABLE");
     await this.options.reportIncident(actor, kind);
@@ -302,6 +302,30 @@ export class SecurityMonitor {
       channels: ["email"],
       subject: text.messages.securityDeletionRequestedSubject,
       text: formatMessage(text.messages.securityDeletionRequestedBody, {
+        time: text.time(at),
+        timezone: text.timezone,
+        url: this.url(),
+      }),
+      url: SETTINGS_PATH,
+      occurredAt: new Date().toISOString(),
+    });
+  }
+
+  /** BL-509: deletion scheduled by an administrator; only an administrator can cancel it. */
+  async deletionRequestedByAdmin(
+    target: Actor,
+    event: { requestId: string; scheduledFor: string },
+  ) {
+    const text = await this.messages(target);
+    const at = rowTime(event.scheduledFor);
+    await this.options.notify(`security-deletion-admin-${event.requestId}`, {
+      v: 1,
+      userId: target.userId,
+      kind: "security",
+      sourceRef: `security:deletion-admin:${event.requestId}`,
+      channels: ["email"],
+      subject: text.messages.securityDeletionAdminSubject,
+      text: formatMessage(text.messages.securityDeletionAdminBody, {
         time: text.time(at),
         timezone: text.timezone,
         url: this.url(),
