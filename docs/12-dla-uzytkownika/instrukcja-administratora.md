@@ -42,7 +42,10 @@ Instalacja wrappera na hoście: skopiuj z tego samego wydania `oli-admin`, `admi
 1. Pierwsze konto administratora: `oli-admin create-owner --email <adres> --name <nazwa> --reason "<powód>"`, następnie logowanie i konfiguracja TOTP, kody zapasowe do menedżera haseł. Polecenie odmawia, jeśli istnieje jakiekolwiek konto; nie przyjmuje hasła w argumentach. Dotyczy wyłącznie lokalnego bootstrapu zatwierdzonego 2026-10-03; rejestracja HTTP pozostaje dostępna tylko z zaproszenia.
 2. Kolejne osoby: **/admin → Zaproszenia** (brama B M1). Zapraszaj tylko pełnoletnie osoby, które same o to prosiły; e-mail z zaproszeniem zawiera informację z art. 14 RODO.
 3. Rola `pro` daje dostęp do ciężkich analiz (Monte Carlo, optymalizacja, backtest, testy skrajne) — nadawaj świadomie, bo obciążają serwer współdzielony z Immichem.
-4. Blokada konta: **/admin → Użytkownicy** (od M5a) albo `revoke-sessions` + `revoke-pats`, z e-mailem do użytkownika (regulamin § 4 ust. 4).
+4. Blokada konta: **/admin → Użytkownicy → konto → Zablokuj konto** (powód 5–500 znaków, opcjonalny termin) albo `revoke-sessions` + `revoke-pats`, z e-mailem do użytkownika (regulamin § 4 ust. 4). Blokada kończy wszystkie sesje; tokeny PAT zablokowanego konta są odrzucane przy każdym użyciu.
+5. Panel **/admin** (BL-112, BL-501, BL-509) pokazuje wyłącznie dane konta, bezpieczeństwa i aktywności — nigdy portfeli, transakcji, analiz ani alertów. Odczyty trafiają do audytu bez step-upu; każda zmiana pyta o potwierdzenie, a jeśli od ostatniego kodu TOTP minęło ponad 15 min, prosi o nowy kod. Własnego konta nie zablokujesz, nie usuniesz, nie zresetujesz mu 2FA ani nie zmienisz mu adresu; ostatniemu administratorowi nie odbierzesz roli.
+6. Zmiana roli, adresu e-mail i reset 2FA wysyłają alert bezpieczeństwa do wszystkich aktywnych administratorów i kończą sesje konta. Zmiana adresu wysyła powiadomienie na stary i nowy adres (zadanie `auth.email-changed`); audyt nie zapisuje adresów, bo po usunięciu konta zachowuje tylko pseudonim.
+7. **Usunięcie konta z panelu** uruchamia ten sam proces co wniosek RODO (14 dni karencji, e-mail do użytkownika). Użytkownik nie może anulować wniosku administratora — widzi w ustawieniach datę i kontakt; anuluje tylko administrator (**Anuluj usunięcie zlecone przez administratora**, step-up, audyt, e-mail). Wniosek złożony przez samego użytkownika anuluje on sam.
 
 ## 4. Wdrożenie nowej wersji
 
@@ -58,7 +61,7 @@ Kontrakt kolejki `notify`: `auth.password-reset` ma zamknięte pola `email`, `to
 
 ### 4.2 Procedura wydania
 
-Kolejka `notify` obsługuje też `auth.invitation` (`email`, `token`, `expiresAt`, `inviterName`) oraz `auth.two-factor-reset` (`email`, `issuedAt`). Zaproszenie wymaga `LEGAL_CONTROLLER_NAME`, zawiera informację o administratorze danych i token wyłącznie we fragmencie. Worker odrzuca wygasłe zaproszenia oraz powiadomienia resetu 2FA starsze niż dobę. Reset 2FA usuwa sesje i poprzedni czynnik; dostęp do danych pozostaje zamknięty do konfiguracji nowego TOTP. Wysłanie zadania do kolejki nie oznacza potwierdzenia doręczenia przez SMTP.
+Kolejka `notify` obsługuje też `auth.invitation` (`email`, `token`, `expiresAt`, `inviterName`), `auth.two-factor-reset` (`email`, `issuedAt`) oraz `auth.email-changed` (`email`, `audience` = `previous`/`current`, `otherEmailMasked`, `issuedAt`, `locale`; worker odrzuca wiadomości starsze niż dobę). Zaproszenie wymaga `LEGAL_CONTROLLER_NAME`, zawiera informację o administratorze danych i token wyłącznie we fragmencie. Worker odrzuca wygasłe zaproszenia oraz powiadomienia resetu 2FA starsze niż dobę. Reset 2FA usuwa sesje i poprzedni czynnik; dostęp do danych pozostaje zamknięty do konfiguracji nowego TOTP. Wysłanie zadania do kolejki nie oznacza potwierdzenia doręczenia przez SMTP.
 
 1. Po scaleniu zmian utwórz tag `vX.Y.Z` na `main`; poczekaj na zielone zadanie `release` (obrazy, SBOM, podpisy).
 2. Na VM przez sieć administracyjną: `sudo /opt/oliginvest/bin/deploy.sh vX.Y.Z` — skrypt sprawdza podpisy, robi kopię, migruje bazę, podmienia usługi i uruchamia test dymny; przy błędzie sam wraca do poprzedniej wersji i wysyła alert.
