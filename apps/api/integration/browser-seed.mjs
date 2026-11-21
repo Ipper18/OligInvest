@@ -49,6 +49,9 @@ export async function seedBrowserInvitations(dev, env) {
       await client.query("SELECT id FROM auth.users WHERE email=$1", ["dev@example.invalid"])
     ).rows[0];
     if (!owner) throw new Error("Synthetic seed owner missing");
+    await client.query(
+      "INSERT INTO platform.feature_flags(key,description,enabled) VALUES('module.alerts','E2E',true) ON CONFLICT(key) DO UPDATE SET enabled=true",
+    );
     const fixtures = {};
     for (const browser of ["chromium", "firefox", "webkit"]) {
       const token = randomBytes(32).toString("base64url");

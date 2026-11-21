@@ -1,4 +1,8 @@
 {
+  "portfolioSubject": "OligInvest — alert portfelowy",
+  "portfolio_change": "Zmiana wartości portfela {value}%, próg {threshold}%.",
+  "drawdown": "Obsunięcie portfela {value}%, próg {threshold}%.",
+  "allocation_drift": "Odchylenie alokacji {value} p.p., próg {threshold} p.p.",
   "subject": "OligInvest — alert cenowy",
   "priceAbove": "{ticker}: kurs {value} przekroczył próg {threshold}.",
   "priceBelow": "{ticker}: kurs {value} spadł poniżej progu {threshold}.",

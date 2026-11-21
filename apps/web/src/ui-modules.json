@@ -21,7 +21,13 @@
   },
   {
     "id": "alerts",
-    "nav": []
+    "nav": [
+      {
+        "href": "/alerty",
+        "labelKey": "nav.alerts",
+        "permission": "alerts:manage"
+      }
+    ]
   },
   {
     "id": "analytics",

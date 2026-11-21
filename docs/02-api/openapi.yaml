@@ -2092,6 +2092,8 @@ paths:
       responses:
         '201': {description: 'Zapisano.', content: {application/json: {schema: {$ref: '#/components/schemas/TargetAllocation'}}}}
         '401': {$ref: '#/components/responses/Unauthenticated'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
         '422': {$ref: '#/components/responses/ValidationFailed'}
   /portfolio/targets/{targetId}:
     put:
@@ -2111,6 +2113,7 @@ paths:
         '200': {description: 'Zapisano.', content: {application/json: {schema: {$ref: '#/components/schemas/TargetAllocation'}}}}
         '401': {$ref: '#/components/responses/Unauthenticated'}
         '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
         '422': {$ref: '#/components/responses/ValidationFailed'}
     delete:
       operationId: deleteTargetAllocation
@@ -2408,7 +2411,7 @@ paths:
           $ref: "#/components/responses/NotFound"
     post:
       operationId: createAlertRule
-      summary: Utwórz alert cenowy (próg lub zmiana dzienna)
+      summary: Utwórz regułę alertu cenowego lub portfelowego
       tags:
         - alerts
       x-permission: alerts:manage
@@ -6058,7 +6061,7 @@ components:
           description: Liczba pozycji w ćwiartkach dobra/zła decyzja × dobry/zły wynik (z postmortemów).
           additionalProperties: {type: integer}
           example: {goodProcessGoodOutcome: 7, goodProcessBadOutcome: 3, badProcessGoodOutcome: 2, badProcessBadOutcome: 4}
-    TargetWeight:
+    RebalanceTargetWeight:
       type: object
       required: [weight]
       properties:
@@ -6068,14 +6071,24 @@ components:
       oneOf:
         - {required: [instrumentId]}
         - {required: [assetClass]}
+    TargetWeight:
+      type: object
+      required: [weight]
+      properties:
+        instrumentId: {$ref: '#/components/schemas/Uuid'}
+        assetClass: {type: string, maxLength: 11, enum: [equity, bond, commodity, cash, fx, crypto, real_estate, mixed, other]}
+        weight: {$ref: '#/components/schemas/DecimalString', description: 'Ułamek od 0 do 1.'}
+      oneOf:
+        - {required: [instrumentId]}
+        - {required: [assetClass]}
     TargetAllocationInput:
       type: object
       required: [name, targets]
       properties:
         name: {type: string, minLength: 1, maxLength: 60}
         accountId: {$ref: '#/components/schemas/Uuid'}
-        targets: {type: array, minItems: 1, maxItems: 50, items: {$ref: '#/components/schemas/TargetWeight'}, description: 'Suma wag = 1 (± 1e-9).'}
-        tolerance: {type: number, minimum: 0, maximum: 0.5, default: 0.05, description: 'Pasmo tolerancji jako ułamek (0.05 = ±5 p.p.).'}
+        targets: {type: array, minItems: 1, maxItems: 50, items: {$ref: '#/components/schemas/TargetWeight'}, description: 'Suma wag = dokładnie 1.'}
+        tolerance: {$ref: '#/components/schemas/DecimalString', default: '0.05', description: 'Pasmo tolerancji jako ułamek (0.05 = ±5 p.p.).'}
     TargetAllocation:
       allOf:
         - {$ref: '#/components/schemas/TargetAllocationInput'}
@@ -6294,7 +6307,7 @@ components:
       properties:
         accountId: {$ref: '#/components/schemas/Uuid'}
         targetId: {$ref: '#/components/schemas/Uuid'}
-        targets: {type: array, minItems: 1, maxItems: 50, items: {$ref: '#/components/schemas/TargetWeight'}}
+        targets: {type: array, minItems: 1, maxItems: 50, items: {$ref: '#/components/schemas/RebalanceTargetWeight'}}
         tolerance: {type: number, minimum: 0, maximum: 0.5, default: 0.05}
         mode: {type: string, enum: [full, buy_only]}
         newCash: {$ref: '#/components/schemas/Money'}
@@ -6957,6 +6970,142 @@ components:
             - instrumentId
             - params
           additionalProperties: true
+        - type: object
+          properties:
+            channels:
+              type: array
+              items:
+                type: string
+                enum:
+                  - push
+                  - email
+              minItems: 1
+              default:
+                - push
+                - email
+              uniqueItems: true
+            cooldownMinutes:
+              type: integer
+              minimum: 5
+              maximum: 10080
+              default: 1440
+            hysteresis:
+              type: number
+              minimum: 0
+              maximum: 0.1
+              default: 0.005
+            enabled:
+              type: boolean
+              default: true
+            type:
+              type: string
+              enum:
+                - portfolio_change
+            params:
+              type: object
+              properties:
+                threshold:
+                  type: string
+                  pattern: ^-?\d{1,12}(\.\d{1,8})?$
+              required:
+                - threshold
+              additionalProperties: true
+          required:
+            - type
+            - params
+          additionalProperties: true
+        - type: object
+          properties:
+            channels:
+              type: array
+              items:
+                type: string
+                enum:
+                  - push
+                  - email
+              minItems: 1
+              default:
+                - push
+                - email
+              uniqueItems: true
+            cooldownMinutes:
+              type: integer
+              minimum: 5
+              maximum: 10080
+              default: 1440
+            hysteresis:
+              type: number
+              minimum: 0
+              maximum: 0.1
+              default: 0.005
+            enabled:
+              type: boolean
+              default: true
+            type:
+              type: string
+              enum:
+                - drawdown
+            params:
+              type: object
+              properties:
+                threshold:
+                  type: string
+                  pattern: ^-?\d{1,12}(\.\d{1,8})?$
+              required:
+                - threshold
+              additionalProperties: true
+          required:
+            - type
+            - params
+          additionalProperties: true
+        - type: object
+          properties:
+            channels:
+              type: array
+              items:
+                type: string
+                enum:
+                  - push
+                  - email
+              minItems: 1
+              default:
+                - push
+                - email
+              uniqueItems: true
+            cooldownMinutes:
+              type: integer
+              minimum: 5
+              maximum: 10080
+              default: 1440
+            hysteresis:
+              type: number
+              minimum: 0
+              maximum: 0.1
+              default: 0.005
+            enabled:
+              type: boolean
+              default: true
+            type:
+              type: string
+              enum:
+                - allocation_drift
+            params:
+              type: object
+              properties:
+                threshold:
+                  type: string
+                  pattern: ^-?\d{1,12}(\.\d{1,8})?$
+                targetId:
+                  type: string
+                  format: uuid
+              required:
+                - threshold
+                - targetId
+              additionalProperties: false
+          required:
+            - type
+            - params
+          additionalProperties: true
     PriceAlertRulePatch:
       type: object
       properties:
@@ -6996,11 +7145,39 @@ components:
             - price_above
             - price_below
             - change_pct
+            - portfolio_change
+            - drawdown
+            - allocation_drift
         instrumentId:
           type: string
           format: uuid
+        inactiveReason:
+          type: string
+          enum:
+            - target_deleted
+            - target_changed
         params:
           anyOf:
+            - type: object
+              properties:
+                threshold:
+                  type: string
+                  pattern: ^-?\d{1,12}(\.\d{1,8})?$
+                targetId:
+                  type: string
+                  format: uuid
+              required:
+                - threshold
+                - targetId
+              additionalProperties: false
+            - type: object
+              properties:
+                threshold:
+                  type: string
+                  pattern: ^-?\d{1,12}(\.\d{1,8})?$
+              required:
+                - threshold
+              additionalProperties: true
             - type: object
               properties:
                 threshold:
@@ -7062,7 +7239,6 @@ components:
       required:
         - id
         - type
-        - instrumentId
         - params
         - channels
         - cooldownMinutes
@@ -7099,6 +7275,9 @@ components:
             - price_above
             - price_below
             - change_pct
+            - portfolio_change
+            - drawdown
+            - allocation_drift
         triggeredAt:
           type: string
           format: date-time
@@ -7132,6 +7311,9 @@ components:
             - computed
             - demo
             - mixed
+        delayMinutes:
+          type: integer
+          minimum: 0
         instrument:
           $ref: "#/components/schemas/InstrumentSummary"
         deliveries:

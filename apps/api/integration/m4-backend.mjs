@@ -12,6 +12,7 @@ import { PatService } from "../dist/auth/pat-service.js";
 import { AuthService } from "../dist/auth/service.js";
 import { sessionCookie } from "../dist/auth/session.js";
 import { testPushStorage } from "./pwa-push.mjs";
+import { testValuationAlerts } from "./valuation-alerts.mjs";
 
 export async function testM4Backend(settings) {
   const connection = { host: settings.host, port: settings.port, database: settings.database };
@@ -402,6 +403,80 @@ export async function testM4Backend(settings) {
         assertOrigin: async () => {},
       },
     });
+    const targetRequest = (path, method, body) =>
+      app.request("/api/v1/portfolio/targets" + path, {
+        method,
+        headers: { "content-type": "application/json", "Idempotency-Key": randomUUID() },
+        ...(body ? { body: JSON.stringify(body) } : {}),
+      });
+    const targetInput = {
+      name: "Synthetic allocation",
+      targets: [{ assetClass: "cash", weight: "1" }],
+      tolerance: "0.0123456789",
+    };
+    for (const weight of [1, "0.9999999999", "1.0000000001"]) {
+      assert.equal(
+        (
+          await targetRequest("", "POST", {
+            ...targetInput,
+            targets: [{ assetClass: "cash", weight }],
+          })
+        ).status,
+        422,
+      );
+    }
+    const targetResponse = await targetRequest("", "POST", targetInput);
+    assert.equal(targetResponse.status, 201);
+    const target = await targetResponse.json();
+    assert.equal(target.tolerance, targetInput.tolerance);
+    assert.equal((await (await targetRequest("", "GET")).json()).data[0].id, target.id);
+    assert.equal((await targetRequest("", "POST", targetInput)).status, 409);
+    const otherAccount = (
+      await repo.createAccount(
+        other,
+        { name: "Synthetic other owner", broker: "other", currency: "PLN", accountType: "regular" },
+        randomUUID(),
+      )
+    ).value;
+    assert.equal(
+      (
+        await targetRequest("", "POST", {
+          ...targetInput,
+          name: "Foreign scope",
+          accountId: otherAccount.id,
+        })
+      ).status,
+      404,
+    );
+    for (const assetClass of ["mixed", "fx", "unsupported", "real_estate_extra"]) {
+      const response = await targetRequest("", "POST", {
+        ...targetInput,
+        name: assetClass,
+        targets: [{ assetClass, weight: "1" }],
+      });
+      if (assetClass === "mixed" || assetClass === "fx") {
+        assert.equal(response.status, 201);
+        const saved = await response.json();
+        assert.equal(saved.targets[0].assetClass, assetClass);
+        assert.equal((await targetRequest("/" + saved.id, "PUT", targetInput)).status, 409);
+      } else assert.equal(response.status, 422);
+    }
+    const drift = { type: "allocation_drift", params: { targetId: target.id, threshold: "0.05" } };
+    await denied(() => alerts.create(other, drift), "NOT_FOUND");
+    const firstDrift = (await alerts.create(context, drift)).data;
+    assert.equal(
+      (await targetRequest("/" + target.id, "PUT", { ...targetInput, name: "Updated allocation" }))
+        .status,
+      200,
+    );
+    assert.equal((await alerts.get(context, firstDrift.id)).inactiveReason, "target_changed");
+    assert.equal((await alerts.get(context, firstDrift.id)).enabled, false);
+    const secondDrift = (await alerts.create(context, drift)).data;
+    assert.equal((await targetRequest("/" + target.id, "DELETE")).status, 204);
+    assert.equal((await alerts.get(context, secondDrift.id)).inactiveReason, "target_deleted");
+    assert.equal((await alerts.get(context, secondDrift.id)).enabled, false);
+    await alerts.remove(context, firstDrift.id);
+    await alerts.remove(context, secondDrift.id);
     const quick = (path, body, key = randomUUID(), secret = token.token) =>
       app.request("/api/v1/quick/" + path, {
         method: body ? "POST" : "GET",
@@ -533,6 +608,18 @@ export async function testM4Backend(settings) {
       ),
     );
     service.features.invalidate();
+    await testValuationAlerts({
+      appDatabase,
+      alerts,
+      context,
+      other,
+      accountId: account.id,
+      instrumentId,
+      secondInstrumentId,
+      targetRequest,
+      origin: configuration.origin,
+      today,
+    });
     await pats.revoke(request(), token.id);
     assert.equal((await quick("today")).status, 401);
   } finally {

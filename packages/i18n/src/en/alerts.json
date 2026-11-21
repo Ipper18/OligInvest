@@ -1,4 +1,8 @@
 {
+  "portfolioSubject": "OligInvest — portfolio alert",
+  "portfolio_change": "Portfolio change {value}%, threshold {threshold}%.",
+  "drawdown": "Portfolio drawdown {value}%, threshold {threshold}%.",
+  "allocation_drift": "Allocation deviation {value} percentage points, threshold {threshold} percentage points.",
   "subject": "OligInvest — price alert",
   "priceAbove": "{ticker}: price {value} crossed above threshold {threshold}.",
   "priceBelow": "{ticker}: price {value} fell below threshold {threshold}.",

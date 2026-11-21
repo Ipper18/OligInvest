@@ -109,6 +109,58 @@ test("real invitation → TOTP → XTB worker → reconciled portfolio", async (
       .violations,
   ).toEqual([]);
   await expect(page.getByText("Aktualizacje na żywo", { exact: true })).toBeVisible();
+  const origin = new URL(page.url()).origin;
+  const post = async (path: string, data: unknown) => {
+    const response = await page.request.post("/api/v1/portfolio/" + path, {
+      data,
+      headers: { origin, "Idempotency-Key": crypto.randomUUID() },
+    });
+    expect(response.status()).toBe(201);
+    return response.json();
+  };
+  const cashAccount = await post("accounts", {
+    name: "Alert E2E",
+    accountType: "regular",
+    broker: "other",
+    currency: "PLN",
+  });
+  await post("targets", {
+    name: "Allocation E2E",
+    accountId: cashAccount.id,
+    targets: [{ assetClass: "equity", weight: "1" }],
+  });
+  await page.setViewportSize({ width: 360, height: 800 });
+  await page.goto("/alerty/nowy");
+  await page
+    .getByRole("combobox", { name: "Warunek", exact: true })
+    .selectOption("allocation_drift");
+  await page.getByRole("button", { name: "Dalej" }).press("Enter");
+  await page.getByLabel("Próg", { exact: false }).fill("0.10");
+  await page.getByRole("button", { name: "Podgląd powiadomienia" }).press("Enter");
+  await expect(page.getByRole("heading", { name: "Podgląd powiadomienia" })).toBeVisible();
+  expect(
+    (await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze())
+      .violations,
+  ).toEqual([]);
+  await page.getByRole("button", { name: "Zapisz regułę" }).press("Enter");
+  await expect(page).toHaveURL("/alerty");
+  await post("transactions", {
+    accountId: cashAccount.id,
+    type: "DEPOSIT",
+    amount: { amount: "100", currency: "PLN" },
+    tradeDate: new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Warsaw" }).format(new Date()),
+  });
+  await expect
+    .poll(async () => {
+      const response = await page.request.get("/api/v1/alerts/events");
+      return (await response.json()).data.some(
+        (event: { deliveries: { channel: string; status: string }[] }) =>
+          event.deliveries.some((d) => d.channel === "email" && d.status === "sent"),
+      );
+    })
+    .toBe(true);
+  await page.getByRole("link", { name: "Historia wyzwoleń i doręczeń" }).click();
+  await expect(page.getByText(/E-mail · Wysłano/)).toBeVisible();
   // BL-413: sign-out moved from the shell header to Settings.
   await page.goto("/ustawienia");
   await page.getByRole("button", { name: "Wyloguj się", exact: true }).click();

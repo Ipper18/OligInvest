@@ -1,5 +1,6 @@
 import { safeReturnTo } from "@oliginvest/contracts/navigation";
 import type { AppDatabase } from "@oliginvest/db";
+import { disclaimers } from "@oliginvest/i18n";
 import { sql } from "drizzle-orm";
 import { z } from "zod";
 import { channelSchema } from "./contracts.js";
@@ -132,10 +133,21 @@ export async function dispatchNotification(
             continue;
           }
         } else {
+          let text = data.text;
+          if (data.kind === "alert") {
+            const [preference] = (
+              await tx.execute(sql`SELECT locale FROM identity.user_preferences`)
+            ).rows;
+            const catalog =
+              preference?.locale === "en-US"
+                ? (await import("@oliginvest/i18n/en")).copies.disclaimers
+                : disclaimers;
+            text += "\n\n" + catalog.alerts.text;
+          }
           await send(
             z.email().parse(recipient.email),
             data.subject,
-            data.text,
+            text,
             data.kind === "security",
           );
         }

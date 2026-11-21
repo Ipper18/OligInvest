@@ -7,6 +7,7 @@ import type { ImportRepository } from "./server/imports.js";
 export { parseMbank } from "./import/mbank.js";
 export { parseXtb } from "./import/xtb.js";
 export { portfolioDate, recomputePortfolio } from "./recompute.js";
+export { readAlertObservation } from "./server/alert-observation.js";
 export async function parseImport(
   repository: ImportRepository,
   raw: unknown,

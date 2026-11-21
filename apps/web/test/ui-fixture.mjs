@@ -47,6 +47,7 @@ export function fixtureCookie(route) {
     route.startsWith("/portfel") ||
     route.startsWith("/rynek") ||
     route.startsWith("/nauka") ||
+    route.startsWith("/alerty") ||
     route.startsWith("/analizy")
   )
     return "__Host-oliginvest.session_token=fixture-perf";
@@ -159,6 +160,24 @@ export async function uiFixture(request, response) {
     const interval = setInterval(() => response.write(": heartbeat\n\n"), 15000);
     request.on("close", () => clearInterval(interval));
     return true;
+  }
+  if (key === "fixture-perf" && request.method === "GET") {
+    const endpoint = path.split("?")[0];
+    const rule = {
+      id: "01900000-0000-7000-8000-000000000107",
+      type: "drawdown",
+      params: { threshold: "0.1" },
+      channels: ["email"],
+      cooldownMinutes: 60,
+      hysteresis: 0,
+      enabled: true,
+      createdAt: "2026-10-12T00:00:00Z",
+      updatedAt: "2026-10-12T00:00:00Z",
+    };
+    if (endpoint === "/api/v1/alerts/rules")
+      return send({ data: [rule], page: { hasMore: false } });
+    if (endpoint === `/api/v1/alerts/rules/${rule.id}`) return send(rule);
+    if (endpoint === "/api/v1/alerts/events") return send({ data: [], page: { hasMore: false } });
   }
   if (await analyticsFixture(request, response, key)) return true;
   if (
