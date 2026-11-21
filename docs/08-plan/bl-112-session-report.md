@@ -21,17 +21,18 @@ Rozbieżności rozstrzygnięte według kolejności ADR → wymagania → konwenc
 1. **Odczyty bez step-upu, zmiany ze step-upem.** ADR-006 wymaga step-upu przy zmianach; odczyty są audytowane, ale nie pytają o kod (inaczej każde wejście na listę zużywałoby limit 5/min i 20/h).
 2. **Rola przed step-upem.** Kolejność w `Administration.http` zmieniona: konto bez roli admin dostaje `FORBIDDEN`, nigdy prośby o kod (nie ujawnia, że operacja istnieje i wymaga TOTP).
 3. **Ochrona przed samym sobą (`409`):** własne konto nie może zmienić e-maila, zostać zablokowane, usunięte ani mieć resetu 2FA; ostatni administrator nie traci roli i nie może zostać usunięty.
-4. **Sesje kończone przy zmianie roli, e-maila i blokady** (oraz przy resecie 2FA, jak w BL-111). Alerty do administratorów: zmiana roli, e-maila i reset 2FA (jak w kontrolach § 5.2; blokada i usunięcie mają e-mail do użytkownika).
-5. **`email_verified` bez zmian przy zmianie adresu** — zmiana jest na prośbę z dotychczasowego adresu (instrukcja administratora § 7); obie skrzynki dostają powiadomienie.
-6. **Bez adresów e-mail w audycie** zmiany adresu: usunięcie konta pseudonimizuje identyfikatory, ale nie tekst; zapis adresu przeżyłby usunięcie.
-7. **`AdminInvitation.invitedBy` opcjonalne** (kolumna zerowana po usunięciu autora) i **`banReason` 5–500 znaków** (jak `--reason` w CLI) — zmiany addytywne w `openapi.yaml` i CHANGELOG.
-8. **Anulowanie przez administratora dotyczy tylko wniosków administratora;** wniosek użytkownika anuluje użytkownik.
-9. **`FOR NO KEY UPDATE` przy blokowaniu konta:** `FOR UPDATE` w transakcji auth blokował sprawdzenie klucza obcego w transakcji app tego samego żądania (przekroczenie `lock_timeout` przy zapisie wniosku usunięcia).
-10. **Kursor z dokładnym znacznikiem czasu bazy** (`to_json(created_at)`), bo milisekundy ISO gubiły mikrosekundy i powtarzały wiersz na granicy strony.
-11. **Zmiany przez Server Action z listą operacji** (jak `mutateResource` portfela) zamiast `fetch` z przeglądarki: Zod zostaje na serwerze (budżet `/admin/*` zakazuje Zod), ścieżka API nie pochodzi z przeglądarki, a ścieżka działa także w testowym serwerze bez bramy Caddy.
-12. **Wpis budżetu `/admin`** (kopia progów `/admin/*`, bo wzorzec `*` nie obejmuje samego `/admin`) i fixture `userId` dla trasy dynamicznej — bez zmiany żadnego progu.
-13. **`uiDefinition` modułu admin bez importu `@oliginvest/platform`** — unika nowej zależności workspace dla jednej stałej.
-14. **AGENTS.md § 6.2** nie istnieje na `main` (PR #91 nie jest scalony); pracowałem według treści z polecenia właściciela.
+4. **Sesje kończone przy zmianie roli, e-maila i blokady** (oraz przy resecie 2FA, jak w BL-111). Alerty do administratorów: zmiana roli, e-maila i reset 2FA (jak w kontrolach § 5.2); blokada i usunięcie mają e-mail do użytkownika.
+5. **E-mail o blokadzie i jej zdjęciu** (`auth.account-blocked`, PL/EN) — wymaga go regulamin § 4 ust. 4, choć backlog go nie wymieniał. Wysyłany bezpośrednio (jak `auth.email-changed`), bo dyspozytor powiadomień pomija zablokowanych odbiorców; powód blokady nie trafia do wiadomości (zostaje w audycie).
+6. **`email_verified` bez zmian przy zmianie adresu** — zmiana jest na prośbę z dotychczasowego adresu (instrukcja administratora § 7); obie skrzynki dostają powiadomienie.
+7. **Bez adresów e-mail w audycie** zmiany adresu: usunięcie konta pseudonimizuje identyfikatory, ale nie tekst; zapis adresu przeżyłby usunięcie.
+8. **`AdminInvitation.invitedBy` opcjonalne** (kolumna zerowana po usunięciu autora) i **`banReason` 5–500 znaków** (jak `--reason` w CLI) — zmiany addytywne w `openapi.yaml` i CHANGELOG.
+9. **Anulowanie przez administratora dotyczy tylko wniosków administratora;** wniosek użytkownika anuluje użytkownik.
+10. **`FOR NO KEY UPDATE` przy blokowaniu konta:** `FOR UPDATE` w transakcji auth blokował sprawdzenie klucza obcego w transakcji app tego samego żądania (przekroczenie `lock_timeout` przy zapisie wniosku usunięcia).
+11. **Kursor z dokładnym znacznikiem czasu bazy** (`to_json(created_at)`), bo milisekundy ISO gubiły mikrosekundy i powtarzały wiersz na granicy strony.
+12. **Zmiany przez Server Action z listą operacji** (jak `mutateResource` portfela) zamiast `fetch` z przeglądarki: Zod zostaje na serwerze (budżet `/admin/*` zakazuje Zod), ścieżka API nie pochodzi z przeglądarki, a ścieżka działa także w testowym serwerze bez bramy Caddy.
+13. **Wpis budżetu `/admin`** (kopia progów `/admin/*`, bo wzorzec `*` nie obejmuje samego `/admin`) i fixture `userId` dla trasy dynamicznej — bez zmiany żadnego progu.
+14. **`uiDefinition` modułu admin bez importu `@oliginvest/platform`** — unika nowej zależności workspace dla jednej stałej.
+15. **AGENTS.md § 6.2** nie istnieje na `main` (PR #91 nie jest scalony); pracowałem według treści z polecenia właściciela.
 
 ## Dowody lokalne
 

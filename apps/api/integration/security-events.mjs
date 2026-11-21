@@ -530,6 +530,7 @@ async function testFacadeWiring({ database, appDatabase, audit }) {
   const administration = new Administration(service, {
     resetMail: async () => {},
     emailChangedMail: async () => {},
+    blockedMail: async () => {},
     inviteMail: async () => {},
     flagsChanged: async () => {},
     queues: async () => {},

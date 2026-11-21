@@ -231,7 +231,7 @@ Logi trafiają wyłącznie do miejsc z tej tabeli (ASVS V16.2.3); znaczniki czas
 | Przekroczenie limitu żądań | `ratelimit.exceeded` | seria → CrowdSec |
 | Naruszenie polityki RLS (błąd `42501` przy zapisie) | `security.rls_violation` | **natychmiast** — nie powinno wystąpić nigdy |
 | Każda akcja administratora | `admin.*` (stan przed i po) | zmiana roli, reset 2FA, flagi → e-mail do właściciela instancji |
-| Panel `/admin` (BL-112, BL-501, BL-509): odczyty i zmiany kont, zaproszeń i sesji | `admin.user.list`, `admin.user.get`, `admin.user.update`, `admin.user.delete`, `admin.user.deletion_cancel`, `admin.user.revoke_sessions`, `admin.invitation.list`, `admin.invitation.revoke`, `admin.session.list`, `admin.session.revoke` (powód blokady i resetu w `after`, bez adresów e-mail) | zmiana roli, zmiana e-maila i reset 2FA → alert do wszystkich aktywnych administratorów; zmiana e-maila → e-mail na stary i nowy adres |
+| Panel `/admin` (BL-112, BL-501, BL-509): odczyty i zmiany kont, zaproszeń i sesji | `admin.user.list`, `admin.user.get`, `admin.user.update`, `admin.user.delete`, `admin.user.deletion_cancel`, `admin.user.revoke_sessions`, `admin.invitation.list`, `admin.invitation.revoke`, `admin.session.list`, `admin.session.revoke` (powód blokady i resetu w `after`, bez adresów e-mail) | zmiana roli, zmiana e-maila i reset 2FA → alert do wszystkich aktywnych administratorów; zmiana e-maila → e-mail na stary i nowy adres; blokada i jej zdjęcie → e-mail do użytkownika (regulamin § 4 ust. 4) |
 
 ### 5.3 Reguły wykrywania anomalii
 

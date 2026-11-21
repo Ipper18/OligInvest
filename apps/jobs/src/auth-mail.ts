@@ -1,6 +1,7 @@
 import { isIP } from "node:net";
 import type { ServiceConfig } from "@oliginvest/config";
 import {
+  accountBlockedMailSchema,
   authMailSchema,
   emailChangedMailSchema,
   invitationMailSchema,
@@ -97,6 +98,7 @@ export function createAuthMailer(
           "auth.invitation",
           "auth.two-factor-reset",
           "auth.email-changed",
+          "auth.account-blocked",
         ].includes(name) ||
         !config.SMTP_FROM
       )
@@ -108,7 +110,9 @@ export function createAuthMailer(
             ? invitationMail(input, config)
             : name === "auth.email-changed"
               ? emailChangedMail(input, config)
-              : twoFactorResetMail(input, config);
+              : name === "auth.account-blocked"
+                ? accountBlockedMail(input, config)
+                : twoFactorResetMail(input, config);
       await reserve(true);
       try {
         await transport.sendMail(message);
@@ -182,6 +186,42 @@ export function emailChangedMail(input: unknown, config: ServiceConfig<"jobs">, 
     text: formatMessage(
       previous ? messages.emailChangedPreviousBody : messages.emailChangedCurrentBody,
       { other: data.otherEmailMasked, issuedAt: data.issuedAt },
+    ),
+    disableFileAccess: true,
+    disableUrlAccess: true,
+  };
+}
+
+/** BL-509, regulamin § 4 ust. 4: block or its end, in the account's language. */
+export function accountBlockedMail(
+  input: unknown,
+  config: ServiceConfig<"jobs">,
+  now = Date.now(),
+) {
+  const data = accountBlockedMailSchema.parse(input);
+  const messages = data.locale === "en-US" ? copies.authMailMessages : defaultAuthMailMessages;
+  if (
+    Date.parse(data.issuedAt) > now ||
+    now - Date.parse(data.issuedAt) > 86400_000 ||
+    !config.SMTP_FROM
+  )
+    throw new Error("AUTH_MAIL_EXPIRED");
+  const blocked = data.state === "blocked";
+  return {
+    from: { name: "OligInvest", address: config.SMTP_FROM },
+    to: { address: data.email, name: "" },
+    subject: blocked ? messages.accountBlockedSubject : messages.accountUnblockedSubject,
+    text: formatMessage(
+      blocked
+        ? data.until
+          ? messages.accountBlockedUntilBody
+          : messages.accountBlockedBody
+        : messages.accountUnblockedBody,
+      {
+        issuedAt: data.issuedAt,
+        until: data.until ?? "",
+        termsUrl: new URL("/regulamin", config.PUBLIC_BASE_URL).href,
+      },
     ),
     disableFileAccess: true,
     disableUrlAccess: true,

@@ -26,6 +26,14 @@ export type AdminEffects = {
     otherEmailMasked: string;
     issuedAt: string;
   }) => Promise<void>;
+  /** BL-509: `auth.account-blocked` — regulamin § 4 ust. 4 (block and its end, by e-mail). */
+  blockedMail: (message: {
+    userId: string;
+    email: string;
+    state: "blocked" | "unblocked";
+    until?: string;
+    issuedAt: string;
+  }) => Promise<void>;
   inviteMail: (message: {
     email: string;
     token: string;

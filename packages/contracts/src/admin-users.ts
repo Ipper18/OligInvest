@@ -92,6 +92,20 @@ export const emailChangedMailSchema = z
   })
   .strict();
 
+/**
+ * `notify` job `auth.account-blocked`: regulamin § 4 ust. 4 — the user learns of a block (and of its
+ * end) by e-mail. A direct message, because notification dispatch skips banned recipients.
+ */
+export const accountBlockedMailSchema = z
+  .object({
+    email: z.email(),
+    state: z.enum(["blocked", "unblocked"]),
+    until: z.iso.datetime().optional(),
+    issuedAt: z.iso.datetime(),
+    locale: z.enum(["pl-PL", "en-US"]).optional(),
+  })
+  .strict();
+
 export type AdminUser = z.infer<typeof adminUserSchema>;
 export type AdminUserPatch = z.infer<typeof adminUserPatchSchema>;
 export type AdminInvitation = z.infer<typeof adminInvitationSchema>;

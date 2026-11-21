@@ -354,6 +354,19 @@ export function mountAdminUsers(api: OpenAPIHono<AppEnv>, dependencies: Identity
           .catch(() => admin.service.options.event("auth.email_changed_mail_failed"));
       }
     }
+    // Regulamin § 4 ust. 4: the account holder is told about a block (and its end) by e-mail.
+    if (result.changes.ban || result.changes.unban)
+      await admin.effects
+        .blockedMail({
+          userId: result.user.id,
+          email: result.user.email,
+          state: result.changes.ban ? "blocked" : "unblocked",
+          ...(result.changes.ban && result.user.banExpires
+            ? { until: result.user.banExpires }
+            : {}),
+          issuedAt: new Date().toISOString(),
+        })
+        .catch(() => admin.service.options.event("auth.account_blocked_mail_failed"));
     if (result.revoked) await sessionsChanged(admin);
     return context.json(userSchema.parse(result.user), 200);
   });

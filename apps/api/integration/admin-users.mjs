@@ -32,6 +32,7 @@ export async function testAdminUsers({
   cookies,
   userId,
   emailChanges,
+  blockMails,
   resets,
 }) {
   const service = administration.service;
@@ -419,6 +420,7 @@ export async function testAdminUsers({
 
     // ── Block and unblock.
     await reissue();
+    const blockMailsBefore = blockMails.length;
     const banned = await expect(
       await call("PATCH", `/admin/users/${ids.alice}`, {
         banned: true,
@@ -444,6 +446,16 @@ export async function testAdminUsers({
     assert.equal(unbanned.data.banned, false);
     assert.equal(unbanned.data.banReason, undefined);
     assert.equal(unbanned.data.activeSessions, 1, "Lifting a block keeps sessions");
+    // Regulamin § 4 ust. 4: the holder learns of the block and its end; the reason stays internal.
+    const sentBlockMails = blockMails.slice(blockMailsBefore);
+    assert.deepEqual(
+      sentBlockMails.map(({ userId, state, until }) => ({ userId, state, until })),
+      [
+        { userId: ids.alice, state: "blocked", until: banned.data.banExpires },
+        { userId: ids.alice, state: "unblocked", until: undefined },
+      ],
+    );
+    assert.ok(sentBlockMails.every((mail) => !JSON.stringify(mail).includes("Synthetic block")));
 
     // ── 2FA reset.
     await expect(

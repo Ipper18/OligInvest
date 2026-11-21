@@ -74,10 +74,12 @@ export async function testAuthFacade(settings) {
   const invitations = [];
   const resets = [];
   const emailChanges = [];
+  const blockMails = [];
   const queueActions = [];
   const administration = new Administration(service, {
     resetMail: async (message) => resets.push(message),
     emailChangedMail: async (message) => emailChanges.push(message),
+    blockedMail: async (message) => blockMails.push(message),
     inviteMail: async (message) => invitations.push(message),
     flagsChanged: async () => service.features.invalidate(),
     queues: async (...args) => queueActions.push(args),
@@ -336,6 +338,7 @@ export async function testAuthFacade(settings) {
       cookies,
       userId,
       emailChanges,
+      blockMails,
       resets,
     });
     console.log(

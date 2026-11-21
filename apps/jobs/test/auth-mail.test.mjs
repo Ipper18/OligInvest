@@ -2,6 +2,7 @@ import { once } from "node:events";
 import { createServer } from "node:net";
 import { expect, test } from "vitest";
 import {
+  accountBlockedMail,
   createAuthMailer,
   emailChangedMail,
   invitationMail,
@@ -183,5 +184,23 @@ test("admin e-mail change notifies both addresses with only a masked other addre
       config,
       Date.parse(base.issuedAt) + 86400001,
     ),
+  ).toThrow();
+});
+
+test("block and its end reach the account by e-mail, in its language (regulamin § 4 ust. 4)", () => {
+  const base = { email: "user@example.test", issuedAt: message.issuedAt };
+  const until = new Date(Date.now() + 86400000).toISOString();
+  const blocked = accountBlockedMail({ ...base, state: "blocked", until }, config);
+  expect(blocked.to.address).toBe(base.email);
+  expect(blocked.subject).toBe("OligInvest — konto zablokowane");
+  expect(blocked.text).toContain(until);
+  expect(blocked.text).toContain("https://example.test/regulamin");
+  const open = accountBlockedMail({ ...base, state: "blocked" }, config);
+  expect(open.text).toContain("do odwołania blokady");
+  const lifted = accountBlockedMail({ ...base, state: "unblocked", locale: "en-US" }, config);
+  expect(lifted.subject).toBe("OligInvest — account block lifted");
+  expect(() => accountBlockedMail({ ...base, state: "blocked", reason: "x" }, config)).toThrow();
+  expect(() =>
+    accountBlockedMail({ ...base, state: "blocked" }, config, Date.parse(base.issuedAt) + 86400001),
   ).toThrow();
 });
