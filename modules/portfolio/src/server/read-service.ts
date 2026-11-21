@@ -47,7 +47,7 @@ export type ReadQuery = {
   status?: "open" | "closed" | "all" | undefined;
 };
 export async function readPortfolio(
-  repo: PortfolioRepository,
+  repo: Pick<PortfolioRepository, "read" | "now">,
   context: DatabaseContext,
   operation: string,
   query: ReadQuery,

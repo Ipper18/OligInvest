@@ -437,7 +437,7 @@ export const portfolioTargetAllocations = portfolioSchema.table(
     name: text("name").notNull(),
     accountId: uuid("account_id"),
     targets: jsonb("targets").notNull(),
-    tolerancePp: numeric("tolerance_pp", { precision: 6, scale: 3 }).notNull().default(sql`5`),
+    tolerancePp: numeric("tolerance_pp", { precision: 11, scale: 8 }).notNull().default(sql`5`),
     createdAt: timestamp("created_at", { withTimezone: true, mode: "string" })
       .notNull()
       .default(sql`now()`),

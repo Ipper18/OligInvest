@@ -11,7 +11,10 @@ export function ruleDto(row: Record<string, unknown>) {
   return ruleSchema.parse({
     id: row.id,
     type: row.type,
-    instrumentId: row.instrument_id,
+    ...(row.instrument_id ? { instrumentId: row.instrument_id } : {}),
+    ...(row.last_state && typeof row.last_state === "object" && "inactiveReason" in row.last_state
+      ? { inactiveReason: row.last_state.inactiveReason }
+      : {}),
     params: row.params,
     channels: row.channels,
     cooldownMinutes: row.cooldown_minutes,
@@ -23,6 +26,16 @@ export function ruleDto(row: Record<string, unknown>) {
   });
 }
 const live = sql`coalesce(last_state->>'deleted','false')<>'true'`;
+async function requireTarget(tx: DatabaseTransaction, id: string) {
+  if (
+    !(
+      await tx.execute(
+        sql`SELECT id FROM portfolio.target_allocations WHERE id=${id}::uuid FOR SHARE`,
+      )
+    ).rows.length
+  )
+    throw new ProblemError("NOT_FOUND");
+}
 export class AlertRepository {
   constructor(readonly database: AppDatabase) {}
   async get(context: DatabaseContext, id: string) {
@@ -59,7 +72,9 @@ export class AlertRepository {
           return { data: ruleSchema.parse(old.response_body), replayed: true };
         }
       }
+      if (value.type === "allocation_drift") await requireTarget(tx, value.params.targetId);
       if (
+        "instrumentId" in value &&
         !(
           await tx.execute(
             sql`SELECT id FROM market.instruments WHERE id=${value.instrumentId}::uuid AND is_active`,
@@ -69,7 +84,7 @@ export class AlertRepository {
         throw new ProblemError("NOT_FOUND");
       const row = (
         await tx.execute(
-          sql`INSERT INTO alerts.alert_rules(user_id,type,instrument_id,params,channels,cooldown_minutes,hysteresis_pct,enabled) VALUES(${context.userId}::uuid,${value.type},${value.instrumentId}::uuid,${JSON.stringify(value.params)}::jsonb,${sql.param(value.channels)}::text[],${value.cooldownMinutes},${toDecimal(String(value.hysteresis)).mul(100).toFixed()},${value.enabled}) RETURNING *`,
+          sql`INSERT INTO alerts.alert_rules(user_id,type,instrument_id,params,channels,cooldown_minutes,hysteresis_pct,enabled) VALUES(${context.userId}::uuid,${value.type},${"instrumentId" in value ? value.instrumentId : null}::uuid,${JSON.stringify(value.params)}::jsonb,${sql.param(value.channels)}::text[],${value.cooldownMinutes},${toDecimal(String(value.hysteresis)).mul(100).toFixed()},${value.enabled}) RETURNING *`,
         )
       ).rows[0]!;
       const data = ruleDto(row);
@@ -87,13 +102,17 @@ export class AlertRepository {
         current = ruleDto(old),
         value = priceRuleInput.parse({
           type: current.type,
-          instrumentId: current.instrumentId,
+          ...(current.instrumentId ? { instrumentId: current.instrumentId } : {}),
           params: patch.params ?? current.params,
           channels: patch.channels ?? current.channels,
           cooldownMinutes: patch.cooldownMinutes ?? current.cooldownMinutes,
           hysteresis: patch.hysteresis ?? current.hysteresis,
           enabled: patch.enabled ?? current.enabled,
         });
+      if (value.type === "allocation_drift" && value.enabled) {
+        if (current.inactiveReason && !patch.params) throw new ProblemError("VALIDATION_FAILED");
+        await requireTarget(tx, value.params.targetId);
+      }
       const row = (
         await tx.execute(
           sql`UPDATE alerts.alert_rules SET params=${JSON.stringify(value.params)}::jsonb,channels=${sql.param(value.channels)}::text[],cooldown_minutes=${value.cooldownMinutes},hysteresis_pct=${toDecimal(String(value.hysteresis)).mul(100).toFixed()},enabled=${value.enabled},last_state=${patch.params ? null : old.last_state === null ? null : JSON.stringify(old.last_state)}::jsonb,updated_at=now() WHERE id=${id}::uuid RETURNING *`,

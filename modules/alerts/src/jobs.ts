@@ -1,6 +1,6 @@
-import { evaluatePriceAlert, toDecimal } from "@oliginvest/core";
-import type { AppDatabase } from "@oliginvest/db";
-import { alertMessages as defaultAlertMessages } from "@oliginvest/i18n";
+import { evaluatePortfolioAlert, evaluatePriceAlert, toDecimal } from "@oliginvest/core";
+import type { AppDatabase, DatabaseTransaction } from "@oliginvest/db";
+import { alertMessages as defaultAlertMessages, formatMessage } from "@oliginvest/i18n";
 import { sql } from "drizzle-orm";
 import { z } from "zod";
 import { alertJob, priceRuleInput, stateSchema } from "./contracts.js";
@@ -12,6 +12,13 @@ export async function evaluateAlerts(
   input: unknown,
   origin: string,
   now = new Date(),
+  readObservation?: (
+    tx: DatabaseTransaction,
+    userId: string,
+    type: "portfolio_change" | "drawdown" | "allocation_drift",
+    targetId: string | undefined,
+    now: Date,
+  ) => Promise<{ value: string; asOf: string } | null>,
 ) {
   const job = alertJob.parse(input),
     context = { userId: job.userId, role: "user" as const };
@@ -25,6 +32,80 @@ export async function evaluateAlerts(
       locale === "en-US"
         ? (await import("@oliginvest/i18n/en")).copies.alertMessages
         : defaultAlertMessages;
+    if (job.mode === "valuation") {
+      if (!readObservation) throw new Error("MISSING_VALUATION_READER");
+      const rules = (
+        await tx.execute(
+          sql`SELECT * FROM alerts.alert_rules WHERE enabled AND type IN ('portfolio_change','drawdown','allocation_drift') ORDER BY id FOR UPDATE`,
+        )
+      ).rows;
+      for (const row of rules) {
+        const dto = ruleDto(row);
+        const rule = priceRuleInput.parse({
+          type: dto.type,
+          params: dto.params,
+          channels: dto.channels,
+          hysteresis: dto.hysteresis,
+          cooldownMinutes: dto.cooldownMinutes,
+          enabled: true,
+        });
+        if ("instrumentId" in rule) continue;
+        const observation = await readObservation(
+          tx,
+          job.userId,
+          rule.type,
+          rule.type === "allocation_drift" ? rule.params.targetId : undefined,
+          now,
+        );
+        if (!observation) continue;
+        const previous = row.last_state ? stateSchema.parse(row.last_state) : undefined;
+        const result = evaluatePortfolioAlert(
+          observation.value,
+          rule.params.threshold,
+          String(rule.hysteresis),
+          rule.cooldownMinutes,
+          observation.asOf,
+          previous,
+        );
+        if (!result.state || result.state === previous) continue;
+        if (
+          result.triggered &&
+          row.last_triggered_at &&
+          now.getTime() - z.coerce.date().parse(row.last_triggered_at).getTime() <
+            rule.cooldownMinutes * 60000
+        )
+          continue;
+        await tx.execute(
+          sql`UPDATE alerts.alert_rules SET last_state=${JSON.stringify(result.state)}::jsonb WHERE id=${dto.id}::uuid`,
+        );
+        if (!result.triggered) continue;
+        const show = (s: string) =>
+          toDecimal(s)
+            .mul(100)
+            .toFixed()
+            .replace(".", locale === "pl-PL" ? "," : ".");
+        const message =
+          formatMessage(alertMessages[rule.type], {
+            value: show(observation.value),
+            threshold: show(rule.params.threshold),
+          }) +
+          " " +
+          formatMessage(alertMessages.metadata, {
+            triggeredAt: now.toISOString(),
+            dataAsOf: observation.asOf,
+            delayMinutes: "0",
+            source: alertMessages.computedSource,
+            url: new URL("/alerty/" + dto.id, origin).href,
+          });
+        await tx.execute(
+          sql`INSERT INTO alerts.alert_events(user_id,rule_id,triggered_at,value,threshold,data_as_of,data_source,payload) VALUES(${job.userId}::uuid,${dto.id}::uuid,${now.toISOString()}::timestamptz,${observation.value},${rule.params.threshold},${observation.asOf}::timestamptz,'computed',${JSON.stringify({ message, subject: alertMessages.portfolioSubject, channels: rule.channels, enqueued: false })}::jsonb)`,
+        );
+        await tx.execute(
+          sql`UPDATE alerts.alert_rules SET last_triggered_at=${now.toISOString()}::timestamptz WHERE id=${dto.id}::uuid`,
+        );
+      }
+      return;
+    }
     const rules = (
       await tx.execute(
         sql`SELECT * FROM alerts.alert_rules WHERE enabled AND type IN ('price_above','price_below','change_pct') ORDER BY id FOR UPDATE`,
@@ -41,6 +122,7 @@ export async function evaluateAlerts(
           hysteresis: dto.hysteresis,
           enabled: dto.enabled,
         });
+      if (!("instrumentId" in rule)) continue;
       if (rule.type !== "change_pct" && rule.params.basis === "close" && job.mode !== "eod")
         continue;
       const market = (
@@ -174,7 +256,9 @@ export async function flushAlertEvents(
       subject: payload.subject ?? defaultAlertMessages.subject,
       text: payload.message,
       occurredAt: at,
-      url: row.instrument_id ? `/rynek/${z.uuid().parse(row.instrument_id)}` : "/",
+      url: row.instrument_id
+        ? `/rynek/${z.uuid().parse(row.instrument_id)}`
+        : `/alerty/${z.uuid().parse(row.rule_id)}`,
     });
     await publish({
       event: "alerts.alert.triggered",

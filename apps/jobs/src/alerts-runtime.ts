@@ -5,7 +5,7 @@ import { type Queue, Worker } from "bullmq";
 import { sql } from "drizzle-orm";
 import type { Redis } from "ioredis";
 import { z } from "zod";
-import { alertsJobs } from "./modules.js";
+import { alertsJobs, readAlertObservation } from "./modules.js";
 import type { readRuntime } from "./runtime.js";
 export async function startAlertsWorker(options: {
   database: AppDatabase;
@@ -64,7 +64,7 @@ export async function startAlertsWorker(options: {
         return;
       }
       const input = z
-        .object({ v: z.literal(1), userId: z.uuid(), mode: z.enum(["quote", "eod"]) })
+        .object({ v: z.literal(1), userId: z.uuid(), mode: z.enum(["quote", "eod", "valuation"]) })
         .strict()
         .parse(job.data);
       const user = (await users()).find((u) => u.id === input.userId);
@@ -73,7 +73,13 @@ export async function startAlertsWorker(options: {
         !(await enabled(input.userId, z.enum(["user", "pro", "admin"]).parse(user.role)))
       )
         return;
-      await evaluateAlerts(options.database, input, options.origin);
+      await evaluateAlerts(
+        options.database,
+        input,
+        options.origin,
+        new Date(),
+        readAlertObservation,
+      );
       await flushAlertEvents(
         options.database,
         input.userId,

@@ -58,3 +58,4 @@ export * from "./analytics-metadata.js";
 export * from "./analytics-view.js";
 export * from "./performance.js";
 export * from "./preferences.js";
+export * from "./target-allocations.js";
