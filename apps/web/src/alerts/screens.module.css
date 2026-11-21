@@ -1,0 +1,32 @@
+.screen {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.screen nav,
+.screen form {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  align-items: end;
+}
+.screen label {
+  display: grid;
+  gap: 0.375rem;
+  max-width: 100%;
+}
+.screen input,
+.screen select,
+.screen button {
+  min-height: 44px;
+  max-width: 100%;
+}
+.screen fieldset label {
+  display: inline-flex;
+  align-items: center;
+  margin-inline-end: 1rem;
+}
+.screen li {
+  margin-block: 0.5rem;
+}

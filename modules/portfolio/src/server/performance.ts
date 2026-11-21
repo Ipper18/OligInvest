@@ -141,7 +141,7 @@ export function performanceFromRows(
 }
 
 export async function readValuationSeries<T>(
-  repository: PortfolioRepository,
+  repository: Pick<PortfolioRepository, "read" | "now">,
   context: DatabaseContext,
   query: PerformanceQuery,
   project: (

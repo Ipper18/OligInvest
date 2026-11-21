@@ -34,7 +34,7 @@ test("MFA and legal gates are ordered before private content", () => {
 });
 test("navigation lists only sections that have screens", () => {
   const hrefs = uiModules.flatMap((module) => (module.nav ?? []).map((item) => item.href));
-  expect(hrefs).not.toContain("/alerty");
+  expect(hrefs.includes("/alerty")).toBe(uiModules.some((module) => module.id === "alerts"));
   expect(hrefs).toContain("/analizy");
   for (const href of hrefs)
     expect(existsSync(new URL(`../src/app/(app)${href}/page.tsx`, import.meta.url)), href).toBe(

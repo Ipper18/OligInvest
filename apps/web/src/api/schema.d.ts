@@ -1879,7 +1879,7 @@ export interface paths {
         /** Reguły alertów */
         get: operations["listAlertRules"];
         put?: never;
-        /** Utwórz alert cenowy (próg lub zmiana dzienna) */
+        /** Utwórz regułę alertu cenowego lub portfelowego */
         post: operations["createAlertRule"];
         delete?: never;
         options?: never;
@@ -4460,21 +4460,27 @@ export interface components {
                 [key: string]: number;
             };
         };
-        TargetWeight: {
+        RebalanceTargetWeight: {
             instrumentId?: components["schemas"]["Uuid"];
             assetClass?: string;
             weight: number;
         } & (unknown | unknown);
+        TargetWeight: {
+            instrumentId?: components["schemas"]["Uuid"];
+            assetClass?: string;
+            /** @description Ułamek od 0 do 1. */
+            weight: components["schemas"]["DecimalString"];
+        } & (unknown | unknown);
         TargetAllocationInput: {
             name: string;
             accountId?: components["schemas"]["Uuid"];
-            /** @description Suma wag = 1 (± 1e-9). */
+            /** @description Suma wag = dokładnie 1. */
             targets: components["schemas"]["TargetWeight"][];
             /**
              * @description Pasmo tolerancji jako ułamek (0.05 = ±5 p.p.).
              * @default 0.05
              */
-            tolerance: number;
+            tolerance: components["schemas"]["DecimalString"];
         };
         TargetAllocation: components["schemas"]["TargetAllocationInput"] & {
             id: components["schemas"]["Uuid"];
@@ -4742,7 +4748,7 @@ export interface components {
         RebalanceParams: {
             accountId: components["schemas"]["Uuid"];
             targetId?: components["schemas"]["Uuid"];
-            targets?: components["schemas"]["TargetWeight"][];
+            targets?: components["schemas"]["RebalanceTargetWeight"][];
             /** @default 0.05 */
             tolerance: number;
             /** @enum {string} */
@@ -5289,6 +5295,75 @@ export interface components {
             };
         } & {
             [key: string]: unknown;
+        }) | ({
+            /**
+             * @default [
+             *       "push",
+             *       "email"
+             *     ]
+             */
+            channels: ("push" | "email")[];
+            /** @default 1440 */
+            cooldownMinutes: number;
+            /** @default 0.005 */
+            hysteresis: number;
+            /** @default true */
+            enabled: boolean;
+            /** @enum {string} */
+            type: "portfolio_change";
+            params: {
+                threshold: string;
+            } & {
+                [key: string]: unknown;
+            };
+        } & {
+            [key: string]: unknown;
+        }) | ({
+            /**
+             * @default [
+             *       "push",
+             *       "email"
+             *     ]
+             */
+            channels: ("push" | "email")[];
+            /** @default 1440 */
+            cooldownMinutes: number;
+            /** @default 0.005 */
+            hysteresis: number;
+            /** @default true */
+            enabled: boolean;
+            /** @enum {string} */
+            type: "drawdown";
+            params: {
+                threshold: string;
+            } & {
+                [key: string]: unknown;
+            };
+        } & {
+            [key: string]: unknown;
+        }) | ({
+            /**
+             * @default [
+             *       "push",
+             *       "email"
+             *     ]
+             */
+            channels: ("push" | "email")[];
+            /** @default 1440 */
+            cooldownMinutes: number;
+            /** @default 0.005 */
+            hysteresis: number;
+            /** @default true */
+            enabled: boolean;
+            /** @enum {string} */
+            type: "allocation_drift";
+            params: {
+                threshold: string;
+                /** Format: uuid */
+                targetId: string;
+            };
+        } & {
+            [key: string]: unknown;
         });
         PriceAlertRulePatch: {
             channels?: ("push" | "email")[];
@@ -5305,10 +5380,20 @@ export interface components {
             /** Format: uuid */
             id: string;
             /** @enum {string} */
-            type: "price_above" | "price_below" | "change_pct";
+            type: "price_above" | "price_below" | "change_pct" | "portfolio_change" | "drawdown" | "allocation_drift";
             /** Format: uuid */
-            instrumentId: string;
-            params: ({
+            instrumentId?: string;
+            /** @enum {string} */
+            inactiveReason?: "target_deleted" | "target_changed";
+            params: {
+                threshold: string;
+                /** Format: uuid */
+                targetId: string;
+            } | ({
+                threshold: string;
+            } & {
+                [key: string]: unknown;
+            }) | ({
                 threshold: string;
                 /**
                  * @default last
@@ -5352,7 +5437,7 @@ export interface components {
             /** Format: uuid */
             ruleId: string;
             /** @enum {string} */
-            ruleType: "price_above" | "price_below" | "change_pct";
+            ruleType: "price_above" | "price_below" | "change_pct" | "portfolio_change" | "drawdown" | "allocation_drift";
             /** Format: date-time */
             triggeredAt: string;
             value: string;
@@ -5362,6 +5447,7 @@ export interface components {
             dataAsOf: string;
             /** @enum {string} */
             dataSource: "gpw" | "gpw_manual" | "yahoo" | "stooq_manual" | "nbp" | "ecb" | "finnhub" | "twelvedata" | "alphavantage" | "fred" | "gdelt" | "marketaux" | "broker_import" | "computed" | "demo" | "mixed";
+            delayMinutes?: number;
             instrument?: components["schemas"]["InstrumentSummary"];
             deliveries: ({
                 /** @enum {string} */

@@ -402,6 +402,49 @@ export async function testM4Backend(settings) {
         assertOrigin: async () => {},
       },
     });
+    const targetRequest = (path, method, body) =>
+      app.request("/api/v1/portfolio/targets" + path, {
+        method,
+        headers: { "content-type": "application/json", "Idempotency-Key": randomUUID() },
+        ...(body ? { body: JSON.stringify(body) } : {}),
+      });
+    const targetInput = {
+      name: "Synthetic allocation",
+      targets: [{ assetClass: "cash", weight: "1" }],
+      tolerance: "0.0123456789",
+    };
+    for (const weight of [1, "0.9999999999", "1.0000000001"]) {
+      assert.equal(
+        (
+          await targetRequest("", "POST", {
+            ...targetInput,
+            targets: [{ assetClass: "cash", weight }],
+          })
+        ).status,
+        422,
+      );
+    }
+    const targetResponse = await targetRequest("", "POST", targetInput);
+    assert.equal(targetResponse.status, 201);
+    const target = await targetResponse.json();
+    assert.equal(target.tolerance, targetInput.tolerance);
+    assert.equal((await (await targetRequest("", "GET")).json()).data[0].id, target.id);
+    const drift = { type: "allocation_drift", params: { targetId: target.id, threshold: "0.05" } };
+    await denied(() => alerts.create(other, drift), "NOT_FOUND");
+    const firstDrift = (await alerts.create(context, drift)).data;
+    assert.equal(
+      (await targetRequest("/" + target.id, "PUT", { ...targetInput, name: "Updated allocation" }))
+        .status,
+      200,
+    );
+    assert.equal((await alerts.get(context, firstDrift.id)).inactiveReason, "target_changed");
+    assert.equal((await alerts.get(context, firstDrift.id)).enabled, false);
+    const secondDrift = (await alerts.create(context, drift)).data;
+    assert.equal((await targetRequest("/" + target.id, "DELETE")).status, 204);
+    assert.equal((await alerts.get(context, secondDrift.id)).inactiveReason, "target_deleted");
+    assert.equal((await alerts.get(context, secondDrift.id)).enabled, false);
+    await alerts.remove(context, firstDrift.id);
+    await alerts.remove(context, secondDrift.id);
     const quick = (path, body, key = randomUUID(), secret = token.token) =>
       app.request("/api/v1/quick/" + path, {
         method: body ? "POST" : "GET",
