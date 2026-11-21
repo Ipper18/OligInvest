@@ -7141,6 +7141,26 @@ components:
                 threshold:
                   type: string
                   pattern: ^-?\d{1,12}(\.\d{1,8})?$
+                targetId:
+                  type: string
+                  format: uuid
+              required:
+                - threshold
+                - targetId
+              additionalProperties: false
+            - type: object
+              properties:
+                threshold:
+                  type: string
+                  pattern: ^-?\d{1,12}(\.\d{1,8})?$
+              required:
+                - threshold
+              additionalProperties: true
+            - type: object
+              properties:
+                threshold:
+                  type: string
+                  pattern: ^-?\d{1,12}(\.\d{1,8})?$
                 basis:
                   type: string
                   enum:
@@ -7163,26 +7183,6 @@ components:
                     - down
                     - both
                   default: both
-              required:
-                - threshold
-              additionalProperties: true
-            - type: object
-              properties:
-                threshold:
-                  type: string
-                  pattern: ^-?\d{1,12}(\.\d{1,8})?$
-                targetId:
-                  type: string
-                  format: uuid
-              required:
-                - threshold
-                - targetId
-              additionalProperties: false
-            - type: object
-              properties:
-                threshold:
-                  type: string
-                  pattern: ^-?\d{1,12}(\.\d{1,8})?$
               required:
                 - threshold
               additionalProperties: true
@@ -7289,6 +7289,9 @@ components:
             - computed
             - demo
             - mixed
+        delayMinutes:
+          type: integer
+          minimum: 0
         instrument:
           $ref: "#/components/schemas/InstrumentSummary"
         deliveries:

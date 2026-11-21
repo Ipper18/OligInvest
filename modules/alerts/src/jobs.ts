@@ -64,7 +64,7 @@ export async function evaluateAlerts(
           rule.params.threshold,
           String(rule.hysteresis),
           rule.cooldownMinutes,
-          observation.asOf,
+          job.valuationAsOf ?? observation.asOf,
           previous,
         );
         if (!result.state || result.state === previous) continue;
@@ -93,12 +93,14 @@ export async function evaluateAlerts(
           formatMessage(alertMessages.metadata, {
             triggeredAt: now.toISOString(),
             dataAsOf: observation.asOf,
-            delayMinutes: "0",
+            delayMinutes: String(
+              Math.max(0, Math.floor((now.getTime() - Date.parse(observation.asOf)) / 60000)),
+            ),
             source: alertMessages.computedSource,
             url: new URL("/alerty/" + dto.id, origin).href,
           });
         await tx.execute(
-          sql`INSERT INTO alerts.alert_events(user_id,rule_id,triggered_at,value,threshold,data_as_of,data_source,payload) VALUES(${job.userId}::uuid,${dto.id}::uuid,${now.toISOString()}::timestamptz,${observation.value},${rule.params.threshold},${observation.asOf}::timestamptz,'computed',${JSON.stringify({ message, subject: alertMessages.portfolioSubject, channels: rule.channels, enqueued: false })}::jsonb)`,
+          sql`INSERT INTO alerts.alert_events(user_id,rule_id,triggered_at,value,threshold,data_as_of,data_source,payload) VALUES(${job.userId}::uuid,${dto.id}::uuid,${now.toISOString()}::timestamptz,${observation.value},${rule.params.threshold},${observation.asOf}::timestamptz,'computed',${JSON.stringify({ message, subject: alertMessages.portfolioSubject, delayMinutes: Math.max(0, Math.floor((now.getTime() - Date.parse(observation.asOf)) / 60000)), channels: rule.channels, enqueued: false })}::jsonb)`,
         );
         await tx.execute(
           sql`UPDATE alerts.alert_rules SET last_triggered_at=${now.toISOString()}::timestamptz WHERE id=${dto.id}::uuid`,
@@ -209,7 +211,7 @@ export async function evaluateAlerts(
       );
       const event = (
         await tx.execute(
-          sql`INSERT INTO alerts.alert_events(user_id,rule_id,triggered_at,value,threshold,data_as_of,data_source,payload)VALUES(${job.userId}::uuid,${dto.id}::uuid,${triggeredAt}::timestamptz,${result.value},${threshold},${asOf}::timestamptz,${observation.source},${JSON.stringify({ message, subject: alertMessages.subject, channels: rule.channels, enqueued: false })}::jsonb)RETURNING id::text`,
+          sql`INSERT INTO alerts.alert_events(user_id,rule_id,triggered_at,value,threshold,data_as_of,data_source,payload)VALUES(${job.userId}::uuid,${dto.id}::uuid,${triggeredAt}::timestamptz,${result.value},${threshold},${asOf}::timestamptz,${observation.source},${JSON.stringify({ message, subject: alertMessages.subject, delayMinutes: delay, channels: rule.channels, enqueued: false })}::jsonb)RETURNING id::text`,
         )
       ).rows[0]!;
       await tx.execute(
@@ -243,6 +245,7 @@ export async function flushAlertEvents(
           subject: z.string().optional(),
           channels: z.array(z.enum(["push", "email"])),
           enqueued: z.boolean(),
+          delayMinutes: z.number().int().min(0).optional(),
         })
         .strict()
         .parse(row.payload),

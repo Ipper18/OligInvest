@@ -73,7 +73,7 @@ export const ruleSchema = object({
   type: z.enum(types),
   instrumentId: z.uuid().optional(),
   inactiveReason: z.enum(["target_deleted", "target_changed"]).optional(),
-  params: z.union([priceParams, changeParams, driftParams, portfolioParams]),
+  params: z.union([driftParams, portfolioParams, priceParams, changeParams]),
   channels,
   cooldownMinutes: z.number().int().min(5).max(10080),
   hysteresis: z.number().min(0).max(0.1),
@@ -117,6 +117,7 @@ export const eventSchema = object({
   message: z.string(),
   dataAsOf: z.iso.datetime(),
   dataSource: sources,
+  delayMinutes: z.number().int().min(0).optional(),
   instrument: summarySchema.optional(),
   deliveries: z.array(
     object({
@@ -130,7 +131,12 @@ export const eventPage = object({ data: z.array(eventSchema), page: pageInfo }).
   "PriceAlertEventPage",
 );
 export const alertJob = z
-  .object({ v: z.literal(1), userId: z.uuid(), mode: z.enum(["quote", "eod", "valuation"]) })
+  .object({
+    v: z.literal(1),
+    userId: z.uuid(),
+    mode: z.enum(["quote", "eod", "valuation"]),
+    valuationAsOf: z.iso.datetime().optional(),
+  })
   .strict();
 export const stateSchema = z
   .object({

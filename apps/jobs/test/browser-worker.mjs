@@ -33,7 +33,12 @@ const alerts = await startAlertsWorker({
   origin: runtime.config.PUBLIC_BASE_URL,
 });
 const mailer = createAuthMailer(runtime.config, runtime.mode, runtime.mail.port, (security) =>
-  reserveMail((key) => flags.cache.incr(key), security),
+  reserveMail(async (key) => {
+    const client = await queues[0].getBackend().client;
+    const n = Number(await client.runCommand("incr", [key]));
+    await client.runCommand("expire", [key, "172800"]);
+    return n;
+  }, security),
 );
 const { commandTimeout: _deadline, ...blocking } = runtime.connection;
 const notify = new Worker(

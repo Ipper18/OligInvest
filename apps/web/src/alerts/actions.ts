@@ -1,9 +1,14 @@
 "use server";
+import { loadConfig } from "@oliginvest/config";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import type { components } from "../api/schema";
 import { alertsContext, ruleTypes } from "./data";
 
+function mutationHeaders() {
+  const mode = z.enum(["development", "test", "production"]).parse(process.env.NODE_ENV);
+  return { origin: new URL(loadConfig("web", process.env, { mode }).PUBLIC_BASE_URL).origin };
+}
 export async function saveAlert(form: FormData) {
   const { api } = await alertsContext();
   const type = ruleTypes.parse(form.get("type"));
@@ -40,6 +45,7 @@ export async function saveAlert(form: FormData) {
   else body = { ...common, type, params: { threshold } };
   const result = await api.POST("/alerts/rules", {
     body,
+    headers: mutationHeaders(),
     params: { header: { "Idempotency-Key": z.uuid().parse(form.get("key")) } },
   });
   redirect(result.response.ok ? "/alerty" : "/alerty/nowy?error=invalid");
@@ -52,9 +58,10 @@ export async function changeAlert(form: FormData) {
   const action = z.enum(["disable", "enable", "remove"]).parse(form.get("action"));
   const result =
     action === "remove"
-      ? await api.DELETE("/alerts/rules/{ruleId}", { params })
+      ? await api.DELETE("/alerts/rules/{ruleId}", { params, headers: mutationHeaders() })
       : await api.PATCH("/alerts/rules/{ruleId}", {
           params,
+          headers: mutationHeaders(),
           body: { enabled: action === "enable" },
         });
   redirect(result.response.ok ? "/alerty" : `/alerty/${ruleId}?error=invalid`);

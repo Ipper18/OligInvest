@@ -131,7 +131,9 @@ test("real invitation → TOTP → XTB worker → reconciled portfolio", async (
   });
   await page.setViewportSize({ width: 360, height: 800 });
   await page.goto("/alerty/nowy");
-  await page.getByLabel("Warunek", { exact: true }).selectOption("allocation_drift");
+  await page
+    .getByRole("combobox", { name: "Warunek", exact: true })
+    .selectOption("allocation_drift");
   await page.getByRole("button", { name: "Dalej" }).press("Enter");
   await page.getByLabel("Próg", { exact: false }).fill("0.10");
   await page.getByRole("button", { name: "Podgląd powiadomienia" }).press("Enter");

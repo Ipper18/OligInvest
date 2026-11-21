@@ -1,4 +1,5 @@
 import "server-only";
+import { createFormatters, alertMessages as plMessages } from "@oliginvest/i18n";
 import { alertScreens } from "@oliginvest/i18n/alert-screens";
 import { getLocalization } from "@oliginvest/ui/localization-server";
 import { notFound } from "next/navigation";
@@ -18,8 +19,14 @@ export async function alertsContext() {
   const me = await requireMe();
   if (!uiModules.some((module) => module.id === "alerts") || me.features["module.alerts"] === false)
     notFound();
-  const { locale } = await getLocalization();
-  return { api: await getApiClient(), m: alertScreens[locale] };
+  const localization = await getLocalization();
+  const locale = localization.locale;
+  return {
+    api: await getApiClient(),
+    m: alertScreens[locale],
+    format: createFormatters(localization),
+    messages: (localization.copies.alertMessages as typeof plMessages | undefined) ?? plMessages,
+  };
 }
 export function checked<T>(result: { response: Response; data?: T }): T {
   if (result.response.status === 404) notFound();

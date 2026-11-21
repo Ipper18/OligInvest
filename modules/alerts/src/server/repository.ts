@@ -177,6 +177,7 @@ export class AlertRepository {
             subject: z.string().optional(),
             channels: z.array(z.enum(["push", "email"])),
             enqueued: z.boolean(),
+            delayMinutes: z.number().int().min(0).optional(),
           })
           .strict()
           .parse(row.payload);
@@ -199,6 +200,7 @@ export class AlertRepository {
           message: payload.message,
           dataAsOf: instant(row.data_as_of),
           dataSource: row.data_source,
+          ...(payload.delayMinutes !== undefined ? { delayMinutes: payload.delayMinutes } : {}),
           deliveries,
         });
       }

@@ -1,4 +1,5 @@
 import { persistentEventSchema } from "@oliginvest/contracts";
+import { realtimeSchemas } from "@oliginvest/contracts/realtime";
 import type { AppDatabase } from "@oliginvest/db";
 import type { Metrics, PlatformLogger } from "@oliginvest/platform";
 import { type Queue, Worker } from "bullmq";
@@ -51,7 +52,13 @@ export async function startPortfolioWorker(options: {
         .find((q) => q.name === "alerts")!
         .add(
           "alerts.evaluate",
-          { v: 1, userId, mode: "valuation" },
+          {
+            v: 1,
+            userId,
+            mode: "valuation",
+            valuationAsOf: realtimeSchemas["portfolio.valuation.updated"].parse(event.data)
+              .valuationAsOf,
+          },
           { removeOnComplete: true, removeOnFail: { age: 86400 } },
         );
     }

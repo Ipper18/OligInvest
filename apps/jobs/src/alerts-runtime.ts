@@ -64,7 +64,12 @@ export async function startAlertsWorker(options: {
         return;
       }
       const input = z
-        .object({ v: z.literal(1), userId: z.uuid(), mode: z.enum(["quote", "eod", "valuation"]) })
+        .object({
+          v: z.literal(1),
+          userId: z.uuid(),
+          mode: z.enum(["quote", "eod", "valuation"]),
+          valuationAsOf: z.iso.datetime().optional(),
+        })
         .strict()
         .parse(job.data);
       const user = (await users()).find((u) => u.id === input.userId);

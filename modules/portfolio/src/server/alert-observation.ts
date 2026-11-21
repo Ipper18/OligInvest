@@ -77,5 +77,10 @@ export async function readAlertObservation(
   const value = allocationDrift(String(valuation.total), weights, amounts);
   return value === null
     ? null
-    : { value, asOf: z.coerce.date().parse(valuation.as_of).toISOString() };
+    : {
+        value,
+        asOf: new Date(
+          Math.min(now.getTime(), z.coerce.date().parse(valuation.as_of).getTime()),
+        ).toISOString(),
+      };
 }

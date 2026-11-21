@@ -5385,7 +5385,15 @@ export interface components {
             instrumentId?: string;
             /** @enum {string} */
             inactiveReason?: "target_deleted" | "target_changed";
-            params: ({
+            params: {
+                threshold: string;
+                /** Format: uuid */
+                targetId: string;
+            } | ({
+                threshold: string;
+            } & {
+                [key: string]: unknown;
+            }) | ({
                 threshold: string;
                 /**
                  * @default last
@@ -5401,14 +5409,6 @@ export interface components {
                  * @enum {string}
                  */
                 direction: "up" | "down" | "both";
-            } & {
-                [key: string]: unknown;
-            }) | {
-                threshold: string;
-                /** Format: uuid */
-                targetId: string;
-            } | ({
-                threshold: string;
             } & {
                 [key: string]: unknown;
             });
@@ -5447,6 +5447,7 @@ export interface components {
             dataAsOf: string;
             /** @enum {string} */
             dataSource: "gpw" | "gpw_manual" | "yahoo" | "stooq_manual" | "nbp" | "ecb" | "finnhub" | "twelvedata" | "alphavantage" | "fred" | "gdelt" | "marketaux" | "broker_import" | "computed" | "demo" | "mixed";
+            delayMinutes?: number;
             instrument?: components["schemas"]["InstrumentSummary"];
             deliveries: ({
                 /** @enum {string} */

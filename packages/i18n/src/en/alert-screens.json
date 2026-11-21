@@ -1,4 +1,6 @@
 {
+  "observed": "[value at trigger time]",
+  "atTrigger": "[time the condition is met]",
   "fraction": "fraction, e.g. 0.05 = 5%",
   "title": "Alerts",
   "create": "New alert",

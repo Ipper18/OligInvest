@@ -1,5 +1,7 @@
 import { randomUUID } from "node:crypto";
+import { formatMessage } from "@oliginvest/i18n";
 import { AssumptionsBlock, DataFreshness, Disclaimer, Panel } from "@oliginvest/ui";
+import { useFormatters } from "@oliginvest/ui/localization-server";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { z } from "zod";
@@ -22,18 +24,30 @@ function Notes({ m }: { m: Copy }) {
   );
 }
 function Events({ data, m }: { data: Event[]; m: Copy }) {
+  const { formatDateTime } = useFormatters();
   return data.length ? (
     <ol>
       {data.map((e) => (
         <li key={e.id}>
           <p>{e.message}</p>
-          <time dateTime={e.triggeredAt}>{e.triggeredAt}</time>
+          <time dateTime={e.triggeredAt}>{formatDateTime(e.triggeredAt)}</time>
+          {e.delayMinutes !== undefined && (
+            <DataFreshness
+              kind="delayed"
+              meta={{
+                source: e.dataSource,
+                asOf: e.dataAsOf,
+                delayMinutes: e.delayMinutes,
+                stale: false,
+              }}
+            />
+          )}
           <p>{m.delivery}</p>
           {e.deliveries.length ? (
             <ul>
               {e.deliveries.map((d) => (
                 <li key={d.channel}>
-                  {m[d.channel]} · {m[d.status]} {d.sentAt}
+                  {m[d.channel]} · {m[d.status]} {d.sentAt && formatDateTime(d.sentAt)}
                 </li>
               ))}
             </ul>
@@ -173,7 +187,7 @@ export async function AlertDetail({
   );
 }
 export async function AlertWizard({ searchParams }: { searchParams: Search }) {
-  const { api, m } = await alertsContext();
+  const { api, m, format, messages } = await alertsContext();
   const search = await searchParams;
   const type = ruleTypes.catch("price_above").parse(search.type);
   const price = type === "price_above" || type === "price_below";
@@ -213,6 +227,34 @@ export async function AlertWizard({ searchParams }: { searchParams: Search }) {
     (type !== "change_pct" || Number(threshold.data) <= 1) &&
     channels.success;
   const unit = price ? instrument?.currency : m.fraction;
+  const summary = market
+    ? undefined
+    : checked(
+        await api.GET("/portfolio/summary", {
+          params: { query: target?.accountId ? { accountId: [target.accountId] } : {} },
+        }),
+      );
+  const meta = instrument?.quote?.meta ?? summary?.meta;
+  const template =
+    type === "price_above"
+      ? messages.priceAbove
+      : type === "price_below"
+        ? messages.priceBelow
+        : type === "change_pct"
+          ? messages.change
+          : messages[type];
+  const thresholdText = threshold.success
+    ? price
+      ? threshold.data + " " + instrument?.currency
+      : type === "change_pct"
+        ? format.formatPercent(threshold.data)
+        : format.formatPercent(threshold.data).replace(/%/u, "").trim()
+    : "";
+  const previewText = formatMessage(template, {
+    ticker: instrument?.ticker ?? "",
+    value: m.observed,
+    threshold: thresholdText,
+  });
   return (
     <section className={styles.screen}>
       <h1>{m.create}</h1>
@@ -261,8 +303,8 @@ export async function AlertWizard({ searchParams }: { searchParams: Search }) {
               {instrument.ticker} · {instrument.name} · {instrument.currency}
             </p>
           )}
-          {instrument?.quote ? (
-            <DataFreshness kind="delayed" meta={instrument.quote.meta} />
+          {meta ? (
+            <DataFreshness kind="delayed" meta={meta} />
           ) : (
             <p>{market ? m.missing : m.computed + " " + m.delay}</p>
           )}
@@ -310,9 +352,18 @@ export async function AlertWizard({ searchParams }: { searchParams: Search }) {
         <Panel>
           <h2>{m.preview}</h2>
           <p>
-            {m.example} · {instrument?.ticker ?? target?.name} {m[type]} · {m.threshold}{" "}
-            {threshold.data} ({unit})
+            {previewText}{" "}
+            {meta
+              ? formatMessage(messages.metadata, {
+                  triggeredAt: m.atTrigger,
+                  dataAsOf: format.formatDateTime(meta.asOf),
+                  delayMinutes: String(meta.delayMinutes),
+                  source: meta.source,
+                  url: "",
+                })
+              : m.missing}
           </p>
+          {instrument && <Link href={`/rynek/${instrument.id}`}>{instrument.ticker}</Link>}
           <p>{channels.data.map((c) => m[c]).join(" · ")}</p>
           <form action={saveAlert}>
             <input type="hidden" name="type" value={type} />
