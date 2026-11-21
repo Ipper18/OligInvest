@@ -5,7 +5,7 @@
   "method": "Decimal (prec 34, ROUND_HALF_EVEN; prezentacja 2 miejsca ROUND_HALF_UP) dla kwot; float64 dla statystyk; porownanie z empyrical-reloaded i TA-Lib 0.8.0",
   "tolerances": "patrz obliczenia-finansowe.md par. 0.5",
   "destination": "Jedno zrodlo: docs/03-dane/wektory-testowe.json; loadery: packages/test-vectors (Vitest) i apps/analytics (pytest), bez kopii",
-  "changes": "2026-09-24 F_day_change.day_change_pct 0.54% -> 0.53%: mianownik wyniku dnia V(D-1) + przeplywy dnia (280.45 / 52840.10), spojnie z TWR par. 6.2 - decyzja wlasciciela, przeglad C-13; D_risk.tied_*: remisy na progu 5 %, CVaR wg definicji empyrical (srednia int((n-1)*0.05)+1 najnizszych stop) - decyzja wlasciciela, przeglad C-23"
+  "changes": "2026-09-24 F_day_change.day_change_pct 0.54% -> 0.53%: mianownik wyniku dnia V(D-1) + przeplywy dnia (280.45 / 52840.10), spojnie z TWR par. 6.2 - decyzja wlasciciela, przeglad C-13; D_risk.tied_*: remisy na progu 5 %, CVaR wg definicji empyrical (srednia int((n-1)*0.05)+1 najnizszych stop) - decyzja wlasciciela, przeglad C-23; 2026-11-20 A_fifo_fx.instrument_currency_account: koszt w PLN na rachunku w walucie instrumentu (BL-306b, Z-29)"
  },
  "A_fifo_fx": {
   "lots": [
@@ -70,6 +70,87 @@
   "average_cost": {
    "avg_cost_per_share_pln": "891.234000",
    "realized_pl_pln": "-671.18"
+  },
+  "instrument_currency_account": {
+   "note": "BL-306b (Z-29): te same operacje na rachunku USD; koszt w PLN = koszt w USD x kurs NBP z ostatniego dnia roboczego przed dniem rozliczenia (par. 2.2, 4.2.1). Kursy fikcyjne; kurs z dnia rozliczenia jest wabikiem (nie moze zostac uzyty).",
+   "nbp_rates": [
+    {
+     "date": "2025-03-06",
+     "rate": "3.9000"
+    },
+    {
+     "date": "2025-03-07",
+     "rate": "3.8500"
+    },
+    {
+     "date": "2025-03-10",
+     "rate": "3.8000"
+    },
+    {
+     "date": "2025-11-10",
+     "rate": "3.7000"
+    },
+    {
+     "date": "2025-11-12",
+     "rate": "3.6500"
+    },
+    {
+     "date": "2025-12-31",
+     "rate": "3.6000"
+    }
+   ],
+   "lots": [
+    {
+     "lot": "T1",
+     "case": "rozliczenie w poniedzialek: kurs z piatku",
+     "trade_date": "2025-03-07",
+     "settle_date": "2025-03-10",
+     "qty": "10",
+     "price_usd": "240.00",
+     "fee_usd": "0.00",
+     "cost_usd": "2400.00",
+     "nbp_rate_date": "2025-03-07",
+     "cost_pln": "9240.0000"
+    },
+    {
+     "lot": "T2",
+     "case": "dzien przed rozliczeniem to swieto (11.11): kurs z 10.11",
+     "trade_date": "2025-11-11",
+     "settle_date": "2025-11-12",
+     "qty": "5",
+     "price_usd": "200.00",
+     "fee_usd": "1.00",
+     "cost_usd": "1001.00",
+     "nbp_rate_date": "2025-11-10",
+     "cost_pln": "3703.7000"
+    }
+   ],
+   "sell": {
+    "lot": "T3",
+    "trade_date": "2025-12-01",
+    "settle_date": "2025-12-02",
+    "qty": "12",
+    "price_usd": "230.00"
+   },
+   "remaining": {
+    "qty": "3",
+    "cost_usd": "600.60",
+    "cost_pln": "2222.22"
+   },
+   "valuation": {
+    "date": "2025-12-31",
+    "price_usd": "210.00",
+    "nbp_rate": "3.6000",
+    "value_pln": "2268.00",
+    "pl_pln": "45.78",
+    "r0": "3.7",
+    "price_effect_pln": "108.78",
+    "fx_effect_pln": "-63.00"
+   },
+   "trade_date_basis": {
+    "T1_nbp_rate_date": "2025-03-06",
+    "T1_cost_pln": "9360.0000"
+   }
   }
  },
  "B_twr_xirr": {

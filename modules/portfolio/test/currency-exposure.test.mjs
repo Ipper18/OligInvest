@@ -130,11 +130,11 @@ test("vector A remainder: slices, NBP rate with date and table, price/FX effect 
   expect(row.fxEffect.amount).toBe("145.68750000");
   expect(result.decomposition.total.unrealizedPl.amount).toBe("258.75000000");
   expect(result.decomposition.isComplete).toBe(true);
-  // The USD account's own-currency position stays in the exposure but not in the FX effect.
+  // No settlement day (hence no NBP rate before it) for M1: in the exposure, not in the split.
   expect(result.decomposition.exclusions).toEqual([
     { accountId: USD_ACCOUNT, instrumentId: MSFT, currency: "USD", reason: "missing_cost_pln" },
   ]);
-  // Owner decision Z-29: an explicit annotation, never a currency effect of 0.
+  // Z-29/BL-306b: an explicit annotation, never a currency effect of 0.
   expect(result.decomposition.notSplit).toEqual([
     { currency: "USD", positions: 1, reason: "missing_cost_pln" },
   ]);
@@ -144,6 +144,8 @@ test("vector A remainder: slices, NBP rate with date and table, price/FX effect 
     fxRates: "nbp_table_a_mid",
     view: "economic",
     costBasisMethod: "fifo",
+    // Only the PLN account is in the split: no PLN-cost tables to show.
+    costFxRates: { method: "nbp_table_a_mid_previous_business_day", stale: false, tables: [] },
   });
   expect(result.meta).toMatchObject({
     source: "computed",
@@ -199,6 +201,77 @@ test("missing FX rate: USD value stays in USD, PLN amounts and effects are null"
     unrealizedPl: null,
     priceEffect: null,
     fxEffect: null,
+  });
+});
+
+test("BL-306b: a USD-account position joins the split at its PLN cost (NBP before the cost day)", () => {
+  // Settled Monday 2025-04-07: NBP of Friday 2025-04-04 (3.9000), not the decoy of the settlement day.
+  const settled = base.map((t) => (t.id === "M1" ? { ...t, settleDate: d("2025-04-07") } : t));
+  const rates = createFxRateTable([
+    fxRate({ base: "USD", quote: "PLN", rate: "3.9000", date: "2025-04-04", source: "nbp" }),
+    fxRate({ base: "USD", quote: "PLN", rate: "3.5000", date: "2025-04-07", source: "nbp" }),
+    fxRate({ base: "USD", quote: "PLN", rate: "4.0000", date: "2025-09-30", source: "nbp" }),
+  ]);
+  const ledger = buildLedger({ accounts, transactions: settled, taxRates: rates });
+  const result = projectCurrencyExposure(
+    input({ ledger: { positions: ledger.positions, cash: ledger.cash }, fx: rates }),
+    now,
+  );
+  const [row] = result.decomposition.rows;
+  // M1: cost 200 USD · 3.9 = 780 PLN, value 220 · 4 = 880, P/L 100, price (220 − 200) · 3.9 = 78.
+  expect(row).toMatchObject({ currency: "USD", status: "ok", positions: 2 });
+  expect(row.unrealizedPl.amount).toBe("358.75000000");
+  expect(row.priceEffect.amount).toBe("191.06250000");
+  expect(row.fxEffect.amount).toBe("167.68750000");
+  expect(result.decomposition.notSplit).toEqual([]);
+  expect(result.decomposition.exclusions).toEqual([]);
+  // The exposure itself does not change.
+  expect(result.total.amount).toBe("13255.12000000");
+  // The table behind the PLN cost is shown with its date; it is the expected one.
+  expect(result.assumptions.costFxRates).toEqual({
+    method: "nbp_table_a_mid_previous_business_day",
+    stale: false,
+    tables: [
+      {
+        currency: "USD",
+        rateDate: "2025-04-04",
+        expectedDate: "2025-04-04",
+        stale: false,
+        tableNo: null,
+      },
+    ],
+  });
+  // Gap in NBP data (no table of Friday 04-04): the older table is used and flagged, not hidden.
+  const gapRates = createFxRateTable([
+    fxRate({ base: "USD", quote: "PLN", rate: "3.8000", date: "2025-04-03", source: "nbp" }),
+    fxRate({ base: "USD", quote: "PLN", rate: "4.0000", date: "2025-09-30", source: "nbp" }),
+  ]);
+  const gapLedger = buildLedger({ accounts, transactions: settled, taxRates: gapRates });
+  const gap = projectCurrencyExposure(
+    input({
+      ledger: { positions: gapLedger.positions, cash: gapLedger.cash },
+      fx: gapRates,
+      // Synthetic table number for the test only.
+      tables: new Map([
+        ["USD:PLN:2025-09-30:nbp", "190/A/NBP/2025"],
+        ["USD:PLN:2025-04-03:nbp", "065/A/NBP/2025"],
+      ]),
+    }),
+    now,
+  );
+  expect(gap.decomposition.rows[0].positions).toBe(2);
+  expect(gap.assumptions.costFxRates).toEqual({
+    method: "nbp_table_a_mid_previous_business_day",
+    stale: true,
+    tables: [
+      {
+        currency: "USD",
+        rateDate: "2025-04-03",
+        expectedDate: "2025-04-04",
+        stale: true,
+        tableNo: "065/A/NBP/2025",
+      },
+    ],
   });
 });
 

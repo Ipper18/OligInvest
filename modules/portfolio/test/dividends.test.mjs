@@ -255,16 +255,31 @@ test("yield on cost: trailing 12 months gross in PLN over the open FIFO cost in 
   expect(ranged.status).toBe("no_data");
 });
 
-test("yield on cost reasons: no position, cost not in PLN (Z-29), unknown cost, missing rate", () => {
+test("yield on cost reasons: no position, PLN cost on a USD account (BL-306b), unknown cost, missing rate", () => {
   const reason = (transactions, overrides) =>
     projectDividends(input(transactions, overrides), now).byInstrument[0].yieldOnCost;
   expect(reason([dividend(1)]).reason).toBe("no_open_position");
-  const usd = reason([
+  const onUsd = [
     buy(10, USD_ACCOUNT, "6000", "USD"),
     dividend(1, { accountId: USD_ACCOUNT, amount: money("21.25", "USD") }),
-  ]);
-  expect(usd).toMatchObject({ reason: "missing_cost_pln", ratio: null, costPln: null });
-  expect(usd.trailingGrossPln.amount).toBe("92.25000000");
+  ];
+  // Settled on Monday 2025-01-13: 6000 USD at NBP of Friday 2025-01-10 (4.0000) = 24 000 PLN.
+  const usd = reason(onUsd);
+  expect(usd).toEqual({
+    ratio: "0.00384375",
+    trailingGrossPln: { amount: "92.25000000", currency: "PLN" },
+    costPln: { amount: "24000.00000000", currency: "PLN" },
+    asOf: "2025-12-31",
+    reason: null,
+  });
+  // No NBP rate before the cost day: an explicit reason, never a cost at today's rate or 0.
+  const noCostRate = reason(onUsd, {
+    taxRates: createFxRateTable([
+      fxRate({ base: "USD", quote: "PLN", rate: "3.6900", date: "2025-08-13", source: "nbp" }),
+    ]),
+  });
+  expect(noCostRate).toMatchObject({ reason: "missing_cost_pln", ratio: null, costPln: null });
+  expect(noCostRate.trailingGrossPln.amount).toBe("92.25000000");
   const transfer = {
     id: id(11),
     accountId: PLN_ACCOUNT,

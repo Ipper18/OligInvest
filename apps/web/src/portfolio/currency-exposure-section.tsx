@@ -63,6 +63,17 @@ export async function CurrencyExposureSection({
       count: formatQuantity(String(n.positions)),
     }),
   );
+  // Owner decision 2026-11-20: the NBP tables behind the PLN cost and their age are never hidden.
+  const { costFxRates } = result.assumptions;
+  const costTables = costFxRates.tables.map((t) => {
+    const values = { currency: t.currency, date: formatDate(t.rateDate) };
+    const text = t.tableNo
+      ? formatMessage(copy.costRate, { ...values, table: t.tableNo })
+      : formatMessage(copy.costRateNoTable, values);
+    return t.stale
+      ? `${text} ${formatMessage(copy.costRateStale, { expected: formatDate(t.expectedDate) })}`
+      : text;
+  });
   return (
     <section aria-label={copy.title} id="currency-exposure">
       <h2>
@@ -72,6 +83,10 @@ export async function CurrencyExposureSection({
       <AssumptionsBlock summary={copy.assumptions}>
         <p>{copy.explanation}</p>
         <p>{copy.decompositionExplanation}</p>
+        {costTables.length > 0 && (
+          <p>{formatMessage(copy.costRates, { tables: costTables.join("; ") })}</p>
+        )}
+        {costFxRates.stale && <p role="status">{copy.costRatesStale}</p>}
         <p>{formatMessage(copy.date, { date: formatDate(result.date) })}</p>
       </AssumptionsBlock>
       {result.status !== "ok" && (

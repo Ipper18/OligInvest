@@ -8,7 +8,7 @@ Powiązane: [`orkiestracja-agentow.md`](orkiestracja-agentow.md) § 7, [`openbot
 
 - Rutyna to jedna instrukcja i harmonogram; wynik trafia do wątku agenta ([OpenBot 101](https://openbot.run/guides/openbot-101), sprawdzono 2026-10-24).
 - **„Brak zmian.” jest poprawnym wynikiem** — bez tego agent wymyśla treść, żeby coś zgłosić.
-- Rutyny są tylko do odczytu, chyba że opis mówi inaczej (R5 tworzy PR z `docs/`). Żadna rutyna nie startuje paczki, nie poprawia kodu i nie scala.
+- R1 i R4 czytają stan. R2 uzgadnia kolejkę i może przydzielić kartę, R3 komentuje PR zależności, R5 przygotowuje PR dokumentacyjny. Scalanie należy do właściciela.
 - CI i PR sprawdzane jednym wywołaniem na przebieg — bez pętli odpytywania ([`AGENTS.md`](../../AGENTS.md) § 6.1).
 - Wynik ≤ 10 linii; szczegóły w PR albo w `~/OpenBot/Shared/oliginvest/`.
 - Godziny w czasie lokalnym stacji (Europe/Warsaw) — **NIEZWERYFIKOWANE**, czy OpenBot przyjmuje strefę systemu.
@@ -16,7 +16,7 @@ Powiązane: [`orkiestracja-agentow.md`](orkiestracja-agentow.md) § 7, [`openbot
 | ID | Rutyna | Agent | Harmonogram | Tryb |
 |---|---|---|---|---|
 | R1 | Poranny stan CI i PR | Dyspozytor | pn–pt 08:00 | odczyt |
-| R2 | Kontrola scaleń | Dyspozytor | pn–pt 18:00 | odczyt |
+| R2 | Kontrola scaleń | Dyspozytor | pn–pt 18:00 | uzgodnienie stanu i karty |
 | R3 | Triage zależności | Weryfikator | pn 09:00 | komentarze w PR Renovate |
 | R4 | Zgodność backlogu z kodem | Dyspozytor | pt 15:00 | odczyt |
 | R5 | Weryfikacja znaczników i audyt skilli | Weryfikator | pierwszy pn miesiąca 10:00 | PR z `docs/` |
@@ -36,17 +36,11 @@ Jeśli od wczoraj nic się nie zmieniło i wszystko jest zielone — odpowiedz t
 
 ## 3. R2 — kontrola scaleń
 
-Agenci działają na tokenach właściciela, więc GitHub nie odróżni scalenia przez właściciela od scalenia przez agenta. R2 daje właścicielowi codzienną listę do potwierdzenia ([`orkiestracja-agentow.md`](orkiestracja-agentow.md) § 6.2, R-42).
+R2 odtwarza przejście po scaleniu, gdy Dyspozytor nie obsłużył go wcześniej. Wspólna tożsamość GitHub wymaga sprawdzenia śladu przeglądu (R-42).
 
 ```text
-Rutyna R2 (kontrola scaleń). Tylko odczyt.
-1. gh pr list --state merged --search "merged:>=<data sprzed 24 h w formacie RRRR-MM-DD>"
-   --json number,title,mergedAt,headRefName
-2. Dla każdego PR: czy ma komentarz Recenzenta „[Recenzent · OpenBot]” i czy w stan.md był
-   oznaczony jako „gotowy do przeglądu właściciela”.
-Wynik: „Scalone w ostatnich 24 h: #<nr> <tytuł> — potwierdź, że to Ty.” oraz osobno PR scalone
-bez komentarza Recenzenta albo bez oznaczenia w stan.md (oznacz jako STOP).
-Brak scaleń — odpowiedz tylko: „Brak zmian.”
+Porównaj aktywną kartę w stan.md ze stanem PR i mergedAt w GitHubie, także po przerwie dłuższej niż doba. Dla MERGED sprawdź SHA ocen Recenzenta i Weryfikatora, wymagane CI oraz zapis przeglądu właściciela. Niewyjaśnione scalenie lub brak dowodu zgłoś jako STOP.
+Zapisz potwierdzone zakończenie. Jeżeli kolejka jest czynna, sprawdź zależności, rezerwacje i limit WIP według orkiestracja-agentow.md § 4–5. Przydziel następną gotową kartę tylko raz. Przy istniejącej karcie wznów jej pierwszy niezakończony krok. Brak zmiany stanu nie wymaga wiadomości.
 ```
 
 ## 4. R3 — triage zależności
@@ -74,7 +68,7 @@ Rutyna R4 (zgodność backlogu). Tylko odczyt — niczego nie poprawiaj.
 3. Dodatkowo: zadania „w toku”, których PR jest scalony, a CI na main zielone — kandydaci do „gotowe”;
    zadania „todo”, które mają scalony PR — rozbieżność.
 Wynik: tabela „zadanie | status w backlogu | stan faktyczny | proponowana zmiana”, najwyżej 15 wierszy,
-reszta liczbowo. Zmiany statusów wykona Budowniczy w PR po „OK” właściciela.
+reszta liczbowo. Zmiany statusów wykona Budowniczy w PR z karty Dyspozytora.
 Brak rozbieżności — odpowiedz tylko: „Brak zmian.”
 ```
 

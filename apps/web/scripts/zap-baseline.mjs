@@ -10,6 +10,7 @@ import {
   copyFileSync,
   mkdirSync,
   mkdtempSync,
+  readdirSync,
   readFileSync,
   rmSync,
   writeFileSync,
@@ -127,6 +128,220 @@ export function verifyApiCoverage(rows) {
   }
 }
 
+// BL-614b: authenticated pass over the same production API. The hook registers a synthetic
+// invited account, enrols TOTP, signs out, signs in again with TOTP and then reads protected
+// routes, all through ZAP so the passive cookie rules (10010, 10011, 10054, 90033) see every
+// Set-Cookie. `{{…}}` placeholders are filled inside the container from the per-run account
+// file and the TOTP secret returned by enrolment; values never reach reports or logs.
+// `sends`: cookie names on the request; `issues`/`clears`: Set-Cookie names expected back.
+const SESSION = "__Host-oliginvest.session_token";
+const TWO_FACTOR = "__Host-oliginvest.two_factor";
+const SESSION_DATA = "__Host-oliginvest.session_data";
+const DONT_REMEMBER = "__Host-oliginvest.dont_remember";
+const LEGAL = { acceptTerms: true, termsVersion: "2026-09", privacyNoticeVersion: "2026-09" };
+const signedIn = (path, extra = {}) => ({
+  method: "GET",
+  path,
+  status: 200,
+  sends: [SESSION],
+  ...extra,
+});
+export const API_AUTH_FLOW = [
+  {
+    method: "POST",
+    path: "/api/auth/sign-up/email",
+    body: {
+      name: "ZAP synthetic",
+      email: "{{email}}",
+      password: "{{password}}",
+      invitationToken: "{{invitationToken}}",
+      ...LEGAL,
+    },
+    status: 200,
+    issues: [SESSION],
+    mfaVerified: false,
+  },
+  signedIn("/api/v1/me"),
+  signedIn("/api/v1/portfolio/summary", { status: 403, code: "MFA_ENROLLMENT_REQUIRED" }),
+  {
+    method: "POST",
+    path: "/api/auth/two-factor/enable",
+    body: { password: "{{password}}" },
+    status: 200,
+    sends: [SESSION],
+    capture: "totp",
+  },
+  {
+    method: "POST",
+    path: "/api/auth/two-factor/verify-totp",
+    body: { code: "{{totp:previous}}" },
+    status: 200,
+    sends: [SESSION],
+    issues: [SESSION],
+    mfaVerified: true,
+  },
+  {
+    method: "POST",
+    path: "/api/auth/sign-out",
+    body: {},
+    status: 200,
+    sends: [SESSION],
+    clears: [SESSION, SESSION_DATA, DONT_REMEMBER],
+  },
+  // The pre-sign-out cookie must be dead server-side, not only deleted in the browser.
+  {
+    method: "GET",
+    path: "/api/auth/get-session",
+    status: 200,
+    sends: [SESSION],
+    cookies: "stale",
+    session: "none",
+  },
+  {
+    method: "POST",
+    path: "/api/auth/sign-in/email",
+    body: { email: "{{email}}", password: "{{password}}" },
+    status: 200,
+    // Password alone yields only the short-lived challenge cookie, never a session.
+    issues: [TWO_FACTOR],
+    clears: [SESSION, SESSION_DATA],
+    twoFactorRedirect: true,
+  },
+  {
+    method: "POST",
+    path: "/api/auth/two-factor/verify-totp",
+    body: { code: "{{totp:current}}" },
+    status: 200,
+    sends: [TWO_FACTOR],
+    issues: [SESSION],
+    clears: [TWO_FACTOR],
+    mfaVerified: true,
+  },
+  signedIn("/api/auth/get-session", { session: "verified" }),
+  signedIn("/api/auth/list-sessions"),
+  ...[
+    "/api/v1/me",
+    "/api/v1/me/preferences",
+    "/api/v1/me/legal",
+    "/api/v1/me/tokens",
+    "/api/v1/notifications/preferences",
+    "/api/v1/notifications/push-subscriptions",
+    "/api/v1/market/status",
+    "/api/v1/market/watchlists",
+    "/api/v1/portfolio/accounts",
+    "/api/v1/portfolio/transactions",
+    "/api/v1/portfolio/summary",
+    "/api/v1/portfolio/positions",
+    "/api/v1/portfolio/cash",
+    "/api/v1/portfolio/dividends",
+  ].map((path) => signedIn(path)),
+  // Authorization still applies to a fully verified `user` session.
+  {
+    method: "POST",
+    path: "/api/v1/admin/invitations",
+    body: { email: "zap-denied@scan.example.test", role: "user" },
+    status: 403,
+    code: "FORBIDDEN",
+    sends: [SESSION],
+  },
+];
+
+const attribute = (cookie, key) => cookie.attributes.filter(([name]) => name === key);
+
+// Better Auth cookie contract (AUTH § 4.1, SEC § 3.6 and § 8 O-01): `__Host-` prefix, Secure,
+// HttpOnly, SameSite=Lax, Path=/ and no Domain on every Set-Cookie, issued or deleted. A
+// deletion is an empty value that expires now or earlier, judged as browsers and
+// apps/web/src/auth/relay.ts do (Max-Age wins over Expires, RFC 6265 § 5.3).
+export function cookieProblems(cookie, now = Date.now()) {
+  const problems = [];
+  if (!/^__Host-oliginvest\.[a-z_]+$/u.test(cookie.name)) problems.push("name");
+  for (const flag of ["secure", "httponly"])
+    if (attribute(cookie, flag).length !== 1) problems.push(flag);
+  const single = (key) => {
+    const values = attribute(cookie, key);
+    return values.length === 1 ? values[0][1] : undefined;
+  };
+  if (single("samesite")?.toLowerCase() !== "lax") problems.push("samesite");
+  if (single("path") !== "/") problems.push("path");
+  if (attribute(cookie, "domain").length) problems.push("domain");
+  for (const key of ["max-age", "expires"])
+    if (attribute(cookie, key).length > 1) problems.push(key);
+  const maxAge = single("max-age");
+  const expires = single("expires");
+  if (maxAge !== undefined && !/^-?\d+$/u.test(maxAge)) problems.push("max-age");
+  if (expires !== undefined && Number.isNaN(Date.parse(expires))) problems.push("expires");
+  const expired =
+    maxAge !== undefined
+      ? Number(maxAge) <= 0
+      : expires !== undefined && Date.parse(expires) <= now;
+  if (cookie.empty !== expired) problems.push(cookie.empty ? "deletion" : "expired");
+  return problems;
+}
+
+export function verifyAuthFlow(flow, coverage, now = Date.now()) {
+  if (!Array.isArray(flow) || flow.length > API_AUTH_FLOW.length)
+    throw new Error("Authenticated API flow result is malformed");
+  for (const [index, expected] of API_AUTH_FLOW.entries()) {
+    const row = flow[index];
+    const label = `${expected.method} ${expected.path} (step ${index + 1})`;
+    if (!row) throw new Error(`Authenticated API flow stopped before ${label}`);
+    if (
+      row.method !== expected.method ||
+      row.path !== expected.path ||
+      row.status !== expected.status ||
+      row.code !== (expected.code ?? null) ||
+      !row.noStore
+    )
+      throw new Error(
+        `Unexpected authenticated API response: ${label} (${row.status}, ${row.code})`,
+      );
+    const names = (list) => [...new Set(list)].toSorted().join(",");
+    const issued = row.cookies.filter((cookie) => !cookie.empty).map((cookie) => cookie.name);
+    const cleared = row.cookies.filter((cookie) => cookie.empty).map((cookie) => cookie.name);
+    if (
+      names(row.sent) !== names(expected.sends ?? []) ||
+      names(issued) !== names(expected.issues ?? []) ||
+      names(cleared) !== names(expected.clears ?? [])
+    )
+      throw new Error(
+        `Unexpected cookies: ${label} (sent ${row.sent}; issued ${issued}; cleared ${cleared})`,
+      );
+    if ("mfaVerified" in expected && row.mfaVerified !== expected.mfaVerified)
+      throw new Error(`Unexpected MFA state: ${label}`);
+    if (expected.session && row.session !== expected.session)
+      throw new Error(`Unexpected session state: ${label} (${row.session})`);
+    if (expected.twoFactorRedirect && row.twoFactorRedirect !== true)
+      throw new Error(`Missing TOTP challenge: ${label}`);
+    if (expected.capture === "totp" && row.captured !== true)
+      throw new Error(`TOTP enrolment returned no otpauth URI: ${label}`);
+  }
+  if (!Array.isArray(coverage)) throw new Error("API coverage is missing");
+  const cookies = [...flow, ...coverage].flatMap((row) => row.cookies ?? []);
+  if (!cookies.some((cookie) => cookie.name === SESSION && !cookie.empty))
+    throw new Error("No session cookie was issued");
+  for (const cookie of cookies) {
+    const problems = cookieProblems(cookie, now);
+    if (problems.length) throw new Error(`Cookie ${cookie.name} violates: ${problems.join(", ")}`);
+  }
+  // ZAP history already contains the flow exchanges; return each Set-Cookie once for the report.
+  return coverage.flatMap((row) => row.cookies ?? []);
+}
+
+// Values the authenticated hook handled (password, invitation token, TOTP secret, backup codes,
+// cookie values) must not appear in any artefact uploaded from the scan directory.
+export function findLeaks(files, sensitive) {
+  const leaks = [];
+  for (const [file, text] of files)
+    for (const { kind, value } of sensitive)
+      if (
+        typeof value === "string" &&
+        value.length >= 8 &&
+        [value, encodeURIComponent(value)].some((form) => text.includes(form))
+      )
+        leaks.push(`${kind} in ${file}`);
+  return [...new Set(leaks)];
+}
+
 // Official baseline hooks: seed requests before the passive queue drains, then attest ALL
 // recorded exchanges (including spider traffic). No cookie jar, auth header, rule or threshold changes.
 const API_HOOK = `import json
@@ -184,6 +399,148 @@ def zap_pre_shutdown(zap):
     Path("/zap/wrk/coverage.json").write_text(json.dumps(rows, indent=2))
 `;
 
+// BL-614b hook. Same ZAP API calls as above plus a manual cookie jar for the explicit flow only;
+// ZAP's own HTTP state, auth headers, rules and thresholds stay untouched. Sensitive values go
+// to /zap/secret (a separate, deleted-after-run mount), never to /zap/wrk, stdout or reports.
+// Cookie rows keep names and attributes only, never values.
+const AUTH_HOOK = `import base64, hashlib, hmac, json, struct, time
+from pathlib import Path
+from urllib.parse import parse_qs, urlsplit
+
+SECRET = Path("/zap/secret")
+sensitive = []
+
+def keep(kind, value):
+    # Rewritten on every value, so even an aborted flow leaves a complete list to scan for.
+    if isinstance(value, str) and value:
+        sensitive.append({"kind": kind, "value": value})
+        (SECRET / "sensitive.json").write_text(json.dumps(sensitive))
+
+def totp(secret, step):
+    key = base64.b32decode(secret + "=" * (-len(secret) % 8))
+    digest = hmac.new(key, struct.pack(">Q", step), hashlib.sha1).digest()
+    offset = digest[19] & 15
+    return "%06d" % ((struct.unpack(">I", digest[offset:offset + 4])[0] & 0x7fffffff) % 1000000)
+
+def code(secret, which):
+    # Not a retry: never compute a code in the last 5 s of its 30 s step, so it cannot expire
+    # in flight. Enrolment uses the previous step, sign-in the current one (no replay).
+    while 30 - time.time() % 30 < 5:
+        time.sleep(0.5)
+    step = int(time.time() // 30)
+    return totp(secret, step - 1 if which == "previous" else step)
+
+def cookies(headers):
+    rows = []
+    for line in headers[1:]:
+        if not line.lower().startswith("set-cookie:"):
+            continue
+        pair, *parts = [part.strip() for part in line.split(":", 1)[1].split(";")]
+        name, _, value = pair.partition("=")
+        attributes = []
+        for part in parts:
+            key, _, setting = part.partition("=")
+            attributes.append([key.strip().lower(), setting.strip()])
+        rows.append(({"name": name.strip(), "empty": value.strip() in ("", '""'),
+                      "attributes": attributes}, value.strip()))
+    return rows
+
+def fill(item, values, secret):
+    if isinstance(item, dict):
+        return {key: fill(value, values, secret) for key, value in item.items()}
+    if isinstance(item, str) and item.startswith("{{totp:"):
+        return code(secret, item[7:-2])
+    if isinstance(item, str) and item.startswith("{{"):
+        return values[item[2:-2]]
+    return item
+
+def zap_started(zap, target):
+    url = urlsplit(target)
+    origin = url.scheme + "://" + url.netloc
+    values = json.loads((SECRET / "account.json").read_text())
+    keep("password", values["password"])
+    keep("invitation token", values["invitationToken"])
+    # The auth facade allows 5 counted requests per IP in a fixed 60 s window (AUTH § 3); the
+    # anonymous pass just used 4 of them. Start in a fresh window instead of touching the limit.
+    time.sleep(62 - time.time() % 60)
+    jar, stale, secret, flow = {}, {}, None, []
+    for item in json.loads(Path("/zap/wrk/flow.json").read_text()):
+        if secret is None and "{{totp:" in json.dumps(item.get("body")):
+            break  # enrolment failed; the shorter flow-result fails verification with its rows
+        body = json.dumps(fill(item["body"], values, secret)) if "body" in item else ""
+        sent = dict(stale if item.get("cookies") == "stale" else jar)
+        headers = [item["method"] + " " + origin + item["path"] + " HTTP/1.1",
+                   "Host: " + url.netloc, "Accept: application/json"]
+        if sent:
+            headers.append("Cookie: " + "; ".join(k + "=" + v for k, v in sent.items()))
+        if body:
+            headers += ["Origin: " + origin, "Content-Type: application/json",
+                        "Content-Length: " + str(len(body.encode()))]
+        message = zap.core.send_request("\\r\\n".join(headers) + "\\r\\n\\r\\n" + body,
+                                        followredirects=False)
+        message = message[0] if isinstance(message, list) else message
+        request = message["requestHeader"].splitlines()
+        response = message["responseHeader"].splitlines()
+        parsed = []
+        for cookie, value in cookies(response):
+            parsed.append(cookie)
+            if cookie["empty"]:
+                if cookie["name"] in jar:
+                    stale = dict(jar)
+                jar.pop(cookie["name"], None)
+            else:
+                keep("cookie value", value)
+                jar[cookie["name"]] = value
+        raw = message.get("responseBody")
+        try:
+            data = json.loads(raw or "")
+        except (ValueError, TypeError):
+            data = None
+        captured = False
+        if item.get("capture") == "totp" and isinstance(data, dict) and \\
+                str(data.get("totpURI", "")).startswith("otpauth://totp/"):
+            secret = parse_qs(urlsplit(data["totpURI"]).query)["secret"][0]
+            keep("TOTP secret", secret)
+            captured = True
+        for backup in (data.get("backupCodes") or []) if isinstance(data, dict) else []:
+            keep("backup code", backup)
+        session = data.get("session") if isinstance(data, dict) else None
+        null = raw == "null" or (raw is None and any(h.lower() == "content-length: 4" for h in response[1:]))
+        sent_names = []
+        for h in request[1:]:
+            if h.lower().startswith("cookie:"):
+                sent_names += [p.split("=", 1)[0].strip() for p in h.split(":", 1)[1].split(";")]
+        flow.append({
+            "method": item["method"], "path": item["path"],
+            "status": int(response[0].split()[1]),
+            "code": data.get("code") if isinstance(data, dict) else None,
+            "noStore": any(h.lower().startswith("cache-control:") and "no-store" in h.lower() for h in response[1:]),
+            "sent": sent_names, "cookies": parsed, "captured": captured,
+            "mfaVerified": bool(session.get("mfaVerifiedAt")) if isinstance(session, dict) else None,
+            "twoFactorRedirect": data.get("twoFactorRedirect") if isinstance(data, dict) else None,
+            "session": "none" if null else ("verified" if isinstance(session, dict) and session.get("mfaVerifiedAt") else None),
+        })
+    Path("/zap/wrk/flow-result.json").write_text(json.dumps(flow, indent=2))
+
+def zap_pre_shutdown(zap):
+    rows = []
+    start = 0
+    while True:
+        messages = zap.core.messages(start=start, count=100)
+        if not messages:
+            break
+        start += len(messages)
+        for message in messages:
+            method, url, _ = message["requestHeader"].splitlines()[0].split(" ", 2)
+            headers = message["responseHeader"].splitlines()
+            if headers[0].split()[1] == "0":
+                continue
+            rows.append({"method": method, "path": urlsplit(url).path,
+                         "status": int(headers[0].split()[1]),
+                         "cookies": [cookie for cookie, _ in cookies(headers)]})
+    Path("/zap/wrk/coverage.json").write_text(json.dumps(rows, indent=2))
+`;
+
 const gitPath = (name) =>
   resolve(
     root,
@@ -200,6 +557,7 @@ async function withApiServer(run, origin) {
   const { prepareDevelopment } = await import(
     "../../../packages/db/scripts/prepare-development.mjs"
   );
+  const { seedScanInvitation } = await import("../../../apps/api/integration/browser-seed.mjs");
   const dev = await isolatedEnvironment();
   dev.DEV_BIND_ADDRESS = "127.0.0.1";
   const app = applicationEnvironment(dev);
@@ -208,6 +566,7 @@ async function withApiServer(run, origin) {
   try {
     compose(dev, ["up", "-d", "--wait"]);
     await prepareDevelopment(dev, app);
+    const account = await seedScanInvitation(dev, app);
     const production = { ...process.env, ...app, NODE_ENV: "production", PUBLIC_BASE_URL: origin };
     for (const key of [
       "BETTER_AUTH_SECRETS",
@@ -233,7 +592,7 @@ async function withApiServer(run, origin) {
       },
     );
     await once(api, "spawn");
-    return await run({ web: app.API_INTERNAL_URL, api: app.API_INTERNAL_URL });
+    return await run({ web: app.API_INTERNAL_URL, api: app.API_INTERNAL_URL, account });
   } finally {
     if (api && api.exitCode === null && api.signalCode === null) {
       const stopped = once(api, "exit");
@@ -391,6 +750,16 @@ export const SCANS = [
   { name: "public", entry: "/logowanie", authenticated: false },
   { name: "authenticated", entry: "/portfel", authenticated: true },
 ];
+// `--api`: the BL-614 anonymous pass unchanged, then the BL-614b TOTP session pass (`flow`).
+export const API_SCANS = [
+  { name: "api-public", entry: "/api/v1/health/ready", authenticated: false },
+  { name: "api-authenticated", entry: "/api/v1/me", authenticated: false, flow: true },
+];
+
+const listFiles = (directory) =>
+  readdirSync(directory, { recursive: true, withFileTypes: true })
+    .filter((entry) => entry.isFile())
+    .map((entry) => resolve(entry.parentPath, entry.name));
 
 async function main() {
   if (process.env.BASE_URL) throw new Error("ZAP baseline scans only the local instance");
@@ -408,9 +777,7 @@ async function main() {
   const started = Date.now();
   const port = await freePort();
   const origin = `https://localhost:${port}`;
-  const scans = apiMode
-    ? [{ name: "api-public", entry: "/api/v1/health/ready", authenticated: false }]
-    : SCANS;
+  const scans = apiMode ? API_SCANS : SCANS;
   const withServer = apiMode ? (run) => withApiServer(run, origin) : withPerformanceServer;
   const results = await withServer(
     async (upstream) => {
@@ -454,9 +821,20 @@ async function main() {
           const directory = resolve(output, scan.name);
           mkdirSync(directory, { recursive: true });
           copyFileSync(RULES_FILE, resolve(directory, "rules.conf"));
-          if (apiMode) {
+          if (apiMode && !scan.flow) {
             writeFileSync(resolve(directory, "requests.json"), JSON.stringify(API_REQUESTS));
             writeFileSync(resolve(directory, "api-hooks.py"), API_HOOK);
+          }
+          // Synthetic account and the hook's sensitive values live outside the uploaded report
+          // directory and are deleted right after the scan, whatever its outcome.
+          const vault = scan.flow ? mkdtempSync(gitPath("zap-api-auth-")) : null;
+          if (vault) {
+            writeFileSync(resolve(directory, "flow.json"), JSON.stringify(API_AUTH_FLOW));
+            writeFileSync(resolve(directory, "api-hooks.py"), AUTH_HOOK);
+            chmodSync(vault, 0o777);
+            writeFileSync(resolve(vault, "account.json"), JSON.stringify(upstream.account), {
+              mode: 0o644,
+            });
           }
           // The container user (zap, uid 1000) writes reports into the bind mount.
           chmodSync(directory, 0o777);
@@ -474,54 +852,90 @@ async function main() {
               ]
             : [];
           const begin = Date.now();
-          const zap = await docker([
-            "run",
-            "--rm",
-            "--network",
-            `container:${edge}`,
-            "--mount",
-            `type=bind,source=${directory},target=/zap/wrk`,
-            "--mount",
-            `type=bind,source=${addOn},target=/zap/plugin/${BETA_RULES.name},readonly`,
-            ...auth,
-            ZAP_IMAGE,
-            "zap-baseline.py",
-            ...(apiMode ? ["--hook=/zap/wrk/api-hooks.py"] : []),
-            "-t",
-            `${origin}${scan.entry}`,
-            "-c",
-            "rules.conf",
-            "-J",
-            "report.json",
-            "-r",
-            "report.html",
-            "-w",
-            "report.md",
-            "-m",
-            "1",
-            "-T",
-            "5",
-            "-z",
-            "-silent",
-          ]);
-          writeFileSync(resolve(directory, "zap.log"), zap.stdout + zap.stderr);
+          let zap;
+          let leaks = [];
+          try {
+            zap = await docker([
+              "run",
+              "--rm",
+              "--network",
+              `container:${edge}`,
+              "--mount",
+              `type=bind,source=${directory},target=/zap/wrk`,
+              "--mount",
+              `type=bind,source=${addOn},target=/zap/plugin/${BETA_RULES.name},readonly`,
+              ...(vault ? ["--mount", `type=bind,source=${vault},target=/zap/secret`] : []),
+              ...auth,
+              ZAP_IMAGE,
+              "zap-baseline.py",
+              ...(apiMode ? ["--hook=/zap/wrk/api-hooks.py"] : []),
+              "-t",
+              `${origin}${scan.entry}`,
+              "-c",
+              "rules.conf",
+              "-J",
+              "report.json",
+              "-r",
+              "report.html",
+              "-w",
+              "report.md",
+              "-m",
+              "1",
+              "-T",
+              "5",
+              "-z",
+              "-silent",
+            ]);
+            writeFileSync(resolve(directory, "zap.log"), zap.stdout + zap.stderr);
+            if (vault) {
+              let sensitive;
+              try {
+                sensitive = JSON.parse(readFileSync(resolve(vault, "sensitive.json"), "utf8"));
+              } catch {
+                throw new Error(
+                  `ZAP ${scan.name} hook did not start; inspect ${directory}/zap.log`,
+                );
+              }
+              const files = listFiles(directory).map((file) => [
+                file.slice(output.length + 1),
+                readFileSync(file, "latin1"),
+              ]);
+              leaks = findLeaks(files, sensitive);
+            }
+          } finally {
+            if (vault) rmSync(vault, { recursive: true, force: true });
+          }
+          // Names the artefact and the kind of value only, never the value itself.
+          if (leaks.length) throw new Error(`Sensitive values in scan output: ${leaks.join("; ")}`);
           const seconds = Math.round((Date.now() - begin) / 1000);
           if (![0, 1, 2].includes(zap.status))
             throw new Error(`ZAP ${scan.name} scan error; inspect ${directory}/zap.log`);
           const urls = urlTotal(zap.stdout);
-          if (urls < (apiMode ? API_REQUESTS.length : MINIMUM_URLS[scan.name]))
+          const minimum = scan.flow
+            ? new Set(API_AUTH_FLOW.map((item) => `${item.method} ${item.path}`)).size
+            : apiMode
+              ? API_REQUESTS.length
+              : MINIMUM_URLS[scan.name];
+          if (urls < minimum)
             throw new Error(
               `ZAP ${scan.name} scan reached only ${urls} URLs; inspect ${directory}`,
             );
           const findings = summarize(JSON.parse(readFileSync(resolve(directory, "report.json"))));
-          if (apiMode)
-            verifyApiCoverage(JSON.parse(readFileSync(resolve(directory, "coverage.json"))));
+          const coverage = () => JSON.parse(readFileSync(resolve(directory, "coverage.json")));
+          let cookies = [];
+          if (scan.flow)
+            cookies = verifyAuthFlow(
+              JSON.parse(readFileSync(resolve(directory, "flow-result.json"))),
+              coverage(),
+            );
+          else if (apiMode) verifyApiCoverage(coverage());
           rows.push({
             scan: scan.name,
             status: scanStatus(zap.status, findings, rules),
             seconds,
             urls,
             findings,
+            cookies,
           });
         }
         return rows;
@@ -532,7 +946,7 @@ async function main() {
     { edge: false },
   );
   const lines = [
-    `## ZAP baseline (${apiMode ? "BL-614, anonymous API" : "BL-602"}) — ${Math.round((Date.now() - started) / 1000)} s`,
+    `## ZAP baseline (${apiMode ? "BL-614 anonymous + BL-614b TOTP session, API" : "BL-602"}) — ${Math.round((Date.now() - started) / 1000)} s`,
     "",
     "| Scan | Exit | Time | URLs | Rule | Level | Risk | Instances | Example paths |",
     "|---|---|---|---|---|---|---|---|---|",
@@ -547,6 +961,26 @@ async function main() {
         `| ${row.scan} | ${row.status} | ${row.seconds} s | ${row.urls} | ${finding.id} ${finding.name} | ${rules.get(finding.id) ?? "WARN"} | ${finding.risk} | ${finding.count} | ${finding.urls.join(", ")} |`,
       );
   }
+  // Names and attributes only (values are never recorded); every row passed cookieProblems().
+  const cookies = new Map();
+  for (const cookie of results.flatMap((row) => row.cookies ?? [])) {
+    const attributes = cookie.attributes
+      .map(([key, value]) => (key === "expires" || !value ? key : `${key}=${value}`))
+      .toSorted()
+      .join("; ");
+    const key = `${cookie.name} ${cookie.empty ? "deleted" : "issued"} ${attributes}`;
+    cookies.set(key, (cookies.get(key) ?? 0) + 1);
+  }
+  if (cookies.size)
+    lines.push(
+      "",
+      "| Set-Cookie (value withheld) | Kind | Attributes | Seen |",
+      "|---|---|---|---|",
+      ...[...cookies].map(([key, count]) => {
+        const [name, kind, ...attributes] = key.split(" ");
+        return `| ${name} | ${kind} | ${attributes.join(" ")} | ${count} |`;
+      }),
+    );
   report(lines.join("\n"));
   // Exit 1 = a FAIL rule matched; WARN (2) is reported for the owner's decision (SEC § 9.1).
   if (results.some((row) => row.status === 1)) process.exitCode = 1;

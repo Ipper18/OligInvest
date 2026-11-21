@@ -1,6 +1,37 @@
 import { createHash, randomBytes } from "node:crypto";
 import pg from "pg";
 
+// BL-614b: one synthetic `user` invitation for the authenticated ZAP API scan, in the same
+// isolated database only. Email, token and password are random per run, never logged, and are
+// destroyed with the Compose volumes after the scan.
+export async function seedScanInvitation(dev, env) {
+  if (env.NODE_ENV !== "test" || env.DB_NAME !== "oliginvest_dev")
+    throw new Error("Isolated browser database required");
+  const client = new pg.Client({
+    host: env.DB_HOST,
+    port: Number(env.DB_PORT),
+    database: env.DB_NAME,
+    user: "postgres",
+    password: dev.DEV_POSTGRES_PASSWORD,
+  });
+  await client.connect();
+  try {
+    const owner = (
+      await client.query("SELECT id FROM auth.users WHERE email=$1", ["dev@example.invalid"])
+    ).rows[0];
+    if (!owner) throw new Error("Synthetic seed owner missing");
+    const email = `zap-${randomBytes(6).toString("hex")}@scan.example.test`;
+    const invitationToken = randomBytes(32).toString("base64url");
+    await client.query(
+      "INSERT INTO identity.invitations(email,role,token_hash,invited_by,expires_at) VALUES($1,'user',$2,$3,now()+interval '1 hour')",
+      [email, createHash("sha256").update(invitationToken).digest("hex"), owner.id],
+    );
+    return { email, invitationToken, password: randomBytes(24).toString("hex") };
+  } finally {
+    await client.end();
+  }
+}
+
 // Only the isolated ci:e2e database. Invitation tokens are synthetic and never logged.
 export async function seedBrowserInvitations(dev, env) {
   if (env.NODE_ENV !== "test" || env.DB_NAME !== "oliginvest_dev")
