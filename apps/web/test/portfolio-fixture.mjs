@@ -471,6 +471,30 @@ export async function portfolioFixture(request, response, key, preferences = {})
         fxRates: "nbp_table_a_mid",
         view: "economic",
         costBasisMethod: "fifo",
+        // Synthetic tables (test data only): one expected, one older because of a gap in NBP data.
+        costFxRates:
+          empty || gap || unsplit
+            ? { method: "nbp_table_a_mid_previous_business_day", stale: false, tables: [] }
+            : {
+                method: "nbp_table_a_mid_previous_business_day",
+                stale: true,
+                tables: [
+                  {
+                    currency: "USD",
+                    rateDate: "2025-03-07",
+                    expectedDate: "2025-03-07",
+                    stale: false,
+                    tableNo: "047/A/NBP/2025",
+                  },
+                  {
+                    currency: "USD",
+                    rateDate: "2025-05-30",
+                    expectedDate: "2025-06-02",
+                    stale: true,
+                    tableNo: null,
+                  },
+                ],
+              },
       },
       meta: {
         source: "computed",

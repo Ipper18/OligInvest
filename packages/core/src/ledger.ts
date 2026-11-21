@@ -1,5 +1,5 @@
 import { type CurrencyCode, PLN } from "./currency.js";
-import { addDays, type IsoDate, isWeekday } from "./dates.js";
+import { addDays, type IsoDate, isNbpBusinessDay as polishBusinessDay } from "./dates.js";
 import { Decimal } from "./decimal.js";
 import { type DividendTaxView, dividendTaxView } from "./dividends.js";
 import { CoreError } from "./errors.js";
@@ -34,8 +34,9 @@ export interface LedgerInput {
   /** NBP table A; only `before(currency, 'PLN', taxDate)` is used (§ 2.2). */
   readonly taxRates?: FxRateTable | undefined;
   /**
-   * NBP publication calendar (Polish business days); default Monday–Friday. A tax rate older than
-   * the business day before the tax day raises `stale_tax_rate` (C-06).
+   * NBP publication calendar; default Polish business days (Monday–Friday without public
+   * holidays). A tax rate older than the business day before the tax day raises `stale_tax_rate`
+   * (C-06); the same check marks a stale PLN-cost rate (`Lot.costPlnRateStale`, BL-306b).
    */
   readonly isNbpBusinessDay?: ((date: IsoDate) => boolean) | undefined;
 }
@@ -95,6 +96,20 @@ export interface Lot {
   readonly taxCostRemaining: Money | null;
   /** NBP rate of the transfer day used to convert the economic cost to this account's currency. */
   readonly transferRate: FxRate | null;
+  /**
+   * Economic cost in PLN (BL-306b, Z-29): on a PLN account the cost itself; on an account in another
+   * currency the cost × NBP mid of the last business day before the cost day (as in the tax view,
+   * § 2.2), on any account type. Null when the cost, the cost day or that NBP rate is unknown —
+   * never the cost at today's rate.
+   */
+  readonly costPln: Money | null;
+  readonly costPlnRemaining: Money | null;
+  /** NBP rate used for `costPln` (null on a PLN account or when missing). */
+  readonly costPlnRate: FxRate | null;
+  /** Expected table date: the last NBP business day before the cost day (null without a rate). */
+  readonly costPlnRateExpected: IsoDate | null;
+  /** True when `costPlnRate` is older than expected (gap in NBP data); shown, never hidden. */
+  readonly costPlnRateStale: boolean;
   readonly closedOn: IsoDate | null;
 }
 
@@ -172,6 +187,8 @@ export interface Position {
   readonly costInstrument: Money | null;
   readonly fxFee: Money;
   readonly taxCost: Money | null;
+  /** Σ `costPlnRemaining` of the open lots (BL-306b); null when any lot lacks it. */
+  readonly costPln: Money | null;
   readonly lots: readonly Lot[];
 }
 
@@ -235,6 +252,10 @@ interface WorkingLot {
   fxFeePln: Decimal | null;
   fxFeePlnRemaining: Decimal | null;
   transferRate: FxRate | null;
+  costPln: Decimal | null;
+  costPlnRemaining: Decimal | null;
+  costPlnRate: FxRate | null;
+  costPlnRateExpected: IsoDate | null;
   closedOn: IsoDate | null;
 }
 
@@ -245,6 +266,7 @@ interface Share {
   fxFee: Decimal;
   taxCost: Decimal | null;
   fxFeePln: Decimal | null;
+  costPln: Decimal | null;
 }
 
 const ZERO = new Decimal(0);
@@ -265,6 +287,7 @@ function takeShare(lot: WorkingLot, units: Decimal, date: IsoDate): Share {
     fxFee: part(lot.fxFeeRemaining),
     taxCost: lot.taxCostRemaining === null ? null : part(lot.taxCostRemaining),
     fxFeePln: lot.fxFeePlnRemaining === null ? null : part(lot.fxFeePlnRemaining),
+    costPln: lot.costPlnRemaining === null ? null : part(lot.costPlnRemaining),
   };
   lot.quantityRemaining = lot.quantityRemaining.minus(units);
   lot.costRemaining = lot.costRemaining.minus(share.cost);
@@ -277,6 +300,9 @@ function takeShare(lot: WorkingLot, units: Decimal, date: IsoDate): Share {
   }
   if (lot.fxFeePlnRemaining !== null && share.fxFeePln !== null) {
     lot.fxFeePlnRemaining = lot.fxFeePlnRemaining.minus(share.fxFeePln);
+  }
+  if (lot.costPlnRemaining !== null && share.costPln !== null) {
+    lot.costPlnRemaining = lot.costPlnRemaining.minus(share.costPln);
   }
   if (lot.quantityRemaining.isZero()) lot.closedOn = date;
   return share;
@@ -297,6 +323,7 @@ function freezeLot(lot: WorkingLot, usedRateDates: ReadonlyMap<string, IsoDate>)
   const m = (value: Decimal, currency: CurrencyCode) => money(value, currency);
   const tax = (value: Decimal | null) => (value === null ? null : money(value, PLN));
   const known = (value: Decimal) => (lot.costKnown ? m(value, lot.costCurrency) : null);
+  const pln = (value: Decimal | null) => (lot.costKnown && value !== null ? m(value, PLN) : null);
   const instrument = (value: Decimal | null) =>
     value === null ? null : m(value, lot.instrumentCurrency);
   return Object.freeze({
@@ -325,6 +352,18 @@ function freezeLot(lot: WorkingLot, usedRateDates: ReadonlyMap<string, IsoDate>)
     taxCostRemaining: tax(lot.taxCostRemaining),
     taxRateDate: usedRateDates.get(lot.originTransactionId) ?? null,
     transferRate: lot.transferRate,
+    costPln: pln(lot.costPln),
+    costPlnRemaining: pln(lot.costPlnRemaining),
+    costPlnRate: lot.costKnown && lot.costPln !== null ? lot.costPlnRate : null,
+    costPlnRateExpected:
+      lot.costKnown && lot.costPln !== null && lot.costPlnRate ? lot.costPlnRateExpected : null,
+    costPlnRateStale: Boolean(
+      lot.costKnown &&
+        lot.costPln !== null &&
+        lot.costPlnRate &&
+        lot.costPlnRateExpected &&
+        lot.costPlnRate.date < lot.costPlnRateExpected,
+    ),
     closedOn: lot.closedOn,
   });
 }
@@ -378,21 +417,50 @@ export function buildLedger(input: LedgerInput): Ledger {
     return type !== "ike" && type !== "ikze";
   };
 
+  /** Day of cost or income (§ 2.2): settlement date, or trade date with `dateBasis = trade`. */
+  const costDayOf = (tx: Transaction): IsoDate | null =>
+    settings.dateBasis === "trade" ? tx.tradeDate : (tx.settleDate ?? null);
+
   function taxDateOf(tx: Transaction): IsoDate | null {
-    if (settings.dateBasis === "trade") return tx.tradeDate;
-    if (tx.settleDate !== undefined) return tx.settleDate;
-    report({ code: "missing_settle_date", transactionId: tx.id });
-    return null;
+    const date = costDayOf(tx);
+    if (date === null) report({ code: "missing_settle_date", transactionId: tx.id });
+    return date;
   }
 
-  const isNbpBusinessDay = input.isNbpBusinessDay ?? isWeekday;
+  /** NBP table A mid of the last business day before `date` (§ 2.2): tax view and PLN cost. */
+  const rateBefore = (currency: CurrencyCode, date: IsoDate) =>
+    input.taxRates?.before(currency, PLN, date);
+
+  /**
+   * Economic cost in PLN of a new lot (BL-306b): the cost on a PLN account, else the cost × NBP of
+   * the last business day before `date`. An unknown day or rate gives null, never 0.
+   */
+  function plnCost(cost: Decimal, currency: CurrencyCode, date: IsoDate | null) {
+    const none = { costPln: null, costPlnRate: null, costPlnRateExpected: null };
+    if (currency === PLN) return { ...none, costPln: cost };
+    const rate = date === null ? undefined : rateBefore(currency, date);
+    return rate && date !== null
+      ? {
+          costPln: cost.times(rate.rate),
+          costPlnRate: rate,
+          costPlnRateExpected: expectedRateDate(date),
+        }
+      : none;
+  }
+
+  const isNbpBusinessDay = input.isNbpBusinessDay ?? polishBusinessDay;
   const usedRateDate = new Map<string, IsoDate>();
+
+  /** The last NBP business day before `date` (§ 2.2, C-06). */
+  function expectedRateDate(date: IsoDate): IsoDate {
+    let expected = addDays(date, -1);
+    for (let i = 0; i < 31 && !isNbpBusinessDay(expected); i += 1) expected = addDays(expected, -1);
+    return expected;
+  }
 
   /** The rate must come from the last NBP business day before `date` (§ 2.2, C-06). */
   function checkFresh(rate: FxRate, date: IsoDate, txId: string) {
-    let expected = addDays(date, -1);
-    for (let i = 0; i < 31 && !isNbpBusinessDay(expected); i += 1) expected = addDays(expected, -1);
-    if (rate.date < expected) {
+    if (rate.date < expectedRateDate(date)) {
       report({ code: "stale_tax_rate", transactionId: txId, currency: rate.base, date: rate.date });
     }
   }
@@ -401,7 +469,7 @@ export function buildLedger(input: LedgerInput): Ledger {
     if (value === undefined) return ZERO;
     if (value.currency === PLN) return value.amount;
     if (date === null) return null;
-    const rate = input.taxRates?.before(value.currency, PLN, date);
+    const rate = rateBefore(value.currency, date);
     if (!rate) {
       report({ code: "missing_tax_rate", transactionId: txId, currency: value.currency, date });
       return null;
@@ -480,6 +548,8 @@ export function buildLedger(input: LedgerInput): Ledger {
       );
       fxFeePln = toPln(tx.fxFee, taxDate, tx.id);
     }
+    const cost = tx.amount.amount.negated().plus(linkedCost);
+    const pln = plnCost(cost, tx.amount.currency, costDayOf(tx));
     insertLot({
       key: tx.id,
       accountId: tx.accountId,
@@ -495,8 +565,8 @@ export function buildLedger(input: LedgerInput): Ledger {
       costCurrency: tx.amount.currency,
       instrumentCurrency: tx.price.currency,
       costKnown: true,
-      cost: tx.amount.amount.negated().plus(linkedCost),
-      costRemaining: tx.amount.amount.negated().plus(linkedCost),
+      cost,
+      costRemaining: cost,
       costInstrument,
       costInstrumentRemaining: costInstrument,
       fxFee,
@@ -506,6 +576,10 @@ export function buildLedger(input: LedgerInput): Ledger {
       fxFeePln,
       fxFeePlnRemaining: fxFeePln,
       transferRate: null,
+      costPln: pln.costPln,
+      costPlnRemaining: pln.costPln,
+      costPlnRate: pln.costPlnRate,
+      costPlnRateExpected: pln.costPlnRateExpected,
       closedOn: null,
     });
   }
@@ -682,6 +756,8 @@ export function buildLedger(input: LedgerInput): Ledger {
         taxCostRemaining: share.taxCost,
         fxFeePln: share.fxFeePln,
         fxFeePlnRemaining: share.fxFeePln,
+        costPln: share.costPln,
+        costPlnRemaining: share.costPln,
         closedOn: null,
       }),
     );
@@ -759,6 +835,13 @@ export function buildLedger(input: LedgerInput): Ledger {
     lot.fxFeeRemaining = lot.fxFeeRemaining.times(factor);
     lot.costCurrency = target;
     lot.transferRate = rate ?? null;
+    // On a PLN account the PLN cost is the economic cost; elsewhere the original PLN cost moves on.
+    if (target === PLN) {
+      lot.costPln = lot.cost;
+      lot.costPlnRemaining = lot.costRemaining;
+      lot.costPlnRate = null;
+      lot.costPlnRateExpected = null;
+    }
   }
 
   /** Transfer from outside the tracked accounts: declared cost and date, or an unknown cost (§ 3.5). */
@@ -773,6 +856,7 @@ export function buildLedger(input: LedgerInput): Ledger {
       taxCost = toPln(declared, acquiredOn, tx.id);
     }
     const cost = declared?.amount ?? ZERO;
+    const pln = plnCost(cost, account.currency, acquiredOn);
     insertLot({
       key: tx.id,
       accountId: tx.accountId,
@@ -799,6 +883,10 @@ export function buildLedger(input: LedgerInput): Ledger {
       fxFeePln: declared === undefined ? null : ZERO,
       fxFeePlnRemaining: declared === undefined ? null : ZERO,
       transferRate: null,
+      costPln: pln.costPln,
+      costPlnRemaining: pln.costPln,
+      costPlnRate: pln.costPlnRate,
+      costPlnRateExpected: pln.costPlnRateExpected,
       closedOn: null,
     });
   }
@@ -820,10 +908,7 @@ export function buildLedger(input: LedgerInput): Ledger {
       tx.gross.currency,
     );
     const taxDate = tx.settleDate ?? tx.tradeDate;
-    const rate =
-      tx.gross.currency === PLN
-        ? undefined
-        : input.taxRates?.before(tx.gross.currency, PLN, taxDate);
+    const rate = tx.gross.currency === PLN ? undefined : rateBefore(tx.gross.currency, taxDate);
     const grossPln =
       tx.gross.currency === PLN
         ? tx.gross
@@ -904,6 +989,7 @@ export function buildLedger(input: LedgerInput): Ledger {
       });
     }
     const taxCosts = lots.map((lot) => lot.taxCostRemaining);
+    const plnCosts = lots.map((lot) => lot.costPlnRemaining);
     const costs = lots.map((lot) => lot.costRemaining);
     const instrumentCosts = lots.map((lot) => lot.costInstrumentRemaining);
     const costKnown = !costs.includes(null);
@@ -922,6 +1008,7 @@ export function buildLedger(input: LedgerInput): Ledger {
           first.fxFee.currency,
         ),
         taxCost: taxCosts.includes(null) ? null : sumMoney(taxCosts as Money[], PLN),
+        costPln: plnCosts.includes(null) ? null : sumMoney(plnCosts as Money[], PLN),
         lots: Object.freeze(lots),
       }),
     );

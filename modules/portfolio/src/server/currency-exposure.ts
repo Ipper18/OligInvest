@@ -80,11 +80,11 @@ export function projectCurrencyExposure(input: CurrencyExposureInput, now: Date)
     reason: Reason;
   }[] = [];
   const effects: { currency: string; effect: PriceFxEffect }[] = [];
+  const costTables = new Map<string, { rate: FxRate; expected: IsoDate; stale: boolean }>();
   const scoped = new Set<string>();
   for (const p of positions) {
     const code = currencyOf(p);
     if (code === "PLN") continue;
-    const account = input.accounts.find((a) => a.id === p.accountId)!;
     const exclude = (reason: Reason) =>
       exclusions.push({
         accountId: p.accountId,
@@ -92,19 +92,34 @@ export function projectCurrencyExposure(input: CurrencyExposureInput, now: Date)
         currency: code,
         reason,
       });
-    // Z-29: the PLN cost of the account currency is not recorded (BL-306b), so no split.
-    if (account.currency === code) {
-      exclude("missing_cost_pln");
-      continue;
-    }
     const original = input.ledger.positions.find(
       (o) => o.accountId === p.accountId && o.instrumentId === p.instrumentId,
     )!;
-    const effect = positionEffect(p, original, fx, date);
+    // BL-306b (Z-29): r0 uses the PLN cost of the lots — on an account in another currency the
+    // cost × NBP of the last business day before the cost day, never today's rate. Without that
+    // rate the position stays in the exposure but out of the split, never an FX effect of 0.
+    if (original.cost && !original.costPln) {
+      exclude("missing_cost_pln");
+      continue;
+    }
+    const effect = positionEffect(p, original, fx, date, original.costPln ?? undefined);
     // Unknown cost leaves the sums like in positions totals (decision 2026-10-08); a valuation
     // gap (price or rate) makes the whole currency row null.
     if (typeof effect === "string") exclude(effect);
-    else effects.push({ currency: code, effect });
+    else {
+      effects.push({ currency: code, effect });
+      // Age of the PLN-cost rates is part of the result (owner decision 2026-11-20).
+      for (const lot of original.lots)
+        if (lot.costPlnRate && lot.costPlnRateExpected && !lot.quantityRemaining.isZero())
+          costTables.set(
+            `${lot.costPlnRate.base}:${lot.costPlnRate.date}:${lot.costPlnRateExpected}`,
+            {
+              rate: lot.costPlnRate,
+              expected: lot.costPlnRateExpected,
+              stale: lot.costPlnRateStale,
+            },
+          );
+    }
     if (typeof effect !== "string" || effect !== "missing_cost") scoped.add(code);
   }
   const sums = priceFxEffectsByCurrency(effects);
@@ -185,6 +200,26 @@ export function projectCurrencyExposure(input: CurrencyExposureInput, now: Date)
       fxRates: "nbp_table_a_mid",
       view: "economic",
       costBasisMethod: "fifo",
+      costFxRates: {
+        method: "nbp_table_a_mid_previous_business_day",
+        stale: [...costTables.values()].some((t) => t.stale),
+        tables: [...costTables.values()]
+          .sort(
+            (a, b) =>
+              a.rate.date.localeCompare(b.rate.date) ||
+              a.rate.base.localeCompare(b.rate.base) ||
+              a.expected.localeCompare(b.expected),
+          )
+          .map((t) => ({
+            currency: t.rate.base,
+            rateDate: t.rate.date,
+            expectedDate: t.expected,
+            stale: t.stale,
+            tableNo:
+              input.tables.get(`${t.rate.base}:${t.rate.quote}:${t.rate.date}:${t.rate.source}`) ??
+              null,
+          })),
+      },
     },
     meta: {
       source: "computed",
@@ -229,6 +264,14 @@ export async function readCurrencyExposure(
       cash: ledger.cash.filter((c) => ids.has(c.accountId)),
     };
     const instrumentIds = [...new Set(selected.positions.map((p) => p.instrumentId))];
+    // Table numbers of the NBP rates behind the PLN cost (BL-306b), besides the valuation window.
+    const costRateDates = [
+      ...new Set(
+        selected.positions.flatMap((p) =>
+          p.lots.flatMap((l) => (l.costPlnRate ? [l.costPlnRate.date] : [])),
+        ),
+      ),
+    ];
     const currencies = new Map(
       (
         await tx.execute(
@@ -249,7 +292,7 @@ export async function readCurrencyExposure(
     const tables = new Map(
       (
         await tx.execute(
-          sql`SELECT base,quote,rate_date::text AS date,source,table_no AS "tableNo" FROM market.fx_rates WHERE table_no IS NOT NULL AND rate_date<=${date}::date AND rate_date>=${date}::date - 31 AND (base='PLN' OR quote='PLN')`,
+          sql`SELECT base,quote,rate_date::text AS date,source,table_no AS "tableNo" FROM market.fx_rates WHERE table_no IS NOT NULL AND ((rate_date<=${date}::date AND rate_date>=${date}::date - 31) OR rate_date=ANY(${sql.param(costRateDates)}::date[])) AND (base='PLN' OR quote='PLN')`,
         )
       ).rows.map((r) => {
         const row = z
