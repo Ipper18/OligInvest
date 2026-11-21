@@ -278,7 +278,7 @@ M4 zależy od M1 i M2, nie od M3.
 | BL-403 | Moduł `notifications`: kanały, ciche godziny, deduplikacja, limit e-mail 300/dobę, dziennik doręczeń | FR-05.06 | [ADR-010](../09-decyzje/ADR-010-kanaly-powiadomien.md), MOD | BL-402, BL-107 | 2,5 | w toku |
 | BL-404 | Moduł `alerts`: alerty cenowe (próg, zmiana %), ewaluacja po notowaniach i EOD, histereza, cooldown | FR-05.01 | MOD, OBL | BL-137, BL-403 | 3 | w toku |
 | BL-405 | Treści alertów bez kwot portfela i bez języka rekomendacji; szablony z testem języka | FR-05.07 | LAW, [ADR-010](../09-decyzje/ADR-010-kanaly-powiadomien.md) | BL-404 | 1 | w toku |
-| BL-406 | Ekrany alertów: lista, kreator z podglądem treści, historia wyzwoleń i doręczeń | FR-05.01, FR-05.06 | EKR | BL-404, BL-413 | 2 | w toku — [raport](bl-406-session-report.md); nakład i odchylenie niezmierzone |
+| BL-406 | Ekrany alertów: lista, kreator z podglądem treści, historia wyzwoleń i doręczeń | FR-05.01, FR-05.06 | EKR | BL-404, BL-413 | 2 | w toku — [PR #92](https://github.com/Ipper18/OligInvest/pull/92), [kontrole lokalne](bl-406-session-report.md); nakład i odchylenie niezmierzone |
 | BL-407 | Tokeny PAT: zakresy, ważność 90/365 dni, limity 30/min i 2 000/dobę, step-up, e-mail o nowej sieci, ekran tokenów | FR-07.07 | AUTH | BL-106 | 2,5 | w toku |
 | BL-408 | API szybkich akcji `/api/v1/quick/*` (tekst i JSON, pl-PL, < 300 ms) z `quick/alerts` | FR-09.04 | API, IOS | BL-407, BL-146, BL-404 | 2,5 | w toku |
 | BL-409 | Gotowe Skróty iOS (linki iCloud, pytania przy imporcie) i ekran `/ustawienia/integracje` | FR-09.05 | IOS, USR | BL-408, BL-413 | 1,5 | todo |
@@ -334,7 +334,7 @@ Każde zadanie z analizą przyszłości kończy się przeglądem metodologicznym
 | BL-560 | Kalkulator celu (wspólne liczby losowe, p = 50/75/90 %) | FR-04.09 | OBL | BL-313 | 1,5 | w toku (Claude Code, `feat/m3-stress-goal`, tylko backend; dokładny kwantyl zamiast bisekcji, § 12.6; ekran po redesignie UI; nakład niezmierzony) |
 | BL-561 | Screening kandydatów na bazie screenera, z listą spełnionych kryteriów | FR-04.07 | LAW | BL-514 | 1,5 | todo |
 | BL-562 | Alerty na wskaźnikach (te same funkcje co wykres) | FR-05.02 | MOD | BL-404, BL-201 | 2 | todo |
-| BL-563 | Alerty portfelowe (zmiana wartości, obsunięcie, odchylenie alokacji) | FR-05.03 | MOD | BL-404, BL-305 | 1,5 | w toku — [raport](bl-406-session-report.md); nakład i odchylenie niezmierzone |
+| BL-563 | Alerty portfelowe (zmiana wartości, obsunięcie, odchylenie alokacji) | FR-05.03 | MOD | BL-404, BL-305 | 1,5 | w toku — [PR #92](https://github.com/Ipper18/OligInvest/pull/92), [kontrole lokalne](bl-406-session-report.md); nakład i odchylenie niezmierzone |
 | BL-564 | Spike i wdrożenie OAuth z wymuszonym TOTP za flagą `auth.oauth` (ADR) | FR-07.03 | AUTH, [ADR-004](../09-decyzje/ADR-004-postgres-better-auth-rls.md) | BL-103 | 3 | todo |
 | BL-565 | Migawka offline: tylko w zainstalowanej PWA, po zgodzie, ≤ 30 dni, kasowana przy wylogowaniu i 401 | FR-09.02 | UI, RODO | BL-401 | 2 | todo |
 | BL-566 | Przegląd metodologiczny i zgodności funkcji M5b (checklisty, test języka) | NFR-07.02 | LAW | BL-559, BL-555 | 0,5 | todo |
