@@ -18,7 +18,7 @@ Plik rulesetu ma `enforcement: disabled` i pustą listę obejść. Import jest w
 
 GitHub nie pozwala autorowi zatwierdzić własnego PR ([dokumentacja](https://docs.github.com/en/pull-requests/how-tos/review-pull-requests/reviewing-proposed-changes-in-a-pull-request), sprawdzono 2026-09-20). PR utworzony przez `gh` w tej sesji ma autora `Ipper18`, a CODEOWNERS wskazuje tę samą osobę.
 
-Decyzja właściciela z 2026-09-20 (R-23): `required_approving_review_count: 0` i `require_code_owner_review: false`. Nie tworzymy odrębnej tożsamości autora. Właściciel dokumentuje przegląd każdego PR w jego checkliście przed scaleniem (R-11); CODEOWNERS wskazuje obszary szczególnej uwagi. GitHub egzekwuje wymagany PR, CI i rozwiązanie wątków, ale nie liczbę zatwierdzeń. Brak bypass. To doprecyzowanie procesu nie wymaga ADR.
+Decyzja właściciela z 2026-09-20 (R-23): `required_approving_review_count: 0` i `require_code_owner_review: false`. Nie tworzymy odrębnej tożsamości autora. Właściciel dokumentuje przegląd każdego PR w jego checkliście przed scaleniem (R-11); CODEOWNERS wskazuje obszary szczególnej uwagi. GitHub egzekwuje wymagany PR, CI i rozwiązanie wątków, ale nie liczbę zatwierdzeń. Brak bypass. Niezależną kontrolę SHA i warunki ewentualnej przyszłej automatyzacji wyłącznie dla PR niskiego ryzyka określa [ADR-018](../09-decyzje/ADR-018-autonomia-zespolu.md). Obecnie auto-merge jest wyłączone.
 
 ## 2. General i Actions
 
