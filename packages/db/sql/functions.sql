@@ -106,6 +106,63 @@ CREATE FUNCTION identity.erase_account(p_user_id uuid, p_actor_ref text)
   END
   $$;
 
+-- Usunięcie konta zlecone przez administratora (BL-509, FR-08.01; decyzja właściciela 2026-11-21): ten sam wniosek
+-- i to samo nocne zadanie identity.erasure co RODO, z requested_by = 'admin'. Rola aplikacji w kontekście admina nie ma
+-- polityk na tej tabeli (FR-08.01), więc wniosek zakłada, anuluje i pokazuje wyłącznie ta trójka funkcji. Własnego konta
+-- administrator tą drogą nie usunie (prawo z RODO w /ustawienia). Aktywny wniosek → pusty wynik (409 w API).
+CREATE FUNCTION identity.admin_schedule_deletion(p_user_id uuid, p_grace_days integer)
+  RETURNS TABLE (id uuid, requested_at timestamptz, scheduled_for timestamptz)
+  LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = pg_catalog, identity
+  AS $$
+  #variable_conflict use_column
+  BEGIN
+    IF platform.current_app_role() IS DISTINCT FROM 'admin' OR platform.current_user_id() IS NULL THEN
+      RAISE EXCEPTION 'administrator context required' USING ERRCODE = '42501';
+    END IF;
+    IF p_user_id IS NULL OR p_user_id = platform.current_user_id() OR p_grace_days IS NULL OR p_grace_days < 14 THEN
+      RAISE EXCEPTION 'invalid deletion request' USING ERRCODE = '22023';
+    END IF;
+    -- Ten sam klucz co wniosek użytkownika (gdpr-routes.ts): równoległe wnioski nie tworzą dwóch aktywnych.
+    PERFORM pg_advisory_xact_lock(hashtextextended('gdpr-deletion:' || p_user_id::text, 114));
+    IF EXISTS (SELECT 1 FROM identity.deletion_requests d WHERE d.user_id = p_user_id
+        AND d.cancelled_at IS NULL AND d.completed_at IS NULL) THEN
+      RETURN;
+    END IF;
+    RETURN QUERY INSERT INTO identity.deletion_requests AS d (user_id, scheduled_for, requested_by)
+      VALUES (p_user_id, now() + make_interval(days => p_grace_days), 'admin')
+      RETURNING d.id, d.requested_at, d.scheduled_for;
+  END
+  $$;
+
+CREATE FUNCTION identity.admin_cancel_deletion(p_user_id uuid)
+  RETURNS uuid
+  LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = pg_catalog, identity
+  AS $$
+  DECLARE v_id uuid;
+  BEGIN
+    IF platform.current_app_role() IS DISTINCT FROM 'admin' OR platform.current_user_id() IS NULL THEN
+      RAISE EXCEPTION 'administrator context required' USING ERRCODE = '42501';
+    END IF;
+    UPDATE identity.deletion_requests d SET cancelled_at = now()
+      WHERE d.user_id = p_user_id AND d.requested_by = 'admin' AND d.cancelled_at IS NULL
+        AND d.completed_at IS NULL AND d.scheduled_for > now()
+      RETURNING d.id INTO v_id;
+    RETURN v_id;
+  END
+  $$;
+
+-- Stan wniosków dla listy kont w panelu: tylko termin i strona zlecająca, bez innych danych konta.
+CREATE FUNCTION identity.admin_deletion_status(p_user_ids uuid[])
+  RETURNS TABLE (user_id uuid, scheduled_for timestamptz, requested_by text)
+  LANGUAGE sql STABLE SECURITY DEFINER SET search_path = pg_catalog, identity
+  AS $$
+    SELECT DISTINCT ON (d.user_id) d.user_id, d.scheduled_for, d.requested_by
+    FROM identity.deletion_requests d
+    WHERE platform.current_app_role() = 'admin' AND platform.current_user_id() IS NOT NULL
+      AND d.user_id = ANY (p_user_ids) AND d.cancelled_at IS NULL AND d.completed_at IS NULL
+    ORDER BY d.user_id, d.requested_at DESC, d.id DESC
+  $$;
+
 -- Właściciel uruchomienia analizy (BL-312): jobs dostaje z kolejki wyłącznie runId i odczytuje user_id
 -- z rekordu tą funkcją (tylko kontekst system), a wynik zapisuje już w kontekście RLS właściciela.
 CREATE FUNCTION analytics.run_owner(p_run_id uuid)

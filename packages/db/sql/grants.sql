@@ -22,6 +22,7 @@ GRANT EXECUTE ON FUNCTION identity.find_invitation(text), identity.consume_invit
 GRANT EXECUTE ON FUNCTION platform.current_user_id(), platform.current_app_role() TO oliginvest_app;
 GRANT EXECUTE ON FUNCTION analytics.run_owner(uuid) TO oliginvest_app;
 GRANT EXECUTE ON FUNCTION identity.export_auth_data(), identity.erase_account(uuid, text) TO oliginvest_app;
+GRANT EXECUTE ON FUNCTION identity.admin_schedule_deletion(uuid, integer), identity.admin_cancel_deletion(uuid), identity.admin_deletion_status(uuid[]) TO oliginvest_app;
 
 -- oliginvest_analytics_ro: tylko dane rynkowe (bez watchlist i presetów użytkowników)
 GRANT SELECT ON market.instruments, market.bars_daily, market.fx_rates, market.corporate_actions, market.trading_calendar,
@@ -34,6 +35,7 @@ GRANT SELECT ON market.data_quality_issues TO oliginvest_analytics_ro;
 REVOKE EXECUTE ON FUNCTION identity.find_invitation(text), identity.consume_invitation(text, uuid) FROM PUBLIC;
 REVOKE EXECUTE ON FUNCTION analytics.run_owner(uuid) FROM PUBLIC;
 REVOKE EXECUTE ON FUNCTION identity.export_auth_data(), identity.erase_account(uuid, text) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION identity.admin_schedule_deletion(uuid, integer), identity.admin_cancel_deletion(uuid), identity.admin_deletion_status(uuid[]) FROM PUBLIC;
 
 -- Przyszłe tabele w schematach domenowych dostają uprawnienia domyślne (nowa tabela z user_id MUSI dostać politykę RLS w tej samej migracji).
 ALTER DEFAULT PRIVILEGES FOR ROLE oliginvest_owner IN SCHEMA identity, notifications, market, portfolio, analytics, alerts, education
