@@ -23,6 +23,16 @@ export const changeParams = object({
   threshold: z.number().gt(0).max(1),
   direction: z.enum(["up", "down", "both"]).default("both"),
 });
+export const portfolioParams = object({ threshold: decimal.refine((v) => toDecimal(v).gt(0)) });
+export const driftParams = portfolioParams.extend({ targetId: z.uuid() }).strict();
+const types = [
+  "price_above",
+  "price_below",
+  "change_pct",
+  "portfolio_change",
+  "drawdown",
+  "allocation_drift",
+] as const;
 export const priceRuleInput = z
   .discriminatedUnion("type", [
     object({
@@ -43,6 +53,9 @@ export const priceRuleInput = z
       instrumentId: z.uuid(),
       params: changeParams,
     }),
+    object({ ...settings, type: z.literal("portfolio_change"), params: portfolioParams }),
+    object({ ...settings, type: z.literal("drawdown"), params: portfolioParams }),
+    object({ ...settings, type: z.literal("allocation_drift"), params: driftParams }),
   ])
   .openapi("PriceAlertRuleInput");
 export type PriceRuleInput = z.infer<typeof priceRuleInput>;
@@ -57,9 +70,10 @@ export const rulePatch = object({
   .openapi("PriceAlertRulePatch", { minProperties: 1 });
 export const ruleSchema = object({
   id: z.uuid(),
-  type: z.enum(["price_above", "price_below", "change_pct"]),
-  instrumentId: z.uuid(),
-  params: z.union([priceParams, changeParams]),
+  type: z.enum(types),
+  instrumentId: z.uuid().optional(),
+  inactiveReason: z.enum(["target_deleted", "target_changed"]).optional(),
+  params: z.union([driftParams, portfolioParams, priceParams, changeParams]),
   channels,
   cooldownMinutes: z.number().int().min(5).max(10080),
   hysteresis: z.number().min(0).max(0.1),
@@ -96,13 +110,14 @@ export const sources = z.enum([
 export const eventSchema = object({
   id: z.uuid(),
   ruleId: z.uuid(),
-  ruleType: z.enum(["price_above", "price_below", "change_pct"]),
+  ruleType: z.enum(types),
   triggeredAt: z.iso.datetime(),
   value: decimal,
   threshold: decimal,
   message: z.string(),
   dataAsOf: z.iso.datetime(),
   dataSource: sources,
+  delayMinutes: z.number().int().min(0).optional(),
   instrument: summarySchema.optional(),
   deliveries: z.array(
     object({
@@ -116,7 +131,12 @@ export const eventPage = object({ data: z.array(eventSchema), page: pageInfo }).
   "PriceAlertEventPage",
 );
 export const alertJob = z
-  .object({ v: z.literal(1), userId: z.uuid(), mode: z.enum(["quote", "eod"]) })
+  .object({
+    v: z.literal(1),
+    userId: z.uuid(),
+    mode: z.enum(["quote", "eod", "valuation"]),
+    valuationAsOf: z.iso.datetime().optional(),
+  })
   .strict();
 export const stateSchema = z
   .object({

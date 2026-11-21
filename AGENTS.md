@@ -15,7 +15,7 @@
 2. Przeczytaj sekcję etapu w [`docs/08-plan/roadmapa.md`](docs/08-plan/roadmapa.md) (kryteria wyjścia) i dokumenty z kolumny „Dokumenty” (legenda: backlog § 0.1).
 3. Zawsze obowiązują: [`CONTRIBUTING.md`](CONTRIBUTING.md) (Definition of Done), [`docs/00-przeglad/wymagania.md`](docs/00-przeglad/wymagania.md) (FR/NFR i kryteria akceptacji), decyzje w [`docs/09-decyzje/`](docs/09-decyzje/ADR-000-szablon.md) (ADR-001…015).
 4. Źródła kontraktów: API — [`docs/02-api/openapi.yaml`](docs/02-api/openapi.yaml) i [`konwencje-api.md`](docs/02-api/konwencje-api.md); SSE — [`realtime.md`](docs/02-api/realtime.md); baza — [`docs/03-dane/schema.sql`](docs/03-dane/schema.sql) i [`testy-rls.sql`](docs/03-dane/testy-rls.sql); wzory — [`docs/03-dane/obliczenia-finansowe.md`](docs/03-dane/obliczenia-finansowe.md) i [`wektory-testowe.json`](docs/03-dane/wektory-testowe.json); importy — [`formaty-importu.md`](docs/03-dane/formaty-importu.md); moduły — [`docs/01-architektura/moduly.md`](docs/01-architektura/moduly.md); UI — [`docs/04-frontend/`](docs/04-frontend/mapa-ekranow.md); bezpieczeństwo — [`docs/06-bezpieczenstwo/`](docs/06-bezpieczenstwo/kontrole-bezpieczenstwa.md); wdrożenie — [`docs/07-wdrozenie/`](docs/07-wdrozenie/infrastruktura.md).
-5. Gdy dokumentacja jest sprzeczna, niepełna albo nie zgadza się z rzeczywistością (wersja biblioteki, zachowanie API) — **zatrzymaj się**, opisz rozbieżność i zaproponuj zmianę dokumentu lub nowy ADR. Nie zgaduj i nie zmieniaj decyzji po cichu.
+5. Gdy dokumentacja jest sprzeczna, niepełna albo nie zgadza się z rzeczywistością (wersja biblioteki, zachowanie API) — rozstrzygnij według § 6.2 i pracuj dalej; zatrzymaj się tylko w przypadkach wymienionych w § 6.2. Nie zgaduj i nie zmieniaj decyzji po cichu: każde rozstrzygnięcie wpisz do PR.
 
 ## 3. Stos (zmiana tylko przez ADR)
 
@@ -98,6 +98,8 @@ Szczegóły, licencje i uzasadnienia: [`docs/01-architektura/stack-technologiczn
 - Język: dokumentacja i teksty UI po polsku (klucze w `packages/i18n`, brak literałów w komponentach); kod, identyfikatory, nazwy plików i commity po angielsku.
 - Nazwy: pliki i katalogi `kebab-case`, komponenty i typy `PascalCase`, funkcje `camelCase`, stałe i env `SCREAMING_SNAKE_CASE`, tabele SQL `snake_case` w liczbie mnogiej.
 
+W OpenBot Dyspozytor sam wybiera gotowe BL po sprawdzeniu zależności, otwartych PR i stanu paczki. Obowiązuje jeden aktywny PR implementacyjny. Budowniczy oddaje PR do niezależnej recenzji i kontroli Weryfikatora. Po dwóch nieskutecznych rundach poprawek obowiązuje STOP. Scala wyłącznie właściciel. Dyspozytor wybiera kolejny BL po potwierdzeniu MERGED. Szczegóły i warunki przyszłej bramki opisuje [ADR-018](docs/09-decyzje/ADR-018-autonomia-zespolu.md).
+
 ### 6.1 Oszczędzanie kontekstu i limitu (obowiązuje w każdej sesji)
 
 - **Start sesji:** stan paczki czytaj z krótkiego raportu stanu (np. [`docs/08-plan/m0-1-session-report.md`](docs/08-plan/m0-1-session-report.md)); historii sesji nie czytaj bez potrzeby konkretnego dowodu. Po sesji raport stanu **nadpisz** (ok. 3 KB), a do historii dopisz najwyżej 10 linii na zamknięty etap.
@@ -107,10 +109,22 @@ Szczegóły, licencje i uzasadnienia: [`docs/01-architektura/stack-technologiczn
 - **Lokalnie sprawdzaj tylko to, co zmieniłeś:** `pnpm turbo run lint typecheck test --filter=...[origin/main]` (pakiety zmienione i zależne). Pełne E2E w trzech przeglądarkach, budowanie i skan obrazów oraz pełne monorepo uruchamia CI — lokalnie tylko wtedy, gdy zadanie zmienia te obszary albo diagnozujesz konkretny błąd z CI.
 - **CI sprawdzaj raz, na końcu sesji:** po pushu nie czekaj na przebiegi i nie odpytuj `gh run`/`gh pr checks` w pętli. Przed zakończeniem sesji wywołaj `gh pr checks` jeden raz; przy błędzie czytaj tylko log nieudanego kroku (`gh run view <id> --log-failed`, końcówka) — nie całe logi.
 - **Raport stanu aktualizuj raz na koniec sesji lub paczki**, nie po każdym kroku; nie powtarzaj w nim dowodów zapisanych już w historii ani w opisie PR.
-- **Zależności:** zadanie wykonane lokalnie ma status `w toku` tylko do zielonego CI i wspólnego DoD — traktuj je jako spełnioną zależność.
-- **Rozbieżność z dokumentem:** błąd własnego odwzorowania (kod ≠ dokument) poprawiaj bez pytania i wymień w raporcie; zatrzymuj się, gdy to dokument źródłowy (`schema.sql`, `testy-rls.sql`, `openapi.yaml`, ADR) wydaje się błędny.
+- **Zależności:** zadanie wykonane lokalnie ma status `w toku` tylko do zielonego CI i wspólnego DoD — przy wyborze nowej paczki potwierdź również, że wymagane zmiany są już na origin/main.
+- **Rozbieżność z dokumentem:** rozstrzygaj według § 6.2.
 
-**Zatrzymaj się i zapytaj właściciela, gdy:** zadanie wymaga zmiany decyzji z ADR, nowej usługi zewnętrznej lub kosztu; potrzebne są sekrety, dostęp do serwera albo realne dane; funkcja zbliża się do granicy doradztwa (§ 5.5) albo zmienia status z `11-zgodnosc-prawna.md` § 8; test bezpieczeństwa lub RLS nie przechodzi, a poprawka wymaga osłabienia kontroli.
+### 6.2 Samodzielne decyzje i kiedy się zatrzymać (decyzja właściciela 2026-11-21)
+
+Cel: paczka ma być doprowadzona do draft PR z zielonym CI w jednej sesji, bez przerw na pytania, które da się rozstrzygnąć z dokumentacji.
+
+**Rozstrzygaj sam i pracuj dalej**, a każde rozstrzygnięcie wpisz do opisu PR w sekcji „Decyzje samodzielne” (co, dlaczego, który dokument przeważył):
+
+1. Błąd własnego odwzorowania (kod ≠ dokument) — popraw kod.
+2. Rozbieżność między dokumentami — przeważa źródło wyżej w kolejności: ADR → `wymagania.md` (FR/NFR, zastrzeżenia) → `obliczenia-finansowe.md`, `konwencje-api.md`, `kontrole-bezpieczenstwa.md` → `openapi.yaml`, `schema.sql`, `testy-rls.sql` → backlog i raporty. Popraw niższy dokument w tym samym PR (np. liczba w OpenAPI zamiast `DecimalString` wbrew ADR-014, opis operacji sprzeczny z `obliczenia-finansowe.md`).
+3. Brakujący element kontraktu potrzebny paczce, który już istnieje w `openapi.yaml` lub `openapi-pending.json` — zaimplementuj go zgodnie z kontraktem (lista operacji w testach może tylko rosnąć, `openapi-pending.json` tylko maleć).
+4. Szczegóły UI, nazewnictwo, podział plików, kolejność kroków, brakujące teksty PL/EN, dodatkowe testy — wybierz wariant prostszy i zgodny z systemem projektowym.
+5. Zakres sąsiedniego zadania potrzebny do domknięcia paczki (np. zapis celu alokacji dla alertu) — zrób minimalną część, opisz ją w backlogu przy obu zadaniach.
+
+**Zatrzymaj się i zapytaj właściciela tylko, gdy:** zadanie zmienia zakres biznesowy, zabezpieczenia, workflow, ustawienia GitHub lub ochronę main albo wymaga zmiany decyzji z ADR, nowej usługi zewnętrznej, kosztu albo nowej zależności poza § 5.8; potrzebne są sekrety, dostęp do serwera albo realne dane; funkcja zbliża się do granicy doradztwa (§ 5.5) albo zmienia status z `11-zgodnosc-prawna.md` § 8; test bezpieczeństwa lub RLS nie przechodzi, a poprawka wymaga osłabienia kontroli, wyjątku w skanerze, obniżenia progu lub budżetu, podniesienia timeoutu albo ponawiania testów; dokumenty na tym samym poziomie kolejności są ze sobą sprzeczne i każda opcja zmienia zachowanie widoczne dla użytkownika. Przed pytaniem zrób całą resztę paczki, którą da się zrobić bez tej decyzji, i zadaj wszystkie pytania naraz.
 
 ## 7. Przegląd metodologiczny (zamiast skilli `backtest-review` i `strategy-critique`)
 

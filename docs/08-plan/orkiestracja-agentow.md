@@ -2,7 +2,7 @@
 
 **Cel:** opisać, jak właściciel prowadzi budowę OligInvest zespołem agentów w OpenBot — role, przepływ zadania od backlogu do scalenia, granice uprawnień, izolację środowiska i rutyny — tak, aby automatyzacja nie osłabiła zasad z [`AGENTS.md`](../../AGENTS.md) i [`CONTRIBUTING.md`](../../CONTRIBUTING.md).
 
-**Status:** szkic do przeglądu (2026-10-24). Wdrożenie zaczyna się od pilotażu (§ 10); do jego oceny obowiązuje dotychczasowy sposób pracy z [`prompty-codex.md`](prompty-codex.md).
+**Proces:** decyzja właściciela z 2026-11-21 ([ADR-018](../09-decyzje/ADR-018-autonomia-zespolu.md)). Auto-merge pozostaje wyłączone.
 
 Powiązane: [`openbot-agenci.md`](openbot-agenci.md) (instrukcje agentów do wklejenia), [`openbot-rutyny.md`](openbot-rutyny.md) (rutyny), [`prompty-codex.md`](prompty-codex.md) (paczki i szablon promptu), [`backlog.md`](backlog.md), [`ryzyka.md`](ryzyka.md) (R-11, R-42), [`../09-decyzje/audyt-pluginow.md`](../09-decyzje/audyt-pluginow.md) § 6.
 
@@ -12,20 +12,20 @@ Powiązane: [`openbot-agenci.md`](openbot-agenci.md) (instrukcje agentów do wkl
 |---|---|---|
 | Czym jest | Aplikacja desktopowa (Windows, macOS, Linux) prowadząca trwałych agentów na CLI dostawców: Codex, Claude Code (Claude Agent SDK), Gemini, Cursor (`cursor-agent acp`), Grok, OpenCode, Cline, modele lokalne | [openbot.run](https://openbot.run), [README](https://github.com/nightly-labs/openbot#readme) |
 | Agent | Nazwa, rola, instrukcje, workspace `~/OpenBot/Agents/<agent-id>`, trwały wątek, prywatna sesja dostawcy; zmiana dostawcy nie kasuje wątku ani plików | [OpenBot 101](https://openbot.run/guides/openbot-101) |
-| Kanały | Wspólny wątek kilku agentów; jedno zadanie ma jednego właściciela, przekazanie jest jawną wiadomością; Stop, Resume, Reassign, Archive | [OpenBot 101](https://openbot.run/guides/openbot-101), [README](https://github.com/nightly-labs/openbot#readme) |
+| Kanały | Wspólny wątek kilku agentów; jedno zadanie ma jednego właściciela, lider przydziela kartę; Stop, Resume, Reassign, Archive | [OpenBot 101](https://openbot.run/guides/openbot-101), [README](https://github.com/nightly-labs/openbot#readme) |
 | Rutyny | Instrukcja + godziny uruchomienia; wynik w wątku agenta, oznaczony jako tura zaplanowana | [OpenBot 101](https://openbot.run/guides/openbot-101) |
 | Uprawnienia | Po jednorazowej zgodzie agenci działają z `danger-full-access` i `approvalPolicy: never` — pliki, polecenia, sieć i przeglądarka bez pytania; autorzy nazywają to decyzją produktową, nie granicą bezpieczeństwa | [OpenBot 101](https://openbot.run/guides/openbot-101) |
 | Dane | Workspace, wątki i `openbot.db` lokalnie; prompty idą do dostawcy; konto (opcjonalne) i parowanie telefonu przez Cloudflare/WebRTC bez treści czatów | [README](https://github.com/nightly-labs/openbot#readme) |
 | Marketplace | Agenci, skille, pluginy (m.in. GitHub na PAT, Linear); dane uwierzytelniające pluginu trafiają do usługi zewnętrznej | [Marketplace](https://openbot.run/guides/openbot-marketplace) |
 | Licencja i dojrzałość | PolyForm Noncommercial 1.0.0 (wersje ≤ 0.1.11: Apache-2.0); „development preview” | [README](https://github.com/nightly-labs/openbot#readme) |
 
-OpenBot nie jest zależnością aplikacji ani elementem stosu — to narzędzie właściciela, jak edytor. Nie zmienia [`stack-technologiczny.md`](../01-architektura/stack-technologiczny.md) i nie wymaga ADR; audyt narzędzia: [`audyt-pluginow.md`](../09-decyzje/audyt-pluginow.md) § 6.
+OpenBot nie jest zależnością aplikacji ani elementem stosu — to narzędzie właściciela, jak edytor. Nie zmienia [`stack-technologiczny.md`](../01-architektura/stack-technologiczny.md). Zasady pracy określa [ADR-018](../09-decyzje/ADR-018-autonomia-zespolu.md). Audyt narzędzia: [`audyt-pluginow.md`](../09-decyzje/audyt-pluginow.md) § 6.
 
 ## 2. Co automatyzujemy, a co zostaje u właściciela
 
 | Automatyzujemy (agenci) | Zostaje u właściciela |
 |---|---|
-| wybór następnej paczki z [`prompty-codex.md`](prompty-codex.md) § 3.2 i sprawdzenie zależności | zgoda na start paczki |
+| wybór następnej paczki z [`prompty-codex.md`](prompty-codex.md) § 3.2 i sprawdzenie zależności | decyzje o zmianie zakresu biznesowego |
 | złożenie promptu z szablonu § 3.1 i przekazanie wykonawcy | przegląd każdego PR i **scalenie** (R-11) |
 | implementacja, testy, PR, raport sesji, statusy w backlogu | decyzje ADR, nowe usługi i koszty |
 | przegląd wstępny PR według DoD, § 5 i § 7 `AGENTS.md` | zadania infrastrukturalne i testy na urządzeniach (paczki M0-3, M1-5, M4-2, M6-1 — część „wykonuje właściciel”) |
@@ -40,46 +40,19 @@ Wąskim gardłem jest przegląd właściciela, nie tempo agentów — stąd limi
 |---|---|---|---|
 | **Dyspozytor** | Claude Code | prowadzi kolejkę paczek, przekazuje pracę, pilnuje WIP, informuje właściciela; nie pisze kodu | token „odczyt” |
 | **Budowniczy** | Codex | wykonuje paczkę według `AGENTS.md` i szablonu § 3.1 — jak dotychczasowe sesje Codexa | token „budowa” |
-| **Budowniczy-2** (opcjonalny) | Claude Code | ta sama instrukcja co Budowniczy; tylko paczki rozłączne katalogami (np. `packages/core`, `apps/analytics`) — decyzja z 2026-09-24 w [`CLAUDE.md`](../../CLAUDE.md) | token „budowa” |
+| **Budowniczy-2** (opcjonalny) | Claude Code | ta sama instrukcja co Budowniczy; zastępstwo w tej samej paczce po uzgodnieniu jej stanu — decyzja z 2026-09-24 w [`CLAUDE.md`](../../CLAUDE.md) | token „budowa” |
 | **Recenzent** | inny dostawca niż autor PR (Claude dla PR Codexa, Codex dla PR Claude'a) | przegląd wstępny: DoD, twarde reguły, zgodność, przegląd metodologiczny; tylko komentarze | token „odczyt” |
-| **Weryfikator** | Gemini | znaczniki **NIEZWERYFIKOWANE**, wersje i limity z linkiem i datą, triage Renovate, audyt skilli | token „budowa” (tylko PR z `docs/`) |
-
-Cursora na start nie używamy: kopie podobnych agentów w jednym kanale dają powtarzalny szum (zalecenie [OpenBot 101](https://openbot.run/guides/openbot-101)), a każdy dodatkowy agent zużywa limity. Rola dla niego (np. dopracowanie UI w `apps/web`) — po pilotażu.
+| **Weryfikator** | Gemini | bezpieczeństwo, obliczenia i zgodność PR, znaczniki **NIEZWERYFIKOWANE**, wersje i limity z linkiem i datą, triage Renovate, audyt skilli | token „budowa” (tylko PR z `docs/`) |
 
 Wszyscy agenci działają na tokenach właściciela: ich commity, komentarze i PR na GitHubie wyglądają jak działania `Ipper18` (odrębnej tożsamości nie tworzymy — R-23). Dlatego każdy komentarz agenta zaczyna się prefiksem roli, np. `[Recenzent · OpenBot]`.
 
 ## 4. Przepływ paczki
 
-```mermaid
-sequenceDiagram
-    participant W as Właściciel
-    participant D as Dyspozytor
-    participant B as Budowniczy
-    participant R as Recenzent
-    participant G as GitHub
-    D->>W: propozycja paczki (zadania, zależności, estymacja)
-    W->>D: OK (albo zmiana zakresu)
-    D->>B: karta przekazania + prompt z § 3.1
-    B->>G: gałąź, commity per zadanie, PR, jedno gh pr checks
-    B->>D: karta: PR #n, dowody, pominięte
-    D->>R: karta: przegląd PR #n
-    R->>G: komentarz z werdyktem i ustaleniami
-    alt DO POPRAWY (najwyżej 2 rundy)
-        R->>D: karta: lista poprawek
-        D->>B: karta: poprawki do PR #n
-    else GOTOWE albo STOP
-        R->>D: karta: werdykt
-        D->>W: PR #n gotowy do przeglądu / pytanie STOP
-    end
-    W->>G: przegląd i squash merge
-    D->>D: zamknięcie karty, następna propozycja
-```
-
-1. **Propozycja.** Dyspozytor wybiera z [`prompty-codex.md`](prompty-codex.md) § 3.2 najwcześniejszą paczkę z zadaniami `todo`, których zależności są `gotowe` albo `w toku` z zielonym CI ([`AGENTS.md`](../../AGENTS.md) § 6.1). Pomija zadania przypisane innemu wykonawcy w kolumnie statusu i zadania „wykonuje właściciel”. Paczkę startuje dopiero po „OK” właściciela w kanale; właściciel może z góry zatwierdzić kolejkę kilku paczek.
-2. **Wykonanie.** Budowniczy pracuje według `AGENTS.md` (dokument → test → kod, commit na zadanie, push po każdym zamkniętym zadaniu, lokalnie tylko `--filter=...[origin/main]`, CI sprawdzone raz na końcu).
-3. **Przegląd wstępny.** Recenzent komentuje PR; nie zatwierdza i nie scala. Po dwóch rundach poprawek bez werdyktu „GOTOWE” Dyspozytor przekazuje sprawę właścicielowi.
-4. **Przegląd właściciela i scalenie** — bez zmian względem [`CONTRIBUTING.md`](../../CONTRIBUTING.md) § 4. Automatyczne scalanie pozostaje wyłączone ([`ustawienia-repozytorium.md`](../07-wdrozenie/ustawienia-repozytorium.md) § 2).
-5. **Zamknięcie.** Dyspozytor zapisuje stan kolejki w `~/OpenBot/Shared/oliginvest/stan.md` (poza repozytorium) i proponuje następną paczkę.
+1. Dyspozytor porównuje backlog i zależności z aktualnym origin/main, otwartymi PR oraz stan.md. Pomija zadania zajęte, wstrzymane lub zastrzeżone dla właściciela. Przy wolnym limicie WIP rezerwuje jeden gotowy BL lub spójną paczkę i przekazuje kartę Budowniczemu. Decyzje krytyczne z ADR-018 zwraca właścicielowi jako STOP.
+2. Budowniczy realizuje kartę na jednej gałęzi od origin/main. Do PR dołącza kryteria, testy i ryzyka. Zwraca numer PR i SHA.
+3. Dyspozytor przydziela Recenzentowi od innego dostawcy niż autor przegląd tego SHA. Weryfikator ocenia bezpieczeństwo, obliczenia i zgodność. Dla obszaru poza zakresem zapisuje N/D z powodem. Obaj zapisują wynik w PR i zwracają kartę Dyspozytorowi.
+4. Po DO POPRAWY Budowniczy poprawia ten sam PR. Dyspozytor przekazuje nowy SHA do ponownej oceny i liczy rundy wspólnie dla obu kontroli. Po dwóch nieskutecznych rundach zgłasza STOP właścicielowi.
+5. Po zielonym wymaganym CI i pozytywnych ocenach aktualnego SHA właściciel dostaje gotowy PR do przeglądu i scalenia. Dopiero gdy GitHub potwierdzi MERGED, Dyspozytor zamyka kartę w stan.md i wybiera następny gotowy BL, o ile właściciel nie wstrzymał kolejki. Zamknięcie PR bez scalenia wymaga rozstrzygnięcia losu karty.
 
 ### 4.0 Mechanizm przekazania w OpenBot
 
@@ -99,9 +72,9 @@ dowody: <polecenia i wynik, link do CI> | pominięte: <co i dlaczego> | następn
 
 ## 5. Kanał i limity pracy w toku
 
-- Jeden kanał `oliginvest-budowa` z Dyspozytorem, Budowniczym, Recenzentem i właścicielem; Weryfikator pracuje we własnym wątku (rutyny) i nie bierze zadań z kanału.
-- **WIP:** najwyżej 2 PR agentów czekające na właściciela; gdy limit jest pełny, Dyspozytor nie startuje paczki. Jeden Budowniczy = jedna paczka naraz.
-- Dwóch Budowniczych równolegle tylko dla paczek rozłącznych katalogami i bez wspólnych zmian w `docs/02-api/openapi.yaml`, `docs/03-dane/schema.sql` ani `backlog.md` w tych samych sekcjach; inaczej kolejno.
+- Dyspozytor, Budowniczy, Recenzent i Weryfikator pracują w jednym kanale. Dyspozytor przydziela zadania przez channel_assign, wykonawcy zwracają wynik przez channel_result. W kanale pojawia się karta tylko przy zmianie stanu.
+- WIP obejmuje jeden aktywny PR implementacyjny, również draft lub PR oczekujący na poprawki albo scalenie. Przydzielona paczka rezerwuje miejsce jeszcze przed otwarciem PR.
+- Dyspozytor zapisuje w stan.md identyfikator operacji, BL, etap, wykonawcę i dostawcę, gałąź, PR, SHA, rundę i ostatni potwierdzony krok. Przy limicie modelu lub po restarcie uzgadnia zapis z GitHubem i lokalnym stanem gałęzi. Wznawia od pierwszego niewykonanego kroku w tej samej karcie. Sprawdza istniejący PR i wyniki dla jego SHA przed ponownym przydzieleniem operacji. Sprzeczność, której nie można wyjaśnić, oznacza STOP.
 
 ## 6. Środowisko i izolacja — warunek wstępny
 
@@ -147,7 +120,7 @@ Szczegóły i treść do wklejenia: [`openbot-rutyny.md`](openbot-rutyny.md).
 | R4 | Zgodność backlogu z kodem | Dyspozytor | pt 15:00 |
 | R5 | Weryfikacja znaczników i audyt skilli | Weryfikator | pierwszy poniedziałek miesiąca 10:00 |
 
-Nie ma rutyny „wykonaj następną paczkę” — start paczki zawsze wymaga zgody właściciela.
+R2 może wznowić kolejkę według § 4 po potwierdzeniu MERGED. Respektuje wstrzymanie przez właściciela.
 
 ## 8. Limity dostawców i budżet tokenów
 
@@ -162,7 +135,7 @@ Cel tej sekcji: zmniejszyć zużycie limitów bez obniżania jakości — oszcz�
 
 ### 8.2 Zasady
 
-1. **Świeży kontekst na paczkę.** Po scaleniu albo zamknięciu paczki następna startuje w nowym wątku lub kanale (stary archiwizujemy). Ciągłość zapewniają karta, `~/OpenBot/Shared/oliginvest/stan.md` i repozytorium, nie historia czatu. **NIEZWERYFIKOWANE:** czy OpenBot pozwala wyczyścić historię kanału bez tworzenia nowego — sprawdzić w pilotażu.
+1. **Świeży kontekst na paczkę.** Po potwierdzonym scaleniu Dyspozytor prowadzi następną paczkę osobną kartą. Ciągłość zapewniają karta, `~/OpenBot/Shared/oliginvest/stan.md` i repozytorium, nie historia czatu.
 2. **Zasady czytane raz na wątek.** Agent czyta `AGENTS.md` i swoje sekcje [`openbot-agenci.md`](openbot-agenci.md) przy pierwszym zadaniu w wątku, a potem tylko wtedy, gdy zmienił się ich ostatni commit na `origin/main` (`git log -1 --format=%h origin/main -- AGENTS.md docs/08-plan/openbot-agenci.md`). Zakazy krytyczne są w wersji skróconej instrukcji, więc obowiązują także bez ponownej lektury.
 3. **Karta ze wskazaniem miejsc.** Dyspozytor wpisuje do zadania ścieżki plików, sekcje dokumentów, `operationId` i tabele, których dotyczy paczka (np. „kontrakt: `GET /portfolio/export`, `exportPortfolioData`, `docs/02-api/openapi.yaml`”). Wykonawca nie przeszukuje repozytorium.
 4. **Poziom rozumowania według roli i ryzyka:**
@@ -174,7 +147,7 @@ Cel tej sekcji: zmniejszyć zużycie limitów bez obniżania jakości — oszcz�
    | Recenzent | Claude Opus | **wysoki** — bez zmian, to bramka jakości |
    | Weryfikator | Gemini Flash | domyślny |
 
-   Dyspozytor w propozycji paczki podaje zalecany poziom dla Budowniczego; właściciel ustawia go w OpenBot przed „OK”.
+   Dyspozytor podaje zalecany poziom w karcie.
 5. **Recenzent czyta diff.** Pierwszy przegląd: `gh pr diff` i dokumenty wskazane w karcie. Po poprawkach tylko zmiany od ostatnio ocenianego commitu. Najwyżej 2 rundy poprawek, potem STOP do właściciela (§ 4).
 6. **CI raz, logi skrótowo** — według [`AGENTS.md`](../../AGENTS.md) § 6.1: jedno `gh pr checks` na końcu, przy błędzie tylko końcówka `--log-failed`.
 7. **Rozmowa w kanale.** Tylko karty; diff, logi i raporty w PR albo w `~/OpenBot/Shared/oliginvest/`. Właściciel pisze do Dyspozytora jedną wiadomością ze wszystkimi decyzjami — każda wiadomość to osobna tura z ponownym wczytaniem kontekstu.
@@ -184,7 +157,7 @@ Cel tej sekcji: zmniejszyć zużycie limitów bez obniżania jakości — oszcz�
 
 ### 8.3 Pomiar
 
-Po każdej paczce Dyspozytor zapisuje w `stan.md` zużycie każdego agenta z panelu użycia OpenBot (ikona wykresu) i liczbę rund poprawek. Porównanie paczek przed i po zmianach z § 8.2 trafia do oceny pilotażu (§ 10, punkt 5).
+Po każdej paczce Dyspozytor zapisuje w `stan.md` zużycie każdego agenta z panelu użycia OpenBot (ikona wykresu) i liczbę rund poprawek. Wyniki pozwalają ocenić koszt i skuteczność procesu.
 
 ## 9. Bezpieczeństwo i zgodność — reguły nadrzędne
 
@@ -194,7 +167,7 @@ Po każdej paczce Dyspozytor zapisuje w `stan.md` zużycie każdego agenta z pan
 4. Konfiguracja OpenBota (eksport agentów, ścieżki, tokeny) nie trafia do repozytorium; wersjonujemy tylko te dokumenty.
 5. Funkcje FR-04 i alerty na wskaźnikach: Recenzent wykonuje przegląd z [`AGENTS.md`](../../AGENTS.md) § 7 i wkleja wynik do PR; werdykt metodologiczny i tak ocenia właściciel.
 
-## 10. Pilotaż i ocena
+## 10. Historyczny plan pilotażu (2026-10-24)
 
 1. Konto systemowe, tokeny i logowanie dostawców według § 6.
 2. Utworzenie agentów z [`openbot-agenci.md`](openbot-agenci.md); test: każdy agent cytuje zdanie **Cel** z `AGENTS.md` i podaje bieżącą gałąź klonu.

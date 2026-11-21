@@ -5,7 +5,12 @@ export {
   dispatchNotification,
   notificationJobSchema,
 } from "@oliginvest/mod-notifications/jobs";
-export { parseImport, portfolioDate, recomputePortfolio } from "@oliginvest/mod-portfolio/jobs";
+export {
+  parseImport,
+  portfolioDate,
+  readAlertObservation,
+  recomputePortfolio,
+} from "@oliginvest/mod-portfolio/jobs";
 export {
   enqueuePortfolioRecompute,
   ImportRepository,

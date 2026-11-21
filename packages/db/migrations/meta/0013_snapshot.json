@@ -1,5 +1,5 @@
 {
-  "id": "03cb2c57-175c-495a-a410-3a93a2ef3790",
+  "id": "0dd4769d-ddbf-4ebb-8bc0-3069f8669485",
   "prevId": "e4b10268-a8a5-401b-83af-0f47a93b84ef",
   "version": "7",
   "dialect": "postgresql",
@@ -2138,13 +2138,6 @@
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false
-        },
-        "requested_by": {
-          "name": "requested_by",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'user'::text"
         }
       },
       "indexes": {},
@@ -2163,12 +2156,7 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
-      "checkConstraints": {
-        "deletion_requests_requested_by_check": {
-          "name": "deletion_requests_requested_by_check",
-          "value": "((requested_by = ANY (ARRAY['user'::text, 'admin'::text])))"
-        }
-      },
+      "checkConstraints": {},
       "isRLSEnabled": false
     },
     "identity.invitations": {
@@ -5972,7 +5960,7 @@
         },
         "tolerance_pp": {
           "name": "tolerance_pp",
-          "type": "numeric(6, 3)",
+          "type": "numeric(11, 8)",
           "primaryKey": false,
           "notNull": true,
           "default": "5"

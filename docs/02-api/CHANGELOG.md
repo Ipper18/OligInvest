@@ -18,6 +18,10 @@ zmiana administracyjna wymaga świeżego TOTP, ADR-006). `AdminUserPatch.banReas
 autora (BL-114). Nowe zadania kolejki `notify`: `auth.email-changed` (`email`, `audience`, `otherEmailMasked`, `issuedAt`,
 `locale`) i `auth.account-blocked` (`email`, `state`, `until`, `issuedAt`, `locale`; regulamin § 4 ust. 4). Bez istniejących klientów produkcyjnych.
 
+## 2026-11-21 — cele alokacji (BL-563)
+
+POST i PUT zwracają 409 przy powtórzonej nazwie i 404 dla niedostępnego rachunku. Waga celu akceptuje klasy instrumentu oraz klasy z nadpisania użytkownika, łącznie dziewięć wartości o długości do 11 znaków.
+
 ## 2026-11-14 — prawa z RODO: eksport i usunięcie konta (BL-114)
 
 Pierwsza implementacja `createDataExport`, `getDataExport`, `downloadDataExport`, `getDeletionRequest`,

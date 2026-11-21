@@ -1,4 +1,5 @@
 import { createRoute, type OpenAPIHono, z } from "@hono/zod-openapi";
+import { targetAllocationInputSchema } from "@oliginvest/contracts";
 import type { DatabaseContext } from "@oliginvest/db";
 import { marketError } from "@oliginvest/mod-market/server";
 import { type AppEnv, ProblemError, requirePermission } from "@oliginvest/platform";
@@ -19,6 +20,7 @@ import { mountImports } from "./import-routes.js";
 import type { ImportRepository } from "./imports.js";
 import { mountPortfolioReads } from "./read-routes.js";
 import { type PortfolioRepository, validationError } from "./repository.js";
+import { deleteTarget, listTargets, saveTarget } from "./target-allocations.js";
 
 export interface PortfolioDependencies {
   repository(): PortfolioRepository | Promise<PortfolioRepository>;
@@ -34,6 +36,10 @@ const body = (schema: z.ZodType) => ({
   required: true,
   content: { "application/json": { schema } },
 });
+const targetResponse = z.intersection(
+  targetAllocationInputSchema,
+  object({ id: z.uuid(), createdAt: z.iso.datetime(), updatedAt: z.iso.datetime() }),
+);
 const security = [{ sessionCookie: [] }];
 const conflict = {
   ...marketError,
@@ -97,7 +103,7 @@ export function mountPortfolio(api: OpenAPIHono<AppEnv>, deps: PortfolioDependen
       principal.role as "user" | "pro" | "admin",
       c.req.method === "GET"
         ? "portfolio:read"
-        : c.req.path.includes("/accounts")
+        : c.req.path.includes("/accounts") || c.req.path.includes("/targets")
           ? "portfolio:write"
           : "transactions:write",
     );
@@ -113,6 +119,53 @@ export function mountPortfolio(api: OpenAPIHono<AppEnv>, deps: PortfolioDependen
     }),
   );
   const routes = [
+    createRoute({
+      method: "get",
+      path: "/portfolio/targets",
+      operationId: "listTargetAllocations",
+      tags: ["portfolio"],
+      security,
+      responses: { 200: json(object({ data: z.array(targetResponse) })), 401: marketError },
+    }),
+    createRoute({
+      method: "post",
+      path: "/portfolio/targets",
+      operationId: "createTargetAllocation",
+      tags: ["portfolio"],
+      security,
+      request: { body: body(targetAllocationInputSchema) },
+      responses: {
+        201: json(targetResponse),
+        401: marketError,
+        404: marketError,
+        409: conflict,
+        422: marketError,
+      },
+    }),
+    createRoute({
+      method: "put",
+      path: "/portfolio/targets/{targetId}",
+      operationId: "replaceTargetAllocation",
+      tags: ["portfolio"],
+      security,
+      request: { params: pathParams("targetId"), body: body(targetAllocationInputSchema) },
+      responses: {
+        200: json(targetResponse),
+        401: marketError,
+        404: marketError,
+        409: conflict,
+        422: marketError,
+      },
+    }),
+    createRoute({
+      method: "delete",
+      path: "/portfolio/targets/{targetId}",
+      operationId: "deleteTargetAllocation",
+      tags: ["portfolio"],
+      security,
+      request: { params: pathParams("targetId") },
+      responses: { 204: { description: "Usunięto." }, 401: marketError, 404: marketError },
+    }),
     createRoute({
       method: "get",
       path: "/portfolio/accounts",
@@ -255,7 +308,8 @@ export function mountPortfolio(api: OpenAPIHono<AppEnv>, deps: PortfolioDependen
       try {
         const principal = await deps.authorize(c.req.raw);
         const repo = await deps.repository();
-        const id = c.req.param("accountId") ?? c.req.param("transactionId");
+        const id =
+          c.req.param("accountId") ?? c.req.param("transactionId") ?? c.req.param("targetId");
         if (id) z.uuid().parse(id);
         const input = async () => {
           try {
@@ -265,6 +319,24 @@ export function mountPortfolio(api: OpenAPIHono<AppEnv>, deps: PortfolioDependen
           }
         };
         switch (route.operationId) {
+          case "listTargetAllocations":
+            return c.json(await listTargets(repo, principal));
+          case "createTargetAllocation":
+            return c.json(
+              await saveTarget(
+                repo,
+                principal,
+                await input(),
+                undefined,
+                c.req.header("Idempotency-Key"),
+              ),
+              201,
+            );
+          case "replaceTargetAllocation":
+            return c.json(await saveTarget(repo, principal, await input(), id!));
+          case "deleteTargetAllocation":
+            await deleteTarget(repo, principal, id!);
+            return c.body(null, 204);
           case "listAccounts":
             return c.json(
               await repo.listAccounts(

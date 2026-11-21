@@ -1,4 +1,5 @@
 import { persistentEventSchema } from "@oliginvest/contracts";
+import { realtimeSchemas } from "@oliginvest/contracts/realtime";
 import type { AppDatabase } from "@oliginvest/db";
 import type { Metrics, PlatformLogger } from "@oliginvest/platform";
 import { type Queue, Worker } from "bullmq";
@@ -6,6 +7,7 @@ import { sql } from "drizzle-orm";
 import type { Redis } from "ioredis";
 import { z } from "zod";
 import {
+  alertsJobs,
   enqueuePortfolioRecompute,
   ImportRepository,
   PortfolioRepository,
@@ -45,6 +47,21 @@ export async function startPortfolioWorker(options: {
       "data",
       JSON.stringify(event.data),
     );
+    if (event.event === "portfolio.valuation.updated" && alertsJobs) {
+      await options.queues
+        .find((q) => q.name === "alerts")!
+        .add(
+          "alerts.evaluate",
+          {
+            v: 1,
+            userId,
+            mode: "valuation",
+            valuationAsOf: realtimeSchemas["portfolio.valuation.updated"].parse(event.data)
+              .valuationAsOf,
+          },
+          { removeOnComplete: true, removeOnFail: { age: 86400 } },
+        );
+    }
     await options.cache.xtrim(key, "MINID", `${Date.now() - 600000}-0`);
     await options.cache.expire(key, 600);
   };

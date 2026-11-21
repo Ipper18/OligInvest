@@ -148,7 +148,7 @@ export function drawdownFromRows(
 }
 
 export function readDrawdown(
-  repository: PortfolioRepository,
+  repository: Pick<PortfolioRepository, "read" | "now">,
   context: DatabaseContext,
   query: DrawdownQuery,
 ) {

@@ -1008,7 +1008,7 @@ CREATE TABLE portfolio.target_allocations (
   name          text        NOT NULL,
   account_id    uuid,                                        -- NULL = wszystkie rachunki
   targets       jsonb       NOT NULL,                        -- [{"instrumentId"|"assetClass": ..., "weight": "0.60"}]
-  tolerance_pp  numeric(6,3) NOT NULL DEFAULT 5,
+  tolerance_pp  numeric(11,8) NOT NULL DEFAULT 5,
   created_at    timestamptz NOT NULL DEFAULT now(),
   updated_at    timestamptz NOT NULL DEFAULT now(),
   UNIQUE (user_id, name),
@@ -1152,6 +1152,21 @@ CREATE TABLE alerts.alert_rules (
   UNIQUE (id, user_id)
 );
 CREATE INDEX alert_rules_instrument_idx ON alerts.alert_rules (instrument_id) WHERE enabled;
+
+CREATE FUNCTION alerts.disable_target_alerts() RETURNS trigger
+LANGUAGE plpgsql AS $$
+BEGIN
+  UPDATE alerts.alert_rules
+     SET enabled = false,
+         last_state = coalesce(last_state, '{}'::jsonb) || jsonb_build_object(
+           'inactiveReason', CASE WHEN TG_OP = 'DELETE' THEN 'target_deleted' ELSE 'target_changed' END),
+         updated_at = now()
+   WHERE user_id = OLD.user_id AND type = 'allocation_drift' AND params->>'targetId' = OLD.id::text;
+  RETURN NULL;
+END;
+$$;
+CREATE TRIGGER disable_target_alerts AFTER UPDATE OR DELETE ON portfolio.target_allocations
+FOR EACH ROW EXECUTE FUNCTION alerts.disable_target_alerts();
 
 CREATE TABLE alerts.alert_events (
   id            uuid        PRIMARY KEY DEFAULT uuidv7(),

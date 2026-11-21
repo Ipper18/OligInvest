@@ -10,6 +10,10 @@
     "build": "tsc -p tsconfig.json"
   },
   "exports": {
+    "./alert-screens": {
+      "types": "./dist/alert-screens.d.ts",
+      "import": "./dist/alert-screens.js"
+    },
     "./onboarding": {
       "types": "./dist/onboarding.d.ts",
       "import": "./dist/onboarding.js"

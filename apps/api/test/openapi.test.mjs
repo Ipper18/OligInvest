@@ -62,12 +62,14 @@ test("Zod document matches all implemented operations and pending is the exact r
     "createDataExport",
     "createPersonalAccessToken",
     "createPushSubscription",
+    "createTargetAllocation",
     "createTransaction",
     "createWatchlist",
     "deleteAccount",
     "deleteAlertRule",
     "deleteAnalyticsRun",
     "deletePushSubscription",
+    "deleteTargetAllocation",
     "deleteTransaction",
     "deleteWatchlist",
     "discardImport",
@@ -118,6 +120,7 @@ test("Zod document matches all implemented operations and pending is the exact r
     "listPositions",
     "listPushSubscriptions",
     "listStressScenarios",
+    "listTargetAllocations",
     "listTransactions",
     "listWatchlists",
     "openEventStream",
@@ -129,6 +132,7 @@ test("Zod document matches all implemented operations and pending is the exact r
     "quickGetToday",
     "removeWatchlistItem",
     "replaceNotificationPreferences",
+    "replaceTargetAllocation",
     "requestAccountDeletion",
     "resolveImportRow",
     "revokePersonalAccessToken",
@@ -367,6 +371,30 @@ test("Git baseline reads the base branch, fails closed and bootstraps only a pre
     expect(() => readBasePending(cwd, "HEAD")).toThrow();
   } finally {
     rmSync(cwd, { recursive: true, force: true });
+  }
+});
+
+test("target classes cover stored instrument classes and market overrides", () => {
+  const sql = readFileSync(join(root, "docs/03-dane/schema.sql"), "utf8");
+  const stored = sql
+    .match(/CHECK \(asset_class IN \(([^)]+)\)\)/)[1]
+    .match(/'([^']+)'/g)
+    .map((value) => value.slice(1, -1));
+  const schemas = source.components.schemas;
+  const overrides = schemas.InstrumentOverride.properties.assetClass.enum;
+  const expected = [...new Set([...stored, ...overrides])].sort();
+  expect([...schemas.TargetWeight.properties.assetClass.enum].sort()).toEqual(expected);
+  expect(schemas.TargetWeight.properties.assetClass.maxLength).toBe(
+    Math.max(...expected.map((v) => v.length)),
+  );
+  for (const doc of [source, generated]) {
+    for (const operation of [
+      doc.paths["/portfolio/targets"].post,
+      doc.paths["/portfolio/targets/{targetId}"].put,
+    ]) {
+      expect(operation.responses).toHaveProperty("404");
+      expect(operation.responses).toHaveProperty("409");
+    }
   }
 });
 
