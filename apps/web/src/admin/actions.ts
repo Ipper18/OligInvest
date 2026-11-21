@@ -33,6 +33,23 @@ const operation = z.discriminatedUnion("op", [
 export type AdminOperation = z.input<typeof operation>;
 export type AdminOutcome = { status: number; code?: string; data?: unknown };
 
+type SafeAdminPath = string & { readonly __brand: "SafeAdminPath" };
+
+function assertSafeAdminPath(path: string): SafeAdminPath {
+  const uuid = "[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}";
+  const allowed = [
+    new RegExp(`^/admin/users/${uuid}$`, "i"),
+    new RegExp(`^/admin/users/${uuid}/deletion-request$`, "i"),
+    new RegExp(`^/admin/users/${uuid}/reset-2fa$`, "i"),
+    new RegExp(`^/admin/users/${uuid}/revoke-sessions$`, "i"),
+    new RegExp(`^/admin/sessions/${uuid}$`, "i"),
+    new RegExp(`^/admin/invitations/${uuid}$`, "i"),
+    /^\/admin\/invitations$/i,
+  ];
+  if (!allowed.some((rx) => rx.test(path))) throw new Error("UNSAFE_ADMIN_PATH");
+  return path as SafeAdminPath;
+}
+
 function target(input: z.output<typeof operation>): {
   method: "PATCH" | "POST" | "DELETE";
   path: string;
@@ -64,6 +81,7 @@ export async function adminMutation(raw: unknown): Promise<AdminOutcome> {
   const parsed = operation.safeParse(raw);
   if (!parsed.success) return { status: 422, code: "VALIDATION_FAILED" };
   const request = target(parsed.data);
+  const safePath = assertSafeAdminPath(request.path);
   const config = loadConfig("web", process.env, {
     mode: process.env.NODE_ENV as "production" | "development" | "test",
   });
@@ -77,7 +95,7 @@ export async function adminMutation(raw: unknown): Promise<AdminOutcome> {
   if (request.key) outgoing.set("Idempotency-Key", request.key);
   try {
     const response = await fetch(
-      new URL(`/api/v1${request.path}`, new URL(config.API_INTERNAL_URL).origin),
+      new URL(`/api/v1${safePath}`, new URL(config.API_INTERNAL_URL).origin),
       {
         method: request.method,
         headers: outgoing,
