@@ -33,46 +33,64 @@ const operation = z.discriminatedUnion("op", [
 export type AdminOperation = z.input<typeof operation>;
 export type AdminOutcome = { status: number; code?: string; data?: unknown };
 
-type SafeAdminPath = string & { readonly __brand: "SafeAdminPath" };
+type AdminRouteKey =
+  | "users.update"
+  | "users.delete"
+  | "users.cancelDeletion"
+  | "users.resetTwoFactor"
+  | "users.revokeSessions"
+  | "sessions.revoke"
+  | "invitations.revoke"
+  | "invitations.create";
 
-function assertSafeAdminPath(path: string): SafeAdminPath {
-  const uuid = "[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}";
-  const allowed = [
-    new RegExp(`^/admin/users/${uuid}$`, "i"),
-    new RegExp(`^/admin/users/${uuid}/deletion-request$`, "i"),
-    new RegExp(`^/admin/users/${uuid}/reset-2fa$`, "i"),
-    new RegExp(`^/admin/users/${uuid}/revoke-sessions$`, "i"),
-    new RegExp(`^/admin/sessions/${uuid}$`, "i"),
-    new RegExp(`^/admin/invitations/${uuid}$`, "i"),
-    /^\/admin\/invitations$/i,
-  ];
-  if (!allowed.some((rx) => rx.test(path))) throw new Error("UNSAFE_ADMIN_PATH");
-  return path as SafeAdminPath;
+function buildAdminPath(
+  route: AdminRouteKey,
+  params: { id?: string } = {},
+): `/admin/${string}` {
+  switch (route) {
+    case "users.update":
+      return `/admin/users/${params.id!}`;
+    case "users.delete":
+      return `/admin/users/${params.id!}`;
+    case "users.cancelDeletion":
+      return `/admin/users/${params.id!}/deletion-request`;
+    case "users.resetTwoFactor":
+      return `/admin/users/${params.id!}/reset-2fa`;
+    case "users.revokeSessions":
+      return `/admin/users/${params.id!}/revoke-sessions`;
+    case "sessions.revoke":
+      return `/admin/sessions/${params.id!}`;
+    case "invitations.revoke":
+      return `/admin/invitations/${params.id!}`;
+    case "invitations.create":
+      return "/admin/invitations";
+  }
 }
 
 function target(input: z.output<typeof operation>): {
   method: "PATCH" | "POST" | "DELETE";
-  path: string;
+  route: AdminRouteKey;
+  params?: { id?: string };
   body?: unknown;
   key?: string;
 } {
   switch (input.op) {
     case "updateUser":
-      return { method: "PATCH", path: `/admin/users/${input.id}`, body: input.body };
+      return { method: "PATCH", route: "users.update", params: { id: input.id }, body: input.body };
     case "deleteUser":
-      return { method: "DELETE", path: `/admin/users/${input.id}` };
+      return { method: "DELETE", route: "users.delete", params: { id: input.id } };
     case "cancelDeletion":
-      return { method: "DELETE", path: `/admin/users/${input.id}/deletion-request` };
+      return { method: "DELETE", route: "users.cancelDeletion", params: { id: input.id } };
     case "resetTwoFactor":
-      return { method: "POST", path: `/admin/users/${input.id}/reset-2fa`, body: input.body };
+      return { method: "POST", route: "users.resetTwoFactor", params: { id: input.id }, body: input.body };
     case "revokeUserSessions":
-      return { method: "POST", path: `/admin/users/${input.id}/revoke-sessions` };
+      return { method: "POST", route: "users.revokeSessions", params: { id: input.id } };
     case "revokeSession":
-      return { method: "DELETE", path: `/admin/sessions/${input.id}` };
+      return { method: "DELETE", route: "sessions.revoke", params: { id: input.id } };
     case "revokeInvitation":
-      return { method: "DELETE", path: `/admin/invitations/${input.id}` };
+      return { method: "DELETE", route: "invitations.revoke", params: { id: input.id } };
     case "createInvitation":
-      return { method: "POST", path: "/admin/invitations", body: input.body, key: input.key };
+      return { method: "POST", route: "invitations.create", body: input.body, key: input.key };
   }
 }
 
@@ -81,7 +99,7 @@ export async function adminMutation(raw: unknown): Promise<AdminOutcome> {
   const parsed = operation.safeParse(raw);
   if (!parsed.success) return { status: 422, code: "VALIDATION_FAILED" };
   const request = target(parsed.data);
-  const safePath = assertSafeAdminPath(request.path);
+  const safePath = buildAdminPath(request.route, request.params);
   const config = loadConfig("web", process.env, {
     mode: process.env.NODE_ENV as "production" | "development" | "test",
   });
