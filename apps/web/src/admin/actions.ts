@@ -33,96 +33,73 @@ const operation = z.discriminatedUnion("op", [
 export type AdminOperation = z.input<typeof operation>;
 export type AdminOutcome = { status: number; code?: string; data?: unknown };
 
-type AdminRouteKey =
-  | "users.update"
-  | "users.delete"
-  | "users.cancelDeletion"
-  | "users.resetTwoFactor"
-  | "users.revokeSessions"
-  | "sessions.revoke"
-  | "invitations.revoke"
-  | "invitations.create";
+/** Strict lowercase/uppercase hex UUID with hyphens: no slash, dot, percent, query, host or space. */
+const UUID = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
 
-function buildAdminPath(
-  route: AdminRouteKey,
-  params: { id?: string } = {},
-): `/admin/${string}` {
-  switch (route) {
-    case "users.update":
-      return `/admin/users/${params.id!}`;
-    case "users.delete":
-      return `/admin/users/${params.id!}`;
-    case "users.cancelDeletion":
-      return `/admin/users/${params.id!}/deletion-request`;
-    case "users.resetTwoFactor":
-      return `/admin/users/${params.id!}/reset-2fa`;
-    case "users.revokeSessions":
-      return `/admin/users/${params.id!}/revoke-sessions`;
-    case "sessions.revoke":
-      return `/admin/sessions/${params.id!}`;
-    case "invitations.revoke":
-      return `/admin/invitations/${params.id!}`;
-    case "invitations.create":
-      return "/admin/invitations";
-  }
-}
+/**
+ * The only admin routes this action may call: fixed method and fixed path segments; `id` marks
+ * the single place where a validated UUID is inserted. Anything else is rejected before fetch.
+ */
+const ROUTES = {
+  updateUser: { method: "PATCH", segments: ["users", "id"] },
+  deleteUser: { method: "DELETE", segments: ["users", "id"] },
+  cancelDeletion: { method: "DELETE", segments: ["users", "id", "deletion-request"] },
+  resetTwoFactor: { method: "POST", segments: ["users", "id", "reset-2fa"] },
+  revokeUserSessions: { method: "POST", segments: ["users", "id", "revoke-sessions"] },
+  revokeSession: { method: "DELETE", segments: ["sessions", "id"] },
+  revokeInvitation: { method: "DELETE", segments: ["invitations", "id"] },
+  createInvitation: { method: "POST", segments: ["invitations"] },
+} as const satisfies Record<
+  z.output<typeof operation>["op"],
+  { method: "PATCH" | "POST" | "DELETE"; segments: readonly string[] }
+>;
 
-function target(input: z.output<typeof operation>): {
-  method: "PATCH" | "POST" | "DELETE";
-  route: AdminRouteKey;
-  params?: { id?: string };
-  body?: unknown;
-  key?: string;
-} {
-  switch (input.op) {
-    case "updateUser":
-      return { method: "PATCH", route: "users.update", params: { id: input.id }, body: input.body };
-    case "deleteUser":
-      return { method: "DELETE", route: "users.delete", params: { id: input.id } };
-    case "cancelDeletion":
-      return { method: "DELETE", route: "users.cancelDeletion", params: { id: input.id } };
-    case "resetTwoFactor":
-      return { method: "POST", route: "users.resetTwoFactor", params: { id: input.id }, body: input.body };
-    case "revokeUserSessions":
-      return { method: "POST", route: "users.revokeSessions", params: { id: input.id } };
-    case "revokeSession":
-      return { method: "DELETE", route: "sessions.revoke", params: { id: input.id } };
-    case "revokeInvitation":
-      return { method: "DELETE", route: "invitations.revoke", params: { id: input.id } };
-    case "createInvitation":
-      return { method: "POST", route: "invitations.create", body: input.body, key: input.key };
+/** Path below /api/v1/admin, or null when the operation needs an id that is not a strict UUID. */
+function adminPath(input: z.output<typeof operation>): string | null {
+  const resourceId = "id" in input ? input.id : undefined;
+  if (resourceId !== undefined && !UUID.test(resourceId)) return null;
+  const parts: string[] = [];
+  for (const segment of ROUTES[input.op].segments) {
+    if (segment !== "id") parts.push(segment);
+    else if (resourceId === undefined) return null;
+    else parts.push(encodeURIComponent(resourceId));
   }
+  return `/api/v1/admin/${parts.join("/")}`;
 }
 
 export async function adminMutation(raw: unknown): Promise<AdminOutcome> {
   await requireAdmin();
   const parsed = operation.safeParse(raw);
   if (!parsed.success) return { status: 422, code: "VALIDATION_FAILED" };
-  const request = target(parsed.data);
-  const safePath = buildAdminPath(request.route, request.params);
+  const input = parsed.data;
+  const path = adminPath(input);
+  if (path === null) return { status: 422, code: "VALIDATION_FAILED" };
+  if (input.op === "createInvitation" && !UUID.test(input.key))
+    return { status: 422, code: "VALIDATION_FAILED" };
+  const { method } = ROUTES[input.op];
+  const body = "body" in input ? input.body : undefined;
   const config = loadConfig("web", process.env, {
     mode: process.env.NODE_ENV as "production" | "development" | "test",
   });
+  // Host and protocol only from configuration; the path has fixed segments and a checked UUID.
+  const url = new URL(path, new URL(config.API_INTERNAL_URL).origin);
   const incoming = await headers();
   const outgoing = new Headers({
     cookie: incoming.get("cookie") ?? "",
     origin: new URL(config.PUBLIC_BASE_URL).origin,
     "x-request-id": incoming.get("x-request-id") ?? "",
   });
-  if (request.body !== undefined) outgoing.set("Content-Type", "application/json");
-  if (request.key) outgoing.set("Idempotency-Key", request.key);
+  if (body !== undefined) outgoing.set("Content-Type", "application/json");
+  if (input.op === "createInvitation") outgoing.set("Idempotency-Key", input.key);
   try {
-    const response = await fetch(
-      new URL(`/api/v1${safePath}`, new URL(config.API_INTERNAL_URL).origin),
-      {
-        method: request.method,
-        headers: outgoing,
-        ...(request.body !== undefined ? { body: JSON.stringify(request.body) } : {}),
-        cache: "no-store",
-        redirect: "error",
-        signal: AbortSignal.timeout(15000),
-      },
-    );
+    const response = await fetch(url, {
+      method,
+      headers: outgoing,
+      ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+      cache: "no-store",
+      redirect: "error",
+      signal: AbortSignal.timeout(15000),
+    });
     const text = response.status === 204 ? "" : await response.text();
     let data: unknown;
     try {
