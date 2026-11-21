@@ -75,6 +75,18 @@ CREATE POLICY retention_anonymize ON identity.invitations FOR UPDATE TO oliginve
 CREATE POLICY definer_functions ON analytics.analytics_runs FOR SELECT TO oliginvest_owner USING (true);
 -- identity.erase_account (BL-114): właściciel czyta wnioski o usunięcie, anonimizuje audyt i dopisuje erasure_log.
 CREATE POLICY definer_functions ON identity.deletion_requests FOR SELECT TO oliginvest_owner USING (true);
+-- BL-509: wniosek administratora — użytkownik go widzi (owner_all), ale nie zmieni ani nie usunie; własne wnioski
+-- zakłada wyłącznie z requested_by = 'user'. Funkcje admin_* (właściciel) zakładają i anulują tylko wnioski 'admin'.
+CREATE POLICY user_requests_insert ON identity.deletion_requests AS RESTRICTIVE FOR INSERT TO oliginvest_app
+  WITH CHECK (requested_by = 'user');
+CREATE POLICY user_requests_update ON identity.deletion_requests AS RESTRICTIVE FOR UPDATE TO oliginvest_app
+  USING (requested_by = 'user') WITH CHECK (requested_by = 'user');
+CREATE POLICY user_requests_delete ON identity.deletion_requests AS RESTRICTIVE FOR DELETE TO oliginvest_app
+  USING (requested_by = 'user');
+CREATE POLICY definer_admin_insert ON identity.deletion_requests FOR INSERT TO oliginvest_owner
+  WITH CHECK (requested_by = 'admin');
+CREATE POLICY definer_admin_cancel ON identity.deletion_requests FOR UPDATE TO oliginvest_owner
+  USING (requested_by = 'admin') WITH CHECK (requested_by = 'admin');
 CREATE POLICY definer_erasure_read ON platform.audit_log FOR SELECT TO oliginvest_owner USING (true);
 CREATE POLICY definer_erasure_update ON platform.audit_log FOR UPDATE TO oliginvest_owner USING (true) WITH CHECK (true);
 CREATE POLICY definer_functions ON platform.erasure_log FOR INSERT TO oliginvest_owner WITH CHECK (true);
