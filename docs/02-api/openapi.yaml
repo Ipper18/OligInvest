@@ -833,12 +833,14 @@ paths:
     delete:
       operationId: cancelAccountDeletion
       summary: Anuluj zaplanowane usunięcie konta
+      description: Wniosek złożony przez administratora (`requestedBy = admin`) → `409 CONFLICT`; anuluje go tylko administrator (`adminCancelUserDeletion`).
       tags: [identity]
-      x-requirements: [FR-07.09]
+      x-requirements: [FR-07.09, FR-08.01]
       responses:
         '204': {description: 'Anulowano.'}
         '401': {$ref: '#/components/responses/Unauthenticated'}
         '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
 
   # ───────────────────────────── notifications ─────────────────────────────
   /notifications/push-config:
@@ -2884,8 +2886,13 @@ paths:
         '404': {$ref: '#/components/responses/NotFound'}
     patch:
       operationId: adminUpdateUser
-      summary: Zmień rolę lub zablokuj/odblokuj użytkownika
-      description: Zmiana roli unieważnia sesje użytkownika (rotacja uprawnień, NFR-03.03). Admin nie może odebrać sobie roli admin, jeśli jest jedynym adminem.
+      summary: Zmień rolę, e-mail lub zablokuj/odblokuj użytkownika
+      description: |
+        Zmiana roli, adresu e-mail albo blokada unieważnia wszystkie sesje użytkownika (rotacja uprawnień, NFR-03.03).
+        Rola i e-mail: e-mail bezpieczeństwa do wszystkich aktywnych administratorów (SEC § 5.2). Zmiana e-maila:
+        powiadomienie na stary i nowy adres (decyzja właściciela 2026-11-21). Własnego e-maila ani własnej blokady
+        tą ścieżką zmienić nie można, a rola ostatniego aktywnego administratora nie może zostać odebrana → `409 CONFLICT`.
+        Zajęty adres → `409 CONFLICT`.
       tags: [admin]
       x-permission: admin:users
       x-step-up: true
@@ -2907,14 +2914,35 @@ paths:
     delete:
       operationId: adminDeleteUser
       summary: Zaplanuj usunięcie konta użytkownika (jak RODO — 14 dni)
+      description: |
+        Ten sam wniosek i to samo nocne zadanie `identity.erasure` co `requestAccountDeletion` (BL-114), z `requestedBy = admin`:
+        użytkownik dostaje e-mail, ale nie może sam anulować wniosku (`adminCancelUserDeletion`). Aktywny wniosek, własne konto
+        albo ostatni aktywny administrator → `409 CONFLICT`.
       tags: [admin]
       x-permission: admin:users
       x-step-up: true
-      x-requirements: [FR-08.01]
+      x-requirements: [FR-08.01, FR-07.09]
       parameters:
         - {$ref: '#/components/parameters/UserId'}
       responses:
         '202': {description: 'Zaplanowano.', content: {application/json: {schema: {$ref: '#/components/schemas/DeletionRequest'}}}}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /admin/users/{userId}/deletion-request:
+    delete:
+      operationId: adminCancelUserDeletion
+      summary: Anuluj usunięcie konta zlecone przez administratora
+      description: Tylko wniosek z `requestedBy = admin` w okresie karencji; e-mail do użytkownika, wpis audytu (decyzja właściciela 2026-11-21). Brak takiego wniosku → `404`.
+      tags: [admin]
+      x-permission: admin:users
+      x-step-up: true
+      x-requirements: [FR-08.01, FR-07.09]
+      parameters:
+        - {$ref: '#/components/parameters/UserId'}
+      responses:
+        '204': {description: 'Anulowano.'}
         '401': {$ref: '#/components/responses/Unauthenticated'}
         '403': {$ref: '#/components/responses/Forbidden'}
         '404': {$ref: '#/components/responses/NotFound'}
@@ -2939,12 +2967,15 @@ paths:
         '401': {$ref: '#/components/responses/Unauthenticated'}
         '403': {$ref: '#/components/responses/Forbidden'}
         '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '422': {$ref: '#/components/responses/ValidationFailed'}
   /admin/users/{userId}/revoke-sessions:
     post:
       operationId: adminRevokeUserSessions
       summary: Unieważnij wszystkie sesje użytkownika
       tags: [admin]
       x-permission: admin:users
+      x-step-up: true
       x-requirements: [FR-08.02]
       parameters:
         - {$ref: '#/components/parameters/UserId'}
@@ -3025,7 +3056,8 @@ paths:
       summary: Odwołaj niewykorzystane zaproszenie
       tags: [admin]
       x-permission: admin:users
-      x-requirements: [FR-07.01]
+      x-step-up: true
+      x-requirements: [FR-07.01, FR-08.01]
       parameters:
         - {name: invitationId, in: path, required: true, schema: {$ref: '#/components/schemas/Uuid'}}
       responses:
@@ -3055,6 +3087,7 @@ paths:
       summary: Unieważnij sesję
       tags: [admin]
       x-permission: admin:users
+      x-step-up: true
       x-requirements: [FR-08.02]
       parameters:
         - {name: sessionId, in: path, required: true, schema: {$ref: '#/components/schemas/Uuid'}}
@@ -4337,12 +4370,13 @@ components:
         sizeBytes: {type: integer, minimum: 0}
     DeletionRequest:
       type: object
-      required: [id, requestedAt, scheduledFor]
+      required: [id, requestedAt, scheduledFor, requestedBy]
       properties:
         id: {$ref: '#/components/schemas/Uuid'}
         requestedAt: {$ref: '#/components/schemas/Timestamp'}
         scheduledFor: {$ref: '#/components/schemas/Timestamp'}
         cancelledAt: {$ref: '#/components/schemas/Timestamp'}
+        requestedBy: {type: string, enum: [user, admin], description: 'Kto zlecił usunięcie. Wniosek administratora (BL-509) może anulować wyłącznie administrator; decyzja właściciela 2026-11-21.'}
 
     # ── notifications ──
     PushSubscriptionCreate:
@@ -7361,6 +7395,7 @@ components:
         lastActiveAt: {$ref: '#/components/schemas/Timestamp'}
         activeSessions: {type: integer}
         deletionScheduledFor: {$ref: '#/components/schemas/Timestamp'}
+        deletionRequestedBy: {type: string, enum: [user, admin]}
     AdminUserPage:
       type: object
       required: [data, page]
@@ -7374,7 +7409,7 @@ components:
         role: {$ref: '#/components/schemas/Role'}
         email: {type: string, format: email, description: 'Zmiana adresu (tylko admin): powiadomienie na stary i nowy adres, unieważnienie sesji, wpis audytu.'}
         banned: {type: boolean}
-        banReason: {type: string, maxLength: 500}
+        banReason: {type: string, minLength: 5, maxLength: 500, description: 'Uzasadnienie blokady (zapisywane w audycie).'}
         banExpires: {oneOf: [{$ref: '#/components/schemas/Timestamp'}, {type: 'null'}]}
       if: {properties: {banned: {const: true}}, required: [banned]}
       then: {required: [banReason]}
@@ -7400,7 +7435,8 @@ components:
       additionalProperties: false
     AdminInvitation:
       type: object
-      required: [id, email, role, invitedBy, status, expiresAt, createdAt]
+      description: '`invitedBy` jest pusty po usunięciu konta autora (BL-114, `schema.sql`).'
+      required: [id, email, role, status, expiresAt, createdAt]
       properties:
         id: {$ref: '#/components/schemas/Uuid'}
         email: {type: string, format: email}

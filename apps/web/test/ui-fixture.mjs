@@ -1,5 +1,6 @@
 // Synthetic UI boundary only. Real authentication/RLS is tested by apps/api/integration.
 import { randomUUID } from "node:crypto";
+import { adminFixture } from "./admin-fixture.mjs";
 import { analyticsFixture } from "./analytics-fixture.mjs";
 import { portfolioFixture } from "./portfolio-fixture.mjs";
 
@@ -41,6 +42,8 @@ export function fixtureCookie(route) {
   if (route === "/konfiguracja-2fa") return "__Host-oliginvest.session_token=fixture-enroll";
   if (route === "/akceptacja-regulaminu") return "__Host-oliginvest.session_token=fixture-legal";
   if (route === "/logowanie/2fa") return "__Host-oliginvest.two_factor=fixture-challenge";
+  if (route === "/admin" || route.startsWith("/admin/"))
+    return "__Host-oliginvest.session_token=fixture-admin";
   if (
     route === "/" ||
     route.startsWith("/ustawienia") ||
@@ -117,7 +120,11 @@ export async function uiFixture(request, response) {
           id: user.id,
           email: user.email,
           name: user.name,
-          role: key.includes("analytics-pro") || key === "fixture-perf" ? "pro" : user.role,
+          role: key.startsWith("fixture-admin")
+            ? "admin"
+            : key.includes("analytics-pro") || key === "fixture-perf"
+              ? "pro"
+              : user.role,
           emailVerified: true,
           mfa: {
             enrolled: profile.enrolled,
@@ -130,12 +137,14 @@ export async function uiFixture(request, response) {
             "alerts:manage",
             "analytics:run:light",
             "education:use",
+            ...(key.startsWith("fixture-admin") ? ["admin:users"] : []),
           ],
           features: {
             "module.portfolio.import.mbank": !key.includes("no-mbank"),
             "module.alerts": !key.includes("no-alerts"),
             "module.analytics": !key.includes("no-analytics"),
             "module.education": !key.includes("no-education"),
+            ...(key.startsWith("fixture-admin") ? { "module.admin": true } : {}),
           },
           preferences: Object.fromEntries(Object.keys(preferences).map((k) => [k, profile[k]])),
         })
@@ -160,6 +169,15 @@ export async function uiFixture(request, response) {
     request.on("close", () => clearInterval(interval));
     return true;
   }
+  if (
+    await adminFixture(
+      request,
+      response,
+      key,
+      profile?.enrolled && profile.verified && !profile.required ? profile : null,
+    )
+  )
+    return true;
   if (await analyticsFixture(request, response, key)) return true;
   if (
     await portfolioFixture(

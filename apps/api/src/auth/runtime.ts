@@ -1,9 +1,11 @@
 import type { ServiceConfig } from "@oliginvest/config";
 import {
   type AnalyticsJob,
+  accountBlockedMailSchema,
   analyticsCancelKey,
   authMailSchema,
   authSecurityEventSchema,
+  emailChangedMailSchema,
   invitationMailSchema,
   twoFactorResetMailSchema,
 } from "@oliginvest/contracts";
@@ -295,6 +297,32 @@ export function createAuthRuntime(
         await queue("notify").add(
           "auth.two-factor-reset",
           twoFactorResetMailSchema.parse({ ...message, locale: await mailLocale(message.email) }),
+          {
+            attempts: 3,
+            backoff: { type: "exponential", delay: 1000 },
+            removeOnComplete: true,
+            removeOnFail: true,
+          },
+        );
+      },
+      emailChangedMail: async ({ userId, ...message }) => {
+        const { locale } = await userLocale(appDatabase, { userId, role: "user" });
+        await queue("notify").add(
+          "auth.email-changed",
+          emailChangedMailSchema.parse({ ...message, locale }),
+          {
+            attempts: 3,
+            backoff: { type: "exponential", delay: 1000 },
+            removeOnComplete: true,
+            removeOnFail: true,
+          },
+        );
+      },
+      blockedMail: async ({ userId, ...message }) => {
+        const { locale } = await userLocale(appDatabase, { userId, role: "user" });
+        await queue("notify").add(
+          "auth.account-blocked",
+          accountBlockedMailSchema.parse({ ...message, locale }),
           {
             attempts: 3,
             backoff: { type: "exponential", delay: 1000 },

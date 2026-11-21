@@ -10,3 +10,12 @@ export function legalText(value: string, missing = legalCopy.labels.missing) {
     .replaceAll("{KONTAKT_EMAIL}", config.LEGAL_CONTACT_EMAIL ?? missing)
     .replaceAll("{DATA_WEJSCIA_W_ZYCIE}", config.LEGAL_EFFECTIVE_DATE ?? missing);
 }
+
+/** Contact shown when an administrator scheduled the account deletion (BL-509). */
+export function legalContact(missing = legalCopy.labels.missing) {
+  return (
+    loadConfig("web", process.env, {
+      mode: process.env.NODE_ENV as "production" | "development" | "test",
+    }).LEGAL_CONTACT_EMAIL ?? missing
+  );
+}

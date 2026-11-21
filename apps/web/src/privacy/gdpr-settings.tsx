@@ -20,7 +20,12 @@ type DataExport = {
   expiresAt?: string;
   sizeBytes?: number;
 };
-type DeletionRequest = { id: string; requestedAt: string; scheduledFor: string };
+type DeletionRequest = {
+  id: string;
+  requestedAt: string;
+  scheduledFor: string;
+  requestedBy: "user" | "admin";
+};
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iu;
 
 class InvalidResponse extends Error {
@@ -66,6 +71,8 @@ const deletionRequest = {
       id: uuid(row["id"]),
       requestedAt: timestamp(row["requestedAt"]),
       scheduledFor: timestamp(row["scheduledFor"]),
+      // BL-509: only an administrator cancels an administrator's request (owner decision 2026-11-21).
+      requestedBy: row["requestedBy"] === "admin" ? "admin" : "user",
     };
   },
 };
@@ -94,7 +101,7 @@ async function call(path: string, method = "GET", headers: Record<string, string
   return response.status === 204 ? null : ((await response.json()) as unknown);
 }
 
-export function GdprSettings() {
+export function GdprSettings({ contact }: { contact: string }) {
   const t = useCopy("privacyMessages", defaultT);
   const { formatDateTime } = useFormatters();
   const [current, setCurrent] = useState<DataExport | null>(null);
@@ -225,8 +232,15 @@ export function GdprSettings() {
         }}
       >
         <h3 id="gdpr-delete-heading">{t.deleteHeading}</h3>
-        <p>{t.deleteBody}</p>
-        {deletion ? (
+        {deletion?.requestedBy !== "admin" && <p>{t.deleteBody}</p>}
+        {deletion?.requestedBy === "admin" ? (
+          <p role="status">
+            {formatMessage(t.deleteAdminScheduled, {
+              date: formatDateTime(deletion.scheduledFor),
+              contact,
+            })}
+          </p>
+        ) : deletion ? (
           <>
             <p role="status">
               {formatMessage(t.deleteScheduled, { date: formatDateTime(deletion.scheduledFor) })}

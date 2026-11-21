@@ -10,8 +10,12 @@ const stateSchema = z
     role: z.enum(["user", "pro", "admin"]).optional(),
     status: z.enum(["pending", "paused", "running"]).optional(),
     expiresAt: z.string().datetime().optional(),
-    // GDPR account deletion (BL-114): end of the 14-day grace period.
+    // GDPR account deletion (BL-114): end of the 14-day grace period; BL-509: who requested it.
     scheduledFor: z.string().datetime().optional(),
+    requestedBy: z.enum(["user", "admin"]).optional(),
+    // Account block (BL-509): ban state only; the reason text goes to the audit `reason` field.
+    banned: z.boolean().optional(),
+    banExpires: z.string().datetime().nullable().optional(),
     enabled: z.boolean().optional(),
     twoFactorEnabled: z.boolean().optional(),
     count: z.number().int().nonnegative().optional(),

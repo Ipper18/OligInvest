@@ -1,0 +1,130 @@
+{
+  "title": "Administracja",
+  "intro": "Zarządzanie kontami, zaproszeniami i sesjami. Każde działanie trafia do dziennika audytu, a zmiany wymagają świeżego kodu z aplikacji uwierzytelniającej.",
+  "noFinancialData": "Panel pokazuje wyłącznie dane kont, bezpieczeństwa i aktywności — nigdy portfeli, transakcji, analiz ani alertów użytkowników.",
+  "sections": {
+    "overview": "Przegląd",
+    "users": "Użytkownicy",
+    "invitations": "Zaproszenia",
+    "sessions": "Sesje"
+  },
+  "sectionsLabel": "Sekcje administracji",
+  "usersIntro": "Konta z rolą, stanem 2FA, blokadą i planowanym usunięciem.",
+  "invitationsIntro": "Jednorazowe linki rejestracji. Link widać tylko raz, przy wystawieniu.",
+  "sessionsIntro": "Aktywne sesje wszystkich kont: czas, adres IP i urządzenie.",
+  "search": "Szukaj (e-mail lub nazwa)",
+  "roleFilter": "Rola",
+  "statusFilter": "Status",
+  "any": "Wszystkie",
+  "filter": "Filtruj",
+  "next": "Następna strona",
+  "first": "Pierwsza strona",
+  "empty": "Brak wyników.",
+  "columns": {
+    "email": "E-mail",
+    "name": "Nazwa",
+    "role": "Rola",
+    "twoFactor": "2FA",
+    "status": "Stan",
+    "lastActive": "Ostatnia aktywność",
+    "sessions": "Sesje",
+    "createdAt": "Utworzono",
+    "expiresAt": "Wygasa",
+    "ip": "Adres IP",
+    "device": "Urządzenie",
+    "mfaVerifiedAt": "Potwierdzenie 2FA",
+    "usedAt": "Wykorzystano",
+    "actions": "Działania"
+  },
+  "roles": {
+    "user": "Użytkownik",
+    "pro": "Pro",
+    "admin": "Administrator"
+  },
+  "invitationStatus": {
+    "pending": "Oczekuje",
+    "used": "Wykorzystane",
+    "expired": "Wygasłe",
+    "revoked": "Odwołane"
+  },
+  "state": {
+    "active": "Aktywne",
+    "blocked": "Zablokowane",
+    "blockedUntil": "Zablokowane do {date}",
+    "deletion": "Usunięcie {date}",
+    "byUser": "wniosek użytkownika",
+    "byAdmin": "zlecone przez administratora"
+  },
+  "yes": "Tak",
+  "no": "Nie",
+  "none": "—",
+  "back": "Wróć do listy użytkowników",
+  "account": "Konto",
+  "security": "Bezpieczeństwo i aktywność",
+  "emailVerified": "E-mail potwierdzony",
+  "banReason": "Powód blokady",
+  "deletionBy": "Kto zlecił usunięcie",
+  "actionsHeading": "Działania",
+  "actions": {
+    "role": "Zmień rolę",
+    "email": "Zmień e-mail",
+    "block": "Zablokuj konto",
+    "unblock": "Odblokuj konto",
+    "reset2fa": "Resetuj 2FA",
+    "revokeSessions": "Zakończ wszystkie sesje",
+    "delete": "Zaplanuj usunięcie konta (14 dni)",
+    "cancelDeletion": "Anuluj usunięcie zlecone przez administratora",
+    "revokeSession": "Zakończ sesję",
+    "revokeInvitation": "Odwołaj zaproszenie",
+    "createInvitation": "Wystaw zaproszenie"
+  },
+  "fields": {
+    "role": "Nowa rola",
+    "email": "Nowy adres e-mail",
+    "blockReason": "Powód blokady (5–500 znaków)",
+    "blockUntil": "Blokada do (opcjonalnie, czas lokalny)",
+    "resetReason": "Uzasadnienie resetu (5–500 znaków)",
+    "inviteEmail": "Adres e-mail osoby zapraszanej",
+    "inviteRole": "Rola po rejestracji",
+    "inviteHours": "Ważność linku (godziny, 1–168)",
+    "inviteSend": "Wyślij link e-mailem"
+  },
+  "help": {
+    "reset2fa": "Tylko po potwierdzeniu tożsamości poza systemem. Sekret TOTP i kody zapasowe zostaną usunięte.",
+    "delete": "Ten sam proces co wniosek RODO: konto i dane zostaną usunięte po 14 dniach. Użytkownik nie może anulować wniosku administratora — może to zrobić tylko administrator.",
+    "self": "To Twoje konto: zmiana e-maila, blokada, reset 2FA i usunięcie są tu niedostępne."
+  },
+  "confirm": {
+    "title": "Potwierdź działanie",
+    "role": "Zmienić rolę konta {email} na „{role}”? Wszystkie sesje tego konta zostaną zakończone, a administratorzy dostaną alert bezpieczeństwa.",
+    "email": "Zmienić adres {email} na {newEmail}? Oba adresy dostaną powiadomienie, sesje zostaną zakończone, a administratorzy dostaną alert.",
+    "block": "Zablokować konto {email}? Wszystkie sesje zostaną zakończone.",
+    "unblock": "Odblokować konto {email}?",
+    "reset2fa": "Zresetować 2FA konta {email}? Sesje zostaną zakończone, a przy następnym logowaniu konto skonfiguruje nowy kod.",
+    "revokeSessions": "Zakończyć wszystkie sesje konta {email}?",
+    "delete": "Zaplanować usunięcie konta {email}? Po 14 dniach konto i wszystkie dane zostaną trwale usunięte.",
+    "cancelDeletion": "Anulować usunięcie konta {email}? Użytkownik dostanie e-mail.",
+    "revokeSession": "Zakończyć sesję konta {email}?",
+    "revokeInvitation": "Odwołać zaproszenie dla {email}?",
+    "accept": "Potwierdź",
+    "dismiss": "Anuluj",
+    "createInvitation": "Wystawić zaproszenie dla {email} z rolą „{role}”?"
+  },
+  "stepUp": {
+    "intro": "To działanie wymaga świeżego potwierdzenia kodem z aplikacji uwierzytelniającej (ważne 15 minut).",
+    "label": "Kod z aplikacji (6 cyfr)",
+    "submit": "Potwierdź kodem",
+    "invalid": "Nieprawidłowy kod. Spróbuj ponownie."
+  },
+  "result": {
+    "done": "Zapisano.",
+    "pending": "Trwa zapisywanie…",
+    "conflict": "Nie można tego wykonać: własne konto, ostatni administrator, zajęty adres albo aktywny wniosek.",
+    "validation": "Sprawdź pola formularza.",
+    "notFound": "Nie znaleziono — dane mogły się zmienić.",
+    "forbidden": "Brak uprawnień.",
+    "error": "Nie udało się. Spróbuj ponownie.",
+    "inviteCreated": "Zaproszenie wystawione. Skopiuj link teraz — później nie będzie widoczny:"
+  },
+  "pagingLabel": "Stronicowanie"
+}

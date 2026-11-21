@@ -9,6 +9,7 @@ import {
 } from "@oliginvest/platform";
 import { bodyLimit } from "hono/body-limit";
 import { mountAdminStress } from "./admin-stress-routes.js";
+import { mountAdminUsers } from "./admin-user-routes.js";
 import { mountAlerts } from "./alert-routes.js";
 import { mountGdpr } from "./auth/gdpr-routes.js";
 import { type IdentityDependencies, mountIdentity } from "./auth/identity-routes.js";
@@ -253,6 +254,7 @@ export function createApp(
   };
   mountIdentity(api, identityDependencies);
   mountAdminStress(api, identityDependencies);
+  mountAdminUsers(api, identityDependencies);
   mountPreferences(api, authDependencies);
   mountNotifications(api, authDependencies);
   mountAlerts(api, authDependencies);

@@ -2,6 +2,22 @@
 
 **Cel:** rejestrować zatwierdzone zmiany kontraktu API przed ich implementacją.
 
+## 2026-11-21 — powłoka administratora: użytkownicy, zaproszenia, sesje (BL-112, BL-501, BL-509)
+
+Pierwsza implementacja `adminListUsers`, `adminGetUser`, `adminUpdateUser`, `adminDeleteUser`, `adminResetTwoFactor`,
+`adminRevokeUserSessions`, `adminListInvitations`, `adminRevokeInvitation`, `adminListSessions` i `adminRevokeSession`
+(usunięte z `openapi-pending.json`). Decyzje właściciela 2026-11-21: zmiana e-maila w `AdminUserPatch` zostaje w zakresie
+(step-up, powiadomienie na stary i nowy adres, alert do administratorów, unieważnienie sesji; bez zmiany własnego adresu);
+usunięcie zlecone przez administratora anuluje wyłącznie administrator. Stąd zmiany addytywne: nowa operacja
+`adminCancelUserDeletion` (`DELETE /admin/users/{userId}/deletion-request`), pole `DeletionRequest.requestedBy`
+(`user`/`admin`, zawsze zwracane), pole `AdminUser.deletionRequestedBy`, odpowiedź `409` w `cancelAccountDeletion`
+(wniosek administratora), `adminDeleteUser` (aktywny wniosek, własne konto, ostatni administrator) i `adminResetTwoFactor`
+(własne konto) oraz `422` w `adminResetTwoFactor`. `x-step-up: true` dla unieważniania sesji i odwołania zaproszenia (każda
+zmiana administracyjna wymaga świeżego TOTP, ADR-006). `AdminUserPatch.banReason` ma `minLength: 5` (jak powody poleceń
+`pnpm admin:*`), a `AdminInvitation.invitedBy` jest opcjonalne — kolumna `invited_by` dostaje `NULL` po usunięciu konta
+autora (BL-114). Nowe zadania kolejki `notify`: `auth.email-changed` (`email`, `audience`, `otherEmailMasked`, `issuedAt`,
+`locale`) i `auth.account-blocked` (`email`, `state`, `until`, `issuedAt`, `locale`; regulamin § 4 ust. 4). Bez istniejących klientów produkcyjnych.
+
 ## 2026-11-14 — prawa z RODO: eksport i usunięcie konta (BL-114)
 
 Pierwsza implementacja `createDataExport`, `getDataExport`, `downloadDataExport`, `getDeletionRequest`,

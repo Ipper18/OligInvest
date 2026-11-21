@@ -345,6 +345,101 @@ DO $$ BEGIN IF identity.export_auth_data() IS NOT NULL THEN RAISE EXCEPTION 'AUT
 COMMIT;
 RESET ROLE;
 
+\echo '== admin deletion request: definer functions only, user sees but cannot cancel (BL-509) =='
+SET ROLE oliginvest_auth;
+INSERT INTO auth.users (id, name, email) VALUES ('0198a000-0000-7000-8000-00000000000c', 'User C', 'c@example.test');
+RESET ROLE;
+SET ROLE oliginvest_app;
+BEGIN; SET LOCAL app.user_id = '0198a000-0000-7000-8000-00000000000c'; SET LOCAL app.role = 'user';
+DO $$ BEGIN
+  BEGIN
+    PERFORM identity.admin_schedule_deletion('0198a000-0000-7000-8000-00000000000b', 14);
+    RAISE EXCEPTION 'USER SCHEDULES ADMIN DELETION';
+  EXCEPTION WHEN insufficient_privilege THEN RAISE NOTICE 'OK: admin deletion needs the admin context'; END;
+  BEGIN
+    INSERT INTO identity.deletion_requests (user_id, scheduled_for, requested_by)
+      VALUES ('0198a000-0000-7000-8000-00000000000c', now() + interval '14 days', 'admin');
+    RAISE EXCEPTION 'USER FORGES ADMIN REQUEST';
+  EXCEPTION WHEN insufficient_privilege THEN RAISE NOTICE 'OK: user requests are requested_by = user'; END;
+END $$;
+COMMIT;
+BEGIN; SET LOCAL app.user_id = '0198a000-0000-7000-8000-0000000000ad'; SET LOCAL app.role = 'admin';
+DO $$
+DECLARE scheduled integer;
+BEGIN
+  BEGIN
+    PERFORM identity.admin_schedule_deletion('0198a000-0000-7000-8000-0000000000ad', 14);
+    RAISE EXCEPTION 'ADMIN SCHEDULES OWN DELETION';
+  EXCEPTION WHEN invalid_parameter_value THEN RAISE NOTICE 'OK: own account goes through GDPR settings'; END;
+  BEGIN
+    PERFORM identity.admin_schedule_deletion('0198a000-0000-7000-8000-00000000000c', 13);
+    RAISE EXCEPTION 'GRACE BELOW 14 DAYS';
+  EXCEPTION WHEN invalid_parameter_value THEN RAISE NOTICE 'OK: grace period is at least 14 days'; END;
+  SELECT count(*) INTO scheduled FROM identity.admin_schedule_deletion('0198a000-0000-7000-8000-00000000000c', 14);
+  IF scheduled <> 1 THEN RAISE EXCEPTION 'ADMIN DELETION NOT SCHEDULED'; END IF;
+  SELECT count(*) INTO scheduled FROM identity.admin_schedule_deletion('0198a000-0000-7000-8000-00000000000c', 14);
+  IF scheduled <> 0 THEN RAISE EXCEPTION 'SECOND ACTIVE DELETION REQUEST'; END IF;
+  IF (SELECT count(*) FROM identity.deletion_requests) <> 0 THEN RAISE EXCEPTION 'ADMIN READS DELETION REQUESTS'; END IF;
+  IF NOT EXISTS (SELECT 1 FROM identity.admin_deletion_status(ARRAY['0198a000-0000-7000-8000-00000000000c'::uuid])
+                 WHERE requested_by = 'admin' AND scheduled_for > now() + interval '13 days')
+  THEN RAISE EXCEPTION 'ADMIN DELETION STATUS MISSING'; END IF;
+END $$;
+COMMIT;
+BEGIN; SET LOCAL app.user_id = '0198a000-0000-7000-8000-00000000000c'; SET LOCAL app.role = 'user';
+DO $$
+DECLARE changed integer;
+BEGIN
+  IF (SELECT count(*) FROM identity.deletion_requests WHERE requested_by = 'admin' AND cancelled_at IS NULL) <> 1
+  THEN RAISE EXCEPTION 'USER DOES NOT SEE ADMIN REQUEST'; END IF;
+  IF EXISTS (SELECT 1 FROM identity.admin_deletion_status(ARRAY['0198a000-0000-7000-8000-00000000000c'::uuid]))
+  THEN RAISE EXCEPTION 'USER READS ADMIN DELETION STATUS'; END IF;
+  UPDATE identity.deletion_requests SET cancelled_at = now() WHERE cancelled_at IS NULL;
+  GET DIAGNOSTICS changed = ROW_COUNT;
+  IF changed <> 0 THEN RAISE EXCEPTION 'USER CANCELS ADMIN REQUEST'; END IF;
+  DELETE FROM identity.deletion_requests;
+  GET DIAGNOSTICS changed = ROW_COUNT;
+  IF changed <> 0 THEN RAISE EXCEPTION 'USER DELETES ADMIN REQUEST'; END IF;
+  BEGIN
+    PERFORM identity.admin_cancel_deletion('0198a000-0000-7000-8000-00000000000c');
+    RAISE EXCEPTION 'USER CALLS ADMIN CANCEL';
+  EXCEPTION WHEN insufficient_privilege THEN RAISE NOTICE 'OK: only an administrator cancels'; END;
+END $$;
+COMMIT;
+BEGIN; SET LOCAL app.user_id = '0198a000-0000-7000-8000-0000000000ad'; SET LOCAL app.role = 'admin';
+DO $$ BEGIN
+  IF identity.admin_cancel_deletion('0198a000-0000-7000-8000-00000000000c') IS NULL
+  THEN RAISE EXCEPTION 'ADMIN CANNOT CANCEL OWN REQUEST'; END IF;
+  IF identity.admin_cancel_deletion('0198a000-0000-7000-8000-00000000000c') IS NOT NULL
+  THEN RAISE EXCEPTION 'CANCELLED TWICE'; END IF;
+  IF EXISTS (SELECT 1 FROM identity.admin_deletion_status(ARRAY['0198a000-0000-7000-8000-00000000000c'::uuid]))
+  THEN RAISE EXCEPTION 'CANCELLED REQUEST STILL ACTIVE'; END IF;
+END $$;
+COMMIT;
+BEGIN; SET LOCAL app.user_id = '0198a000-0000-7000-8000-00000000000c'; SET LOCAL app.role = 'user';
+INSERT INTO identity.deletion_requests (user_id, scheduled_for)
+  VALUES ('0198a000-0000-7000-8000-00000000000c', now() + interval '14 days');
+COMMIT;
+BEGIN; SET LOCAL app.user_id = '0198a000-0000-7000-8000-0000000000ad'; SET LOCAL app.role = 'admin';
+DO $$ BEGIN
+  IF identity.admin_cancel_deletion('0198a000-0000-7000-8000-00000000000c') IS NOT NULL
+  THEN RAISE EXCEPTION 'ADMIN CANCELS USER REQUEST'; END IF;
+  IF NOT EXISTS (SELECT 1 FROM identity.admin_deletion_status(ARRAY['0198a000-0000-7000-8000-00000000000c'::uuid])
+                 WHERE requested_by = 'user')
+  THEN RAISE EXCEPTION 'USER REQUEST NOT REPORTED'; END IF;
+END $$;
+COMMIT;
+BEGIN; SET LOCAL app.user_id = '0198a000-0000-7000-8000-00000000000c'; SET LOCAL app.role = 'user';
+DO $$
+DECLARE changed integer;
+BEGIN
+  UPDATE identity.deletion_requests SET cancelled_at = now() WHERE cancelled_at IS NULL AND requested_by = 'user';
+  GET DIAGNOSTICS changed = ROW_COUNT;
+  IF changed <> 1 THEN RAISE EXCEPTION 'USER CANNOT CANCEL OWN REQUEST'; END IF;
+  RAISE NOTICE 'OK: admin requests via definer functions only; user cancels only own requests';
+END $$;
+COMMIT;
+RESET ROLE;
+
 \echo '== account erasure: system only, due request only, audit pseudonymized, erasure_log written (BL-114) =='
 SET ROLE oliginvest_app;
 BEGIN; SET LOCAL app.user_id = '0198a000-0000-7000-8000-00000000000b'; SET LOCAL app.role = 'user';
