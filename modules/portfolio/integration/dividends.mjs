@@ -21,6 +21,7 @@ export async function testDividends({ request, database, owner }) {
     for (const [date, rate, table] of [
       ["2024-04-10", "3.9", "070/A/NBP/2024"],
       ["2024-04-11", "3.95", "071/A/NBP/2024"],
+      ["2024-04-12", "4", "072/A/NBP/2024"],
       ["2024-04-15", "4.1", "073/A/NBP/2024"],
     ])
       await tx.execute(
@@ -131,6 +132,49 @@ export async function testDividends({ request, database, owner }) {
   // 12 months to 2025-04-30 start after 2024-04-30: only the May payment.
   assert.equal(later.byInstrument[0].yieldOnCost.trailingGrossPln.amount, "20.50000000");
   assert.equal(later.byInstrument[0].yieldOnCost.ratio, "0.005125");
+  // BL-306b (Z-30): on a USD account the cost in PLN is 1000 USD · NBP of Friday 2024-04-12 (the
+  // last business day before the Monday settlement), so the yield is known: 20.5 / 4000.
+  const usdAccount = await post("accounts", {
+    name: "Synthetic USD dividends",
+    accountType: "regular",
+    broker: "other",
+    currency: "USD",
+  });
+  await post("transactions", {
+    accountId: usdAccount.id,
+    type: "DEPOSIT",
+    tradeDate: "2024-04-01",
+    amount: { amount: "2000", currency: "USD" },
+  });
+  await post("transactions", {
+    accountId: usdAccount.id,
+    type: "BUY",
+    tradeDate: "2024-04-12",
+    settleDate: "2024-04-15",
+    instrumentId,
+    quantity: "10",
+    price: "100",
+    priceCurrency: "USD",
+  });
+  await post("transactions", {
+    accountId: usdAccount.id,
+    type: "DIVIDEND",
+    tradeDate: "2024-05-10",
+    instrumentId,
+    quantity: "10",
+    price: "0.5",
+    priceCurrency: "USD",
+    amount: { amount: "4.25", currency: "USD" },
+    tax: { amount: "0.75", currency: "USD" },
+  });
+  const usdResponse = await request(
+    `dividends?accountId=${usdAccount.id}&from=2024-04-01&to=2025-03-31`,
+  );
+  assert.equal(usdResponse.status, 200, JSON.stringify(await usdResponse.clone().json()));
+  const usdYield = (await usdResponse.json()).byInstrument[0].yieldOnCost;
+  assert.equal(usdYield.reason, null);
+  assert.equal(usdYield.costPln.amount, "4000.00000000");
+  assert.equal(usdYield.ratio, "0.005125");
   const foreign = await request(`dividends?accountId=${account.id}`, "GET", undefined, {
     "x-owner": "b",
   });

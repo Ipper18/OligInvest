@@ -89,7 +89,8 @@ export async function testCurrencyExposure({ request, database, owner }) {
   assert.equal(gap.decomposition.exclusions[0].reason, "missing_fx");
   assert.equal(gap.decomposition.rows[0].fxEffect, null);
   assert.equal(gap.decomposition.total.fxEffect, null, "no complete row: null, never 0");
-  // Owner decision Z-29: a USD account holding a USD stock stays in the exposure, out of the split.
+  // Z-29/BL-306b: a USD account holding a USD stock without an NBP rate before its settlement day
+  // stays in the exposure, out of the split (explicit state, never an FX effect of 0).
   const usdAccount = await post("accounts", {
     name: "Synthetic USD account",
     accountType: "regular",
@@ -124,6 +125,38 @@ export async function testCurrencyExposure({ request, database, owner }) {
     both.decomposition.exclusions.map((e) => [e.accountId, e.reason]),
     [[usdAccount.id, "missing_cost_pln"]],
   );
+  // BL-306b: with the NBP table of Monday 2024-03-04 (the last business day before the Tuesday
+  // settlement) the PLN cost is 100 USD · 3.9 = 390 PLN and the position joins the split.
+  await database.transaction({ userId: null, role: "system" }, async (tx) => {
+    await tx.execute(
+      sql`INSERT INTO market.fx_rates(base,quote,rate_date,rate,source,table_no) VALUES('USD','PLN','2024-03-04',3.9,'nbp','044/A/NBP/2024') ON CONFLICT(base,quote,rate_date,source) DO UPDATE SET rate=excluded.rate,table_no=excluded.table_no`,
+    );
+  });
+  const split = await get(`accountId=${usdAccount.id}&asOf=2024-03-08`);
+  const [usdRow] = split.decomposition.rows;
+  assert.equal(usdRow.positions, 2);
+  // PLN account 120 / 76 / 44 plus the USD account: value 110 · 4 = 440, P/L 50,
+  // price effect (110 − 100) · 3.9 = 39, FX effect 11.
+  assert.equal(usdRow.unrealizedPl.amount, "170.00000000");
+  assert.equal(usdRow.priceEffect.amount, "115.00000000");
+  assert.equal(usdRow.fxEffect.amount, "55.00000000");
+  assert.equal(split.decomposition.total.fxEffect.amount, "55.00000000");
+  assert.deepEqual(split.decomposition.notSplit, []);
+  assert.deepEqual(split.decomposition.exclusions, []);
+  // The table behind the PLN cost, with its number from the database; the expected one.
+  assert.deepEqual(split.assumptions.costFxRates, {
+    method: "nbp_table_a_mid_previous_business_day",
+    stale: false,
+    tables: [
+      {
+        currency: "USD",
+        rateDate: "2024-03-04",
+        expectedDate: "2024-03-04",
+        stale: false,
+        tableNo: "044/A/NBP/2024",
+      },
+    ],
+  });
   const before = await get("asOf=2024-03-02");
   assert.equal(before.slices.length, 1, "only the deposit exists before the purchase");
   const foreign = await request(`currency-exposure?accountId=${account.id}`, "GET", undefined, {

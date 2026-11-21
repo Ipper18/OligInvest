@@ -111,7 +111,8 @@ export function projectDividends(input: DividendsInput, now: Date) {
     .sort(([a], [b]) => b - a)
     .map(([year, list]) => ({ year, totals: totals(list) }));
   // Yield on cost (§ 4.3, owner decision 2026-09-24): trailing 12 months of gross in PLN at
-  // NBP D-1 over the open FIFO cost in PLN. Cost is in PLN only on a PLN account (Z-29).
+  // NBP D-1 over the open FIFO cost in PLN; on an account in another currency the cost at NBP
+  // before the cost day (BL-306b, Z-29/Z-30), `missing_cost_pln` only without that rate.
   const yieldOf = (instrumentId: string) => {
     const result = (
       reason: YieldReason | null,
@@ -135,9 +136,9 @@ export function projectDividends(input: DividendsInput, now: Date) {
     const gross = grossValues.includes(null) ? null : sumMoney(grossValues as Money[], "PLN");
     if (!positions.length) return result("no_open_position", gross);
     if (positions.some((p) => !p.cost)) return result("missing_cost", gross);
-    if (positions.some((p) => p.cost!.currency !== "PLN")) return result("missing_cost_pln", gross);
+    if (positions.some((p) => !p.costPln)) return result("missing_cost_pln", gross);
     const cost = sumMoney(
-      positions.map((p) => p.cost!),
+      positions.map((p) => p.costPln!),
       "PLN",
     );
     if (!gross) return result("missing_fx", null, cost);

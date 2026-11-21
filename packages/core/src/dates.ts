@@ -61,6 +61,47 @@ export function isWeekday(date: string): boolean {
   return day !== 0 && day !== 6;
 }
 
+/** Easter Sunday (Gregorian, anonymous algorithm) as an ISO date. */
+function easterSunday(year: number): IsoDate {
+  const a = year % 19;
+  const b = Math.floor(year / 100);
+  const c = year % 100;
+  const d = Math.floor(b / 4);
+  const e = b % 4;
+  const f = Math.floor((b + 8) / 25);
+  const g = Math.floor((b - f + 1) / 3);
+  const h = (19 * a + b - d - g + 15) % 30;
+  const i = Math.floor(c / 4);
+  const k = c % 4;
+  const l = (32 + 2 * e + 2 * i - h - k) % 7;
+  const m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const month = Math.floor((h + l - 7 * m + 114) / 31);
+  const day = ((h + l - 7 * m + 114) % 31) + 1;
+  return isoDate(`${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`);
+}
+
+/**
+ * Statutory public holiday in Poland (ustawa o dniach wolnych od pracy, obliczenia-finansowe.md
+ * § 2.2): fixed days, 6 January since 2011, 24 December since 2025, Easter Monday and Corpus Christi
+ * (Sundays — Easter, Pentecost — are not business days anyway).
+ */
+export function isPolishPublicHoliday(date: string): boolean {
+  const d = isoDate(date);
+  const year = Number(d.slice(0, 4));
+  const monthDay = d.slice(5);
+  if (["01-01", "05-01", "05-03", "08-15", "11-01", "11-11", "12-25", "12-26"].includes(monthDay))
+    return true;
+  if (monthDay === "01-06" && year >= 2011) return true;
+  if (monthDay === "12-24" && year >= 2025) return true;
+  const easter = easterSunday(year);
+  return d === addDays(easter, 1) || d === addDays(easter, 60);
+}
+
+/** NBP publishes table A on Polish business days: Monday–Friday without public holidays. */
+export function isNbpBusinessDay(date: string): boolean {
+  return isWeekday(date) && !isPolishPublicHoliday(date);
+}
+
 export type SettlementRegion = "US" | "EU";
 
 const US_MICS = ["XNYS", "XNAS", "ARCX", "BATS", "XASE"] as const;

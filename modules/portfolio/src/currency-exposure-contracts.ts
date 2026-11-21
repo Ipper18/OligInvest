@@ -50,7 +50,8 @@ export function createCurrencyExposureSchema() {
         fxEffect: nullableMoney,
       }),
       isComplete: z.boolean(),
-      // Owner decision Z-29: kept in the exposure, left out of the split, never an FX effect of 0.
+      // Z-29/BL-306b: no NBP rate before the cost day — kept in the exposure, left out of the
+      // split, never an FX effect of 0.
       notSplit: z
         .array(
           object({
@@ -77,6 +78,23 @@ export function createCurrencyExposureSchema() {
       fxRates: z.literal("nbp_table_a_mid"),
       view: z.literal("economic"),
       costBasisMethod: z.literal("fifo"),
+      // BL-306b: PLN cost on a non-PLN account at NBP of the last business day before the cost
+      // day; the tables used and their age are shown, never hidden (owner decision 2026-11-20).
+      costFxRates: object({
+        method: z.literal("nbp_table_a_mid_previous_business_day"),
+        stale: z.boolean(),
+        tables: z
+          .array(
+            object({
+              currency,
+              rateDate: date,
+              expectedDate: date,
+              stale: z.boolean(),
+              tableNo: z.string().max(40).nullable(),
+            }),
+          )
+          .max(1000),
+      }),
     }),
     meta: metaSchema,
   }).openapi("CurrencyExposure");

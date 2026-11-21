@@ -41,17 +41,21 @@ export function baseMoney(value: Money | null, fx: FxRateTable, date: IsoDate) {
   return rate ? convertMoney(value, rate) : null;
 }
 type ValuedPosition = ReturnType<typeof valuePortfolio>["accounts"][number]["positions"][number];
-/** Economic FIFO effect of one position (§ 4.2), or why it cannot be computed. */
+/**
+ * Economic FIFO effect of one position (§ 4.2), or why it cannot be computed. `costPln` overrides
+ * the cost converted at today's rate (BL-306b: the PLN cost at NBP before the cost day).
+ */
 export function positionEffect(
   p: ValuedPosition,
   original: Ledger["positions"][number],
   fx: FxRateTable,
   date: IsoDate,
+  costPln?: Money,
 ): PriceFxEffect | "missing_cost" | "missing_price" | "missing_fx" {
   if (!p.cost || !original.costInstrument || original.costInstrument.amount.isZero())
     return "missing_cost";
   if (!p.price) return "missing_price";
-  const cost = baseMoney(p.cost, fx, date),
+  const cost = costPln ?? baseMoney(p.cost, fx, date),
     value = baseMoney(p.marketValue, fx, date);
   if (!cost || !value) return "missing_fx";
   return priceFxEffect({
