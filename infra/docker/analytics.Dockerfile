@@ -14,12 +14,15 @@ FROM python:3.13.13-slim-trixie@sha256:aa938a849bcb82dce8f49480f056ab82bf5c1c3eb
 # vulnerable apt fetches the fix.
 # liblzma5 5.8.1-1+deb13u2 (DSA-6549-1, xz-utils; debian-security since 2026-10-07T21:15Z) and ca-certificates
 # 20250419+deb13u1 (DSA-6572-1; since 2026-10-20T20:56Z): the pinned Python base (last push 2026-05-22) has neither.
+# glibc 2.41-12+deb13u5 (trixie point release 13.8, no DSA; upstream stable fixes incl. CVE-2026-5435,
+# CVE-2026-18374, CVE-2026-86805, CVE-2026-95818; snapshot.debian.org first seen 2026-11-14T14:41Z) supersedes
+# deb13u4, which the mirror no longer serves.
 RUN apt-get -o Acquire::Retries=0 update -qq && apt-get -o Acquire::Retries=0 install -y --no-install-recommends \
     util-linux=2.41.5-0+deb13u1 mount=2.41.5-0+deb13u1 \
     libblkid1=2.41.5-0+deb13u1 libmount1=2.41.5-0+deb13u1 \
     libsmartcols1=2.41.5-0+deb13u1 libuuid1=2.41.5-0+deb13u1 \
     liblastlog2-2=2.41.5-0+deb13u1 bsdutils=1:2.41.5-0+deb13u1 login=1:4.16.0-2+really2.41.5-0+deb13u1 \
-    libc6=2.41-12+deb13u4 libc-bin=2.41-12+deb13u4 perl-base=5.40.1-6+deb13u1 \
+    libc6=2.41-12+deb13u5 libc-bin=2.41-12+deb13u5 perl-base=5.40.1-6+deb13u1 \
     openssl=3.5.7-1~deb13u3 libssl3t64=3.5.7-1~deb13u3 openssl-provider-legacy=3.5.7-1~deb13u3 \
     apt=3.0.4 libapt-pkg7.0=3.0.4 \
     liblzma5=5.8.1-1+deb13u2 ca-certificates=20250419+deb13u1 \

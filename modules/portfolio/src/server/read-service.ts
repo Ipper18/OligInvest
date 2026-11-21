@@ -3,6 +3,7 @@ import {
   type AverageCostView,
   addDays,
   buildAverageCostView,
+  Decimal,
   dayChange,
   externalFlows,
   grossValue,
@@ -510,7 +511,7 @@ async function readLots(tx: DatabaseTransaction, context: DatabaseContext, query
       costTotal: amount(l.costTotal, l.costCurrency),
       costTotalTax: amount(l.costTotalTaxPln, "PLN"),
       feesTotal: amount(l.feesTotal, l.costCurrency),
-      splitFactor: l.splitFactor,
+      splitFactor: new Decimal(l.splitFactor).toDecimalPlaces(10, Decimal.ROUND_HALF_UP).toFixed(),
       ...(l.closedOn ? { closedOn: l.closedOn } : {}),
       consumptions: consumptions
         .filter((c) => c.lotId === l.id)
