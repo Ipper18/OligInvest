@@ -1,4 +1,5 @@
 import { createHmac } from "node:crypto";
+import { setTimeout as delay } from "node:timers/promises";
 
 /** RFC 6238 code for the real-API browser runs (synthetic secrets from the enrolment screen). */
 export function totp(base32: string) {
@@ -14,4 +15,16 @@ export function totp(base32: string) {
     6,
     "0",
   );
+}
+
+// The real API allows 5 auth calls per clock minute and 20 per hour for the shared loopback peer
+// (apps/api/src/auth/state.ts). Specs record the minute of their last auth call; the next flow
+// waits only while that minute lasts. Module state is per worker, so an unknown minute waits too.
+let authMinute: number | undefined;
+export function recordAuthCalls() {
+  authMinute = Math.floor(Date.now() / 60000);
+}
+export async function freshAuthMinute() {
+  if (authMinute === undefined || authMinute === Math.floor(Date.now() / 60000))
+    await delay(60250 - (Date.now() % 60000));
 }

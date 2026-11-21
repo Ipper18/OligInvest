@@ -52,7 +52,10 @@ export default defineConfig({
           {
             name: `${browserName}-real`,
             // Alphabetical order: real-admin runs after mvp-real created this browser's account.
-            testMatch: ["**/mvp-real.spec.ts", "**/real-admin.spec.ts"],
+            testMatch:
+              browserName === "chromium"
+                ? ["**/mvp-real.spec.ts", "**/real-admin.spec.ts"]
+                : ["**/mvp-real.spec.ts"],
             use: { browserName, baseURL: "https://127.0.0.1:3196" },
           },
         ]

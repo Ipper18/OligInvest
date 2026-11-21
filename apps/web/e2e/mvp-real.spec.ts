@@ -3,7 +3,7 @@ import { setTimeout as delay } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
-import { totp } from "./real-helpers";
+import { recordAuthCalls, totp } from "./real-helpers";
 
 test("real invitation → TOTP → XTB worker → reconciled portfolio", async ({
   page,
@@ -37,6 +37,7 @@ test("real invitation → TOTP → XTB worker → reconciled portfolio", async (
   await expect(page.locator(".oi-backup-codes li")).toHaveCount(10);
   await page.getByRole("button", { name: "Kody zapisane", exact: true }).click();
   await expect(page).toHaveURL("/");
+  recordAuthCalls();
   expect((await request.get("/api/v1/portfolio/accounts")).status()).toBe(401);
 
   await expect(page.getByText("Aktualizacje na żywo", { exact: true })).toBeVisible();
