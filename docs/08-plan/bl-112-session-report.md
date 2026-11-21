@@ -30,14 +30,25 @@ Rozbieżności rozstrzygnięte według kolejności ADR → wymagania → konwenc
 10. **`FOR NO KEY UPDATE` przy blokowaniu konta:** `FOR UPDATE` w transakcji auth blokował sprawdzenie klucza obcego w transakcji app tego samego żądania (przekroczenie `lock_timeout` przy zapisie wniosku usunięcia).
 11. **Kursor z dokładnym znacznikiem czasu bazy** (`to_json(created_at)`), bo milisekundy ISO gubiły mikrosekundy i powtarzały wiersz na granicy strony.
 12. **Zmiany przez Server Action z listą operacji** (jak `mutateResource` portfela) zamiast `fetch` z przeglądarki: Zod zostaje na serwerze (budżet `/admin/*` zakazuje Zod), ścieżka API nie pochodzi z przeglądarki, a ścieżka działa także w testowym serwerze bez bramy Caddy.
-13. **Wpis budżetu `/admin`** (kopia progów `/admin/*`, bo wzorzec `*` nie obejmuje samego `/admin`) i fixture `userId` dla trasy dynamicznej — bez zmiany żadnego progu.
-14. **`uiDefinition` modułu admin bez importu `@oliginvest/platform`** — unika nowej zależności workspace dla jednej stałej.
-15. **AGENTS.md § 6.2** nie istnieje na `main` (PR #91 nie jest scalony); pracowałem według treści z polecenia właściciela.
+13. **Prawdziwe API dla administratora tylko w Chromium** (pytanie 2): czekanie tylko przez minutę, w której `mvp-real` wydał wywołania uwierzytelniania; limity i timeouty bez zmian.
+14. **Wpis budżetu `/admin`** (kopia progów `/admin/*`, bo wzorzec `*` nie obejmuje samego `/admin`) i fixture `userId` dla trasy dynamicznej — bez zmiany żadnego progu.
+15. **`uiDefinition` modułu admin bez importu `@oliginvest/platform`** — unika nowej zależności workspace dla jednej stałej.
+16. **AGENTS.md § 6.2** nie istnieje na `main` (PR #91 nie jest scalony); pracowałem według treści z polecenia właściciela.
 
 ## Dowody lokalne
 
-UZUPEŁNIĆ_DOWODY
+- **PostgreSQL 18 (`pnpm db:test`):** sekcja BL-112/501/509 **PASS** — 401 bez sesji, 403 dla Bearer, obcego `Origin` i ról `user`/`pro` (także ze świeżym step-upem), odczyty bez step-upu, każda zmiana `STEP_UP_REQUIRED` przy nieświeżym kodzie, wpisy audytu (powody w `after`, bez adresów e-mail), przechwycone SQL bez schematów domenowych, `42501` roli auth na tabelach portfela, stronicowanie i 422, ochrona własnego konta i ostatniego administratora, zmiana roli i e-maila (dwa powiadomienia, sesje zakończone), blokada i jej zdjęcie (dwa e-maile bez powodu), reset 2FA, usunięcie z 14-dniową karencją (użytkownik nie anuluje — 409; anuluje administrator; wniosek użytkownika nietknięty), sesje, zaproszenia. Porównanie schematu **ZERO DIFFERENCES**.
+- **Testy jednostkowe:** api, jobs (nowe `emailChangedMail`, `accountBlockedMail`), admin (statyczny brak danych finansowych), i18n, contracts, web — **PASS**; lint i typecheck tych pakietów **PASS**.
+- **Kontrakty:** `check:contracts` **OK** (120 zaimplementowanych, 68 oczekujących; `openapi-pending.json` tylko zmalał), `check:api-client`, `check:deps`, `check:docs`, `check:repository`, `check:ui-text` **PASS**.
+- **E2E fixture (`admin.spec.ts`):** **18/18 PASS** (Chromium, WebKit, Firefox): `404` każdej strony `/admin` i brak linku dla zwykłego konta; axe przy 1280 i 360 px bez przewijania w poziomie; brak znaczników finansowych i brak żądań do API domenowych; blokada wyłącznie z klawiatury z błędnym i poprawnym kodem; Escape bez żadnej zmiany i z powrotem fokusu; usunięcie, anulowanie, zaproszenie z jednorazowym linkiem i zakończenie sesji przez step-up; wersja angielska.
+- **E2E z prawdziwym API (`pnpm ci:e2e`, Compose, produkcyjny build API):** `mvp-real` w trzech przeglądarkach z nowym sprawdzeniem `403 FORBIDDEN` z `/api/v1/admin/users` i `404` stron `/admin` dla zwykłego konta; `real-admin` (Chromium) — zaproszony administrator przed konfiguracją TOTP dostaje `MFA_ENROLLMENT_REQUIRED`, po niej widzi konto z poprzedniego testu bez rachunku, kwot i tickerów, wykonuje zmianę przez Server Action bez wywołań API domenowych — **4/4 PASS**. Pozostałe projekty fixture: Chromium i WebKit w pełnym przebiegu PASS, Firefox osobno **80 PASS, 2 pominięte** (pominięcia istniały wcześniej).
+- **Budżety (`pnpm budgets`):** wszystkie trasy PASS; `/admin*` **161,01/200 KiB** bez Zod. Względem ostatniego CI `main`: powłoka **29,85 → 29,88 / 30 KiB**, `/` 158,61 → 158,63, `/portfel` 168,35 → 168,37 — to wyłącznie wpis `admin` w rejestrze nawigacji; kod administratora nie ładuje się na tych trasach.
+- **Build bez modułu admin (`pnpm ci:build admin`):** **PASS** (pełny build w piaskownicy bez `modules/admin`).
+- Grep sekretów przed commitem: tylko 4 znane syntetyczne trafienia. Jedyny adres IP w testach to zakres dokumentacyjny RFC 5737.
+- Lokalnie pełny `pnpm ci:e2e` przekroczył niezmieniony limit 10 min Playwrighta na tym komputerze (Windows) w trakcie projektów Firefox; dlatego projekty `-real` i Firefox uruchomiono osobno. CI na Linuksie mierzy pełny przebieg.
 
 ## Pytania do właściciela
 
-UZUPEŁNIĆ_PYTANIA
+1. **Powłoka 29,88/30 KiB.** Wpis `admin` w nawigacji dodaje ok. 0,03 KiB do `/` i `/portfel` (kod panelu się tam nie ładuje). Rekomendacja: przyjąć. Alternatywa: link do panelu tylko w `/ustawienia` (zero przyrostu, gorsza odkrywalność). Zapas powłoki to już tylko 0,12 KiB — warto zaplanować jego odzyskanie.
+2. **Prawdziwe API dla administratora tylko w Chromium.** Limity 5/min i 20/h na wspólny adres pętli oraz niezmieniony limit 10 min Playwrighta nie mieszczą trzech dodatkowych rejestracji z czekaniem na nową minutę. Interfejs we wszystkich trzech przeglądarkach sprawdza `admin.spec.ts`, a 403/404 zwykłego konta — `mvp-real` w trzech przeglądarkach. Rekomendacja: przyjąć.
+3. **Powód blokady w e-mailu do użytkownika.** Dziś e-mail mówi o blokadzie i terminie, a powód zostaje w audycie (pole może zawierać notatki wewnętrzne). Rekomendacja: zostawić tak; ewentualnie osobne, opcjonalne pole „wiadomość do użytkownika”.
