@@ -67,7 +67,8 @@ jobs:
       - run: pnpm turbo run build --filter=@oliginvest/web --filter=@oliginvest/api --filter=@oliginvest/db --output-logs=new-only
       - name: ZAP baseline (passive; public + synthetic-session routes behind Caddyfile.test)
         run: pnpm --filter @oliginvest/web exec node scripts/zap-baseline.mjs
-      - name: ZAP baseline (passive; anonymous production API with PostgreSQL and Valkey)
+      # BL-614 anonymous pass, then BL-614b: synthetic invited account, TOTP session, cookie attributes.
+      - name: ZAP baseline (passive; production API with PostgreSQL and Valkey, anonymous + TOTP session)
         run: pnpm --filter @oliginvest/web exec node scripts/zap-baseline.mjs --api
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
