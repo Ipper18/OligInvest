@@ -2,6 +2,7 @@ import { isIP } from "node:net";
 import type { ServiceConfig } from "@oliginvest/config";
 import {
   authMailSchema,
+  emailChangedMailSchema,
   invitationMailSchema,
   twoFactorResetMailSchema,
 } from "@oliginvest/contracts";
@@ -91,7 +92,12 @@ export function createAuthMailer(
     },
     send: async (name: string, input: unknown) => {
       if (
-        !["auth.password-reset", "auth.invitation", "auth.two-factor-reset"].includes(name) ||
+        ![
+          "auth.password-reset",
+          "auth.invitation",
+          "auth.two-factor-reset",
+          "auth.email-changed",
+        ].includes(name) ||
         !config.SMTP_FROM
       )
         throw new Error("AUTH_MAIL_INVALID");
@@ -100,7 +106,9 @@ export function createAuthMailer(
           ? passwordResetMail(input, config.PUBLIC_BASE_URL, config.SMTP_FROM)
           : name === "auth.invitation"
             ? invitationMail(input, config)
-            : twoFactorResetMail(input, config);
+            : name === "auth.email-changed"
+              ? emailChangedMail(input, config)
+              : twoFactorResetMail(input, config);
       await reserve(true);
       try {
         await transport.sendMail(message);
@@ -151,6 +159,30 @@ export function twoFactorResetMail(
       issuedAt: data.issuedAt,
       privacyUrl: new URL("/prywatnosc", config.PUBLIC_BASE_URL).href,
     }),
+    disableFileAccess: true,
+    disableUrlAccess: true,
+  };
+}
+
+/** BL-509: an administrator changed the sign-in address; one message to each address. */
+export function emailChangedMail(input: unknown, config: ServiceConfig<"jobs">, now = Date.now()) {
+  const data = emailChangedMailSchema.parse(input);
+  const messages = data.locale === "en-US" ? copies.authMailMessages : defaultAuthMailMessages;
+  if (
+    Date.parse(data.issuedAt) > now ||
+    now - Date.parse(data.issuedAt) > 86400_000 ||
+    !config.SMTP_FROM
+  )
+    throw new Error("AUTH_MAIL_EXPIRED");
+  const previous = data.audience === "previous";
+  return {
+    from: { name: "OligInvest", address: config.SMTP_FROM },
+    to: { address: data.email, name: "" },
+    subject: previous ? messages.emailChangedPreviousSubject : messages.emailChangedCurrentSubject,
+    text: formatMessage(
+      previous ? messages.emailChangedPreviousBody : messages.emailChangedCurrentBody,
+      { other: data.otherEmailMasked, issuedAt: data.issuedAt },
+    ),
     disableFileAccess: true,
     disableUrlAccess: true,
   };

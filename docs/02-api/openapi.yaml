@@ -7409,7 +7409,7 @@ components:
         role: {$ref: '#/components/schemas/Role'}
         email: {type: string, format: email, description: 'Zmiana adresu (tylko admin): powiadomienie na stary i nowy adres, unieważnienie sesji, wpis audytu.'}
         banned: {type: boolean}
-        banReason: {type: string, maxLength: 500}
+        banReason: {type: string, minLength: 5, maxLength: 500, description: 'Uzasadnienie blokady (zapisywane w audycie).'}
         banExpires: {oneOf: [{$ref: '#/components/schemas/Timestamp'}, {type: 'null'}]}
       if: {properties: {banned: {const: true}}, required: [banned]}
       then: {required: [banReason]}
@@ -7435,7 +7435,8 @@ components:
       additionalProperties: false
     AdminInvitation:
       type: object
-      required: [id, email, role, invitedBy, status, expiresAt, createdAt]
+      description: '`invitedBy` jest pusty po usunięciu konta autora (BL-114, `schema.sql`).'
+      required: [id, email, role, status, expiresAt, createdAt]
       properties:
         id: {$ref: '#/components/schemas/Uuid'}
         email: {type: string, format: email}

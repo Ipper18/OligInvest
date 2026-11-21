@@ -1,24 +1,9 @@
-import { createHmac } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { setTimeout as delay } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
-
-function totp(base32: string) {
-  const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
-  const bits = [...base32.replace(/=+$/, "")]
-    .map((c) => alphabet.indexOf(c).toString(2).padStart(5, "0"))
-    .join("");
-  const key = Buffer.from(bits.match(/.{8}/g)?.map((b) => Number.parseInt(b, 2)) ?? []);
-  const counter = Buffer.alloc(8);
-  counter.writeBigUInt64BE(BigInt(Math.floor(Date.now() / 30000)));
-  const digest = createHmac("sha1", key).update(counter).digest();
-  return String((digest.readUInt32BE((digest[19] ?? 0) & 15) & 0x7fffffff) % 1000000).padStart(
-    6,
-    "0",
-  );
-}
+import { totp } from "./real-helpers";
 
 test("real invitation → TOTP → XTB worker → reconciled portfolio", async ({
   page,
@@ -109,6 +94,12 @@ test("real invitation → TOTP → XTB worker → reconciled portfolio", async (
       .violations,
   ).toEqual([]);
   await expect(page.getByText("Aktualizacje na żywo", { exact: true })).toBeVisible();
+  // BL-112: an ordinary account gets 403 from the admin API (role before step-up) and 404 pages.
+  const admin = await page.request.get("/api/v1/admin/users");
+  expect(admin.status()).toBe(403);
+  expect((await admin.json()).code).toBe("FORBIDDEN");
+  expect((await page.goto("/admin/uzytkownicy"))?.status()).toBe(404);
+  await expect(page.getByRole("link", { name: "Administracja", exact: true })).toHaveCount(0);
   // BL-413: sign-out moved from the shell header to Settings.
   await page.goto("/ustawienia");
   await page.getByRole("button", { name: "Wyloguj się", exact: true }).click();

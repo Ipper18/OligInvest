@@ -42,5 +42,15 @@
         "permission": "education:use"
       }
     ]
+  },
+  {
+    "id": "admin",
+    "nav": [
+      {
+        "href": "/admin",
+        "labelKey": "nav.admin",
+        "permission": "admin:users"
+      }
+    ]
   }
 ]

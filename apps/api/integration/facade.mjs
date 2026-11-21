@@ -15,6 +15,7 @@ import { AuthService } from "../dist/auth/service.js";
 import { SESSION_COOKIE, sessionCookie } from "../dist/auth/session.js";
 import { totpCode } from "../dist/auth/totp.js";
 import { testAdminStress } from "./admin-stress.mjs";
+import { testAdminUsers } from "./admin-users.mjs";
 
 export async function testAuthFacade(settings) {
   const connection = { host: settings.host, port: settings.port, database: settings.database };
@@ -72,9 +73,11 @@ export async function testAuthFacade(settings) {
   const cookies = new Map();
   const invitations = [];
   const resets = [];
+  const emailChanges = [];
   const queueActions = [];
   const administration = new Administration(service, {
     resetMail: async (message) => resets.push(message),
+    emailChangedMail: async (message) => emailChanges.push(message),
     inviteMail: async (message) => invitations.push(message),
     flagsChanged: async () => service.features.invalidate(),
     queues: async (...args) => queueActions.push(args),
@@ -324,6 +327,19 @@ export async function testAuthFacade(settings) {
     await testAdminStress({ app, administration, database, appDatabase, cookies, userId });
     console.log(
       "BL-567: stress admin gates, app-role RLS, atomic audit and concurrent upserts PASS",
+    );
+    await testAdminUsers({
+      app,
+      administration,
+      database,
+      appDatabase,
+      cookies,
+      userId,
+      emailChanges,
+      resets,
+    });
+    console.log(
+      "BL-112/501/509: admin gates, step-up, audit, no financial data, e-mail, block, deletion PASS",
     );
     const invitationInput = {
       email: "new@example.test",
@@ -849,8 +865,11 @@ export async function testAuthFacade(settings) {
       0,
     );
     await cli({ command: "revoke-all-sessions" });
+    // testAdminUsers already queued one reset over HTTP (BL-509); the CLI adds exactly one more.
+    const resetsBeforeCli = resets.length;
     await cli({ command: "reset-2fa", email });
-    assert.equal(resets.length, 1);
+    assert.equal(resets.length, resetsBeforeCli + 1);
+    assert.equal(resets.at(-1).email, email);
     assert.equal(
       (
         await database.transaction((tx) =>

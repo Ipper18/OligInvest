@@ -17,6 +17,15 @@ import {
 
 export type AdminEffects = {
   resetMail: (message: { email: string; issuedAt: string }) => Promise<void>;
+  /** BL-509: `auth.email-changed` to the previous and the new address (decyzja właściciela 2026-11-21). */
+  emailChangedMail: (message: {
+    /** Account whose language the message uses (the address may already have changed). */
+    userId: string;
+    email: string;
+    audience: "previous" | "current";
+    otherEmailMasked: string;
+    issuedAt: string;
+  }) => Promise<void>;
   inviteMail: (message: {
     email: string;
     token: string;
@@ -43,18 +52,33 @@ export class Administration {
     readonly effects: AdminEffects,
   ) {}
 
+  /**
+   * Every /api/v1/admin/* call: session, MFA, role permission, terms gate and an audit entry for
+   * the attempt and its outcome (ADR-006). Changes also need a fresh TOTP step-up; reads opt out
+   * with `stepUp: false`. With `database: "app"` the work gets the app-role transaction (outcome
+   * audit commits with it) and the auth transaction as the third argument.
+   */
   async http<T>(
     request: Request,
     action: string,
-    work: (actor: DatabaseContext, tx: DatabaseTransaction) => Promise<T>,
+    work: (
+      actor: DatabaseContext,
+      tx: DatabaseTransaction,
+      authTx: DatabaseTransaction,
+    ) => Promise<T>,
     metadata?: { requestId: string; ip: string },
     describe?: (result: T) => {
       resourceId: string;
       resourceType: string;
       before: AuditState | null;
       after: AuditState;
+      reason?: string;
     },
-    scope?: { database: "app"; permission: "admin:system" },
+    scope?: {
+      database?: "app";
+      permission?: "admin:system" | "admin:users";
+      stepUp?: false;
+    },
   ): Promise<T> {
     const options = this.service.options;
     const source = {
@@ -77,8 +101,9 @@ export class Administration {
         );
         if (!principal) throw new ProblemError("UNAUTHENTICATED");
         requireMfa(principal);
-        requireStepUp(principal);
+        // Role first: a non-administrator gets FORBIDDEN, never a step-up prompt.
         requirePermission(principal.role, scope?.permission ?? "admin:users");
+        if (scope?.stepUp !== false) requireStepUp(principal);
         if ((await this.service.legal(principal)).termsAcceptanceRequired)
           throw new ProblemError("TERMS_ACCEPTANCE_REQUIRED");
         actor = { userId: principal.user_id, role: principal.role };
@@ -89,7 +114,7 @@ export class Administration {
         });
         if (scope?.database === "app") {
           return options.appDatabase.transaction(actor, async (appTx) => {
-            const result = await work(actor, appTx);
+            const result = await work(actor, appTx, tx);
             await options.audit.recordInTransaction(appTx, actor, {
               action,
               outcome: "success",
@@ -99,7 +124,7 @@ export class Administration {
             return result;
           });
         }
-        const result = await work(actor, tx);
+        const result = await work(actor, tx, tx);
         await options.audit.record(actor, {
           action,
           outcome: "success",

@@ -6,7 +6,7 @@ const root = new URL("../", import.meta.url);
 const hasRoute = (href) => existsSync(new URL(`apps/web/src/app/(app)${href}/page.tsx`, root));
 const definitions = [];
 // These sources export only static UI metadata; type-only imports are stripped by Node.
-for (const id of ["portfolio", "market", "alerts", "analytics", "education"]) {
+for (const id of ["portfolio", "market", "alerts", "analytics", "education", "admin"]) {
   const file = new URL(`modules/${id}/src/ui-module.ts`, root);
   if (!existsSync(file)) continue;
   const definition = (await import(file.href)).uiDefinition;

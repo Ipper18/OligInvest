@@ -3,6 +3,7 @@ import { createServer } from "node:net";
 import { expect, test } from "vitest";
 import {
   createAuthMailer,
+  emailChangedMail,
   invitationMail,
   mailOptions,
   passwordResetMail,
@@ -149,5 +150,38 @@ test("reset messages follow the persisted recipient language and retain token pr
   ).toContain("administrator reset");
   expect(() =>
     passwordResetMail({ ...message, locale: "xx" }, config.PUBLIC_BASE_URL, config.SMTP_FROM),
+  ).toThrow();
+});
+
+test("admin e-mail change notifies both addresses with only a masked other address (BL-509)", () => {
+  const base = { otherEmailMasked: "n***@e***.test", issuedAt: message.issuedAt };
+  const previous = emailChangedMail(
+    { ...base, email: "old@example.test", audience: "previous" },
+    config,
+  );
+  expect(previous.to.address).toBe("old@example.test");
+  expect(previous.subject).toContain("zmieniono adres");
+  expect(previous.text).toContain(base.otherEmailMasked);
+  const current = emailChangedMail(
+    { ...base, email: "new@example.test", audience: "current", locale: "en-US" },
+    config,
+  );
+  expect(current.subject).toBe("OligInvest — new account e-mail address");
+  expect(current.text).toContain(base.otherEmailMasked);
+  expect(() =>
+    emailChangedMail({ ...base, email: "old@example.test", audience: "other" }, config),
+  ).toThrow();
+  expect(() =>
+    emailChangedMail(
+      { ...base, email: "old@example.test", audience: "previous", token: "x" },
+      config,
+    ),
+  ).toThrow();
+  expect(() =>
+    emailChangedMail(
+      { ...base, email: "old@example.test", audience: "previous" },
+      config,
+      Date.parse(base.issuedAt) + 86400001,
+    ),
   ).toThrow();
 });

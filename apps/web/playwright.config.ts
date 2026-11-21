@@ -31,6 +31,7 @@ export default defineConfig({
         "**/shell-auth.spec.ts",
         "**/portfolio-shell.spec.ts",
         "**/mvp-real.spec.ts",
+        "**/real-admin.spec.ts",
         "**/pwa.spec.ts",
       ],
       use: { browserName },
@@ -50,7 +51,8 @@ export default defineConfig({
       ? [
           {
             name: `${browserName}-real`,
-            testMatch: ["**/mvp-real.spec.ts"],
+            // Alphabetical order: real-admin runs after mvp-real created this browser's account.
+            testMatch: ["**/mvp-real.spec.ts", "**/real-admin.spec.ts"],
             use: { browserName, baseURL: "https://127.0.0.1:3196" },
           },
         ]

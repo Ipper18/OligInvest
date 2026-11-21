@@ -4,6 +4,7 @@ import { sql } from "drizzle-orm";
 import { z } from "zod";
 import type { Administration } from "./administration.js";
 import type { AuditState } from "./audit.js";
+import { resetAccountTwoFactor, revokeAccountSessions } from "./user-administration.js";
 
 const reason = z.string().min(5).max(500);
 const email = z.email().transform((value) => value.toLowerCase());
@@ -110,13 +111,6 @@ export async function executeAdminCommand(
       const userId = target ? z.uuid().parse(target.id) : undefined;
       resourceId = userId;
       resourceType = userId ? "user" : undefined;
-      if (data.command === "reset-2fa") {
-        const current = (
-          await tx.execute(sql`SELECT two_factor_enabled FROM auth.users WHERE id=${userId}::uuid`)
-        ).rows[0];
-        before = { twoFactorEnabled: z.boolean().parse(current?.two_factor_enabled) };
-        after = { twoFactorEnabled: false };
-      }
       if (
         ["revoke-sessions", "revoke-all-sessions", "revoke-pats", "revoke-all-pats"].includes(
           data.command,
@@ -160,13 +154,13 @@ export async function executeAdminCommand(
           expiresAt: invitation.value.expiresAt,
         };
       } else if (data.command === "reset-2fa") {
-        await tx.execute(sql`DELETE FROM auth.sessions WHERE user_id=${userId}::uuid`);
-        await tx.execute(sql`DELETE FROM auth.two_factors WHERE user_id=${userId}::uuid`);
-        await tx.execute(
-          sql`UPDATE auth.users SET two_factor_enabled=false,updated_at=now() WHERE id=${userId}::uuid`,
-        );
+        // Shared with POST /admin/users/{userId}/reset-2fa (BL-509).
+        before = {
+          twoFactorEnabled: (await resetAccountTwoFactor(tx, z.uuid().parse(userId))).before,
+        };
+        after = { twoFactorEnabled: false };
       } else if (data.command === "revoke-sessions") {
-        await tx.execute(sql`DELETE FROM auth.sessions WHERE user_id=${userId}::uuid`);
+        await revokeAccountSessions(tx, z.uuid().parse(userId));
       } else if (data.command === "revoke-all-sessions") {
         await tx.execute(sql`DELETE FROM auth.sessions`);
       } else if (data.command === "revoke-pats") {

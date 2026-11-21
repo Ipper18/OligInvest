@@ -90,6 +90,7 @@ export interface AuthServiceOptions {
     | "exportRequested"
     | "deletionRequested"
     | "deletionCancelled"
+    | "deletionRequestedByAdmin"
     | "stepUpFailed"
     | "stepUpVerified"
     | "administrativeChanged"
