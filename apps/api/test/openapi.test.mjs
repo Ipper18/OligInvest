@@ -363,6 +363,30 @@ test("Git baseline reads the base branch, fails closed and bootstraps only a pre
   }
 });
 
+test("target classes cover stored instrument classes and market overrides", () => {
+  const sql = readFileSync(join(root, "docs/03-dane/schema.sql"), "utf8");
+  const stored = sql
+    .match(/CHECK \(asset_class IN \(([^)]+)\)\)/)[1]
+    .match(/'([^']+)'/g)
+    .map((value) => value.slice(1, -1));
+  const schemas = source.components.schemas;
+  const overrides = schemas.InstrumentOverride.properties.assetClass.enum;
+  const expected = [...new Set([...stored, ...overrides])].sort();
+  expect([...schemas.TargetWeight.properties.assetClass.enum].sort()).toEqual(expected);
+  expect(schemas.TargetWeight.properties.assetClass.maxLength).toBe(
+    Math.max(...expected.map((v) => v.length)),
+  );
+  for (const doc of [source, generated]) {
+    for (const operation of [
+      doc.paths["/portfolio/targets"].post,
+      doc.paths["/portfolio/targets/{targetId}"].put,
+    ]) {
+      expect(operation.responses).toHaveProperty("404");
+      expect(operation.responses).toHaveProperty("409");
+    }
+  }
+});
+
 test("Redocly exceptions apply only to the three approved operationIds", () => {
   const config = parse(readFileSync(join(root, "redocly.yaml"), "utf8"));
   expect(config.rules["operation-4xx-response"]).toBe("error");

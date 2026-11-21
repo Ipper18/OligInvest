@@ -19,3 +19,11 @@ Po połączeniu z main (`9bddabb`) sprawdzono cztery trasy alertów na produkcyj
 | Budżety JS | Każda z czterech tras alertów zajmuje 157,82 z 190 KiB, powłoka 29,85 z 30 KiB. |
 
 Wyniki E2E, CodeQL i pozostałych kontroli końcowego SHA publikuje [PR #92](https://github.com/Ipper18/OligInvest/pull/92). Estymaty BL-406 i BL-563 wynoszą odpowiednio 2 i 1,5 dnia, nakład pozostał niezmierzony. Zadania pozostają w toku do spełnienia DoD. M4 jest otwarty.
+
+## Runda poprawek 1
+
+Test integracyjny na PostgreSQL uruchamia zadanie wyceny dla dwóch użytkowników. Dwie pozycje tej samej klasy dają odchylenie 0,5 dla klasy oraz 0,8 dla pierwszego instrumentu. Test sprawdza pominięcie niepełnej wyceny, ponowne uzbrojenie reguły, brak drugiego zdarzenia w czasie cooldownu oraz wyzwolenie po jego upływie. Drugi użytkownik nie wyzwala ani nie odczytuje tych zdarzeń.
+
+Kontrakt i klient uwzględniają konflikt nazwy (409) i niedostępny rachunek (404). Klasa celu może pochodzić z instrumentu albo z nadpisania użytkownika. Test porównuje listę z obiema definicjami i sprawdza maksymalną długość 11 znaków. Test HTTP obejmuje m.in. przyjęcie `fx` i `mixed` oraz odrzucenie nieznanej wartości.
+
+Lokalnie przeszły 75/75 zadań Turbo, testy bazy z porównaniem schematów, 26 testów kontraktu, kontrola klienta API i dokumentacji.

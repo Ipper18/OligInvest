@@ -4481,7 +4481,8 @@ export interface components {
         } & (unknown | unknown);
         TargetWeight: {
             instrumentId?: components["schemas"]["Uuid"];
-            assetClass?: string;
+            /** @enum {string} */
+            assetClass?: "equity" | "bond" | "commodity" | "cash" | "fx" | "crypto" | "real_estate" | "mixed" | "other";
             /** @description Ułamek od 0 do 1. */
             weight: components["schemas"]["DecimalString"];
         } & (unknown | unknown);
@@ -9433,6 +9434,8 @@ export interface operations {
                 };
             };
             401: components["responses"]["Unauthenticated"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
             422: components["responses"]["ValidationFailed"];
         };
     };
@@ -9462,6 +9465,7 @@ export interface operations {
             };
             401: components["responses"]["Unauthenticated"];
             404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
             422: components["responses"]["ValidationFailed"];
         };
     };

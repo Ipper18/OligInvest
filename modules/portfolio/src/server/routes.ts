@@ -134,7 +134,13 @@ export function mountPortfolio(api: OpenAPIHono<AppEnv>, deps: PortfolioDependen
       tags: ["portfolio"],
       security,
       request: { body: body(targetAllocationInputSchema) },
-      responses: { 201: json(targetResponse), 401: marketError, 422: marketError },
+      responses: {
+        201: json(targetResponse),
+        401: marketError,
+        404: marketError,
+        409: conflict,
+        422: marketError,
+      },
     }),
     createRoute({
       method: "put",
@@ -147,6 +153,7 @@ export function mountPortfolio(api: OpenAPIHono<AppEnv>, deps: PortfolioDependen
         200: json(targetResponse),
         401: marketError,
         404: marketError,
+        409: conflict,
         422: marketError,
       },
     }),

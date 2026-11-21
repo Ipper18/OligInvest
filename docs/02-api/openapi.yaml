@@ -2092,6 +2092,8 @@ paths:
       responses:
         '201': {description: 'Zapisano.', content: {application/json: {schema: {$ref: '#/components/schemas/TargetAllocation'}}}}
         '401': {$ref: '#/components/responses/Unauthenticated'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
         '422': {$ref: '#/components/responses/ValidationFailed'}
   /portfolio/targets/{targetId}:
     put:
@@ -2111,6 +2113,7 @@ paths:
         '200': {description: 'Zapisano.', content: {application/json: {schema: {$ref: '#/components/schemas/TargetAllocation'}}}}
         '401': {$ref: '#/components/responses/Unauthenticated'}
         '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
         '422': {$ref: '#/components/responses/ValidationFailed'}
     delete:
       operationId: deleteTargetAllocation
@@ -6073,7 +6076,7 @@ components:
       required: [weight]
       properties:
         instrumentId: {$ref: '#/components/schemas/Uuid'}
-        assetClass: {type: string}
+        assetClass: {type: string, maxLength: 11, enum: [equity, bond, commodity, cash, fx, crypto, real_estate, mixed, other]}
         weight: {$ref: '#/components/schemas/DecimalString', description: 'Ułamek od 0 do 1.'}
       oneOf:
         - {required: [instrumentId]}

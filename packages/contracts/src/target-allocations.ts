@@ -1,10 +1,28 @@
 import { z } from "zod";
 
 const decimal = z.string().regex(/^-?\d{1,14}(\.\d{1,10})?$/);
+// Valuation uses the instrument class or its user override.
+const assetClasses = [
+  "equity",
+  "bond",
+  "commodity",
+  "cash",
+  "fx",
+  "crypto",
+  "real_estate",
+  "mixed",
+  "other",
+] as const;
+const maxClassLength = Math.max(...assetClasses.map((value) => value.length));
+const assetClass = z
+  .enum(assetClasses)
+  .check(z.maxLength(maxClassLength))
+  .meta({ maxLength: maxClassLength });
+
 export const targetWeightSchema = z
   .object({
     instrumentId: z.uuid().optional(),
-    assetClass: z.string().optional(),
+    assetClass: assetClass.optional(),
     weight: decimal,
   })
   .strict()

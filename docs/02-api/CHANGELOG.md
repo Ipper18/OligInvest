@@ -2,6 +2,10 @@
 
 **Cel:** rejestrować zatwierdzone zmiany kontraktu API przed ich implementacją.
 
+## 2026-11-21 — cele alokacji (BL-563)
+
+POST i PUT zwracają 409 przy powtórzonej nazwie i 404 dla niedostępnego rachunku. Waga celu akceptuje klasy instrumentu oraz klasy z nadpisania użytkownika, łącznie dziewięć wartości o długości do 11 znaków.
+
 ## 2026-11-14 — prawa z RODO: eksport i usunięcie konta (BL-114)
 
 Pierwsza implementacja `createDataExport`, `getDataExport`, `downloadDataExport`, `getDeletionRequest`,
