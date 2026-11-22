@@ -41,7 +41,7 @@ Wąskim gardłem jest przegląd właściciela, nie tempo agentów — stąd limi
 | **Dyspozytor** | Claude Code | prowadzi kolejkę paczek, przekazuje pracę, pilnuje WIP, informuje właściciela; nie pisze kodu | token „odczyt” |
 | **Budowniczy** | Codex | wykonuje paczkę według `AGENTS.md` i szablonu § 3.1 — jak dotychczasowe sesje Codexa | token „budowa” |
 | **Budowniczy-2** (opcjonalny) | Claude Code | ta sama instrukcja co Budowniczy; zastępstwo w tej samej paczce po uzgodnieniu jej stanu — decyzja z 2026-09-24 w [`CLAUDE.md`](../../CLAUDE.md) | token „budowa” |
-| **Recenzent** | inny dostawca niż autor PR (Claude dla PR Codexa, Codex dla PR Claude'a) | przegląd wstępny: DoD, twarde reguły, zgodność, przegląd metodologiczny; tylko komentarze | token „odczyt” |
+| **Recenzent** | inny dostawca niż autor PR (Claude dla PR Codexa, Codex dla PR Claude'a) | kontrola CI i diagnostyka awarii, po zielonym CI niezależna recenzja: DoD, twarde reguły, zgodność, przegląd metodologiczny; tylko komentarze | token „odczyt” |
 | **Weryfikator** | Gemini | bezpieczeństwo, obliczenia i zgodność PR, znaczniki **NIEZWERYFIKOWANE**, wersje i limity z linkiem i datą, triage Renovate, audyt skilli | token „budowa” (tylko PR z `docs/`) |
 
 Wszyscy agenci działają na tokenach właściciela: ich commity, komentarze i PR na GitHubie wyglądają jak działania `Ipper18` (odrębnej tożsamości nie tworzymy — R-23). Dlatego każdy komentarz agenta zaczyna się prefiksem roli, np. `[Recenzent · OpenBot]`.
@@ -49,9 +49,9 @@ Wszyscy agenci działają na tokenach właściciela: ich commity, komentarze i P
 ## 4. Przepływ paczki
 
 1. Dyspozytor porównuje backlog i zależności z aktualnym origin/main, otwartymi PR oraz stan.md. Pomija zadania zajęte, wstrzymane lub zastrzeżone dla właściciela. Przy wolnym limicie WIP rezerwuje jeden gotowy BL lub spójną paczkę i przekazuje kartę Budowniczemu. Decyzje krytyczne z ADR-018 zwraca właścicielowi jako STOP.
-2. Budowniczy realizuje kartę na jednej gałęzi od origin/main. Do PR dołącza kryteria, testy i ryzyka. Zwraca numer PR i SHA.
-3. Dyspozytor przydziela Recenzentowi od innego dostawcy niż autor przegląd tego SHA. Weryfikator ocenia bezpieczeństwo, obliczenia i zgodność. Dla obszaru poza zakresem zapisuje N/D z powodem. Obaj zapisują wynik w PR i zwracają kartę Dyspozytorowi.
-4. Po DO POPRAWY Budowniczy poprawia ten sam PR. Dyspozytor przekazuje nowy SHA do ponownej oceny i liczy rundy wspólnie dla obu kontroli. Po dwóch nieskutecznych rundach zgłasza STOP właścicielowi.
+2. Budowniczy realizuje kartę na jednej gałęzi od origin/main. Do PR dołącza kryteria, testy i ryzyka. Po pushu i utworzeniu lub aktualizacji PR natychmiast zwraca Dyspozytorowi numer PR, SHA, zakres i wyniki lokalnych testów. Kończy turę.
+3. Dyspozytor zleca Recenzentowi od innego dostawcy niż autor kontrolę wymaganego CI dla tego SHA. Przy `pending` zapisuje etap w `stan.md` i wznawia go po zdarzeniu lub przez R2. Przy FAIL Recenzent sprawdza nieudany krok i jego log. Dyspozytor otrzymuje kartę z nazwą kontroli, rzeczywistym błędem, plikiem, zakresem poprawki i wymaganym testem. Po zielonym CI Recenzent wykonuje niezależną recenzję kodu, a Dyspozytor zleca Weryfikatorowi końcową ocenę bezpieczeństwa, RLS, obliczeń, zgodności i jakości tego SHA. Weryfikator pomija powtórną diagnostykę CI. Obie role zapisują dowody w PR (N/D z powodem poza zakresem) i oddają wynik Dyspozytorowi.
+4. Przy FAIL lub DO POPRAWY Dyspozytor przekazuje Budowniczemu konkretną kartę poprawki w tym samym PR. Każdy nowy SHA, także po zmianie samej dokumentacji, wymaga ponownej kontroli CI przez Recenzenta i nowych ocen obu ról dla tego SHA. Dyspozytor zapisuje w `stan.md` jeden wspólny licznik rund napraw CI i uwag z obu ocen. Zmiana SHA nie zeruje licznika. Po dwóch nieskutecznych rundach zgłasza STOP właścicielowi.
 5. Po zielonym wymaganym CI i pozytywnych ocenach aktualnego SHA właściciel dostaje gotowy PR do przeglądu i scalenia. Dopiero gdy GitHub potwierdzi MERGED, Dyspozytor zamyka kartę w stan.md i wybiera następny gotowy BL, o ile właściciel nie wstrzymał kolejki. Zamknięcie PR bez scalenia wymaga rozstrzygnięcia losu karty.
 
 ### 4.0 Mechanizm przekazania w OpenBot
@@ -120,7 +120,7 @@ Szczegóły i treść do wklejenia: [`openbot-rutyny.md`](openbot-rutyny.md).
 | R4 | Zgodność backlogu z kodem | Dyspozytor | pt 15:00 |
 | R5 | Weryfikacja znaczników i audyt skilli | Weryfikator | pierwszy poniedziałek miesiąca 10:00 |
 
-R2 może wznowić kolejkę według § 4 po potwierdzeniu MERGED. Respektuje wstrzymanie przez właściciela.
+R2 może wznowić oczekującą kontrolę CI aktualnego SHA lub kolejkę według § 4 po potwierdzeniu MERGED. Respektuje wstrzymanie przez właściciela.
 
 ## 8. Limity dostawców i budżet tokenów
 
@@ -149,7 +149,7 @@ Cel tej sekcji: zmniejszyć zużycie limitów bez obniżania jakości — oszcz�
 
    Dyspozytor podaje zalecany poziom w karcie.
 5. **Recenzent czyta diff.** Pierwszy przegląd: `gh pr diff` i dokumenty wskazane w karcie. Po poprawkach tylko zmiany od ostatnio ocenianego commitu. Najwyżej 2 rundy poprawek, potem STOP do właściciela (§ 4).
-6. **CI raz, logi skrótowo** — według [`AGENTS.md`](../../AGENTS.md) § 6.1: jedno `gh pr checks` na końcu, przy błędzie tylko końcówka `--log-failed`.
+6. **Recenzent sprawdza CI** dla SHA z karty. Czyta logi nieudanych kroków w zakresie potrzebnym do ustalenia błędu. Każde wznowienie wynika ze zdarzenia lub R2, bez pętli.
 7. **Rozmowa w kanale.** Tylko karty; diff, logi i raporty w PR albo w `~/OpenBot/Shared/oliginvest/`. Właściciel pisze do Dyspozytora jedną wiadomością ze wszystkimi decyzjami — każda wiadomość to osobna tura z ponownym wczytaniem kontekstu.
 8. **Rutyny.** „Brak zmian.” jest pełną odpowiedzią ([`openbot-rutyny.md`](openbot-rutyny.md)). Do oceny po pomiarze: przeniesienie R1 (sam odczyt `gh`) z Dyspozytora na Weryfikatora z tańszym modelem.
 
@@ -181,3 +181,7 @@ Po każdej paczce Dyspozytor zapisuje w `stan.md` zużycie każdego agenta z pan
 - **NIEZWERYFIKOWANE:** uprawnienia fine-grained PAT potrzebne do scalenia PR (§ 6.2).
 - **NIEZWERYFIKOWANE:** strefa czasowa harmonogramu rutyn — przyjmujemy czas lokalny stacji (Europe/Warsaw).
 - Wersja OpenBota używana przez właściciela — wpisać do [`audyt-pluginow.md`](../09-decyzje/audyt-pluginow.md) § 6 przy pilotażu.
+
+## Proponowana procedura po aktywacji ADR-019
+
+WIP=1, jedno operationId na operację. Po BEHIND Budowniczy wykonuje update-branch, testuje lokalnie i przekazuje Dyspozytorowi nowe rewizje. Trzeba powtórzyć klasyfikację, kontrolę CI przez Recenzenta i niezależne oceny dla aktualnych rewizji. Konflikt lub obszar krytyczny trafia do właściciela. Po zdarzeniu scalenia Dyspozytor potwierdza MERGED, aktualizuje stan.md, zamyka kartę i wybiera następny gotowy BL bez pytania o rutynową zgodę. R2 po przerwie odtwarza tę samą kolejność, również gdy GitHub scalił poza sesją. Sprawdza stan po zmianie, bez pętli CI i duplikatów. [Warunki aktywacji](../07-wdrozenie/agent-merge-gate.md).

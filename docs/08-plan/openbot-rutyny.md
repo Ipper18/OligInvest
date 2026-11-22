@@ -36,11 +36,12 @@ Jeśli od wczoraj nic się nie zmieniło i wszystko jest zielone — odpowiedz t
 
 ## 3. R2 — kontrola scaleń
 
-R2 odtwarza przejście po scaleniu, gdy Dyspozytor nie obsłużył go wcześniej. Wspólna tożsamość GitHub wymaga sprawdzenia śladu przeglądu (R-42).
+R2 wznawia oczekującą kontrolę CI lub odtwarza przejście po scaleniu, gdy Dyspozytor nie obsłużył go wcześniej. Wspólna tożsamość GitHub wymaga sprawdzenia śladu przeglądu (R-42).
 
 ```text
 Porównaj aktywną kartę w stan.md ze stanem PR i mergedAt w GitHubie, także po przerwie dłuższej niż doba. Dla MERGED sprawdź SHA ocen Recenzenta i Weryfikatora, wymagane CI oraz zapis przeglądu właściciela. Niewyjaśnione scalenie lub brak dowodu zgłoś jako STOP.
-Zapisz potwierdzone zakończenie. Jeżeli kolejka jest czynna, sprawdź zależności, rezerwacje i limit WIP według orkiestracja-agentow.md § 4–5. Przydziel następną gotową kartę tylko raz. Przy istniejącej karcie wznów jej pierwszy niezakończony krok. Brak zmiany stanu nie wymaga wiadomości.
+Dla otwartego PR na etapie oczekiwania na CI uzgodnij head SHA z kartą. Po zmianie SHA odrzuć stare oceny, zachowując licznik rund. Przy czynnej kolejce zleć Recenzentowi sprawdzenie CI dla bieżącego SHA tylko wtedy, gdy brak aktywnego przydziału o tym samym operationId. Zapisz przydział w stan.md. Przy pending zakończ przebieg. Wznów po zdarzeniu lub następnym R2, bez odpytywania w pętli i bez blokowania Budowniczego.
+Zapisz potwierdzone zakończenie scalenia. Jeżeli kolejka jest czynna, sprawdź zależności, rezerwacje i limit WIP według orkiestracja-agentow.md § 4–5. Przydziel następną gotową kartę tylko raz. Przy istniejącej karcie wznów jej pierwszy niezakończony krok. Brak zmiany stanu nie wymaga wiadomości.
 ```
 
 ## 4. R3 — triage zależności

@@ -106,3 +106,7 @@ Doprecyzowanie R-19 (BL-034, 2026-10-23): lokalna baza owner wymaga zachowania `
 | R-16 niedoszacowanie | M1: brama A przed B, cięcia awaryjne, weryfikacja ADR-001 |
 | R-23 blokada zatwierdzania własnego PR | Rozstrzygnięte 2026-09-20: przegląd w procesie R-11, 0 zatwierdzeń w rulesecie, bez code owner review i bypass; potwierdzić w panelu przy aktywacji |
 | R-28 podatności baz bez poprawki | Każde wydanie: przegląd pełnego OSV, pilne poprawki dostępnych pakietów; brak poprawki pozostaje jawnym ryzykiem, nie dowodem bezpieczeństwa |
+
+### MERGEGATE-1 — proponowane ograniczenie R-11, R-23 i R-42
+
+R-11 obejmuje błędne dopuszczenie zmiany krytycznej i ponowne użycie dowodów po zmianie bazy. R-23 wymaga potwierdzenia pochodzenia checka przy zachowaniu zera formalnych zatwierdzeń i braku bypass. Dla R-42 wspólne konto i treść komentarza nie dowodzą tożsamości. Właściciel przed aktywacją sprawdza izolację podpisujących oraz odmowy opisane w [procedurze odbioru](../07-wdrozenie/agent-merge-gate.md).

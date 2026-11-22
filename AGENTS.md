@@ -98,7 +98,7 @@ Szczegóły, licencje i uzasadnienia: [`docs/01-architektura/stack-technologiczn
 - Język: dokumentacja i teksty UI po polsku (klucze w `packages/i18n`, brak literałów w komponentach); kod, identyfikatory, nazwy plików i commity po angielsku.
 - Nazwy: pliki i katalogi `kebab-case`, komponenty i typy `PascalCase`, funkcje `camelCase`, stałe i env `SCREAMING_SNAKE_CASE`, tabele SQL `snake_case` w liczbie mnogiej.
 
-W OpenBot Dyspozytor sam wybiera gotowe BL po sprawdzeniu zależności, otwartych PR i stanu paczki. Obowiązuje jeden aktywny PR implementacyjny. Budowniczy oddaje PR do niezależnej recenzji i kontroli Weryfikatora. Po dwóch nieskutecznych rundach poprawek obowiązuje STOP. Scala wyłącznie właściciel. Dyspozytor wybiera kolejny BL po potwierdzeniu MERGED. Szczegóły i warunki przyszłej bramki opisuje [ADR-018](docs/09-decyzje/ADR-018-autonomia-zespolu.md).
+W OpenBot Dyspozytor sam wybiera gotowe BL po sprawdzeniu zależności, otwartych PR i stanu paczki. Obowiązuje jeden aktywny PR implementacyjny. Po pushu Budowniczy przekazuje PR Dyspozytorowi. Dyspozytor zleca Recenzentowi kontrolę CI i recenzję, a po zielonym CI przydziela końcową kontrolę Weryfikatorowi. Po dwóch nieskutecznych rundach poprawek obowiązuje STOP. Scala wyłącznie właściciel. Dyspozytor wybiera kolejny BL po potwierdzeniu MERGED. Szczegóły i warunki przyszłej bramki opisuje [ADR-018](docs/09-decyzje/ADR-018-autonomia-zespolu.md).
 
 ### 6.1 Oszczędzanie kontekstu i limitu (obowiązuje w każdej sesji)
 
@@ -107,14 +107,14 @@ W OpenBot Dyspozytor sam wybiera gotowe BL po sprawdzeniu zależności, otwartyc
 - **Ciche wyjście narzędzi:** reporter `dot`/`summary`, `pnpm -s`, `--output-logs=new-only`; długie wyniki (dumpy, logi Dockera, diffy SQL) zapisuj w `.git/` i czytaj podsumowanie oraz pierwsze różnice. Nie twórz inwentarzy, sum kontrolnych ani raportów JSON, o które nikt nie prosił.
 - **Commit i push po każdym zamkniętym zadaniu lub etapie**, żeby wyczerpanie limitu nie przerwało pracy w połowie niezapisanej.
 - **Lokalnie sprawdzaj tylko to, co zmieniłeś:** `pnpm turbo run lint typecheck test --filter=...[origin/main]` (pakiety zmienione i zależne). Pełne E2E w trzech przeglądarkach, budowanie i skan obrazów oraz pełne monorepo uruchamia CI — lokalnie tylko wtedy, gdy zadanie zmienia te obszary albo diagnozujesz konkretny błąd z CI.
-- **CI sprawdzaj raz, na końcu sesji:** po pushu nie czekaj na przebiegi i nie odpytuj `gh run`/`gh pr checks` w pętli. Przed zakończeniem sesji wywołaj `gh pr checks` jeden raz; przy błędzie czytaj tylko log nieudanego kroku (`gh run view <id> --log-failed`, końcówka) — nie całe logi.
+- **CI dla aktualnego SHA sprawdza Recenzent.** Po pushu i aktualizacji PR Budowniczy od razu zwraca Dyspozytorowi PR, SHA, zakres i wyniki lokalnych testów. Kończy turę również po poprawce. Recenzent sprawdza wymagane kontrole i diagnozuje nieudane kroki. Przy oczekującym CI Dyspozytor wznawia kontrolę po zdarzeniu lub przez R2, bez odpytywania w pętli.
 - **Raport stanu aktualizuj raz na koniec sesji lub paczki**, nie po każdym kroku; nie powtarzaj w nim dowodów zapisanych już w historii ani w opisie PR.
 - **Zależności:** zadanie wykonane lokalnie ma status `w toku` tylko do zielonego CI i wspólnego DoD — przy wyborze nowej paczki potwierdź również, że wymagane zmiany są już na origin/main.
 - **Rozbieżność z dokumentem:** rozstrzygaj według § 6.2.
 
 ### 6.2 Samodzielne decyzje i kiedy się zatrzymać (decyzja właściciela 2026-11-21)
 
-Cel: paczka ma być doprowadzona do draft PR z zielonym CI w jednej sesji, bez przerw na pytania, które da się rozstrzygnąć z dokumentacji.
+Cel: Budowniczy doprowadza paczkę do draft PR z wynikami lokalnych testów, bez przerw na pytania, które da się rozstrzygnąć z dokumentacji.
 
 **Rozstrzygaj sam i pracuj dalej**, a każde rozstrzygnięcie wpisz do opisu PR w sekcji „Decyzje samodzielne” (co, dlaczego, który dokument przeważył):
 
