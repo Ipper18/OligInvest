@@ -294,8 +294,14 @@ export const identityDeletionRequests = identitySchema.table(
     scheduledFor: timestamp("scheduled_for", { withTimezone: true, mode: "string" }).notNull(),
     cancelledAt: timestamp("cancelled_at", { withTimezone: true, mode: "string" }),
     completedAt: timestamp("completed_at", { withTimezone: true, mode: "string" }),
+    // BL-509: an administrator's request can only be cancelled by an administrator.
+    requestedBy: text("requested_by").notNull().default(sql`'user'::text`),
   },
   (table) => [
+    check(
+      "deletion_requests_requested_by_check",
+      sql`((requested_by = ANY (ARRAY['user'::text, 'admin'::text])))`,
+    ),
     foreignKey({
       name: "deletion_requests_user_id_fkey",
       columns: [table.userId],

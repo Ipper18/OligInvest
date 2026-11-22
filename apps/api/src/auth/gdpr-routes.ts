@@ -31,6 +31,8 @@ export const deletionRequestSchema = z
     requestedAt: timestamp,
     scheduledFor: timestamp,
     cancelledAt: timestamp.optional(),
+    // BL-509: a request made by an administrator can be cancelled only by an administrator.
+    requestedBy: z.enum(["user", "admin"]),
   })
   .strict()
   .openapi("DeletionRequest", { additionalProperties: true });
@@ -73,6 +75,7 @@ function deletionDto(row: Record<string, unknown>): DeletionRequest {
     requestedAt: iso(row.requested_at),
     scheduledFor: iso(row.scheduled_for),
     ...(row.cancelled_at ? { cancelledAt: iso(row.cancelled_at) } : {}),
+    requestedBy: row.requested_by === "admin" ? "admin" : "user",
   });
 }
 const exportColumns = sql`id::text, status, created_at, expires_at, size_bytes`;
@@ -251,9 +254,9 @@ export class GdprService {
       user,
       async (tx) =>
         (
-          await tx.execute(sql`SELECT id::text, requested_at, scheduled_for, cancelled_at
+          await tx.execute(sql`SELECT id::text, requested_at, scheduled_for, cancelled_at, requested_by
             FROM identity.deletion_requests WHERE cancelled_at IS NULL AND completed_at IS NULL
-            ORDER BY requested_at DESC, id DESC LIMIT 1`)
+            ORDER BY requested_by = 'admin' DESC, requested_at DESC, id DESC LIMIT 1`)
         ).rows[0],
     );
     if (!row) throw new ProblemError("NOT_FOUND");
@@ -275,7 +278,7 @@ export class GdprService {
       const row = (
         await tx.execute(sql`INSERT INTO identity.deletion_requests (user_id, scheduled_for)
           VALUES (${user.userId}::uuid, now() + make_interval(days => ${GDPR_LIMITS.deletionGraceDays}))
-          RETURNING id::text, requested_at, scheduled_for, cancelled_at`)
+          RETURNING id::text, requested_at, scheduled_for, cancelled_at, requested_by`)
       ).rows[0];
       if (!row) throw new ProblemError("INTERNAL");
       const created = deletionDto(row);
@@ -299,12 +302,20 @@ export class GdprService {
     this.service.assertOrigin(request);
     const user = owner(await this.service.requireRights(request));
     const id = await this.database.transaction(user, async (tx) => {
+      // RLS lets the user cancel only `requested_by = 'user'`; an administrator's request stays.
       const row = (
         await tx.execute(sql`UPDATE identity.deletion_requests SET cancelled_at = now()
           WHERE cancelled_at IS NULL AND completed_at IS NULL AND scheduled_for > now()
+            AND requested_by = 'user'
           RETURNING id::text`)
       ).rows[0];
-      if (!row) throw new ProblemError("NOT_FOUND");
+      if (!row) {
+        const byAdmin = (
+          await tx.execute(sql`SELECT 1 FROM identity.deletion_requests
+            WHERE cancelled_at IS NULL AND completed_at IS NULL AND requested_by = 'admin' LIMIT 1`)
+        ).rows.length;
+        throw new ProblemError(byAdmin ? "CONFLICT" : "NOT_FOUND");
+      }
       const requestId = z.uuid().parse(row.id);
       await this.service.options.audit.recordInTransaction(tx, user, {
         action: "identity.deletion_cancelled",
@@ -484,7 +495,12 @@ export function mountGdpr(api: OpenAPIHono<AppEnv>, dependencies: AuthRouteDepen
       operationId: "cancelAccountDeletion",
       tags: ["identity"],
       security,
-      responses: { 204: { description: "Anulowano." }, 401: marketError, 404: marketError },
+      responses: {
+        204: { description: "Anulowano." },
+        401: marketError,
+        404: marketError,
+        409: conflictError,
+      },
     }),
     async (c) => {
       await (await gdpr()).cancelDeletion(c.req.raw, client(c));

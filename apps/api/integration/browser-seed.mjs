@@ -61,6 +61,20 @@ export async function seedBrowserInvitations(dev, env) {
         [email, createHash("sha256").update(token).digest("hex"), owner.id],
       );
       fixtures[browser] = { token, email, password: randomBytes(24).toString("hex") };
+      // BL-112: one invited administrator for e2e/real-admin.spec.ts (Chromium only).
+      if (browser === "chromium") {
+        const adminToken = randomBytes(32).toString("base64url");
+        const adminEmail = `admin-${browser}@browser.example.test`;
+        await client.query(
+          "INSERT INTO identity.invitations(email,role,token_hash,invited_by,expires_at) VALUES($1,'admin',$2,$3,now()+interval '1 hour')",
+          [adminEmail, createHash("sha256").update(adminToken).digest("hex"), owner.id],
+        );
+        fixtures[browser].admin = {
+          token: adminToken,
+          email: adminEmail,
+          password: randomBytes(24).toString("hex"),
+        };
+      }
     }
     for (const [symbol, ticker, currency, mic] of [
       ["AAPL.US", "AAPL", "USD", "XNAS"],

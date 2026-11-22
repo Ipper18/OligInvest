@@ -664,7 +664,10 @@ export interface paths {
          *     Aktywny wniosek → `409 CONFLICT`. E-mail bezpieczeństwa do właściciela konta.
          */
         post: operations["requestAccountDeletion"];
-        /** Anuluj zaplanowane usunięcie konta */
+        /**
+         * Anuluj zaplanowane usunięcie konta
+         * @description Wniosek złożony przez administratora (`requestedBy = admin`) → `409 CONFLICT`; anuluje go tylko administrator (`adminCancelUserDeletion`).
+         */
         delete: operations["cancelAccountDeletion"];
         options?: never;
         head?: never;
@@ -2119,15 +2122,44 @@ export interface paths {
         get: operations["adminGetUser"];
         put?: never;
         post?: never;
-        /** Zaplanuj usunięcie konta użytkownika (jak RODO — 14 dni) */
+        /**
+         * Zaplanuj usunięcie konta użytkownika (jak RODO — 14 dni)
+         * @description Ten sam wniosek i to samo nocne zadanie `identity.erasure` co `requestAccountDeletion` (BL-114), z `requestedBy = admin`:
+         *     użytkownik dostaje e-mail, ale nie może sam anulować wniosku (`adminCancelUserDeletion`). Aktywny wniosek, własne konto
+         *     albo ostatni aktywny administrator → `409 CONFLICT`.
+         */
         delete: operations["adminDeleteUser"];
         options?: never;
         head?: never;
         /**
-         * Zmień rolę lub zablokuj/odblokuj użytkownika
-         * @description Zmiana roli unieważnia sesje użytkownika (rotacja uprawnień, NFR-03.03). Admin nie może odebrać sobie roli admin, jeśli jest jedynym adminem.
+         * Zmień rolę, e-mail lub zablokuj/odblokuj użytkownika
+         * @description Zmiana roli, adresu e-mail albo blokada unieważnia wszystkie sesje użytkownika (rotacja uprawnień, NFR-03.03).
+         *     Rola i e-mail: e-mail bezpieczeństwa do wszystkich aktywnych administratorów (SEC § 5.2). Zmiana e-maila:
+         *     powiadomienie na stary i nowy adres (decyzja właściciela 2026-11-21). Własnego e-maila ani własnej blokady
+         *     tą ścieżką zmienić nie można, a rola ostatniego aktywnego administratora nie może zostać odebrana → `409 CONFLICT`.
+         *     Zajęty adres → `409 CONFLICT`.
          */
         patch: operations["adminUpdateUser"];
+        trace?: never;
+    };
+    "/admin/users/{userId}/deletion-request": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Anuluj usunięcie konta zlecone przez administratora
+         * @description Tylko wniosek z `requestedBy = admin` w okresie karencji; e-mail do użytkownika, wpis audytu (decyzja właściciela 2026-11-21). Brak takiego wniosku → `404`.
+         */
+        delete: operations["adminCancelUserDeletion"];
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/admin/users/{userId}/reset-2fa": {
@@ -3105,6 +3137,11 @@ export interface components {
             requestedAt: components["schemas"]["Timestamp"];
             scheduledFor: components["schemas"]["Timestamp"];
             cancelledAt?: components["schemas"]["Timestamp"];
+            /**
+             * @description Kto zlecił usunięcie. Wniosek administratora (BL-509) może anulować wyłącznie administrator; decyzja właściciela 2026-11-21.
+             * @enum {string}
+             */
+            requestedBy: "user" | "admin";
         };
         PushSubscriptionCreate: {
             /** Format: uri */
@@ -5617,6 +5654,8 @@ export interface components {
             lastActiveAt?: components["schemas"]["Timestamp"];
             activeSessions: number;
             deletionScheduledFor?: components["schemas"]["Timestamp"];
+            /** @enum {string} */
+            deletionRequestedBy?: "user" | "admin";
         };
         AdminUserPage: {
             data: components["schemas"]["AdminUser"][];
@@ -5630,6 +5669,7 @@ export interface components {
              */
             email?: string;
             banned?: boolean;
+            /** @description Uzasadnienie blokady (zapisywane w audycie). */
             banReason?: string;
             banExpires?: components["schemas"]["Timestamp"] | null;
         };
@@ -5642,12 +5682,13 @@ export interface components {
             /** @default true */
             sendEmail: boolean;
         };
+        /** @description `invitedBy` jest pusty po usunięciu konta autora (BL-114, `schema.sql`). */
         AdminInvitation: {
             id: components["schemas"]["Uuid"];
             /** Format: email */
             email: string;
             role: components["schemas"]["Role"];
-            invitedBy: components["schemas"]["Uuid"];
+            invitedBy?: components["schemas"]["Uuid"];
             /** @enum {string} */
             status: "pending" | "used" | "expired" | "revoked";
             expiresAt: components["schemas"]["Timestamp"];
@@ -7274,6 +7315,7 @@ export interface operations {
             };
             401: components["responses"]["Unauthenticated"];
             404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
         };
     };
     getPushConfiguration: {
@@ -10480,6 +10522,7 @@ export interface operations {
             401: components["responses"]["Unauthenticated"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
         };
     };
     adminUpdateUser: {
@@ -10513,6 +10556,29 @@ export interface operations {
             422: components["responses"]["ValidationFailed"];
         };
     };
+    adminCancelUserDeletion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: components["parameters"]["UserId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Anulowano. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
     adminResetTwoFactor: {
         parameters: {
             query?: never;
@@ -10538,6 +10604,8 @@ export interface operations {
             401: components["responses"]["Unauthenticated"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["ValidationFailed"];
         };
     };
     adminRevokeUserSessions: {

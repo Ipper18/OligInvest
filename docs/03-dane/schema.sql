@@ -221,7 +221,8 @@ CREATE TABLE identity.deletion_requests (
   requested_at   timestamptz NOT NULL DEFAULT now(),
   scheduled_for  timestamptz NOT NULL,                      -- requested_at + 14 dni (FR-07.09)
   cancelled_at   timestamptz,
-  completed_at   timestamptz
+  completed_at   timestamptz,
+  requested_by   text        NOT NULL DEFAULT 'user' CHECK (requested_by IN ('user', 'admin'))  -- 'admin': anuluje tylko administrator (BL-509)
 );
 
 CREATE TABLE identity.data_exports (
@@ -1039,6 +1040,63 @@ CREATE TABLE analytics.analytics_runs (
 );
 CREATE INDEX analytics_runs_user_idx ON analytics.analytics_runs (user_id, created_at DESC);
 
+-- Usunięcie konta zlecone przez administratora (BL-509, FR-08.01; decyzja właściciela 2026-11-21): ten sam wniosek
+-- i to samo nocne zadanie identity.erasure co RODO, z requested_by = 'admin'. Rola aplikacji w kontekście admina nie ma
+-- polityk na tej tabeli (FR-08.01), więc wniosek zakłada, anuluje i pokazuje wyłącznie ta trójka funkcji. Własnego konta
+-- administrator tą drogą nie usunie (prawo z RODO w /ustawienia). Aktywny wniosek → pusty wynik (409 w API).
+CREATE FUNCTION identity.admin_schedule_deletion(p_user_id uuid, p_grace_days integer)
+  RETURNS TABLE (id uuid, requested_at timestamptz, scheduled_for timestamptz)
+  LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = pg_catalog, identity
+  AS $$
+  #variable_conflict use_column
+  BEGIN
+    IF platform.current_app_role() IS DISTINCT FROM 'admin' OR platform.current_user_id() IS NULL THEN
+      RAISE EXCEPTION 'administrator context required' USING ERRCODE = '42501';
+    END IF;
+    IF p_user_id IS NULL OR p_user_id = platform.current_user_id() OR p_grace_days IS NULL OR p_grace_days < 14 THEN
+      RAISE EXCEPTION 'invalid deletion request' USING ERRCODE = '22023';
+    END IF;
+    -- Ten sam klucz co wniosek użytkownika (gdpr-routes.ts): równoległe wnioski nie tworzą dwóch aktywnych.
+    PERFORM pg_advisory_xact_lock(hashtextextended('gdpr-deletion:' || p_user_id::text, 114));
+    IF EXISTS (SELECT 1 FROM identity.deletion_requests d WHERE d.user_id = p_user_id
+        AND d.cancelled_at IS NULL AND d.completed_at IS NULL) THEN
+      RETURN;
+    END IF;
+    RETURN QUERY INSERT INTO identity.deletion_requests AS d (user_id, scheduled_for, requested_by)
+      VALUES (p_user_id, now() + make_interval(days => p_grace_days), 'admin')
+      RETURNING d.id, d.requested_at, d.scheduled_for;
+  END
+  $$;
+
+CREATE FUNCTION identity.admin_cancel_deletion(p_user_id uuid)
+  RETURNS uuid
+  LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = pg_catalog, identity
+  AS $$
+  DECLARE v_id uuid;
+  BEGIN
+    IF platform.current_app_role() IS DISTINCT FROM 'admin' OR platform.current_user_id() IS NULL THEN
+      RAISE EXCEPTION 'administrator context required' USING ERRCODE = '42501';
+    END IF;
+    UPDATE identity.deletion_requests d SET cancelled_at = now()
+      WHERE d.user_id = p_user_id AND d.requested_by = 'admin' AND d.cancelled_at IS NULL
+        AND d.completed_at IS NULL AND d.scheduled_for > now()
+      RETURNING d.id INTO v_id;
+    RETURN v_id;
+  END
+  $$;
+
+-- Stan wniosków dla listy kont w panelu: tylko termin i strona zlecająca, bez innych danych konta.
+CREATE FUNCTION identity.admin_deletion_status(p_user_ids uuid[])
+  RETURNS TABLE (user_id uuid, scheduled_for timestamptz, requested_by text)
+  LANGUAGE sql STABLE SECURITY DEFINER SET search_path = pg_catalog, identity
+  AS $$
+    SELECT DISTINCT ON (d.user_id) d.user_id, d.scheduled_for, d.requested_by
+    FROM identity.deletion_requests d
+    WHERE platform.current_app_role() = 'admin' AND platform.current_user_id() IS NOT NULL
+      AND d.user_id = ANY (p_user_ids) AND d.cancelled_at IS NULL AND d.completed_at IS NULL
+    ORDER BY d.user_id, d.requested_at DESC, d.id DESC
+  $$;
+
 -- Właściciel uruchomienia analizy (BL-312): jobs dostaje z kolejki wyłącznie runId i odczytuje user_id
 -- z rekordu tą funkcją (tylko kontekst system), a wynik zapisuje już w kontekście RLS właściciela.
 CREATE FUNCTION analytics.run_owner(p_run_id uuid)
@@ -1243,6 +1301,18 @@ CREATE POLICY retention_anonymize ON identity.invitations FOR UPDATE TO oliginve
 CREATE POLICY definer_functions ON analytics.analytics_runs FOR SELECT TO oliginvest_owner USING (true);
 -- identity.erase_account (BL-114): właściciel czyta wnioski o usunięcie, anonimizuje audyt i dopisuje erasure_log.
 CREATE POLICY definer_functions ON identity.deletion_requests FOR SELECT TO oliginvest_owner USING (true);
+-- BL-509: wniosek administratora — użytkownik go widzi (owner_all), ale nie zmieni ani nie usunie; własne wnioski
+-- zakłada wyłącznie z requested_by = 'user'. Funkcje admin_* (właściciel) zakładają i anulują tylko wnioski 'admin'.
+CREATE POLICY user_requests_insert ON identity.deletion_requests AS RESTRICTIVE FOR INSERT TO oliginvest_app
+  WITH CHECK (requested_by = 'user');
+CREATE POLICY user_requests_update ON identity.deletion_requests AS RESTRICTIVE FOR UPDATE TO oliginvest_app
+  USING (requested_by = 'user') WITH CHECK (requested_by = 'user');
+CREATE POLICY user_requests_delete ON identity.deletion_requests AS RESTRICTIVE FOR DELETE TO oliginvest_app
+  USING (requested_by = 'user');
+CREATE POLICY definer_admin_insert ON identity.deletion_requests FOR INSERT TO oliginvest_owner
+  WITH CHECK (requested_by = 'admin');
+CREATE POLICY definer_admin_cancel ON identity.deletion_requests FOR UPDATE TO oliginvest_owner
+  USING (requested_by = 'admin') WITH CHECK (requested_by = 'admin');
 CREATE POLICY definer_erasure_read ON platform.audit_log FOR SELECT TO oliginvest_owner USING (true);
 CREATE POLICY definer_erasure_update ON platform.audit_log FOR UPDATE TO oliginvest_owner USING (true) WITH CHECK (true);
 CREATE POLICY definer_functions ON platform.erasure_log FOR INSERT TO oliginvest_owner WITH CHECK (true);
@@ -1296,6 +1366,7 @@ GRANT EXECUTE ON FUNCTION identity.find_invitation(text), identity.consume_invit
 GRANT EXECUTE ON FUNCTION platform.current_user_id(), platform.current_app_role() TO oliginvest_app;
 GRANT EXECUTE ON FUNCTION analytics.run_owner(uuid) TO oliginvest_app;
 GRANT EXECUTE ON FUNCTION identity.export_auth_data(), identity.erase_account(uuid, text) TO oliginvest_app;
+GRANT EXECUTE ON FUNCTION identity.admin_schedule_deletion(uuid, integer), identity.admin_cancel_deletion(uuid), identity.admin_deletion_status(uuid[]) TO oliginvest_app;
 
 -- oliginvest_analytics_ro: tylko dane rynkowe (bez watchlist i presetów użytkowników)
 GRANT SELECT ON market.instruments, market.bars_daily, market.fx_rates, market.corporate_actions, market.trading_calendar,
@@ -1308,6 +1379,7 @@ GRANT SELECT ON market.data_quality_issues TO oliginvest_analytics_ro;
 REVOKE EXECUTE ON FUNCTION identity.find_invitation(text), identity.consume_invitation(text, uuid) FROM PUBLIC;
 REVOKE EXECUTE ON FUNCTION analytics.run_owner(uuid) FROM PUBLIC;
 REVOKE EXECUTE ON FUNCTION identity.export_auth_data(), identity.erase_account(uuid, text) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION identity.admin_schedule_deletion(uuid, integer), identity.admin_cancel_deletion(uuid), identity.admin_deletion_status(uuid[]) FROM PUBLIC;
 
 -- Przyszłe tabele w schematach domenowych dostają uprawnienia domyślne (nowa tabela z user_id MUSI dostać politykę RLS w tej samej migracji).
 ALTER DEFAULT PRIVILEGES FOR ROLE oliginvest_owner IN SCHEMA identity, notifications, market, portfolio, analytics, alerts, education

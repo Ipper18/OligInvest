@@ -7,7 +7,7 @@ export const securityIncidentSchema = z
   .object({
     id: z.uuid(),
     occurredAt: z.iso.datetime(),
-    kind: z.enum(["rls", "role", "flag", "limits", "reset-2fa"]),
+    kind: z.enum(["rls", "role", "flag", "limits", "reset-2fa", "email"]),
   })
   .strict();
 export type SecurityIncident = z.infer<typeof securityIncidentSchema>;
@@ -20,7 +20,8 @@ type IncidentMessages = Record<
   | "securityChangeRole"
   | "securityChangeFlag"
   | "securityChangeLimits"
-  | "securityChangeResetTwoFactor",
+  | "securityChangeResetTwoFactor"
+  | "securityChangeEmail",
   string
 >;
 export type SecurityIncidentNotification = {
@@ -78,6 +79,7 @@ export async function deliverSecurityIncident(
         flag: messages.securityChangeFlag,
         limits: messages.securityChangeLimits,
         "reset-2fa": messages.securityChangeResetTwoFactor,
+        email: messages.securityChangeEmail,
       };
       await options.notify(`security-incident-${event.id}-${userId}`, {
         v: 1,

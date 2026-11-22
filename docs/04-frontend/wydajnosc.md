@@ -70,7 +70,7 @@ BL-016 wykrył, że formatery i18n importowały runtime `decimal.js` wyłącznie
 | `/alerty`, `/alerty/*` | ≤ 190 KB | Zod 26 KB | ≤ 220 KB | wykresy |
 | `/nauka`, `/nauka/*` | ≤ 180 KB | driver.js 8 KB | ≤ 190 KB | wykresy, Zod |
 | `/ustawienia/*` | ≤ 185 KB | — | ≤ 190 KB | wykresy |
-| `/admin/*` | ≤ 200 KB | tabela 41 KB, menu 31 KB, zakładki 9 KB | ≤ 290 KB | — (poza nawigacją użytkowników) |
+| `/admin`, `/admin/*` | ≤ 200 KB | tabela 41 KB, menu 31 KB, zakładki 9 KB | ≤ 290 KB | — (poza nawigacją użytkowników) |
 
 Powłoka aplikacji `(app)` (TanStack Query, klient API, SSE, nawigacja, formatery, słownik komunikatów PL) ma własny budżet **≤ 30 KB** ponad framework — kontrolowany przez `size-limit` (§ 6.2).
 

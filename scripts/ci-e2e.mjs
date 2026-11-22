@@ -58,7 +58,7 @@ try {
   run(process.execPath, ["apps/web/node_modules/@playwright/test/cli.js", "test", "--config=apps/web/playwright.config.ts", ...process.argv.slice(2).filter((arg) => arg !== "--")], {
     env: { ...process.env, E2E_API_URL: app.API_INTERNAL_URL, E2E_BROWSER_FIXTURE: browserFixture },
     log: "e2e-playwright.log",
-    timeout: 600000,
+    timeout: 900000,
   });
   console.log("E2E: selected browser scenarios + axe + production API / Compose PASS");
 } finally {
