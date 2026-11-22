@@ -1,6 +1,6 @@
 # Przygotowanie niezależnej bramki
 
-**Cel:** umożliwić właścicielowi ocenę mechanizmu przed instalacją. Pakiet dostarcza funkcję decyzji oraz testy, bez wykonawcy polecenia merge.
+**Cel:** umożliwić właścicielowi ocenę bramki, adapterów i planu scalenia w izolowanej próbie przed instalacją.
 
 ## Granica zaufania
 
@@ -21,3 +21,5 @@ Uruchom testy zaufanej wersji poleceniem `node --test scripts/agent-merge-gate/g
 Po odbiorze właściciel może zainstalować integrację, przypiąć wymagany check do osobnej aplikacji, zachować ścisłą aktualność main, 20 kontekstów, CodeQL, zero zatwierdzeń i brak bypass. Przed włączeniem oczekującego auto-merge udowodnij, że zmiana bazy lub cofnięcie oceny blokuje scalenie po stronie GitHuba także po wydaniu decyzji. Jeśli nie da się zagwarantować tej kolejności atomowo, pozostaw mechanizm wyłączony. Samo sprawdzenie head nie zabezpiecza przed zmianą main.
 
 Dopiero po aktywacji osobny wykonawca z minimalnym prawem scalenia ponawia odczyt i może zlecić `gh pr merge NUMER --repo Ipper18/OligInvest --auto --squash --match-head-commit SHA`. Wyłączenie obejmuje zatrzymanie wykonawcy, anulowanie wszystkich oczekujących auto-merge i unieważnienie opublikowanych wyników. Kolejka rusza po odczycie MERGED, mergedAt i identyfikatora scalenia właściwego PR. Zamknięcie bez scalenia wymaga decyzji.
+
+Etap 2 dostarcza adaptery i próbę offline. Wykonawca zwraca wyłącznie plan. [Instalacja, dowody odbioru i decyzje właściciela](agent-merge-gate/instalacja.md).

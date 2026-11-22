@@ -1,0 +1,36 @@
+name: Owner gate acceptance
+on:
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: Numer PR do odczytu
+        required: true
+        type: number
+permissions:
+  contents: read
+jobs:
+  offline:
+    if: github.ref == 'refs/heads/main' && github.repository == 'Ipper18/OligInvest'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
+        with:
+          node-version-file: .nvmrc
+      - run: node --test scripts/agent-merge-gate/
+  collect:
+    needs: offline
+    if: github.ref == 'refs/heads/main' && github.repository == 'Ipper18/OligInvest'
+    environment: gate-owner-acceptance
+    runs-on:
+      group: gate-owner-acceptance
+    permissions: {}
+    steps:
+      - name: Run the installed read-only collector for this approved main revision
+        env:
+          REQUEST_PR: ${{ inputs.pr }}
+          EXPECTED_MAIN: ${{ github.sha }}
+        run: /opt/oliginvest-gate/bin/owner-acceptance "$EXPECTED_MAIN" "$REQUEST_PR"

@@ -1,5 +1,7 @@
 import { verify } from "node:crypto";
 import { readFileSync } from "node:fs";
+import { canonical, digest, seconds, validVerdict } from "./evidence.mjs";
+import { distinctJobs, proven } from "./provenance.mjs";
 
 function loadJson(path) {
   return JSON.parse(readFileSync(new URL(path, import.meta.url), "utf8"));
@@ -47,7 +49,7 @@ function matchesScope(record, current) {
 function identity(value) {
   return typeof value === "string" && /^[a-z0-9][a-z0-9-]{0,79}$/.test(value);
 }
-function validReviews(snapshot, registry) {
+function validReviews(snapshot, registry, current) {
   if (!Array.isArray(snapshot.reviews) || snapshot.reviews.length !== 2) return false;
   const seen = new Set();
   const keys = new Set();
@@ -61,6 +63,13 @@ function validReviews(snapshot, registry) {
     )
       return false;
     const review = JSON.parse(envelope.payload);
+    if (
+      !validVerdict(review, seconds()) ||
+      canonical(review) !== envelope.payload ||
+      review.sequence !== current.sequences[review.role] ||
+      digest(envelope) !== current.latest[review.role]
+    )
+      return false;
     if (!["reviewer", "verifier"].includes(review?.role) || seen.has(review.role)) return false;
     const signer = registry[review.role];
     if (
@@ -98,7 +107,7 @@ function validReviews(snapshot, registry) {
 const deny = (reason) => ({ eligible: false, mergeAllowed: false, reason });
 
 // Only the isolated adapter supplies the current snapshot and pinned role registry.
-function decide(snapshot, registry) {
+function decide(snapshot, registry, current) {
   if (
     snapshot?.repo !== "Ipper18/OligInvest" ||
     snapshot.branch !== "main" ||
@@ -126,7 +135,10 @@ function decide(snapshot, registry) {
     !requiredContexts.every((name) =>
       snapshot.ci.some(
         (check) =>
-          check?.name === name && check.conclusion === "success" && matchesScope(check, snapshot),
+          check?.name === name &&
+          check.conclusion === "success" &&
+          matchesScope(check, snapshot) &&
+          proven(check, current.pins),
       ),
     )
   )
@@ -138,7 +150,8 @@ function decide(snapshot, registry) {
   )
     return deny("codeql");
   try {
-    if (!validReviews(snapshot, registry)) return deny("independent-reviews");
+    distinctJobs(snapshot.ci);
+    if (!validReviews(snapshot, registry, current)) return deny("independent-reviews");
   } catch {
     return deny("invalid-review-envelope");
   }
@@ -168,7 +181,14 @@ export function assess(current, proof, collectorKey, registry) {
       return deny("shared-collector-key");
     const snapshot = JSON.parse(proof.payload);
     if (!matchesScope(snapshot, current)) return deny("stale-snapshot");
-    return decide(snapshot, registry);
+    if (
+      current.mergeState !== "CLEAN" ||
+      current.mergeState !== snapshot.mergeState ||
+      current.state !== "OPEN" ||
+      current.draft !== false
+    )
+      return deny("changed-pr-state");
+    return decide(snapshot, registry, current);
   } catch {
     return deny("invalid-evidence");
   }
