@@ -18,3 +18,5 @@ Proponujemy oddzielić zbieranie faktów, podpisywanie ocen, obliczenie decyzji 
 Pierwsza lista LOW obejmuje tylko zwykłe modyfikacje instrukcji użytkownika i samouczków. Rozszerzenie listy, zmiana testów, ADR, bramki lub jej zależności wymaga właściciela. Treść obu dokumentów nadal oceniają obie role. Przy braku dostępu do niezależnych źródeł obowiązuje ręczne scalanie.
 
 [Procedura wdrożenia i prób odbiorczych](../07-wdrozenie/agent-merge-gate.md) określa granice zaufania, wymagane uprawnienia, unieważnianie oraz wycofanie. Do czasu odbioru wynik pozytywny służy wyłącznie próbie lokalnej.
+
+Aktywacja wymaga, aby po odbiorze właściciel zmienił status ADR-019 na „przyjęta”. Dopóki odwołanie oceny może wyprzedzić unieważnienie wyniku w GitHubie, scalenie pozostaje ręczne.

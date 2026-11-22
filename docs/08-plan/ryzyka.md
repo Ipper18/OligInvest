@@ -110,3 +110,5 @@ Doprecyzowanie R-19 (BL-034, 2026-10-23): lokalna baza owner wymaga zachowania `
 ### MERGEGATE-1 — proponowane ograniczenie R-11, R-23 i R-42
 
 R-11 obejmuje błędne dopuszczenie zmiany krytycznej i ponowne użycie dowodów po zmianie bazy. R-23 wymaga potwierdzenia pochodzenia checka przy zachowaniu zera formalnych zatwierdzeń i braku bypass. Dla R-42 wspólne konto i treść komentarza nie dowodzą tożsamości. Właściciel przed aktywacją sprawdza izolację podpisujących oraz odmowy opisane w [procedurze odbioru](../07-wdrozenie/agent-merge-gate.md).
+
+W próbie MERGEGATE-2 dla R-11 sprawdzamy zmianę bazy podczas zbierania dowodów i wyścig po wydaniu decyzji. Dla R-23 kolektor uzgadnia aplikację, workflow, wykonanie i zadanie z checkiem. Dla R-42 odrębne klucze, numer kolejny, okres ważności i generacja ograniczają ponowne użycie werdyktu. Do zamknięcia ryzyk potrzebna jest próba właściciela z rzeczywistymi źródłami.

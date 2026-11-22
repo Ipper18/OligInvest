@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
 import { generateKeyPairSync, sign } from "node:crypto";
 import test from "node:test";
+import { canonical, digest, seconds } from "./evidence.mjs";
 import { assess, classify, requiredContexts } from "./gate.mjs";
+import { jobKeyFor, workflowFor } from "./provenance.mjs";
 
 const path = "docs/12-dla-uzytkownika/instrukcja.md";
 const file = { path, status: "modified", beforeMode: "100644", afterMode: "100644" };
@@ -33,7 +35,27 @@ function seal(snapshot) {
   };
 }
 function decide(snapshot, signers) {
-  return assess(scope, seal(snapshot), collector.publicKey, signers);
+  const pins = {
+    actionsAppId: 1,
+    workflows: Object.fromEntries(requiredContexts.map((name) => [workflowFor(name), 2])),
+  };
+  const latest = Object.fromEntries(
+    snapshot.reviews.map((e) => [JSON.parse(e.payload).role, digest(e)]),
+  );
+  return assess(
+    {
+      ...scope,
+      state: "OPEN",
+      draft: false,
+      mergeState: "CLEAN",
+      pins,
+      latest,
+      sequences: { reviewer: 1, verifier: 1 },
+    },
+    seal(snapshot),
+    collector.publicKey,
+    signers,
+  );
 }
 test("untrusted edits and stale collection epochs cannot supply current facts", () => {
   const proof = seal(fixture());
@@ -49,8 +71,11 @@ test("untrusted edits and stale collection epochs cannot supply current facts", 
   assert.equal(assess(scope, proof, keys[0].publicKey, registry).eligible, false);
 });
 function envelope(role, overrides = {}, signer = roles.indexOf(role)) {
-  const payload = JSON.stringify({
+  const payload = canonical({
     ...scope,
+    sequence: 1,
+    issuedAt: seconds(),
+    ttl: 600,
     role,
     issuer: role,
     provider: "provider-b",
@@ -75,7 +100,24 @@ function fixture() {
     rounds: 2,
     changedFiles: 1,
     files: [file],
-    ci: requiredContexts.map((name) => ({ ...scope, name, conclusion: "success" })),
+    ci: requiredContexts.map((name, i) => ({
+      ...scope,
+      name,
+      conclusion: "success",
+      provenance: {
+        repo: scope.repo,
+        appId: 1,
+        workflowId: 2,
+        workflowPath: `.github/workflows/${workflowFor(name)}.yml`,
+        event: "pull_request",
+        runId: 3,
+        attempt: 1,
+        jobId: i + 1,
+        checkId: i + 1,
+        jobName: name,
+        jobKey: jobKeyFor(name),
+      },
+    })),
     codeql: { ...scope, complete: true, newAlerts: 0 },
     reviews: roles.map((role) => envelope(role)),
   };

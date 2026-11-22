@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import "./agent-merge-gate/gate.test.mjs";
+import "./agent-merge-gate/index.js";
 import { checkContexts } from "./check-ci.mjs";
 
 const workflow = {
