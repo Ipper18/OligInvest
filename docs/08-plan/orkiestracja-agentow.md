@@ -181,3 +181,7 @@ Po każdej paczce Dyspozytor zapisuje w `stan.md` zużycie każdego agenta z pan
 - **NIEZWERYFIKOWANE:** uprawnienia fine-grained PAT potrzebne do scalenia PR (§ 6.2).
 - **NIEZWERYFIKOWANE:** strefa czasowa harmonogramu rutyn — przyjmujemy czas lokalny stacji (Europe/Warsaw).
 - Wersja OpenBota używana przez właściciela — wpisać do [`audyt-pluginow.md`](../09-decyzje/audyt-pluginow.md) § 6 przy pilotażu.
+
+## Proponowana procedura po aktywacji ADR-019
+
+WIP=1, jedno operationId na operację. Po BEHIND Budowniczy wykonuje update-branch, odczytuje obie rewizje i powtarza klasyfikację, CI i niezależne oceny. Konflikt lub obszar krytyczny trafia do właściciela. Po zdarzeniu scalenia Dyspozytor potwierdza MERGED, aktualizuje stan.md, zamyka kartę i wybiera następny gotowy BL bez pytania o rutynową zgodę. R2 po przerwie odtwarza tę samą kolejność, również gdy GitHub scalił poza sesją. Sprawdza stan po zmianie, bez pętli CI i duplikatów. [Warunki aktywacji](../07-wdrozenie/agent-merge-gate.md).

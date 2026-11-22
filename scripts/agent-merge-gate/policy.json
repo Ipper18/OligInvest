@@ -1,0 +1,32 @@
+{
+  "allow": ["docs/12-dla-uzytkownika/instrukcja.md", "docs/12-dla-uzytkownika/samouczki.md"],
+  "denyPrefixes": [
+    ".github/",
+    "apps/api/src/auth/",
+    "modules/admin/",
+    "modules/identity/",
+    "packages/db/",
+    "packages/config/",
+    "infra/",
+    "docs/03-dane/",
+    "docs/06-bezpieczenstwo/",
+    "docs/07-wdrozenie/",
+    "docs/08-plan/",
+    "docs/09-decyzje/",
+    "scripts/ci-",
+    "scripts/agent-merge-gate/"
+  ],
+  "denyNames": [
+    "codeowners",
+    "schema.sql",
+    "testy-rls.sql",
+    "package.json",
+    "pnpm-lock.yaml",
+    "pnpm-workspace.yaml",
+    "package-lock.json",
+    "yarn.lock",
+    "uv.lock",
+    ".env",
+    "check-ci.test.mjs"
+  ]
+}

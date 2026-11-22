@@ -295,3 +295,7 @@ AUDYT SKILLI
 - Gdy .claude/skills zmienił się od daty ostatniego audytu w docs/09-decyzje/audyt-pluginow.md,
   wykonaj kontrole z CONTRIBUTING.md § 7 i dopisz wynik do audytu w PR.
 ```
+
+## Proponowana instrukcja kanału po aktywacji ADR-019
+
+Budowniczy aktualizuje gałąź zwykłym update-branch i testuje nowy SHA. Recenzent od innego dostawcy i Weryfikator niezależnie podpisują nowe oceny. Zmiana main unieważnia także oceny niezmienionego head. Po dwóch nieskutecznych rundach Dyspozytor zgłasza STOP. Uprawniony wykonawca obsługuje wyłącznie LOW po decyzji bramki. [Projekt ADR-019](../09-decyzje/ADR-019-niezalezna-bramka-jakosci.md).
